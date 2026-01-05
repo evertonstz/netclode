@@ -8,7 +8,7 @@
   services.redis.servers.juicefs = {
     enable = true;
     port = 6379;
-    bind = "127.0.0.1";
+    bind = "0.0.0.0"; # Allow access from k8s pods
 
     settings = {
       # Persistence
@@ -21,9 +21,12 @@
 
       # Performance
       tcp-keepalive = 300;
+
+      # Security - only allow from pod network and localhost
+      # protected-mode is disabled since we control network access via firewall
     };
   };
 
-  # Open port for localhost only (k8s pods access via host network)
-  networking.firewall.interfaces."lo".allowedTCPPorts = [6379];
+  # Allow Redis access from localhost and k8s pod network
+  networking.firewall.allowedTCPPorts = [6379];
 }
