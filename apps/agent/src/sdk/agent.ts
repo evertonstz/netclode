@@ -14,6 +14,7 @@ export function createAgent(): AgentInstance {
   return {
     async run(prompt: string, send: EventSender) {
       try {
+        console.error("[sdk] Starting query...");
         currentQuery = query({
           prompt,
           options: {
@@ -27,9 +28,12 @@ export function createAgent(): AgentInstance {
           },
         });
 
+        console.error("[sdk] Iterating messages...");
         for await (const message of currentQuery) {
+          console.error(`[sdk] Got message: ${message.type}`);
           await handleMessage(message, send);
         }
+        console.error("[sdk] Done iterating");
       } catch (error) {
         if (error instanceof Error && error.message.includes("abort")) {
           await send({ type: "agent.interrupted" });
