@@ -7,6 +7,7 @@ import * as k8s from "@kubernetes/client-node";
 import { config } from "../config";
 
 const NAMESPACE = process.env.K8S_NAMESPACE || "netclode";
+console.log(`[kubernetes] NAMESPACE = "${NAMESPACE}", K8S_NAMESPACE env = "${process.env.K8S_NAMESPACE}"`);
 const SANDBOX_TEMPLATE = "netclode-agent";
 const STORAGE_CLASS = "juicefs-sc";
 
@@ -283,6 +284,7 @@ export class KubernetesRuntime {
   }
 
   private async createWorkspacePVC(sessionId: string): Promise<void> {
+    console.log(`[${sessionId}] Creating PVC with namespace="${NAMESPACE}"`);
     const pvc: k8s.V1PersistentVolumeClaim = {
       apiVersion: "v1",
       kind: "PersistentVolumeClaim",
