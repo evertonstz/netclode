@@ -1,4 +1,17 @@
 # SandboxTemplate for Netclode Agent
+#
+# Security note on privileged: true
+# ---------------------------------
+# The agent runs with privileged: true because the NixOS image boots a full
+# init system that needs to mount /proc, /dev, /sys, etc.
+#
+# This is SAFE because:
+# 1. Kata Containers runs the pod inside an isolated VM with its own kernel
+# 2. "privileged" only grants root inside the VM, not on the host
+# 3. containerd config has privileged_without_host_devices=true, so no host
+#    devices (/dev/kvm, /dev/sda, etc.) are passed through
+# 4. The VM boundary is the security layer, not container namespaces
+#
 apiVersion: extensions.agents.x-k8s.io/v1alpha1
 kind: SandboxTemplate
 metadata:
@@ -11,6 +24,8 @@ spec:
       containers:
         - name: agent
           image: ghcr.io/angristan/netclode-agent:latest
+          securityContext:
+            privileged: true  # See security note above
           ports:
             - containerPort: 3002
               name: http
