@@ -8,8 +8,8 @@ COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/
 COPY packages/protocol/package.json packages/protocol/
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies (not frozen since we only copy subset of workspace)
+RUN bun install
 
 # Copy source code
 COPY apps/web apps/web

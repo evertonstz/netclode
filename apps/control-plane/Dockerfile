@@ -8,8 +8,8 @@ COPY package.json bun.lock ./
 COPY packages/protocol ./packages/protocol
 COPY apps/control-plane ./apps/control-plane
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies (not frozen since we only copy subset of workspace)
+RUN bun install
 
 # Build
 WORKDIR /app/apps/control-plane
