@@ -100,6 +100,17 @@
     };
   };
 
+  # Enable nix-ld to run dynamically linked binaries
+  # Required for Kata static release - see modules/k3s.nix for why we use static release
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc.lib
+      glibc
+      zlib
+    ];
+  };
+
   # Nix settings
   nix = {
     settings = {
