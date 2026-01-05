@@ -64,6 +64,7 @@
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [22]; # SSH only, rest via Tailscale
+    trustedInterfaces = ["cni0"]; # k3s pod network
   };
 
   # NAT for VM internet access
@@ -73,7 +74,8 @@
     externalInterface = "eth0";
   };
 
-  # nftables rules for VM network isolation
+  # nftables rules for k3s pod network
+  # Note: Network isolation for agent VMs is handled by k8s NetworkPolicy
   networking.nftables = {
     enable = true;
     tables.filter = {
@@ -85,16 +87,13 @@
           # Allow established connections
           ct state established,related accept
 
-          # Block VMs from accessing internal networks
-          iifname "cni0" ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10 } drop
+          # Allow k3s pod and service network traffic
+          iifname "cni0" ip daddr { 10.42.0.0/16, 10.43.0.0/16 } accept
 
-          # Allow host nix-serve from VMs
-          iifname "cni0" ip daddr 10.88.0.1 tcp dport 5000 accept
+          # Allow pods to reach the host (for API server, Redis, etc.)
+          iifname "cni0" oifname "lo" accept
 
-          # Block other host access from VMs
-          iifname "cni0" ip daddr 10.88.0.1 drop
-
-          # Allow VMs to access internet
+          # Allow pods to access internet
           iifname "cni0" accept
         }
       '';

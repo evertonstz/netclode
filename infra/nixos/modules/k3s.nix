@@ -117,6 +117,7 @@ in {
     description = "Download Kata Containers assets";
     wantedBy = ["multi-user.target"];
     before = ["k3s.service"];
+    path = [pkgs.zstd];
 
     serviceConfig = {
       Type = "oneshot";
@@ -126,15 +127,15 @@ in {
     script = ''
       set -euo pipefail
 
-      KATA_VERSION="3.10.0"
+      KATA_VERSION="3.24.0"
       ASSETS_DIR="/var/lib/kata"
 
       # Download kernel if not present
       if [ ! -f "$ASSETS_DIR/vmlinux" ]; then
         echo "Downloading Kata kernel..."
         ${pkgs.curl}/bin/curl -fsSL \
-          "https://github.com/kata-containers/kata-containers/releases/download/$KATA_VERSION/kata-static-$KATA_VERSION-x86_64.tar.xz" \
-          | ${pkgs.gnutar}/bin/tar -xJf - -C /tmp
+          "https://github.com/kata-containers/kata-containers/releases/download/$KATA_VERSION/kata-static-$KATA_VERSION-amd64.tar.zst" \
+          | ${pkgs.zstd}/bin/zstd -d | ${pkgs.gnutar}/bin/tar -xf - -C /tmp
 
         cp /tmp/opt/kata/share/kata-containers/vmlinux.container "$ASSETS_DIR/vmlinux"
         cp /tmp/opt/kata/share/kata-containers/kata-containers.img "$ASSETS_DIR/kata-containers.img"

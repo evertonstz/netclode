@@ -1,6 +1,7 @@
 name: Web App Image
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, master]
     paths:
