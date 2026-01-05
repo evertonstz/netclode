@@ -21,19 +21,20 @@ RUN apk add --no-cache \
 # Create /nix directory (required before Nix install)
 RUN mkdir -m 0755 /nix && chown root /nix
 
-# Install Nix (single-user mode for containers)
-RUN curl -L https://nixos.org/nix/install | sh -s -- --no-daemon --no-channel-add
+# Configure Nix for single-user (no sandbox, no build users)
+RUN mkdir -p /etc/nix && \
+    echo "sandbox = false" >> /etc/nix/nix.conf && \
+    echo "build-users-group =" >> /etc/nix/nix.conf && \
+    echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
 
-# Set up Nix environment
-ENV PATH="/root/.nix-profile/bin:/nix/var/nix/profiles/default/bin:${PATH}"
+# Install Nix using Determinate Systems installer (container-friendly)
+RUN curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux --no-confirm --init none
 
-# Enable flakes and configure Nix
-RUN mkdir -p /root/.config/nix && \
-    echo "experimental-features = nix-command flakes" > /root/.config/nix/nix.conf
+# Set up Nix environment (Determinate installer puts nix at /nix/var/nix/profiles/default/bin)
+ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
 
 # Install essential packages via Nix
-RUN . /root/.nix-profile/etc/profile.d/nix.sh && \
-    nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs && \
+RUN nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs && \
     nix-channel --update && \
     nix-env -iA \
       nixpkgs.bun \
