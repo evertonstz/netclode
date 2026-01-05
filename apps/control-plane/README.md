@@ -1,6 +1,6 @@
 # Control Plane
 
-Session management server for Netclode. Manages agent VMs via containerd/nerdctl and provides WebSocket API for clients.
+Session management server for Netclode. Manages agent sandboxes via Kubernetes and provides WebSocket API for clients.
 
 ## Structure
 
@@ -14,25 +14,24 @@ apps/control-plane/
 │   ├── sessions/
 │   │   └── manager.ts    # Session lifecycle management
 │   ├── runtime/
-│   │   └── nerdctl.ts    # containerd/nerdctl integration
+│   │   └── kubernetes.ts # Kubernetes/SandboxClaim integration
 │   └── storage/
 │       └── juicefs.ts    # JuiceFS workspace operations
+├── Dockerfile
 ├── package.json
 └── tsconfig.json
 ```
 
 ## Configuration
 
-Environment variables:
+Environment variables (via k8s Secret):
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PORT` | HTTP server port | `3000` |
 | `ANTHROPIC_API_KEY` | Anthropic API key | Required |
-| `JUICEFS_ROOT` | JuiceFS mount path | `/juicefs` |
-| `AGENT_IMAGE` | Agent container image | `ghcr.io/stanislas/netclode-agent:latest` |
-| `DEFAULT_CPUS` | Default VM CPU count | `2` |
-| `DEFAULT_MEMORY_MB` | Default VM memory (MB) | `2048` |
+| `K8S_NAMESPACE` | Kubernetes namespace | `netclode` |
+| `AGENT_IMAGE` | Agent container image | `ghcr.io/angristan/netclode-agent:latest` |
 
 ## Development
 
@@ -45,9 +44,12 @@ bun run dev
 
 # Type check
 bun run typecheck
+
+# Build
+bun run build
 ```
 
-Note: Full functionality requires containerd and JuiceFS, which are only available on the NixOS server.
+Note: Full functionality requires Kubernetes access. Use `kubectl port-forward` or run inside the cluster.
 
 ## API
 
@@ -171,55 +173,61 @@ Connect to `/ws` for real-time session management.
 └──────────┘                └──────────┘
 ```
 
-## Runtime Integration
+## Kubernetes Integration
 
-The control plane manages VMs via nerdctl:
+The control plane manages agent sandboxes via the Kubernetes API:
 
 ```typescript
-// Create VM
-await runtime.createVM({
+// Create sandbox (SandboxClaim + PVC + Secret)
+await k8s.createSandbox({
   sessionId: "abc123",
   cpus: 2,
   memoryMB: 2048,
 });
 
-// Execute command in VM
-const result = await runtime.execInVM(sessionId, ["ls", "-la"]);
+// Wait for sandbox to be ready
+const serviceFQDN = await k8s.waitForReady(sessionId);
 
-// Stop and remove VM
-await runtime.stopVM(sessionId);
-await runtime.removeVM(sessionId);
+// Delete sandbox
+await k8s.deleteSandbox(sessionId);
 ```
+
+Agent sandboxes run as Kata Container VMs via the `kata-clh` RuntimeClass.
 
 ## Storage Integration
 
-Workspaces are stored on JuiceFS:
+Workspaces are stored on JuiceFS via PVCs:
 
 ```typescript
-// Create workspace
-await storage.createWorkspace(sessionId);
-
-// Clone repo
-await storage.cloneRepo(sessionId, "https://github.com/user/repo");
-
-// Snapshot
-await storage.createSnapshot(sessionId, "turn-5");
-await storage.restoreSnapshot(sessionId, "turn-5");
+// Each session gets a PVC with JuiceFS StorageClass
+// Workspace is mounted at /workspace in the agent pod
 ```
 
 ## Deployment
 
-The control plane runs as a systemd service on the NixOS host:
+The control plane runs as a Kubernetes Deployment:
 
 ```bash
 # View logs
-journalctl -u netclode -f
+kubectl logs -n netclode -l app=control-plane -f
 
 # Restart
-systemctl restart netclode
+kubectl rollout restart deployment -n netclode control-plane
 
-# Status
-systemctl status netclode
+# Exec into pod
+kubectl exec -it -n netclode deploy/control-plane -- sh
 ```
 
-Code is deployed to `/opt/netclode` via rsync.
+Container images are built via GitHub Actions and pushed to GHCR.
+
+## Docker Build
+
+```bash
+# Build image
+docker build -t netclode-control-plane -f Dockerfile ../..
+
+# Run locally
+docker run -p 3000:3000 \
+  -e ANTHROPIC_API_KEY=sk-ant-xxx \
+  netclode-control-plane
+```

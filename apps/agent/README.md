@@ -1,6 +1,6 @@
 # Agent
 
-Claude Code agent that runs inside sandboxed VMs. Uses the Claude Agent SDK to execute coding tasks.
+Claude Code agent that runs inside sandboxed Kata Container VMs. Uses the Claude Agent SDK to execute coding tasks.
 
 ## Structure
 
@@ -22,7 +22,7 @@ apps/agent/
 
 ## Configuration
 
-Environment variables (injected by control plane):
+Environment variables (injected via k8s Secret):
 
 | Variable | Description |
 |----------|-------------|
@@ -129,7 +129,7 @@ const hooks = {
 
 When running inside a Kata Container VM:
 
-- `/workspace` - Mounted from JuiceFS (session's workspace)
+- `/workspace` - Mounted from JuiceFS PVC (session's workspace)
 - `/opt/agent` - Agent code
 - Docker available for container workloads
 - Nix available for dynamic dependencies
@@ -160,12 +160,12 @@ bun run dev
 bun run typecheck
 ```
 
-## Building the Agent VM
+## Building the Agent Image
 
-The agent is packaged into a NixOS-based OCI image:
+The agent is packaged into a NixOS-based OCI image via GitHub Actions:
 
 ```bash
-# Build image
+# Build image locally
 cd infra/nixos
 nix build .#agent-image
 
@@ -200,26 +200,28 @@ Events emitted during execution:
 
 ## Debugging
 
+From the k8s cluster (when an agent pod is running):
+
+```bash
+# List agent pods
+kubectl get pods -n netclode -l sandbox=true
+
+# View agent logs
+kubectl logs -n netclode <agent-pod-name> -f
+
+# Exec into agent pod
+kubectl exec -it -n netclode <agent-pod-name> -- /bin/bash
+```
+
 Inside the VM:
 
 ```bash
-# View agent logs
-journalctl -u agent -f
+# Check agent process
+ps aux | grep bun
 
-# Check agent status
-systemctl status agent
+# View workspace
+ls -la /workspace
 
-# Manually run agent
-cd /opt/agent
-bun run src/index.ts
-```
-
-From the host:
-
-```bash
-# Exec into VM
-nerdctl exec -it sess-abc123 /bin/bash
-
-# View VM logs
-nerdctl logs sess-abc123
+# Test connectivity
+curl http://control-plane.netclode.svc.cluster.local:80/health
 ```
