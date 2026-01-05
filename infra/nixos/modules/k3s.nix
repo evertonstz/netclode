@@ -70,7 +70,7 @@ in {
 
   # k3s service configuration for Kata
   systemd.services.k3s = {
-    path = [pkgs.kata-containers];
+    path = [pkgs.kata-runtime];
     serviceConfig = {
       # Device access for Kata VMs
       DeviceAllow = [
@@ -87,7 +87,7 @@ in {
   environment.systemPackages = with pkgs; [
     kubectl
     k9s
-    kata-containers
+    kata-runtime
     cloud-hypervisor
     virtiofsd
   ];
