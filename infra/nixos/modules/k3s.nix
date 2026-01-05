@@ -1,33 +1,10 @@
-# containerd with Kata Containers (Cloud Hypervisor) configuration
+# k3s with Kata Containers (Cloud Hypervisor) configuration
 {
   config,
   lib,
   pkgs,
   ...
 }: let
-  # CNI config for VM networking
-  cniConfig = pkgs.writeText "10-netclode.conflist" (builtins.toJSON {
-    cniVersion = "1.0.0";
-    name = "netclode";
-    plugins = [
-      {
-        type = "bridge";
-        bridge = "cni0";
-        isGateway = true;
-        ipMasq = true;
-        ipam = {
-          type = "host-local";
-          ranges = [[{subnet = "10.88.0.0/16";}]];
-          routes = [{dst = "0.0.0.0/0";}];
-        };
-      }
-      {
-        type = "portmap";
-        capabilities = {portMappings = true;};
-      }
-    ];
-  });
-
   # Kata configuration for Cloud Hypervisor
   kataConfig = pkgs.writeText "configuration-clh.toml" ''
     [hypervisor.clh]
@@ -62,64 +39,75 @@
     disable_new_netns = false
     sandbox_cgroup_only = true
   '';
+
+  # containerd config template for k3s with Kata runtime
+  containerdConfigTmpl = pkgs.writeText "config.toml.tmpl" ''
+    version = 2
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "runc"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+        runtime_type = "io.containerd.runc.v2"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh]
+        runtime_type = "io.containerd.kata-clh.v2"
+        privileged_without_host_devices = true
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh.options]
+          ConfigPath = "/etc/kata-containers/configuration-clh.toml"
+  '';
 in {
-  # Enable containerd
-  virtualisation.containerd = {
+  # Enable k3s
+  services.k3s = {
     enable = true;
-    settings = {
-      version = 2;
-      plugins = {
-        "io.containerd.grpc.v1.cri" = {
-          containerd = {
-            default_runtime_name = "kata-clh";
-            runtimes = {
-              kata-clh = {
-                runtime_type = "io.containerd.kata-clh.v2";
-                privileged_without_host_devices = true;
-                options = {
-                  ConfigPath = "/etc/kata-containers/configuration-clh.toml";
-                };
-              };
-              # Keep runc for utility containers
-              runc = {
-                runtime_type = "io.containerd.runc.v2";
-              };
-            };
-          };
-          cni = {
-            bin_dir = "${pkgs.cni-plugins}/bin";
-            conf_dir = "/etc/cni/net.d";
-          };
-        };
-      };
+    role = "server";
+    extraFlags = toString [
+      "--disable=traefik"
+      "--disable=servicelb"
+      "--flannel-backend=host-gw"
+    ];
+  };
+
+  # k3s service configuration for Kata
+  systemd.services.k3s = {
+    path = [pkgs.kata-containers];
+    serviceConfig = {
+      # Device access for Kata VMs
+      DeviceAllow = [
+        "/dev/kvm rwm"
+        "/dev/vhost-vsock rwm"
+        "/dev/vhost-net rwm"
+        "/dev/net/tun rwm"
+      ];
+      Delegate = "yes";
     };
   };
 
   # Install packages
   environment.systemPackages = with pkgs; [
-    nerdctl
-    cni-plugins
+    kubectl
+    k9s
     kata-containers
     cloud-hypervisor
     virtiofsd
   ];
 
-  # CNI configuration
-  environment.etc."cni/net.d/10-netclode.conflist".source = cniConfig;
-
   # Kata configuration
   environment.etc."kata-containers/configuration-clh.toml".source = kataConfig;
 
-  # Kata assets directory
+  # containerd config template for k3s
+  # k3s reads this from /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
   systemd.tmpfiles.rules = [
     "d /var/lib/kata 0755 root root -"
+    "d /var/lib/rancher/k3s/agent/etc/containerd 0755 root root -"
+    "L+ /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl - - - - ${containerdConfigTmpl}"
   ];
 
   # Service to download Kata assets if not present
   systemd.services.kata-assets = {
     description = "Download Kata Containers assets";
     wantedBy = ["multi-user.target"];
-    before = ["containerd.service"];
+    before = ["k3s.service"];
 
     serviceConfig = {
       Type = "oneshot";
@@ -150,6 +138,9 @@ in {
     '';
   };
 
-  # Open port on CNI bridge for nix-serve
-  networking.firewall.interfaces."cni0".allowedTCPPorts = [5000];
+  # KVM kernel modules
+  boot.kernelModules = ["kvm-intel" "kvm-amd" "vhost_net"];
+
+  # Open k3s API port on Tailscale
+  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [6443];
 }

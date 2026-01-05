@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kubernetes/client-node": "^1.0.0",
     "@netclode/protocol": "workspace:*"
   },
   "devDependencies": {

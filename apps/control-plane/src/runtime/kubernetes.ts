@@ -1,0 +1,345 @@
+/**
+ * Kubernetes runtime using agent-sandbox CRDs
+ *
+ * Manages agent sandboxes via SandboxClaim resources
+ */
+import * as k8s from "@kubernetes/client-node";
+import { config } from "../config";
+
+const NAMESPACE = process.env.K8S_NAMESPACE || "netclode";
+const SANDBOX_TEMPLATE = "netclode-agent";
+const STORAGE_CLASS = "juicefs-sc";
+
+export interface VMConfig {
+  sessionId: string;
+  cpus?: number;
+  memoryMB?: number;
+  image?: string;
+  env?: Record<string, string>;
+}
+
+export interface VMInfo {
+  id: string;
+  name: string;
+  status: string;
+  serviceFQDN?: string;
+}
+
+interface SandboxClaimSpec {
+  templateRef: {
+    name: string;
+  };
+}
+
+interface SandboxClaimStatus {
+  conditions?: k8s.V1Condition[];
+  sandboxRef?: {
+    name: string;
+  };
+}
+
+interface SandboxStatus {
+  serviceFQDN?: string;
+  conditions?: k8s.V1Condition[];
+}
+
+export class KubernetesRuntime {
+  private kc: k8s.KubeConfig;
+  private customApi: k8s.CustomObjectsApi;
+  private coreApi: k8s.CoreV1Api;
+
+  constructor() {
+    this.kc = new k8s.KubeConfig();
+
+    // Load config from default locations (in-cluster or KUBECONFIG env)
+    if (process.env.KUBERNETES_SERVICE_HOST) {
+      this.kc.loadFromCluster();
+    } else {
+      this.kc.loadFromDefault();
+    }
+
+    this.customApi = this.kc.makeApiClient(k8s.CustomObjectsApi);
+    this.coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
+  }
+
+  /**
+   * Create a new sandbox for a session
+   */
+  async createSandbox(vmConfig: VMConfig): Promise<string> {
+    const { sessionId, env = {} } = vmConfig;
+    const name = `sess-${sessionId}`;
+
+    // Create PVC for workspace
+    await this.createWorkspacePVC(sessionId);
+
+    // Create secret for environment variables
+    await this.createEnvSecret(sessionId, {
+      SESSION_ID: sessionId,
+      ANTHROPIC_API_KEY: config.anthropicApiKey,
+      ...env,
+    });
+
+    // Create SandboxClaim
+    const sandboxClaim = {
+      apiVersion: "extensions.agents.x-k8s.io/v1alpha1",
+      kind: "SandboxClaim",
+      metadata: {
+        name,
+        namespace: NAMESPACE,
+        labels: {
+          "netclode.io/session": sessionId,
+        },
+      },
+      spec: {
+        templateRef: {
+          name: SANDBOX_TEMPLATE,
+        },
+      } as SandboxClaimSpec,
+    };
+
+    await this.customApi.createNamespacedCustomObject(
+      "extensions.agents.x-k8s.io",
+      "v1alpha1",
+      NAMESPACE,
+      "sandboxclaims",
+      sandboxClaim
+    );
+
+    console.log(`[${sessionId}] SandboxClaim created: ${name}`);
+    return name;
+  }
+
+  /**
+   * Get sandbox status by session ID
+   */
+  async getSandboxStatus(sessionId: string): Promise<VMInfo | null> {
+    const name = `sess-${sessionId}`;
+
+    try {
+      const response = await this.customApi.getNamespacedCustomObject(
+        "extensions.agents.x-k8s.io",
+        "v1alpha1",
+        NAMESPACE,
+        "sandboxclaims",
+        name
+      );
+
+      const claim = response.body as {
+        metadata: k8s.V1ObjectMeta;
+        spec: SandboxClaimSpec;
+        status?: SandboxClaimStatus;
+      };
+
+      const sandboxName = claim.status?.sandboxRef?.name;
+      let serviceFQDN: string | undefined;
+
+      // Get the actual Sandbox to retrieve service FQDN
+      if (sandboxName) {
+        try {
+          const sandboxResponse = await this.customApi.getNamespacedCustomObject(
+            "agents.x-k8s.io",
+            "v1alpha1",
+            NAMESPACE,
+            "sandboxes",
+            sandboxName
+          );
+
+          const sandbox = sandboxResponse.body as {
+            status?: SandboxStatus;
+          };
+
+          serviceFQDN = sandbox.status?.serviceFQDN;
+        } catch {
+          // Sandbox not ready yet
+        }
+      }
+
+      return {
+        id: name,
+        name,
+        status: this.mapConditionsToStatus(claim.status?.conditions),
+        serviceFQDN,
+      };
+    } catch (e: unknown) {
+      const error = e as { response?: { statusCode?: number } };
+      if (error.response?.statusCode === 404) {
+        return null;
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Delete a sandbox by session ID
+   */
+  async deleteSandbox(sessionId: string): Promise<void> {
+    const name = `sess-${sessionId}`;
+
+    // Delete SandboxClaim (controller will clean up Sandbox)
+    try {
+      await this.customApi.deleteNamespacedCustomObject(
+        "extensions.agents.x-k8s.io",
+        "v1alpha1",
+        NAMESPACE,
+        "sandboxclaims",
+        name
+      );
+    } catch (e: unknown) {
+      const error = e as { response?: { statusCode?: number } };
+      if (error.response?.statusCode !== 404) {
+        throw e;
+      }
+    }
+
+    // Delete secret
+    try {
+      await this.coreApi.deleteNamespacedSecret(`sess-${sessionId}-env`, NAMESPACE);
+    } catch {
+      // Ignore errors
+    }
+
+    // Delete PVC (if not handled by reclaimPolicy)
+    try {
+      await this.coreApi.deleteNamespacedPersistentVolumeClaim(
+        `sess-${sessionId}-workspace`,
+        NAMESPACE
+      );
+    } catch {
+      // Ignore errors
+    }
+
+    console.log(`[${sessionId}] Sandbox deleted`);
+  }
+
+  /**
+   * Wait for sandbox to be ready and return service FQDN
+   */
+  async waitForReady(sessionId: string, timeoutMs = 120000): Promise<string | null> {
+    const startTime = Date.now();
+    const checkInterval = 2000;
+
+    while (Date.now() - startTime < timeoutMs) {
+      const info = await this.getSandboxStatus(sessionId);
+
+      if (info?.status === "ready" && info.serviceFQDN) {
+        // Try to reach the agent health endpoint
+        try {
+          const response = await fetch(`http://${info.serviceFQDN}:3002/health`, {
+            signal: AbortSignal.timeout(2000),
+          });
+          if (response.ok) {
+            console.log(`[${sessionId}] Agent ready at ${info.serviceFQDN}`);
+            return info.serviceFQDN;
+          }
+        } catch {
+          // Not ready yet
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, checkInterval));
+    }
+
+    console.error(`[${sessionId}] Timeout waiting for agent to be ready`);
+    return null;
+  }
+
+  /**
+   * List all sandboxes
+   */
+  async listSandboxes(): Promise<VMInfo[]> {
+    const response = await this.customApi.listNamespacedCustomObject(
+      "extensions.agents.x-k8s.io",
+      "v1alpha1",
+      NAMESPACE,
+      "sandboxclaims",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "netclode.io/session"
+    );
+
+    const list = response.body as {
+      items: Array<{
+        metadata: k8s.V1ObjectMeta;
+        spec: SandboxClaimSpec;
+        status?: SandboxClaimStatus;
+      }>;
+    };
+
+    return list.items.map((item) => ({
+      id: item.metadata.name || "",
+      name: item.metadata.name || "",
+      status: this.mapConditionsToStatus(item.status?.conditions),
+    }));
+  }
+
+  /**
+   * Check if sandbox is running
+   */
+  async isSandboxRunning(sessionId: string): Promise<boolean> {
+    const info = await this.getSandboxStatus(sessionId);
+    return info?.status === "ready";
+  }
+
+  private async createWorkspacePVC(sessionId: string): Promise<void> {
+    const pvc: k8s.V1PersistentVolumeClaim = {
+      apiVersion: "v1",
+      kind: "PersistentVolumeClaim",
+      metadata: {
+        name: `sess-${sessionId}-workspace`,
+        namespace: NAMESPACE,
+        labels: {
+          "netclode.io/session": sessionId,
+        },
+      },
+      spec: {
+        accessModes: ["ReadWriteOnce"],
+        storageClassName: STORAGE_CLASS,
+        resources: {
+          requests: {
+            storage: "10Gi",
+          },
+        },
+      },
+    };
+
+    await this.coreApi.createNamespacedPersistentVolumeClaim(NAMESPACE, pvc);
+    console.log(`[${sessionId}] PVC created`);
+  }
+
+  private async createEnvSecret(
+    sessionId: string,
+    env: Record<string, string>
+  ): Promise<void> {
+    const secret: k8s.V1Secret = {
+      apiVersion: "v1",
+      kind: "Secret",
+      metadata: {
+        name: `sess-${sessionId}-env`,
+        namespace: NAMESPACE,
+        labels: {
+          "netclode.io/session": sessionId,
+        },
+      },
+      type: "Opaque",
+      stringData: env,
+    };
+
+    await this.coreApi.createNamespacedSecret(NAMESPACE, secret);
+    console.log(`[${sessionId}] Secret created`);
+  }
+
+  private mapConditionsToStatus(conditions?: k8s.V1Condition[]): string {
+    if (!conditions?.length) return "pending";
+
+    const ready = conditions.find((c) => c.type === "Ready");
+    if (ready?.status === "True") return "ready";
+    if (ready?.status === "False") return "error";
+
+    return "creating";
+  }
+}
+
+// Export singleton instance
+export const kubernetesRuntime = new KubernetesRuntime();

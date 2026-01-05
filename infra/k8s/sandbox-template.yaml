@@ -1,0 +1,67 @@
+# SandboxTemplate for Netclode Agent
+apiVersion: extensions.agents.x-k8s.io/v1alpha1
+kind: SandboxTemplate
+metadata:
+  name: netclode-agent
+  namespace: netclode
+spec:
+  podTemplate:
+    spec:
+      runtimeClassName: kata-clh
+      containers:
+        - name: agent
+          image: ghcr.io/stanislas/netclode-agent:latest
+          ports:
+            - containerPort: 3002
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: WORKSPACE
+              value: "/workspace"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: env-secrets
+              mountPath: /run/secrets
+              readOnly: true
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+  networkPolicy:
+    egress:
+      # Allow internet access
+      - to:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+              except:
+                - 10.0.0.0/8
+                - 172.16.0.0/12
+                - 192.168.0.0/16
+                - 100.64.0.0/10
+      # Allow DNS
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: kube-system
+        ports:
+          - protocol: TCP
+            port: 53
+          - protocol: UDP
+            port: 53

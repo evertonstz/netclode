@@ -5,11 +5,12 @@ export const config = {
   // Anthropic
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
 
-  // Storage
-  juicefsRoot: process.env.JUICEFS_ROOT || "/juicefs",
+  // Kubernetes
+  k8sNamespace: process.env.K8S_NAMESPACE || "netclode",
 
   // Runtime
   agentImage: process.env.AGENT_IMAGE || "ghcr.io/stanislas/netclode-agent:latest",
+  sandboxTemplate: process.env.SANDBOX_TEMPLATE || "netclode-agent",
 
   // VM defaults
   defaultCpus: Number(process.env.DEFAULT_CPUS) || 2,

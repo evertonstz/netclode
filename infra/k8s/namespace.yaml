@@ -1,0 +1,53 @@
+# Netclode namespace and RBAC
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: netclode
+  labels:
+    app.kubernetes.io/name: netclode
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: control-plane
+  namespace: netclode
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sandbox-manager
+  namespace: netclode
+rules:
+  # Sandbox CRDs
+  - apiGroups: ["agents.x-k8s.io"]
+    resources: ["sandboxes", "sandboxes/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Extension CRDs
+  - apiGroups: ["extensions.agents.x-k8s.io"]
+    resources: ["sandboxclaims", "sandboxclaims/status", "sandboxtemplates"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Core resources
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sandbox-manager-binding
+  namespace: netclode
+subjects:
+  - kind: ServiceAccount
+    name: control-plane
+    namespace: netclode
+roleRef:
+  kind: Role
+  name: sandbox-manager
+  apiGroup: rbac.authorization.k8s.io

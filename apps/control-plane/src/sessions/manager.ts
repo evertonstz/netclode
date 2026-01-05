@@ -1,17 +1,19 @@
 /**
  * Session Manager
  *
- * Manages Claude Code agent sessions using containerd/nerdctl
+ * Manages Claude Code agent sessions using Kubernetes and agent-sandbox
  */
 import type { Session, SessionCreateRequest, ServerMessage } from "@netclode/protocol";
-import * as runtime from "../runtime/nerdctl";
-import * as storage from "../storage/juicefs";
+import { KubernetesRuntime } from "../runtime/kubernetes";
 import { config } from "../config";
+
+// Kubernetes runtime instance
+const runtime = new KubernetesRuntime();
 
 export type MessageHandler = (message: ServerMessage) => void;
 
 interface AgentConnection {
-  ip: string;
+  serviceFQDN: string;
   connected: boolean;
   close: () => void;
 }
@@ -43,34 +45,25 @@ export class SessionManager {
     });
 
     try {
-      // Create workspace on JuiceFS
-      console.log(`[${id}] Creating workspace...`);
-      await storage.createWorkspace(id);
-
-      // Clone repo if provided
-      if (request.repo) {
-        console.log(`[${id}] Cloning repo: ${request.repo}`);
-        await storage.cloneRepo(id, request.repo);
-      }
-
-      // Create VM via nerdctl
-      console.log(`[${id}] Creating VM...`);
-      await runtime.createVM({
+      // Create sandbox via Kubernetes
+      console.log(`[${id}] Creating sandbox...`);
+      await runtime.createSandbox({
         sessionId: id,
         cpus: config.defaultCpus,
         memoryMB: config.defaultMemoryMB,
+        env: request.repo ? { GIT_REPO: request.repo } : undefined,
       });
 
-      // Wait for VM to be ready and get its IP
-      console.log(`[${id}] Waiting for VM to be ready...`);
-      const ip = await runtime.waitForVMReady(id, 120000);
-      if (!ip) {
+      // Wait for sandbox to be ready
+      console.log(`[${id}] Waiting for sandbox to be ready...`);
+      const serviceFQDN = await runtime.waitForReady(id, 120000);
+      if (!serviceFQDN) {
         session.status = "error";
-        throw new Error("VM failed to become ready");
+        throw new Error("Sandbox failed to become ready");
       }
 
       session.status = "ready";
-      console.log(`[${id}] Session ready at ${ip}`);
+      console.log(`[${id}] Session ready at ${serviceFQDN}`);
     } catch (e) {
       console.error(`[${id}] Failed to create session:`, e);
       session.status = "error";
@@ -81,13 +74,13 @@ export class SessionManager {
   }
 
   async list(): Promise<Session[]> {
-    // Sync with actual VM state
-    const vms = await runtime.listVMs();
-    const vmNames = new Set(vms.map((vm) => vm.name.replace("sess-", "")));
+    // Sync with actual sandbox state
+    const sandboxes = await runtime.listSandboxes();
+    const sandboxIds = new Set(sandboxes.map((s) => s.name.replace("sess-", "")));
 
-    // Update statuses based on actual VM state
+    // Update statuses based on actual sandbox state
     for (const [id, state] of this.sessions) {
-      if (!vmNames.has(id) && state.session.status === "running") {
+      if (!sandboxIds.has(id) && state.session.status === "running") {
         state.session.status = "paused";
       }
     }
@@ -105,26 +98,27 @@ export class SessionManager {
       throw new Error(`Session ${id} not found`);
     }
 
-    // Check if VM is running and get IP
-    let ip = await runtime.getVMIPAddress(id);
+    // Check if sandbox is running
+    let sandboxInfo = await runtime.getSandboxStatus(id);
+    let serviceFQDN = sandboxInfo?.serviceFQDN;
 
-    if (!ip) {
-      // Check if workspace exists
-      const hasWorkspace = await storage.workspaceExists(id);
-      if (!hasWorkspace) {
-        throw new Error(`Session ${id} workspace not found`);
+    if (!serviceFQDN || sandboxInfo?.status !== "ready") {
+      // Recreate sandbox
+      console.log(`[${id}] Sandbox not running, recreating...`);
+
+      // Delete old sandbox if exists
+      if (sandboxInfo) {
+        await runtime.deleteSandbox(id);
       }
 
-      // Recreate VM
-      console.log(`[${id}] VM not running, recreating...`);
-      await runtime.createVM({
+      await runtime.createSandbox({
         sessionId: id,
         cpus: config.defaultCpus,
         memoryMB: config.defaultMemoryMB,
       });
 
-      ip = await runtime.waitForVMReady(id, 120000);
-      if (!ip) {
+      serviceFQDN = await runtime.waitForReady(id, 120000);
+      if (!serviceFQDN) {
         state.session.status = "error";
         throw new Error("Failed to resume session");
       }
@@ -135,14 +129,14 @@ export class SessionManager {
 
     // Store agent connection
     state.agent = {
-      ip,
+      serviceFQDN,
       connected: true,
       close: () => {
         if (state.agent) state.agent.connected = false;
       },
     };
 
-    console.log(`[${id}] Resumed, agent at ${ip}`);
+    console.log(`[${id}] Resumed, agent at ${serviceFQDN}`);
     return state.session;
   }
 
@@ -158,9 +152,8 @@ export class SessionManager {
       state.agent = null;
     }
 
-    // Stop VM (keeps workspace)
-    await runtime.stopVM(id);
-    await runtime.removeVM(id);
+    // Delete sandbox (PVC persists)
+    await runtime.deleteSandbox(id);
 
     state.session.status = "paused";
     state.session.lastActiveAt = new Date().toISOString();
@@ -179,11 +172,8 @@ export class SessionManager {
       state.agent.close();
     }
 
-    // Remove VM
-    await runtime.removeVM(id);
-
-    // Delete workspace
-    await storage.deleteWorkspace(id);
+    // Delete sandbox and associated resources
+    await runtime.deleteSandbox(id);
 
     this.sessions.delete(id);
   }
@@ -197,14 +187,14 @@ export class SessionManager {
       throw new Error(`Session ${id} not found`);
     }
 
-    if (!state.agent?.connected || !state.agent.ip) {
+    if (!state.agent?.connected || !state.agent.serviceFQDN) {
       throw new Error(`Session ${id} agent not connected`);
     }
 
     state.session.lastActiveAt = new Date().toISOString();
     state.session.status = "running";
 
-    const agentUrl = `http://${state.agent.ip}:3002`;
+    const agentUrl = `http://${state.agent.serviceFQDN}:3002`;
 
     try {
       // Make HTTP request to agent
@@ -287,10 +277,10 @@ export class SessionManager {
    */
   async interrupt(id: string): Promise<void> {
     const state = this.sessions.get(id);
-    if (!state?.agent?.connected || !state.agent.ip) return;
+    if (!state?.agent?.connected || !state.agent.serviceFQDN) return;
 
     try {
-      await fetch(`http://${state.agent.ip}:3002/interrupt`, {
+      await fetch(`http://${state.agent.serviceFQDN}:3002/interrupt`, {
         method: "POST",
         signal: AbortSignal.timeout(5000),
       });
@@ -309,39 +299,8 @@ export class SessionManager {
     return () => state.messageHandlers.delete(handler);
   }
 
-  /**
-   * Create a snapshot of a session
-   */
-  async createSnapshot(id: string, name: string): Promise<void> {
-    const state = this.sessions.get(id);
-    if (!state) {
-      throw new Error(`Session ${id} not found`);
-    }
-
-    await storage.createSnapshot(id, name);
-  }
-
-  /**
-   * Restore a session from snapshot
-   */
-  async restoreSnapshot(id: string, name: string): Promise<void> {
-    const state = this.sessions.get(id);
-    if (!state) {
-      throw new Error(`Session ${id} not found`);
-    }
-
-    // Pause session first if running
-    if (state.session.status === "running") {
-      await this.pause(id);
-    }
-
-    await storage.restoreSnapshot(id, name);
-  }
-
-  /**
-   * List snapshots for a session
-   */
-  async listSnapshots(id: string): Promise<string[]> {
-    return storage.listSnapshots(id);
-  }
+  // TODO: Implement snapshots using Kubernetes VolumeSnapshots
+  // async createSnapshot(id: string, name: string): Promise<void> { }
+  // async restoreSnapshot(id: string, name: string): Promise<void> { }
+  // async listSnapshots(id: string): Promise<string[]> { }
 }

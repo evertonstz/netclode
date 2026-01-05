@@ -1,0 +1,79 @@
+# Control Plane Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane
+  namespace: netclode
+  labels:
+    app: control-plane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: control-plane
+  template:
+    metadata:
+      labels:
+        app: control-plane
+    spec:
+      serviceAccountName: control-plane
+      containers:
+        - name: control-plane
+          image: ghcr.io/stanislas/netclode-control-plane:latest
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: anthropic-api-key
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+# Control Plane Service with Tailscale exposure
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane
+  namespace: netclode
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: "netclode"
+  labels:
+    app: control-plane
+spec:
+  type: ClusterIP
+  selector:
+    app: control-plane
+  ports:
+    - port: 443
+      targetPort: 3000
+      name: https
+# Secret 'netclode-secrets' is created by scripts/deploy-secrets.sh

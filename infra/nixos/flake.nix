@@ -25,11 +25,12 @@
       modules = [
         disko.nixosModules.disko
         ./hosts/netclode-do
-        ./modules/containerd.nix
+        ./modules/k3s.nix
+        ./modules/redis.nix
         ./modules/juicefs.nix
+        ./modules/juicefs-csi.nix
         ./modules/tailscale.nix
         ./modules/nix-serve.nix
-        ./modules/control-plane.nix
       ];
     };
 
@@ -58,7 +59,9 @@
       packages = with pkgs; [
         bun
         nodejs_22
-        nerdctl
+        kubectl
+        k9s
+        kubernetes-helm
         jq
         # For remote deployment
         nixos-rebuild
@@ -67,6 +70,7 @@
       shellHook = ''
         echo "Netclode development shell"
         echo "  - bun: $(bun --version)"
+        echo "  - kubectl: $(kubectl version --client --short 2>/dev/null || echo 'not connected')"
         echo "  - nix: $(nix --version)"
       '';
     };

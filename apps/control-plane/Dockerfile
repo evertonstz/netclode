@@ -1,3 +1,4 @@
+# Control Plane Dockerfile
 FROM oven/bun:1.1-alpine AS builder
 
 WORKDIR /app
@@ -21,10 +22,11 @@ WORKDIR /app
 
 COPY --from=builder /app/apps/control-plane/dist ./dist
 COPY --from=builder /app/apps/control-plane/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
-# Install production dependencies only
-RUN bun install --production
+ENV NODE_ENV=production
+ENV PORT=3000
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["bun", "run", "dist/index.js"]

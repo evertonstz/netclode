@@ -3,20 +3,25 @@
 # Expects secrets at:
 #   /var/secrets/juicefs.env - Contains JUICEFS_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 #
+# Uses Redis for metadata (redis.nix must be enabled)
+#
 {
   config,
   lib,
   pkgs,
   ...
-}: {
+}: let
+  redisUrl = "redis://127.0.0.1:6379/0";
+in {
   # JuiceFS package
   environment.systemPackages = [pkgs.juicefs];
 
   # JuiceFS mount service
   systemd.services.juicefs = {
     description = "JuiceFS Mount";
-    after = ["network-online.target"];
+    after = ["network-online.target" "redis-juicefs.service"];
     wants = ["network-online.target"];
+    requires = ["redis-juicefs.service"];
     wantedBy = ["multi-user.target"];
 
     serviceConfig = {
@@ -27,13 +32,21 @@
     };
 
     preStart = ''
+      # Wait for Redis
+      for i in $(seq 1 30); do
+        if ${pkgs.redis}/bin/redis-cli ping 2>/dev/null | grep -q PONG; then
+          break
+        fi
+        sleep 1
+      done
+
       # Format if not already formatted (idempotent)
-      if ! ${pkgs.juicefs}/bin/juicefs status sqlite3:///var/lib/juicefs/meta.db 2>/dev/null; then
+      if ! ${pkgs.juicefs}/bin/juicefs status ${redisUrl} 2>/dev/null; then
         echo "Formatting JuiceFS filesystem..."
         ${pkgs.juicefs}/bin/juicefs format \
           --storage s3 \
           --bucket "$JUICEFS_BUCKET" \
-          sqlite3:///var/lib/juicefs/meta.db \
+          ${redisUrl} \
           netclode
       fi
     '';
@@ -44,7 +57,7 @@
         --cache-size 50000 \
         --writeback \
         --no-bgjob \
-        sqlite3:///var/lib/juicefs/meta.db \
+        ${redisUrl} \
         /juicefs
     '';
 
@@ -55,7 +68,6 @@
 
   # Create directories
   systemd.tmpfiles.rules = [
-    "d /var/lib/juicefs 0750 root root -"
     "d /var/cache/juicefs 0750 root root -"
     "d /juicefs 0755 root root -"
     "d /juicefs/sessions 0755 root root -"
