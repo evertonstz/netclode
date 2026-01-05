@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "references": [
+    { "path": "./packages/protocol" },
+    { "path": "./apps/control-plane" },
+    { "path": "./apps/agent" },
+    { "path": "./apps/web" }
+  ],
+  "files": []
+}

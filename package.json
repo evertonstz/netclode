@@ -1,0 +1,23 @@
+{
+  "name": "netclode",
+  "private": true,
+  "packageManager": "bun@1.3.5",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "control-plane": "bun run --cwd apps/control-plane dev",
+    "agent": "bun run --cwd apps/agent dev",
+    "web": "bun run --cwd apps/web dev"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.5",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.2"
+  }
+}

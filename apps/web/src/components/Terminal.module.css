@@ -1,0 +1,13 @@
+.container {
+  width: 100%;
+  height: 100%;
+  padding: 0.5rem;
+}
+
+.container :global(.xterm) {
+  height: 100%;
+}
+
+.container :global(.xterm-viewport) {
+  overflow-y: auto !important;
+}

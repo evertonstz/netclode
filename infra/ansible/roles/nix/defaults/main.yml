@@ -1,0 +1,8 @@
+---
+# Use DeterminateSystems installer (recommended)
+nix_installer: "determinate"
+
+# Extra Nix configuration
+nix_extra_config: |
+  experimental-features = nix-command flakes
+  trusted-users = root @wheel
