@@ -10,7 +10,7 @@ spec:
       runtimeClassName: kata-clh
       containers:
         - name: agent
-          image: ghcr.io/stanislas/netclode-agent:latest
+          image: ghcr.io/angristan/netclode-agent:latest
           ports:
             - containerPort: 3002
               name: http

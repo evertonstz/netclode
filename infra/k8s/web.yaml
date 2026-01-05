@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/stanislas/netclode-web:latest
+          image: ghcr.io/angristan/netclode-web:latest
           ports:
             - containerPort: 80
               name: http

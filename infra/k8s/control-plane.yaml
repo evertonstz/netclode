@@ -19,7 +19,7 @@ spec:
       serviceAccountName: control-plane
       containers:
         - name: control-plane
-          image: ghcr.io/stanislas/netclode-control-plane:latest
+          image: ghcr.io/angristan/netclode-control-plane:latest
           ports:
             - containerPort: 3000
               name: http
