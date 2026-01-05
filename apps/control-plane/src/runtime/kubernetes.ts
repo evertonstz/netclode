@@ -31,7 +31,7 @@ export interface VMInfo {
 }
 
 interface SandboxClaimSpec {
-  templateRef: {
+  sandboxTemplateRef: {
     name: string;
   };
 }
@@ -96,7 +96,7 @@ export class KubernetesRuntime {
         },
       },
       spec: {
-        templateRef: {
+        sandboxTemplateRef: {
           name: SANDBOX_TEMPLATE,
         },
       } as SandboxClaimSpec,
