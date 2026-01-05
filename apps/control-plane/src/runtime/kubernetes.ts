@@ -121,15 +121,13 @@ export class KubernetesRuntime {
     const name = `sess-${sessionId}`;
 
     try {
-      const response = await this.customApi.getNamespacedCustomObject({
+      const claim = (await this.customApi.getNamespacedCustomObject({
         group: "extensions.agents.x-k8s.io",
         version: "v1alpha1",
         namespace: getNamespace(),
         plural: "sandboxclaims",
         name,
-      });
-
-      const claim = response.body as {
+      })) as {
         metadata: k8s.V1ObjectMeta;
         spec: SandboxClaimSpec;
         status?: SandboxClaimStatus;
@@ -141,15 +139,13 @@ export class KubernetesRuntime {
       // Get the actual Sandbox to retrieve service FQDN
       if (sandboxName) {
         try {
-          const sandboxResponse = await this.customApi.getNamespacedCustomObject({
+          const sandbox = (await this.customApi.getNamespacedCustomObject({
             group: "agents.x-k8s.io",
             version: "v1alpha1",
             namespace: getNamespace(),
             plural: "sandboxes",
             name: sandboxName,
-          });
-
-          const sandbox = sandboxResponse.body as {
+          })) as {
             status?: SandboxStatus;
           };
 
@@ -255,15 +251,13 @@ export class KubernetesRuntime {
    * List all sandboxes
    */
   async listSandboxes(): Promise<VMInfo[]> {
-    const response = await this.customApi.listNamespacedCustomObject({
+    const list = (await this.customApi.listNamespacedCustomObject({
       group: "extensions.agents.x-k8s.io",
       version: "v1alpha1",
       namespace: getNamespace(),
       plural: "sandboxclaims",
       labelSelector: "netclode.io/session",
-    });
-
-    const list = response.body as {
+    })) as {
       items: Array<{
         metadata: k8s.V1ObjectMeta;
         spec: SandboxClaimSpec;
