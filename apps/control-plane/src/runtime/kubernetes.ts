@@ -6,8 +6,12 @@
 import * as k8s from "@kubernetes/client-node";
 import { config } from "../config";
 
-const NAMESPACE = process.env.K8S_NAMESPACE || "netclode";
-console.log(`[kubernetes] NAMESPACE = "${NAMESPACE}", K8S_NAMESPACE env = "${process.env.K8S_NAMESPACE}"`);
+// Use getter to ensure env var is read at runtime, not bundle time
+function getNamespace(): string {
+  const ns = process.env.K8S_NAMESPACE || "netclode";
+  return ns;
+}
+
 const SANDBOX_TEMPLATE = "netclode-agent";
 const STORAGE_CLASS = "juicefs-sc";
 
@@ -86,7 +90,7 @@ export class KubernetesRuntime {
       kind: "SandboxClaim",
       metadata: {
         name,
-        namespace: NAMESPACE,
+        namespace: getNamespace(),
         labels: {
           "netclode.io/session": sessionId,
         },
@@ -98,13 +102,13 @@ export class KubernetesRuntime {
       } as SandboxClaimSpec,
     };
 
-    await this.customApi.createNamespacedCustomObject(
-      "extensions.agents.x-k8s.io",
-      "v1alpha1",
-      NAMESPACE,
-      "sandboxclaims",
-      sandboxClaim
-    );
+    await this.customApi.createNamespacedCustomObject({
+      group: "extensions.agents.x-k8s.io",
+      version: "v1alpha1",
+      namespace: getNamespace(),
+      plural: "sandboxclaims",
+      body: sandboxClaim,
+    });
 
     console.log(`[${sessionId}] SandboxClaim created: ${name}`);
     return name;
@@ -117,13 +121,13 @@ export class KubernetesRuntime {
     const name = `sess-${sessionId}`;
 
     try {
-      const response = await this.customApi.getNamespacedCustomObject(
-        "extensions.agents.x-k8s.io",
-        "v1alpha1",
-        NAMESPACE,
-        "sandboxclaims",
-        name
-      );
+      const response = await this.customApi.getNamespacedCustomObject({
+        group: "extensions.agents.x-k8s.io",
+        version: "v1alpha1",
+        namespace: getNamespace(),
+        plural: "sandboxclaims",
+        name,
+      });
 
       const claim = response.body as {
         metadata: k8s.V1ObjectMeta;
@@ -137,13 +141,13 @@ export class KubernetesRuntime {
       // Get the actual Sandbox to retrieve service FQDN
       if (sandboxName) {
         try {
-          const sandboxResponse = await this.customApi.getNamespacedCustomObject(
-            "agents.x-k8s.io",
-            "v1alpha1",
-            NAMESPACE,
-            "sandboxes",
-            sandboxName
-          );
+          const sandboxResponse = await this.customApi.getNamespacedCustomObject({
+            group: "agents.x-k8s.io",
+            version: "v1alpha1",
+            namespace: getNamespace(),
+            plural: "sandboxes",
+            name: sandboxName,
+          });
 
           const sandbox = sandboxResponse.body as {
             status?: SandboxStatus;
@@ -178,13 +182,13 @@ export class KubernetesRuntime {
 
     // Delete SandboxClaim (controller will clean up Sandbox)
     try {
-      await this.customApi.deleteNamespacedCustomObject(
-        "extensions.agents.x-k8s.io",
-        "v1alpha1",
-        NAMESPACE,
-        "sandboxclaims",
-        name
-      );
+      await this.customApi.deleteNamespacedCustomObject({
+        group: "extensions.agents.x-k8s.io",
+        version: "v1alpha1",
+        namespace: getNamespace(),
+        plural: "sandboxclaims",
+        name,
+      });
     } catch (e: unknown) {
       const error = e as { response?: { statusCode?: number } };
       if (error.response?.statusCode !== 404) {
@@ -194,17 +198,20 @@ export class KubernetesRuntime {
 
     // Delete secret
     try {
-      await this.coreApi.deleteNamespacedSecret(`sess-${sessionId}-env`, NAMESPACE);
+      await this.coreApi.deleteNamespacedSecret({
+        name: `sess-${sessionId}-env`,
+        namespace: getNamespace(),
+      });
     } catch {
       // Ignore errors
     }
 
     // Delete PVC (if not handled by reclaimPolicy)
     try {
-      await this.coreApi.deleteNamespacedPersistentVolumeClaim(
-        `sess-${sessionId}-workspace`,
-        NAMESPACE
-      );
+      await this.coreApi.deleteNamespacedPersistentVolumeClaim({
+        name: `sess-${sessionId}-workspace`,
+        namespace: getNamespace(),
+      });
     } catch {
       // Ignore errors
     }
@@ -248,17 +255,13 @@ export class KubernetesRuntime {
    * List all sandboxes
    */
   async listSandboxes(): Promise<VMInfo[]> {
-    const response = await this.customApi.listNamespacedCustomObject(
-      "extensions.agents.x-k8s.io",
-      "v1alpha1",
-      NAMESPACE,
-      "sandboxclaims",
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      "netclode.io/session"
-    );
+    const response = await this.customApi.listNamespacedCustomObject({
+      group: "extensions.agents.x-k8s.io",
+      version: "v1alpha1",
+      namespace: getNamespace(),
+      plural: "sandboxclaims",
+      labelSelector: "netclode.io/session",
+    });
 
     const list = response.body as {
       items: Array<{
@@ -284,13 +287,14 @@ export class KubernetesRuntime {
   }
 
   private async createWorkspacePVC(sessionId: string): Promise<void> {
-    console.log(`[${sessionId}] Creating PVC with namespace="${NAMESPACE}"`);
+    const namespace = getNamespace();
+    console.log(`[${sessionId}] Creating PVC with namespace="${namespace}"`);
     const pvc: k8s.V1PersistentVolumeClaim = {
       apiVersion: "v1",
       kind: "PersistentVolumeClaim",
       metadata: {
         name: `sess-${sessionId}-workspace`,
-        namespace: NAMESPACE,
+        namespace,
         labels: {
           "netclode.io/session": sessionId,
         },
@@ -306,7 +310,10 @@ export class KubernetesRuntime {
       },
     };
 
-    await this.coreApi.createNamespacedPersistentVolumeClaim(NAMESPACE, pvc);
+    await this.coreApi.createNamespacedPersistentVolumeClaim({
+      namespace,
+      body: pvc,
+    });
     console.log(`[${sessionId}] PVC created`);
   }
 
@@ -314,12 +321,13 @@ export class KubernetesRuntime {
     sessionId: string,
     env: Record<string, string>
   ): Promise<void> {
+    const namespace = getNamespace();
     const secret: k8s.V1Secret = {
       apiVersion: "v1",
       kind: "Secret",
       metadata: {
         name: `sess-${sessionId}-env`,
-        namespace: NAMESPACE,
+        namespace,
         labels: {
           "netclode.io/session": sessionId,
         },
@@ -328,7 +336,10 @@ export class KubernetesRuntime {
       stringData: env,
     };
 
-    await this.coreApi.createNamespacedSecret(NAMESPACE, secret);
+    await this.coreApi.createNamespacedSecret({
+      namespace,
+      body: secret,
+    });
     console.log(`[${sessionId}] Secret created`);
   }
 

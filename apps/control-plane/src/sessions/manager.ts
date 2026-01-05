@@ -117,7 +117,7 @@ export class SessionManager {
         memoryMB: config.defaultMemoryMB,
       });
 
-      serviceFQDN = await runtime.waitForReady(id, 120000);
+      serviceFQDN = (await runtime.waitForReady(id, 120000)) ?? undefined;
       if (!serviceFQDN) {
         state.session.status = "error";
         throw new Error("Failed to resume session");
