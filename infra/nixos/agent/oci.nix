@@ -25,18 +25,40 @@
     mount -t proc proc /proc 2>/dev/null || true
     mount -t sysfs sys /sys 2>/dev/null || true
     mount -t devtmpfs dev /dev 2>/dev/null || true
+    mkdir -p /dev/pts /dev/shm
+    mount -t devpts devpts /dev/pts 2>/dev/null || true
+    mount -t tmpfs tmpfs /dev/shm 2>/dev/null || true
 
-    # Create tmpfs for writable areas
-    mount -t tmpfs -o mode=755,size=512M tmpfs /run
-    mount -t tmpfs -o mode=1777,size=256M tmpfs /tmp
-    mount -t tmpfs -o mode=755,size=256M tmpfs /var
+    # Create mount point directories (rootfs might be read-only)
+    # Use overlayfs on root first to make directories creatable
+    mkdir -p /mnt/root-upper /mnt/root-work
+    mount -t tmpfs tmpfs /mnt
+    mkdir -p /mnt/root-upper /mnt/root-work
+
+    # Create an overlay on / to make it writable
+    mount -t overlay overlay -o lowerdir=/,upperdir=/mnt/root-upper,workdir=/mnt/root-work / 2>/dev/null || {
+      echo "Root overlay failed, trying alternative approach..."
+      # Create directories in tmpfs and bind mount
+      mkdir -p /mnt/run /mnt/tmp /mnt/var /mnt/etc-upper /mnt/etc-work
+      mount --bind /mnt/run /run 2>/dev/null || mount -t tmpfs tmpfs /run
+      mount --bind /mnt/tmp /tmp 2>/dev/null || mount -t tmpfs tmpfs /tmp
+      mount --bind /mnt/var /var 2>/dev/null || mount -t tmpfs tmpfs /var
+    }
+
+    # Ensure directories exist
+    mkdir -p /run /tmp /var /etc
+
+    # Create tmpfs for writable areas if not already mounted
+    mountpoint -q /run || mount -t tmpfs -o mode=755,size=512M tmpfs /run
+    mountpoint -q /tmp || mount -t tmpfs -o mode=1777,size=256M tmpfs /tmp
+    mountpoint -q /var || mount -t tmpfs -o mode=755,size=256M tmpfs /var
 
     # Set up /etc overlay: tmpfs upper + image etc as lower
     mkdir -p /run/etc-upper /run/etc-work
-    if [ -d /etc ]; then
+    if [ -d /etc ] && ! mountpoint -q /etc; then
       mount -t overlay overlay -o lowerdir=/etc,upperdir=/run/etc-upper,workdir=/run/etc-work /etc 2>/dev/null || {
         # If overlay fails, use tmpfs and copy
-        echo "Overlay mount failed, using tmpfs copy..."
+        echo "Overlay mount failed for /etc, using tmpfs copy..."
         cp -a /etc /run/etc-copy 2>/dev/null || true
         mount -t tmpfs tmpfs /etc
         cp -a /run/etc-copy/* /etc/ 2>/dev/null || true
