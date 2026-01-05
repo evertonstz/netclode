@@ -1,16 +1,19 @@
 #!/usr/bin/env bun
 /**
  * Subprocess script to run SDK prompts
- * Reads prompt from stdin, streams SSE events to stdout
+ * Reads prompt from PROMPT_TEXT env var
  */
 import { query } from "@anthropic-ai/claude-agent-sdk";
 
 const cwd = process.env.WORKSPACE || "/workspace";
+const promptText = process.env.PROMPT_TEXT;
 
-// Read prompt from stdin
-const reader = Bun.stdin.stream().getReader();
-const { value } = await reader.read();
-const input = JSON.parse(new TextDecoder().decode(value)) as { text: string };
+if (!promptText) {
+  console.error("PROMPT_TEXT env var required");
+  process.exit(1);
+}
+
+const input = { text: promptText };
 
 const send = (data: object) => {
   process.stdout.write(`data: ${JSON.stringify(data)}\n\n`);
