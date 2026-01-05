@@ -87,16 +87,20 @@ COPY --from=builder /app/packages /opt/agent/packages
 
 WORKDIR /opt/agent/apps/agent
 
-# Copy global bun packages (claude CLI)
-COPY --from=builder /root/.bun /root/.bun
+# Copy global bun packages (claude CLI) to agent user home
+COPY --from=builder /root/.bun /home/agent/.bun
+RUN chown -R agent:agent /home/agent/.bun /opt/agent
 
 # Environment
 ENV NODE_ENV=production
 ENV WORKSPACE=/workspace
 ENV HOME=/home/agent
-ENV PATH="/root/.bun/bin:/nix/var/nix/profiles/default/bin:${PATH}"
+ENV PATH="/home/agent/.bun/bin:/nix/var/nix/profiles/default/bin:${PATH}"
 
 EXPOSE 3002
+
+# Run as non-root user (required for --dangerously-skip-permissions)
+USER agent
 
 # Run agent
 CMD ["bun", "run", "src/index.ts"]

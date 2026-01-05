@@ -23,6 +23,8 @@ try {
     prompt: input.text,
     options: {
       cwd,
+      dangerouslySkipPermissions: true,
+      model: "claude-opus-4-5-20251101",
     },
   });
 
