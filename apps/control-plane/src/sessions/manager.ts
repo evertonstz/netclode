@@ -62,8 +62,18 @@ export class SessionManager {
         throw new Error("Sandbox failed to become ready");
       }
 
-      session.status = "ready";
-      console.log(`[${id}] Session ready at ${serviceFQDN}`);
+      // Store agent connection so prompts work immediately
+      const state = this.sessions.get(id)!;
+      state.agent = {
+        serviceFQDN,
+        connected: true,
+        close: () => {
+          if (state.agent) state.agent.connected = false;
+        },
+      };
+
+      session.status = "running";
+      console.log(`[${id}] Session running at ${serviceFQDN}`);
     } catch (e) {
       console.error(`[${id}] Failed to create session:`, e);
       session.status = "error";

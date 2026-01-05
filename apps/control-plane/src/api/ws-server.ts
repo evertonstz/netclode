@@ -52,6 +52,15 @@ async function handleMessage(
         name: message.name,
         repo: message.repo,
       });
+
+      // Auto-subscribe to agent messages
+      if (!ws.data.subscriptions.has(session.id)) {
+        const unsub = sessionManager.subscribe(session.id, (msg) => {
+          ws.send(JSON.stringify(msg));
+        });
+        ws.data.subscriptions.set(session.id, unsub);
+      }
+
       send({ type: "session.created", session });
       break;
     }
