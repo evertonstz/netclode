@@ -59,8 +59,8 @@ COPY package.json bun.lock ./
 COPY packages/protocol/package.json packages/protocol/
 COPY apps/agent/package.json apps/agent/
 
-# Install dependencies
-RUN . /root/.nix-profile/etc/profile.d/nix.sh && bun install --frozen-lockfile
+# Install dependencies (bun is in PATH via ENV)
+RUN bun install
 
 # Copy source code
 COPY packages/protocol packages/protocol
@@ -88,9 +88,9 @@ WORKDIR /opt/agent/apps/agent
 ENV NODE_ENV=production
 ENV WORKSPACE=/workspace
 ENV HOME=/home/agent
-ENV PATH="/root/.nix-profile/bin:/nix/var/nix/profiles/default/bin:${PATH}"
+ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
 
 EXPOSE 3002
 
 # Run agent
-CMD ["/root/.nix-profile/bin/bun", "run", "src/index.ts"]
+CMD ["bun", "run", "src/index.ts"]
