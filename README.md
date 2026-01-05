@@ -6,18 +6,21 @@ Self-hosted Claude Code Cloud - persistent sandboxed AI coding agents accessible
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  VPS (NixOS)                                                        │
+│  VPS (NixOS + k3s)                                                  │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Control Plane (Bun)          containerd + kata-clh                 │
-│  ├── WebSocket API     ───►   ├── Agent VM 1 (NixOS)               │
-│  ├── Session Manager          │   └── /workspace → JuiceFS         │
-│  └── JuiceFS storage          ├── Agent VM 2 (NixOS)               │
-│                               │   └── /workspace → JuiceFS         │
-│                               └── ...                               │
+│  k3s Cluster                                                        │
+│  ├── control-plane (Deployment)                                     │
+│  │   └── WebSocket API, Session Manager                             │
+│  ├── web (Deployment)                                               │
+│  │   └── React SPA + nginx proxy                                    │
+│  ├── Agent Sandboxes (Kata VMs via RuntimeClass)                    │
+│  │   └── /workspace → JuiceFS PVC                                   │
+│  └── Tailscale Operator                                             │
+│       └── Exposes services to your tailnet                          │
 │                                                                     │
-│  JuiceFS (/juicefs) ──────────────────────────────► S3 (R2/B2)     │
+│  JuiceFS CSI ────────────────────────────────► S3 (R2/B2)          │
 │                                                                     │
-│  Tailscale ───────────────────────────────────────► Your devices   │
+│  Tailscale ──────────────────────────────────► Your devices         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -26,10 +29,11 @@ Self-hosted Claude Code Cloud - persistent sandboxed AI coding agents accessible
 | Component | Technology |
 |-----------|------------|
 | **Host OS** | NixOS (fully declarative) |
-| **VM Runtime** | containerd + Kata Containers (Cloud Hypervisor) |
+| **Orchestration** | k3s (lightweight Kubernetes) |
+| **VM Runtime** | Kata Containers (Cloud Hypervisor) via RuntimeClass |
 | **Agent VMs** | NixOS-based OCI images |
-| **Storage** | JuiceFS (S3-backed, virtio-fs into VMs) |
-| **Networking** | Tailscale + nftables |
+| **Storage** | JuiceFS CSI (S3-backed PVCs) |
+| **Networking** | Tailscale Operator + Flannel |
 | **Control Plane** | Bun + TypeScript |
 
 ## Project Structure
@@ -39,11 +43,14 @@ netclode/
 ├── apps/
 │   ├── control-plane/    # Session management, WebSocket API
 │   ├── agent/            # Runs inside VM, Claude Agent SDK
-│   └── web/              # React web client
+│   └── web/              # React web client + nginx
 ├── packages/
 │   └── protocol/         # Shared TypeScript types
 ├── infra/
-│   └── nixos/            # NixOS configuration (host + agent VM)
+│   ├── nixos/            # NixOS configuration (host + agent VM)
+│   └── k8s/              # Kubernetes manifests
+├── .github/
+│   └── workflows/        # CI/CD for container images
 └── scripts/              # Deployment scripts
 ```
 
@@ -54,7 +61,7 @@ netclode/
 - [Nix](https://nixos.org/download.html) with flakes enabled
 - A VPS with KVM support (DigitalOcean, Hetzner, etc.)
 - S3-compatible storage (Cloudflare R2, Backblaze B2)
-- Tailscale account
+- Tailscale account with OAuth client configured
 
 ### Local Development
 
@@ -67,80 +74,91 @@ nix develop
 cd ../..
 bun install
 
-# Run control plane locally (won't work without containerd)
+# Run control plane locally
 bun run --cwd apps/control-plane dev
 ```
 
 ### Deploy to Server
 
-1. **Prepare secrets** on the server:
+1. **Create the droplet** (DigitalOcean example):
 
 ```bash
-ssh root@your-server
+doctl compute droplet create netclode \
+  --size s-2vcpu-8gb-amd \
+  --image debian-13-x64 \
+  --region fra1 \
+  --ssh-keys <your-key-id>
+```
 
-mkdir -p /var/secrets
+2. **Install NixOS** using nixos-anywhere:
 
-# Tailscale auth key (get from admin console)
-echo "tskey-auth-xxx" > /var/secrets/tailscale-authkey
+```bash
+cd infra/nixos
+nix run github:nix-community/nixos-anywhere -- \
+  --flake .#netclode \
+  root@<droplet-ip>
+```
 
-# JuiceFS S3 credentials
-cat > /var/secrets/juicefs.env << 'EOF'
+3. **Configure secrets** (create `.env` file locally):
+
+```bash
+cat > .env << 'EOF'
+ANTHROPIC_API_KEY=sk-ant-xxx
 JUICEFS_BUCKET=https://your-bucket.r2.cloudflarestorage.com
 AWS_ACCESS_KEY_ID=xxx
 AWS_SECRET_ACCESS_KEY=xxx
+TS_OAUTH_CLIENT_ID=xxx
+TS_OAUTH_CLIENT_SECRET=xxx
 EOF
-
-# Control plane secrets
-cat > /var/secrets/netclode.env << 'EOF'
-ANTHROPIC_API_KEY=sk-ant-xxx
-EOF
-
-chmod 600 /var/secrets/*
 ```
 
-2. **Deploy NixOS configuration**:
+4. **Deploy secrets and manifests**:
 
 ```bash
-# From your local machine
-cd infra/nixos
-nixos-rebuild switch --flake .#netclode --target-host root@your-server
-```
-
-3. **Deploy application code**:
-
-```bash
-./scripts/deploy.sh your-server
+./scripts/deploy-secrets.sh <server-ip>
+./scripts/deploy-k8s.sh <server-ip>
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-**Control Plane** (`/var/secrets/netclode.env`):
+**Control Plane** (via k8s Secret `netclode-secrets`):
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `ANTHROPIC_API_KEY` | Anthropic API key | Required |
 | `PORT` | HTTP server port | `3000` |
-| `JUICEFS_ROOT` | JuiceFS mount point | `/juicefs` |
-| `AGENT_IMAGE` | Agent OCI image | `ghcr.io/stanislas/netclode-agent:latest` |
-| `DEFAULT_CPUS` | Default VM CPUs | `2` |
-| `DEFAULT_MEMORY_MB` | Default VM memory | `2048` |
+| `K8S_NAMESPACE` | Kubernetes namespace | `netclode` |
 
-### Secrets
+### Tailscale Setup
 
-| File | Purpose |
-|------|---------|
-| `/var/secrets/tailscale-authkey` | Tailscale auth (consumed on first boot) |
-| `/var/secrets/juicefs.env` | JuiceFS S3 credentials |
-| `/var/secrets/netclode.env` | Control plane environment |
-| `/var/secrets/nix-serve-*` | Auto-generated signing keys |
+1. Add ACL tags in Tailscale admin console:
+   ```json
+   {
+     "tagOwners": {
+       "tag:k8s-operator": ["autogroup:admin"],
+       "tag:k8s": ["tag:k8s-operator"]
+     }
+   }
+   ```
+
+2. Create OAuth client with `tag:k8s-operator` permission
+
+3. Enable MagicDNS in Tailscale settings
 
 ## Usage
 
+### Access Services
+
+After deployment, access via Tailscale:
+
+- **Web App**: `http://netclode-web.<your-tailnet>.ts.net`
+- **Control Plane API**: `http://netclode.<your-tailnet>.ts.net`
+
 ### WebSocket API
 
-Connect to `wss://your-server/ws` (via Tailscale).
+Connect to `ws://netclode.<your-tailnet>.ts.net/ws`
 
 **Create Session:**
 ```json
@@ -169,45 +187,50 @@ See `packages/protocol/src/messages.ts` for full API.
 ### View Logs
 
 ```bash
-# Control plane
-journalctl -u netclode -f
+# SSH to server
+ssh root@<server-ip>
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
-# containerd
-journalctl -u containerd -f
+# Control plane logs
+kubectl logs -n netclode -l app=control-plane -f
 
-# JuiceFS
-journalctl -u juicefs -f
+# Web app logs
+kubectl logs -n netclode -l app=web -f
+
+# k3s/kubelet logs
+journalctl -u k3s -f
 ```
 
-### Manage VMs
+### Manage Pods
 
 ```bash
-# List running VMs
-nerdctl ps --filter label=netclode.session
+# List all pods
+kubectl get pods -A
 
-# View VM logs
-nerdctl logs sess-abc123
+# Describe a pod
+kubectl describe pod -n netclode <pod-name>
 
-# Exec into VM
-nerdctl exec -it sess-abc123 /bin/bash
+# Exec into control plane
+kubectl exec -it -n netclode deploy/control-plane -- sh
 
-# Stop VM
-nerdctl stop sess-abc123
+# Restart a deployment
+kubectl rollout restart deployment -n netclode control-plane
 ```
 
-### Update Agent Image
+### Update Images
 
+Images are built automatically via GitHub Actions on push to `master`.
+
+To manually trigger a rebuild:
 ```bash
-# Build new image
-cd infra/nixos
-nix build .#agent-image
+gh workflow run "Control Plane Image"
+gh workflow run "Web App Image"
+gh workflow run "Agent Image"
+```
 
-# Load into containerd
-nerdctl load < result
-
-# Tag and push (optional)
-nerdctl tag netclode-agent:latest ghcr.io/you/netclode-agent:latest
-nerdctl push ghcr.io/you/netclode-agent:latest
+Then restart deployments to pull new images:
+```bash
+kubectl rollout restart deployment -n netclode control-plane web
 ```
 
 ### Rollback NixOS
@@ -222,10 +245,10 @@ nixos-rebuild switch --rollback
 
 ## Security
 
-- **VM Isolation**: Each session runs in a separate Kata Container (Cloud Hypervisor VM)
-- **Network Isolation**: nftables blocks VM access to internal networks (10.x, 172.x, 192.168.x, Tailscale)
-- **Storage Isolation**: Each VM only sees its own workspace via virtio-fs mount
-- **Access Control**: Tailscale ACLs restrict access to your devices only
+- **VM Isolation**: Each agent session runs in a separate Kata Container (Cloud Hypervisor microVM)
+- **Network Isolation**: Kubernetes NetworkPolicy blocks agent access to internal networks
+- **Storage Isolation**: Each agent gets its own PVC via JuiceFS CSI
+- **Access Control**: Tailscale restricts access to your devices only
 
 ## License
 
