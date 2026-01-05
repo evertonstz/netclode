@@ -6,14 +6,12 @@ on:
     branches: [main, master]
     paths:
       - "apps/agent/**"
-      - "infra/nixos/agent/**"
       - "packages/**"
       - ".github/workflows/agent.yaml"
   pull_request:
     branches: [main, master]
     paths:
       - "apps/agent/**"
-      - "infra/nixos/agent/**"
       - "packages/**"
 
 env:
@@ -31,24 +29,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          nix_path: nixpkgs=channel:nixos-24.11
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v15
-        with:
-          name: netclode
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-        continue-on-error: true
-
-      - name: Build agent OCI image
-        run: |
-          cd infra/nixos
-          nix build .#agent-image -o result
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Container Registry
         if: github.event_name != 'pull_request'
@@ -58,18 +40,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push image
-        if: github.event_name != 'pull_request'
-        run: |
-          # Install skopeo
-          nix profile install nixpkgs#skopeo
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
 
-          # Push with latest tag
-          skopeo copy \
-            docker-archive:infra/nixos/result \
-            docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-          # Push with SHA tag
-          skopeo copy \
-            docker-archive:infra/nixos/result \
-            docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/agent/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
