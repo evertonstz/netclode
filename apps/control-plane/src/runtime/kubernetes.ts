@@ -100,6 +100,11 @@ export class KubernetesRuntime {
               {
                 name: "agent",
                 image: "ghcr.io/angristan/netclode-agent:latest",
+                // NixOS needs privileged to mount /proc, /dev, /sys
+                // Safe because Kata runs this inside an isolated VM
+                securityContext: {
+                  privileged: true,
+                },
                 ports: [{ containerPort: 3002, name: "http" }],
                 env: [
                   { name: "NODE_ENV", value: "production" },
@@ -117,7 +122,6 @@ export class KubernetesRuntime {
                 ],
                 resources: {
                   requests: { cpu: "100m", memory: "256Mi" },
-                  limits: { cpu: "2", memory: "4Gi" },
                 },
                 readinessProbe: {
                   httpGet: { path: "/health", port: 3002 },
