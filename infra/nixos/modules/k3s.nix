@@ -41,20 +41,26 @@
   '';
 
   # containerd config template for k3s with Kata runtime
+  # Uses Go templating - k3s replaces {{ .NodeConfig.* }} variables
   containerdConfigTmpl = pkgs.writeText "config.toml.tmpl" ''
     version = 2
 
-    [plugins."io.containerd.grpc.v1.cri".containerd]
-      default_runtime_name = "runc"
+    [plugins."io.containerd.grpc.v1.cri"]
+      [plugins."io.containerd.grpc.v1.cri".cni]
+        bin_dir = "{{ .NodeConfig.AgentConfig.CNIBinDir }}"
+        conf_dir = "{{ .NodeConfig.AgentConfig.CNIConfDir }}"
 
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-        runtime_type = "io.containerd.runc.v2"
+      [plugins."io.containerd.grpc.v1.cri".containerd]
+        default_runtime_name = "runc"
 
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh]
-        runtime_type = "io.containerd.kata-clh.v2"
-        privileged_without_host_devices = true
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh.options]
-          ConfigPath = "/etc/kata-containers/configuration-clh.toml"
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh]
+          runtime_type = "io.containerd.kata-clh.v2"
+          privileged_without_host_devices = true
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh.options]
+            ConfigPath = "/etc/kata-containers/configuration-clh.toml"
   '';
 in {
   # Enable k3s
