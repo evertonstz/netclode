@@ -1,7 +1,5 @@
-import { createAgent } from "./sdk/agent";
 import { config } from "./config";
-
-const agent = createAgent();
+import { spawn } from "bun";
 
 const server = Bun.serve({
   port: config.port || 3002,
@@ -19,52 +17,21 @@ const server = Bun.serve({
       const { text } = body;
       console.error(`[prompt] Received: ${text.slice(0, 50)}...`);
 
-      // Use ReadableStream with pull-based approach
-      let done = false;
-      const queue: string[] = [];
-      let resolve: (() => void) | null = null;
-
-      const send = async (data: object) => {
-        const chunk = `data: ${JSON.stringify(data)}\n\n`;
-        console.error(`[prompt] Sending: ${chunk.slice(0, 80)}...`);
-        queue.push(chunk);
-        if (resolve) {
-          resolve();
-          resolve = null;
-        }
-      };
-
-      // Start agent processing
-      (async () => {
-        try {
-          await send({ type: "start" });
-          await agent.run(text, send);
-          await send({ type: "done" });
-        } catch (error) {
-          console.error(`[prompt] Error:`, error);
-          await send({ type: "error", error: String(error) });
-        } finally {
-          done = true;
-          if (resolve) resolve();
-        }
-      })();
-
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        async pull(controller) {
-          while (queue.length === 0 && !done) {
-            await new Promise<void>((r) => (resolve = r));
-          }
-          while (queue.length > 0) {
-            controller.enqueue(encoder.encode(queue.shift()!));
-          }
-          if (done && queue.length === 0) {
-            controller.close();
-          }
-        },
+      // Spawn subprocess to run SDK (avoids Bun.serve event loop issues)
+      const proc = spawn({
+        cmd: ["bun", "run", `${import.meta.dir}/run-prompt.ts`],
+        stdin: "pipe",
+        stdout: "pipe",
+        stderr: "inherit",
+        env: { ...process.env, WORKSPACE: config.workspacePath },
       });
 
-      return new Response(stream, {
+      // Send prompt to subprocess
+      proc.stdin.write(JSON.stringify({ text }) + "\n");
+      proc.stdin.end();
+
+      // Stream stdout as SSE
+      return new Response(proc.stdout, {
         headers: {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
@@ -73,9 +40,8 @@ const server = Bun.serve({
       });
     }
 
-    // Interrupt
+    // Interrupt (TODO: implement process killing)
     if (url.pathname === "/interrupt" && req.method === "POST") {
-      agent.interrupt();
       return new Response(JSON.stringify({ ok: true }));
     }
 
