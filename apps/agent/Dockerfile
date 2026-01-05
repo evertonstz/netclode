@@ -62,6 +62,9 @@ COPY apps/agent/package.json apps/agent/
 # Install dependencies (bun is in PATH via ENV)
 RUN bun install
 
+# Install Claude Code CLI globally (required by SDK)
+RUN bun add -g @anthropic-ai/claude-code
+
 # Copy source code
 COPY packages/protocol packages/protocol
 COPY apps/agent apps/agent
@@ -84,11 +87,14 @@ COPY --from=builder /app/packages /opt/agent/packages
 
 WORKDIR /opt/agent/apps/agent
 
+# Copy global bun packages (claude CLI)
+COPY --from=builder /root/.bun /root/.bun
+
 # Environment
 ENV NODE_ENV=production
 ENV WORKSPACE=/workspace
 ENV HOME=/home/agent
-ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
+ENV PATH="/root/.bun/bin:/nix/var/nix/profiles/default/bin:${PATH}"
 
 EXPOSE 3002
 
