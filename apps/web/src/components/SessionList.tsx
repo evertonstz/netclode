@@ -1,5 +1,13 @@
+import {
+  Card,
+  Group,
+  Text,
+  Badge,
+  ActionIcon,
+  Stack,
+  Box,
+} from "@mantine/core";
 import type { Session } from "@netclode/protocol";
-import styles from "./SessionList.module.css";
 
 interface SessionListProps {
   sessions: Session[];
@@ -7,60 +15,76 @@ interface SessionListProps {
   onDelete: (id: string) => void;
 }
 
-const STATUS_ICONS: Record<string, string> = {
-  running: "▶️",
-  ready: "✓",
-  paused: "⏸",
-  error: "⚠",
-  creating: "⏳",
+const STATUS_COLORS: Record<string, string> = {
+  running: "green",
+  ready: "blue",
+  paused: "yellow",
+  error: "red",
+  creating: "gray",
 };
 
-export function SessionList({ sessions, onSelect, onDelete }: SessionListProps) {
+export function SessionList({
+  sessions,
+  onSelect,
+  onDelete,
+}: SessionListProps) {
   if (sessions.length === 0) {
     return (
-      <div className={styles.empty}>
-        <span className={styles.emptyIcon}>📋</span>
-        <p>No sessions yet. Create one to get started.</p>
-      </div>
+      <Card withBorder p="xl" ta="center">
+        <Text size="xl" mb="xs">
+          📋
+        </Text>
+        <Text c="dimmed">No sessions yet. Create one to get started.</Text>
+      </Card>
     );
   }
 
   return (
-    <div className={styles.list}>
+    <Stack gap="sm">
       {sessions.map((session) => (
-        <div key={session.id} className={styles.item}>
-          <button
-            className={styles.selectButton}
-            onClick={() => onSelect(session.id)}
-          >
-            <div className={styles.statusIcon} data-status={session.status}>
-              {STATUS_ICONS[session.status] || "○"}
-            </div>
-            <div className={styles.info}>
-              <span className={styles.name}>{session.name}</span>
-              <span className={styles.meta}>
-                <span className={styles.status} data-status={session.status}>
+        <Card
+          key={session.id}
+          withBorder
+          padding="md"
+          style={{ cursor: "pointer" }}
+          onClick={() => onSelect(session.id)}
+        >
+          <Group justify="space-between" wrap="nowrap">
+            <Box style={{ flex: 1, minWidth: 0 }}>
+              <Group gap="sm" mb={4}>
+                <Text fw={500} truncate>
+                  {session.name}
+                </Text>
+                <Badge
+                  color={STATUS_COLORS[session.status] || "gray"}
+                  size="sm"
+                  variant="light"
+                >
                   {session.status}
-                </span>
-                <span>·</span>
-                <span>{formatTime(session.lastActiveAt)}</span>
-              </span>
-            </div>
-            <span className={styles.chevron}>›</span>
-          </button>
-          <button
-            className={styles.deleteButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(session.id);
-            }}
-            title="Delete session"
-          >
-            🗑
-          </button>
-        </div>
+                </Badge>
+              </Group>
+              <Text size="xs" c="dimmed">
+                {formatTime(session.lastActiveAt)}
+              </Text>
+            </Box>
+            <Group gap="xs">
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(session.id);
+                }}
+                title="Delete session"
+              >
+                🗑
+              </ActionIcon>
+              <Text c="dimmed">›</Text>
+            </Group>
+          </Group>
+        </Card>
       ))}
-    </div>
+    </Stack>
   );
 }
 

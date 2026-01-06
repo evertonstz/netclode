@@ -1,17 +1,16 @@
-import { useTheme } from "../contexts/ThemeContext";
-import styles from "./ThemeToggle.module.css";
+import { ActionIcon, useMantineColorScheme } from "@mantine/core";
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
   return (
-    <button
-      className={styles.toggle}
-      onClick={toggleTheme}
-      title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+    <ActionIcon
+      variant="subtle"
+      onClick={() => toggleColorScheme()}
+      title={`Switch to ${colorScheme === "light" ? "dark" : "light"} mode`}
+      aria-label={`Switch to ${colorScheme === "light" ? "dark" : "light"} mode`}
     >
-      {theme === "light" ? (
+      {colorScheme === "light" ? (
         <svg
           width="20"
           height="20"
@@ -46,6 +45,6 @@ export function ThemeToggle() {
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
         </svg>
       )}
-    </button>
+    </ActionIcon>
   );
 }

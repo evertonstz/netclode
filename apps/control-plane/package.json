@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@kubernetes/client-node": "^1.0.0",
-    "@netclode/protocol": "workspace:*",
+    "@netclode/protocol": "*",
     "ioredis": "^5.4.1"
   },
   "devDependencies": {

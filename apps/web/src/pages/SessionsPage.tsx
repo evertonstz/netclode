@@ -1,18 +1,25 @@
 import { useEffect, useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSessionStore } from "../stores/sessionStore";
+import { useLocation } from "wouter";
+import {
+  Container,
+  Group,
+  Title,
+  Button,
+  Badge,
+  Stack,
+  AppShell,
+} from "@mantine/core";
 import { SessionList } from "../components/SessionList";
 import { ThemeToggle } from "../components/ThemeToggle";
 import {
   useWebSocket,
   useWebSocketMessages,
 } from "../contexts/WebSocketContext";
-import type { ServerMessage } from "@netclode/protocol";
-import styles from "./SessionsPage.module.css";
+import type { ServerMessage, Session } from "@netclode/protocol";
 
 export function SessionsPage() {
-  const navigate = useNavigate();
-  const { sessions, setSessions, addSession, updateSession, removeSession } = useSessionStore();
+  const [, navigate] = useLocation();
+  const [sessions, setSessions] = useState<Session[]>([]);
   const { send, connected } = useWebSocket();
   const [creating, setCreating] = useState(false);
 
@@ -22,17 +29,21 @@ export function SessionsPage() {
         setSessions(msg.sessions);
       } else if (msg.type === "session.created") {
         setCreating(false);
-        addSession(msg.session);
+        setSessions((prev) => [...prev, msg.session]);
         navigate(`/session/${msg.session.id}`);
       } else if (msg.type === "session.updated") {
-        updateSession(msg.session);
+        setSessions((prev) =>
+          prev.some((s) => s.id === msg.session.id)
+            ? prev.map((s) => (s.id === msg.session.id ? msg.session : s))
+            : [...prev, msg.session]
+        );
       } else if (msg.type === "session.deleted") {
-        removeSession(msg.id);
+        setSessions((prev) => prev.filter((s) => s.id !== msg.id));
       } else if (msg.type === "session.error") {
         setCreating(false);
       }
     },
-    [setSessions, addSession, updateSession, removeSession, navigate]
+    [navigate]
   );
 
   useWebSocketMessages(handleMessage);
@@ -61,34 +72,43 @@ export function SessionsPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1>Netclode</h1>
-          <span className={styles.status} data-connected={connected}>
-            <span className={styles.statusDot} />
-            {connected ? "Connected" : "Disconnected"}
-          </span>
-        </div>
-        <div className={styles.headerRight}>
+    <AppShell header={{ height: 60 }} padding="md">
+      <AppShell.Header>
+        <Group h="100%" px="md" justify="space-between">
+          <Group>
+            <Title order={3}>Netclode</Title>
+            <Badge
+              color={connected ? "green" : "gray"}
+              variant="dot"
+              size="lg"
+            >
+              {connected ? "Connected" : "Disconnected"}
+            </Badge>
+          </Group>
           <ThemeToggle />
-        </div>
-      </header>
-      <main className={styles.main}>
-        <SessionList
-          sessions={sessions}
-          onSelect={(id) => navigate(`/session/${id}`)}
-          onDelete={handleDeleteSession}
-        />
-        <button
-          className={styles.createButton}
-          onClick={handleCreateSession}
-          disabled={!connected || creating}
-        >
-          <span className={styles.createIcon}>+</span>
-          {creating ? "Creating..." : "New Session"}
-        </button>
-      </main>
-    </div>
+        </Group>
+      </AppShell.Header>
+
+      <AppShell.Main>
+        <Container size="sm">
+          <Stack gap="md">
+            <SessionList
+              sessions={sessions}
+              onSelect={(id) => navigate(`/session/${id}`)}
+              onDelete={handleDeleteSession}
+            />
+            <Button
+              onClick={handleCreateSession}
+              disabled={!connected || creating}
+              loading={creating}
+              size="lg"
+              fullWidth
+            >
+              {creating ? "Creating..." : "New Session"}
+            </Button>
+          </Stack>
+        </Container>
+      </AppShell.Main>
+    </AppShell>
   );
 }

@@ -1,122 +1,147 @@
 import { useState, useRef, useEffect } from "react";
+import {
+  Box,
+  Paper,
+  Text,
+  Textarea,
+  ActionIcon,
+  Group,
+  Stack,
+  ScrollArea,
+  Collapse,
+  Badge,
+  Code,
+  Loader,
+  Anchor,
+  useMantineColorScheme,
+} from "@mantine/core";
 import type { AgentEvent } from "@netclode/protocol";
-import type { ChatMessage } from "../stores/sessionStore";
-import styles from "./ChatPanel.module.css";
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
 
 function EventDetails({ event }: { event: AgentEvent }) {
   switch (event.kind) {
     case "tool_start":
       return (
-        <div className={styles.eventDetails}>
-          <div className={styles.eventDetailRow}>
-            <span className={styles.eventDetailLabel}>Input:</span>
-            <pre className={styles.eventDetailCode}>
-              {JSON.stringify(event.input, null, 2)}
-            </pre>
-          </div>
-        </div>
+        <Stack gap="xs" p="xs">
+          <Group gap="xs">
+            <Text size="xs" c="dimmed">Input:</Text>
+          </Group>
+          <Code block style={{ fontSize: 11, maxHeight: 200, overflow: "auto" }}>
+            {JSON.stringify(event.input, null, 2)}
+          </Code>
+        </Stack>
       );
     case "tool_end":
       return (
-        <div className={styles.eventDetails}>
+        <Stack gap="xs" p="xs">
           {event.result && (
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailLabel}>Result:</span>
-              <pre className={styles.eventDetailCode}>{event.result}</pre>
-            </div>
+            <>
+              <Text size="xs" c="dimmed">Result:</Text>
+              <Code block style={{ fontSize: 11, maxHeight: 200, overflow: "auto" }}>
+                {event.result}
+              </Code>
+            </>
           )}
           {event.error && (
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailLabel}>Error:</span>
-              <pre className={styles.eventDetailError}>{event.error}</pre>
-            </div>
+            <>
+              <Text size="xs" c="red">Error:</Text>
+              <Code block color="red" style={{ fontSize: 11 }}>
+                {event.error}
+              </Code>
+            </>
           )}
-        </div>
+        </Stack>
       );
     case "file_change":
       return (
-        <div className={styles.eventDetails}>
-          <div className={styles.eventDetailRow}>
-            <span className={styles.eventDetailLabel}>Path:</span>
-            <code className={styles.eventDetailPath}>{event.path}</code>
-          </div>
-          <div className={styles.eventDetailRow}>
-            <span className={styles.eventDetailLabel}>Action:</span>
-            <span className={styles.eventDetailValue}>{event.action}</span>
-          </div>
+        <Stack gap="xs" p="xs">
+          <Group gap="xs">
+            <Text size="xs" c="dimmed">Path:</Text>
+            <Code style={{ fontSize: 11 }}>{event.path}</Code>
+          </Group>
+          <Group gap="xs">
+            <Text size="xs" c="dimmed">Action:</Text>
+            <Text size="xs">{event.action}</Text>
+          </Group>
           {(event.linesAdded !== undefined || event.linesRemoved !== undefined) && (
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailLabel}>Changes:</span>
-              <span className={styles.eventDetailValue}>
-                {event.linesAdded !== undefined && <span className={styles.linesAdded}>+{event.linesAdded}</span>}
-                {event.linesRemoved !== undefined && <span className={styles.linesRemoved}>-{event.linesRemoved}</span>}
-              </span>
-            </div>
+            <Group gap="xs">
+              <Text size="xs" c="dimmed">Changes:</Text>
+              {event.linesAdded !== undefined && (
+                <Text size="xs" c="green">+{event.linesAdded}</Text>
+              )}
+              {event.linesRemoved !== undefined && (
+                <Text size="xs" c="red">-{event.linesRemoved}</Text>
+              )}
+            </Group>
           )}
-        </div>
+        </Stack>
       );
     case "command_start":
       return (
-        <div className={styles.eventDetails}>
-          <div className={styles.eventDetailRow}>
-            <span className={styles.eventDetailLabel}>Command:</span>
-            <pre className={styles.eventDetailCode}>{event.command}</pre>
-          </div>
+        <Stack gap="xs" p="xs">
+          <Text size="xs" c="dimmed">Command:</Text>
+          <Code block style={{ fontSize: 11 }}>{event.command}</Code>
           {event.cwd && (
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailLabel}>CWD:</span>
-              <code className={styles.eventDetailPath}>{event.cwd}</code>
-            </div>
+            <Group gap="xs">
+              <Text size="xs" c="dimmed">CWD:</Text>
+              <Code style={{ fontSize: 11 }}>{event.cwd}</Code>
+            </Group>
           )}
-        </div>
+        </Stack>
       );
     case "command_end":
       return (
-        <div className={styles.eventDetails}>
-          <div className={styles.eventDetailRow}>
-            <span className={styles.eventDetailLabel}>Exit code:</span>
-            <span className={event.exitCode === 0 ? styles.exitSuccess : styles.exitError}>
+        <Stack gap="xs" p="xs">
+          <Group gap="xs">
+            <Text size="xs" c="dimmed">Exit code:</Text>
+            <Text size="xs" c={event.exitCode === 0 ? "green" : "red"}>
               {event.exitCode}
-            </span>
-          </div>
+            </Text>
+          </Group>
           {event.output && (
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailLabel}>Output:</span>
-              <pre className={styles.eventDetailCode}>{event.output}</pre>
-            </div>
+            <>
+              <Text size="xs" c="dimmed">Output:</Text>
+              <Code block style={{ fontSize: 11, maxHeight: 200, overflow: "auto" }}>
+                {event.output}
+              </Code>
+            </>
           )}
-        </div>
+        </Stack>
       );
     case "thinking":
       return (
-        <div className={styles.eventDetails}>
-          <div className={styles.eventDetailRow}>
-            <pre className={styles.eventDetailThinking}>{event.content}</pre>
-          </div>
-        </div>
+        <Box p="xs">
+          <Text size="xs" c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+            {event.content}
+          </Text>
+        </Box>
       );
     case "port_detected":
       return (
-        <div className={styles.eventDetails}>
-          <div className={styles.eventDetailRow}>
-            <span className={styles.eventDetailLabel}>Port:</span>
-            <span className={styles.eventDetailValue}>{event.port}</span>
-          </div>
+        <Stack gap="xs" p="xs">
+          <Group gap="xs">
+            <Text size="xs" c="dimmed">Port:</Text>
+            <Text size="xs">{event.port}</Text>
+          </Group>
           {event.process && (
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailLabel}>Process:</span>
-              <span className={styles.eventDetailValue}>{event.process}</span>
-            </div>
+            <Group gap="xs">
+              <Text size="xs" c="dimmed">Process:</Text>
+              <Text size="xs">{event.process}</Text>
+            </Group>
           )}
           {event.previewUrl && (
-            <div className={styles.eventDetailRow}>
-              <span className={styles.eventDetailLabel}>Preview:</span>
-              <a href={event.previewUrl} target="_blank" rel="noopener noreferrer" className={styles.eventDetailLink}>
+            <Group gap="xs">
+              <Text size="xs" c="dimmed">Preview:</Text>
+              <Anchor href={event.previewUrl} target="_blank" size="xs">
                 {event.previewUrl}
-              </a>
-            </div>
+              </Anchor>
+            </Group>
           )}
-        </div>
+        </Stack>
       );
     default:
       return null;
@@ -176,7 +201,12 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const userMsgBg = isDark ? "blue.9" : "blue.0";
+  const assistantMsgBg = isDark ? "orange.9" : "orange.0";
 
   const toggleEvent = (index: number) => {
     setExpandedEvents((prev) => {
@@ -191,7 +221,7 @@ export function ChatPanel({
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    viewport.current?.scrollTo({ top: viewport.current.scrollHeight, behavior: "smooth" });
   }, [messages, events]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -210,99 +240,114 @@ export function ChatPanel({
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.messages}>
+    <Box h="100%" style={{ display: "flex", flexDirection: "column" }}>
+      <ScrollArea flex={1} viewportRef={viewport} p="md">
         {messages.length === 0 && (
-          <div className={styles.empty}>
-            <span className={styles.emptyIcon}>💬</span>
-            <p>Ask Claude anything...</p>
-          </div>
+          <Paper p="xl" ta="center" withBorder>
+            <Text size="xl" mb="xs">💬</Text>
+            <Text c="dimmed">Ask Claude anything...</Text>
+          </Paper>
         )}
-        {messages.map((msg, i) => (
-          <div key={i} className={styles.messageRow} data-role={msg.role}>
-            <div className={styles.avatar} data-role={msg.role}>
-              {msg.role === "user" ? "👤" : "🧠"}
-            </div>
-            <div className={styles.messageContent}>
-              <span className={styles.role}>
-                {msg.role === "user" ? "You" : "Claude"}
-              </span>
-              <div className={styles.message}>
-                <div className={styles.content}>{msg.content}</div>
-              </div>
-            </div>
-          </div>
-        ))}
-        {events.length > 0 && (
-          <div className={styles.events}>
-            <span className={styles.eventsLabel}>
-              <span className={styles.eventsIcon}>⚡</span>
-              Activity ({events.length})
-            </span>
-            {events.map((event, i) => {
-              const isExpanded = expandedEvents.has(i);
-              return (
-                <div key={i} className={styles.eventCard}>
-                  <div
-                    className={styles.eventHeader}
-                    onClick={() => toggleEvent(i)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && toggleEvent(i)}
-                  >
-                    <span className={styles.eventIcon}>{getEventIcon(event.kind)}</span>
-                    <span className={styles.eventKind}>{event.kind}</span>
-                    <span className={styles.eventSummary}>{getEventSummary(event)}</span>
-                    <span className={styles.eventExpand}>{isExpanded ? "▼" : "▶"}</span>
-                  </div>
-                  {isExpanded && <EventDetails event={event} />}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {isProcessing && (
-          <div className={styles.thinking}>
-            <div className={styles.avatar} data-role="assistant">🧠</div>
-            <div className={styles.thinkingBubble}>
-              <span className={styles.dot}></span>
-              <span className={styles.dot}></span>
-              <span className={styles.dot}></span>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-      <form className={styles.inputForm} onSubmit={handleSubmit}>
-        <textarea
-          className={styles.input}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={disabled ? "Session not ready..." : "Ask Claude..."}
-          disabled={disabled}
-          rows={1}
-        />
-        {isProcessing ? (
-          <button
-            type="button"
-            className={styles.interruptButton}
-            onClick={onInterrupt}
-            title="Stop"
-          >
-            ■
-          </button>
-        ) : (
-          <button
-            type="submit"
-            className={styles.sendButton}
-            disabled={disabled || !input.trim()}
-            title="Send"
-          >
-            ↑
-          </button>
-        )}
-      </form>
-    </div>
+        <Stack gap="md">
+          {messages.map((msg, i) => (
+            <Group key={i} align="flex-start" gap="sm" wrap="nowrap">
+              <Text size="lg">{msg.role === "user" ? "👤" : "🧠"}</Text>
+              <Box style={{ flex: 1, minWidth: 0 }}>
+                <Text size="xs" fw={500} mb={4}>
+                  {msg.role === "user" ? "You" : "Claude"}
+                </Text>
+                <Paper
+                  p="sm"
+                  bg={msg.role === "user" ? userMsgBg : assistantMsgBg}
+                  radius="md"
+                >
+                  <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                    {msg.content}
+                  </Text>
+                </Paper>
+              </Box>
+            </Group>
+          ))}
+          {events.length > 0 && (
+            <Paper withBorder p="sm">
+              <Group gap="xs" mb="sm">
+                <Text size="sm">⚡</Text>
+                <Text size="sm" fw={500}>Activity ({events.length})</Text>
+              </Group>
+              <Stack gap="xs">
+                {events.map((event, i) => {
+                  const isExpanded = expandedEvents.has(i);
+                  return (
+                    <Paper
+                      key={i}
+                      withBorder
+                      p="xs"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => toggleEvent(i)}
+                    >
+                      <Group gap="xs" wrap="nowrap">
+                        <Text size="sm">{getEventIcon(event.kind)}</Text>
+                        <Badge size="xs" variant="light">{event.kind}</Badge>
+                        <Text size="xs" c="dimmed" truncate style={{ flex: 1 }}>
+                          {getEventSummary(event)}
+                        </Text>
+                        <Text size="xs" c="dimmed">{isExpanded ? "▼" : "▶"}</Text>
+                      </Group>
+                      <Collapse in={isExpanded}>
+                        <EventDetails event={event} />
+                      </Collapse>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            </Paper>
+          )}
+          {isProcessing && (
+            <Group align="flex-start" gap="sm">
+              <Text size="lg">🧠</Text>
+              <Loader size="sm" type="dots" />
+            </Group>
+          )}
+        </Stack>
+      </ScrollArea>
+      <Box p="md" style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}>
+        <form onSubmit={handleSubmit}>
+          <Group gap="sm" align="flex-end">
+            <Textarea
+              flex={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={disabled ? "Session not ready..." : "Ask Claude..."}
+              disabled={disabled}
+              minRows={1}
+              maxRows={4}
+              autosize
+            />
+            {isProcessing ? (
+              <ActionIcon
+                size="lg"
+                variant="filled"
+                color="red"
+                onClick={onInterrupt}
+                title="Stop"
+              >
+                ■
+              </ActionIcon>
+            ) : (
+              <ActionIcon
+                size="lg"
+                variant="filled"
+                type="submit"
+                disabled={disabled || !input.trim()}
+                title="Send"
+              >
+                ↑
+              </ActionIcon>
+            )}
+          </Group>
+        </form>
+      </Box>
+    </Box>
   );
 }

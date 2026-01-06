@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
+import { Box } from "@mantine/core";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
-import styles from "./Terminal.module.css";
 
 interface TerminalProps {
   onInput: (data: string) => void;
@@ -61,5 +61,12 @@ export function Terminal({ onInput, output }: TerminalProps) {
     }
   }, [output]);
 
-  return <div ref={containerRef} className={styles.container} />;
+  return (
+    <Box
+      ref={containerRef}
+      h="100%"
+      bg="dark.9"
+      style={{ overflow: "hidden" }}
+    />
+  );
 }

@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@netclode/protocol": "workspace:*"
+    "@netclode/protocol": "*"
   },
   "devDependencies": {
     "@types/bun": "latest",
