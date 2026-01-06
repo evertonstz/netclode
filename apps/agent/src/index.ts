@@ -58,7 +58,6 @@ const server = createServer(async (req, res) => {
           permissionMode: "bypassPermissions",
           allowDangerouslySkipPermissions: true,
           model: "claude-opus-4-5-20251101",
-          executable: "/nix/var/nix/profiles/default/bin/node" as "node",
           persistSession: true,
           ...(sdkSessionId && { resume: sdkSessionId }),
         },
