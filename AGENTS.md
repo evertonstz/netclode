@@ -21,8 +21,18 @@ gh run watch
 
 ### Manual kubectl access
 
+Use the `netclode` kubectl context (configured via Tailscale):
+
 ```bash
-ssh $DEPLOY_HOST
+kubectl --context netclode -n netclode get pods
+kubectl --context netclode -n netclode logs -l app=control-plane -f
+kubectl --context netclode apply -f infra/k8s/control-plane.yaml
+```
+
+Or SSH to the server:
+
+```bash
+ssh root@netclode
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 kubectl -n netclode get pods
 ```

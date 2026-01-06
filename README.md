@@ -184,37 +184,51 @@ See `packages/protocol/src/messages.ts` for full API.
 
 ## Operations
 
+### kubectl Access
+
+Use the `netclode` kubectl context (configured via Tailscale):
+
+```bash
+kubectl --context netclode -n netclode get pods
+kubectl --context netclode -n netclode logs -l app=control-plane -f
+kubectl --context netclode apply -f infra/k8s/control-plane.yaml
+```
+
+Or SSH to the server:
+
+```bash
+ssh root@netclode
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+kubectl -n netclode get pods
+```
+
 ### View Logs
 
 ```bash
-# SSH to server
-ssh root@<server-ip>
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-
 # Control plane logs
-kubectl logs -n netclode -l app=control-plane -f
+kubectl --context netclode -n netclode logs -l app=control-plane -f
 
 # Web app logs
-kubectl logs -n netclode -l app=web -f
+kubectl --context netclode -n netclode logs -l app=web -f
 
-# k3s/kubelet logs
-journalctl -u k3s -f
+# k3s/kubelet logs (SSH required)
+ssh root@netclode journalctl -u k3s -f
 ```
 
 ### Manage Pods
 
 ```bash
 # List all pods
-kubectl get pods -A
+kubectl --context netclode get pods -A
 
 # Describe a pod
-kubectl describe pod -n netclode <pod-name>
+kubectl --context netclode describe pod -n netclode <pod-name>
 
 # Exec into control plane
-kubectl exec -it -n netclode deploy/control-plane -- sh
+kubectl --context netclode exec -it -n netclode deploy/control-plane -- sh
 
 # Restart a deployment
-kubectl rollout restart deployment -n netclode control-plane
+kubectl --context netclode rollout restart deployment -n netclode control-plane
 ```
 
 ### Update Images
