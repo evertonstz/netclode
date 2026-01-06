@@ -41,7 +41,7 @@ const server = createServer(async (req, res) => {
           cwd: workspace,
           dangerouslySkipPermissions: true,
           model: "claude-opus-4-5-20251101",
-          executable: "/nix/var/nix/profiles/default/bin/node",
+          executable: "/nix/var/nix/profiles/default/bin/node" as "node",
           persistSession: true,
         },
       });

@@ -34,12 +34,14 @@ spec:
               value: "production"
             - name: WORKSPACE
               value: "/workspace"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: anthropic-api-key
           volumeMounts:
             - name: workspace
               mountPath: /workspace
-            - name: env-secrets
-              mountPath: /run/secrets
-              readOnly: true
           resources:
             requests:
               cpu: "100m"
@@ -48,8 +50,8 @@ spec:
             httpGet:
               path: /health
               port: 3002
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: 3
+            periodSeconds: 2
           livenessProbe:
             httpGet:
               path: /health

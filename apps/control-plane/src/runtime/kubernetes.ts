@@ -1,10 +1,9 @@
 /**
  * Kubernetes runtime using agent-sandbox CRDs
  *
- * Manages agent sandboxes via SandboxClaim resources
+ * Uses SandboxClaim to consume from SandboxWarmPool for fast startup
  */
 import * as k8s from "@kubernetes/client-node";
-import { config } from "../config";
 
 // Use getter to ensure env var is read at runtime, not bundle time
 function getNamespace(): string {
@@ -13,7 +12,6 @@ function getNamespace(): string {
 }
 
 const SANDBOX_TEMPLATE = "netclode-agent";
-const STORAGE_CLASS = "juicefs-sc";
 
 export interface VMConfig {
   sessionId: string;
@@ -30,16 +28,10 @@ export interface VMInfo {
   serviceFQDN?: string;
 }
 
-interface SandboxClaimSpec {
-  sandboxTemplateRef: {
-    name: string;
-  };
-}
-
 interface SandboxClaimStatus {
   conditions?: k8s.V1Condition[];
-  sandboxRef?: {
-    name: string;
+  sandbox?: {
+    Name: string;
   };
 }
 
@@ -68,23 +60,17 @@ export class KubernetesRuntime {
   }
 
   /**
-   * Create a new sandbox for a session
+   * Create a new sandbox claim for a session
+   * Uses SandboxClaim to consume from warm pool for fast startup
    */
   async createSandbox(vmConfig: VMConfig): Promise<string> {
-    const { sessionId, env = {} } = vmConfig;
+    const { sessionId } = vmConfig;
     const name = `sess-${sessionId}`;
 
-    // Create secret for environment variables
-    await this.createEnvSecret(sessionId, {
-      SESSION_ID: sessionId,
-      ANTHROPIC_API_KEY: config.anthropicApiKey,
-      ...env,
-    });
-
-    // Create Sandbox with volumeClaimTemplates (controller creates PVCs)
-    const sandbox = {
-      apiVersion: "agents.x-k8s.io/v1alpha1",
-      kind: "Sandbox",
+    // Create SandboxClaim - controller will assign a warm sandbox
+    const claim = {
+      apiVersion: "extensions.agents.x-k8s.io/v1alpha1",
+      kind: "SandboxClaim",
       metadata: {
         name,
         namespace: getNamespace(),
@@ -93,102 +79,69 @@ export class KubernetesRuntime {
         },
       },
       spec: {
-        podTemplate: {
-          spec: {
-            runtimeClassName: "kata-clh",
-            containers: [
-              {
-                name: "agent",
-                image: "ghcr.io/angristan/netclode-agent:latest",
-                // NixOS needs privileged to mount /proc, /dev, /sys
-                // Safe because Kata runs this inside an isolated VM
-                securityContext: {
-                  privileged: true,
-                  readOnlyRootFilesystem: false,
-                },
-                ports: [{ containerPort: 3002, name: "http" }],
-                env: [
-                  { name: "NODE_ENV", value: "production" },
-                  { name: "WORKSPACE", value: "/workspace" },
-                ],
-                envFrom: [
-                  {
-                    secretRef: {
-                      name: `${name}-env`,
-                    },
-                  },
-                ],
-                volumeMounts: [
-                  { name: "workspace", mountPath: "/workspace" },
-                ],
-                // resources: {
-                //   requests: { cpu: "100m", memory: "256Mi" },
-                // },
-                readinessProbe: {
-                  httpGet: { path: "/health", port: 3002 },
-                  initialDelaySeconds: 10,
-                  periodSeconds: 5,
-                },
-              },
-            ],
-          },
+        sandboxTemplateRef: {
+          name: SANDBOX_TEMPLATE,
         },
-        // Controller will create PVC from this template
-        volumeClaimTemplates: [
-          {
-            metadata: {
-              name: "workspace",
-              labels: {
-                "netclode.io/session": sessionId,
-              },
-            },
-            spec: {
-              accessModes: ["ReadWriteOnce"],
-              storageClassName: STORAGE_CLASS,
-              resources: {
-                requests: {
-                  storage: "10Gi",
-                },
-              },
-            },
-          },
-        ],
       },
     };
 
     await this.customApi.createNamespacedCustomObject({
-      group: "agents.x-k8s.io",
+      group: "extensions.agents.x-k8s.io",
       version: "v1alpha1",
       namespace: getNamespace(),
-      plural: "sandboxes",
-      body: sandbox,
+      plural: "sandboxclaims",
+      body: claim,
     });
 
-    console.log(`[${sessionId}] Sandbox created: ${name}`);
+    console.log(`[${sessionId}] SandboxClaim created: ${name}`);
     return name;
   }
 
   /**
    * Get sandbox status by session ID
+   * First gets the claim, then the assigned sandbox
    */
   async getSandboxStatus(sessionId: string): Promise<VMInfo | null> {
-    const name = `sess-${sessionId}`;
+    const claimName = `sess-${sessionId}`;
 
     try {
+      // Get the SandboxClaim
+      const claim = (await this.customApi.getNamespacedCustomObject({
+        group: "extensions.agents.x-k8s.io",
+        version: "v1alpha1",
+        namespace: getNamespace(),
+        plural: "sandboxclaims",
+        name: claimName,
+      })) as {
+        metadata: k8s.V1ObjectMeta;
+        status?: SandboxClaimStatus;
+      };
+
+      // Check if claim is bound to a sandbox
+      const sandboxName = claim.status?.sandbox?.Name;
+      if (!sandboxName) {
+        return {
+          id: claimName,
+          name: claimName,
+          status: this.mapConditionsToStatus(claim.status?.conditions),
+        };
+      }
+
+      // Get the assigned Sandbox to get serviceFQDN
       const sandbox = (await this.customApi.getNamespacedCustomObject({
         group: "agents.x-k8s.io",
         version: "v1alpha1",
         namespace: getNamespace(),
         plural: "sandboxes",
-        name,
+        name: sandboxName,
       })) as {
         metadata: k8s.V1ObjectMeta;
         status?: SandboxStatus;
       };
 
       return {
-        id: name,
-        name,
+        id: claimName,
+        name: sandboxName,
         status: this.mapConditionsToStatus(sandbox.status?.conditions),
         serviceFQDN: sandbox.status?.serviceFQDN,
       };
@@ -202,18 +155,18 @@ export class KubernetesRuntime {
   }
 
   /**
-   * Delete a sandbox by session ID
+   * Delete a sandbox claim by session ID
    */
   async deleteSandbox(sessionId: string): Promise<void> {
     const name = `sess-${sessionId}`;
 
-    // Delete Sandbox
+    // Delete SandboxClaim - controller handles sandbox cleanup
     try {
       await this.customApi.deleteNamespacedCustomObject({
-        group: "agents.x-k8s.io",
+        group: "extensions.agents.x-k8s.io",
         version: "v1alpha1",
         namespace: getNamespace(),
-        plural: "sandboxes",
+        plural: "sandboxclaims",
         name,
       });
     } catch (e: unknown) {
@@ -223,27 +176,7 @@ export class KubernetesRuntime {
       }
     }
 
-    // Delete secret
-    try {
-      await this.coreApi.deleteNamespacedSecret({
-        name: `sess-${sessionId}-env`,
-        namespace: getNamespace(),
-      });
-    } catch {
-      // Ignore errors
-    }
-
-    // Delete PVC (volumeClaimTemplate naming: {volumeName}-{sandboxName})
-    try {
-      await this.coreApi.deleteNamespacedPersistentVolumeClaim({
-        name: `workspace-sess-${sessionId}`,
-        namespace: getNamespace(),
-      });
-    } catch {
-      // Ignore errors
-    }
-
-    console.log(`[${sessionId}] Sandbox deleted`);
+    console.log(`[${sessionId}] SandboxClaim deleted`);
   }
 
   /**
@@ -251,7 +184,7 @@ export class KubernetesRuntime {
    */
   async waitForReady(sessionId: string, timeoutMs = 120000): Promise<string | null> {
     const startTime = Date.now();
-    const checkInterval = 2000;
+    const checkInterval = 1000; // Check every second for faster response
 
     while (Date.now() - startTime < timeoutMs) {
       const info = await this.getSandboxStatus(sessionId);
@@ -279,19 +212,19 @@ export class KubernetesRuntime {
   }
 
   /**
-   * List all sandboxes
+   * List all sandbox claims
    */
   async listSandboxes(): Promise<VMInfo[]> {
     const list = (await this.customApi.listNamespacedCustomObject({
-      group: "agents.x-k8s.io",
+      group: "extensions.agents.x-k8s.io",
       version: "v1alpha1",
       namespace: getNamespace(),
-      plural: "sandboxes",
+      plural: "sandboxclaims",
       labelSelector: "netclode.io/session",
     })) as {
       items: Array<{
         metadata: k8s.V1ObjectMeta;
-        status?: SandboxStatus;
+        status?: SandboxClaimStatus;
       }>;
     };
 
@@ -308,32 +241,6 @@ export class KubernetesRuntime {
   async isSandboxRunning(sessionId: string): Promise<boolean> {
     const info = await this.getSandboxStatus(sessionId);
     return info?.status === "ready";
-  }
-
-  private async createEnvSecret(
-    sessionId: string,
-    env: Record<string, string>
-  ): Promise<void> {
-    const namespace = getNamespace();
-    const secret: k8s.V1Secret = {
-      apiVersion: "v1",
-      kind: "Secret",
-      metadata: {
-        name: `sess-${sessionId}-env`,
-        namespace,
-        labels: {
-          "netclode.io/session": sessionId,
-        },
-      },
-      type: "Opaque",
-      stringData: env,
-    };
-
-    await this.coreApi.createNamespacedSecret({
-      namespace,
-      body: secret,
-    });
-    console.log(`[${sessionId}] Secret created`);
   }
 
   private mapConditionsToStatus(conditions?: k8s.V1Condition[]): string {
