@@ -11,8 +11,8 @@ FROM nixos/nix:latest AS base
 RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf && \
     echo "accept-flake-config = true" >> /etc/nix/nix.conf
 
-# Install bun via flakes (no channel download needed)
-RUN nix profile install nixpkgs#bun && \
+# Install bun and nodejs via flakes (claude CLI needs node)
+RUN nix profile install nixpkgs#bun nixpkgs#nodejs && \
     nix-collect-garbage -d
 
 # =============================================================================
