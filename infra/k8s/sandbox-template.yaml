@@ -58,7 +58,25 @@ spec:
               port: 3002
             initialDelaySeconds: 30
             periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: juicefs-sc
+        resources:
+          requests:
+            storage: 10Gi
   networkPolicy:
+    # Ingress: Allow control-plane to connect to agent
+    ingress:
+      - from:
+          - podSelector:
+              matchLabels:
+                app: control-plane
+        ports:
+          - protocol: TCP
+            port: 3002
     egress:
       # Allow internet access
       - to:
