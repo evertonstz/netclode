@@ -1,6 +1,7 @@
 # Git
 .git
 .gitignore
+.github
 
 # Dependencies (installed in Docker)
 node_modules
@@ -17,8 +18,22 @@ dist
 *.swp
 *.swo
 
-# Kubernetes (not needed in app image)
-k8s/
+# Infra (not needed in build)
+infra/
+
+# Other apps (agent build only needs apps/agent)
+apps/web/
+apps/control-plane/
+apps/cli/
+apps/ios/
+
+# Scripts
+scripts/
+
+# Docs
+*.md
+README.md
+AGENTS.md
 
 # Test and dev files
 *.test.ts
@@ -26,5 +41,4 @@ k8s/
 __tests__
 coverage/
 *.log
-.env.local
-.env.development
+.env*
