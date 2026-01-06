@@ -24,7 +24,7 @@ interface SessionStore {
 }
 
 export const useSessionStore = create<SessionStore>()(
-  persist<SessionStore, Pick<SessionStore, "messagesBySession">>(
+  persist<SessionStore, [], [], Pick<SessionStore, "messagesBySession">>(
     (set) => ({
       sessions: [],
       currentSessionId: null,
