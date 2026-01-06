@@ -11,7 +11,7 @@ import styles from "./SessionsPage.module.css";
 
 export function SessionsPage() {
   const navigate = useNavigate();
-  const { sessions, setSessions, addSession, updateSession } = useSessionStore();
+  const { sessions, setSessions, addSession, updateSession, removeSession } = useSessionStore();
   const { send, connected } = useWebSocket();
   const [creating, setCreating] = useState(false);
 
@@ -25,11 +25,13 @@ export function SessionsPage() {
         navigate(`/session/${msg.session.id}`);
       } else if (msg.type === "session.updated") {
         updateSession(msg.session);
+      } else if (msg.type === "session.deleted") {
+        removeSession(msg.id);
       } else if (msg.type === "session.error") {
         setCreating(false);
       }
     },
-    [setSessions, addSession, updateSession, navigate]
+    [setSessions, addSession, updateSession, removeSession, navigate]
   );
 
   useWebSocketMessages(handleMessage);
@@ -52,6 +54,11 @@ export function SessionsPage() {
     send({ type: "session.create" });
   };
 
+  const handleDeleteSession = (id: string) => {
+    if (!connected) return;
+    send({ type: "session.delete", id });
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -64,6 +71,7 @@ export function SessionsPage() {
         <SessionList
           sessions={sessions}
           onSelect={(id) => navigate(`/session/${id}`)}
+          onDelete={handleDeleteSession}
         />
         <button
           className={styles.createButton}

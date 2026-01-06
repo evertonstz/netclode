@@ -4,9 +4,10 @@ import styles from "./SessionList.module.css";
 interface SessionListProps {
   sessions: Session[];
   onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export function SessionList({ sessions, onSelect }: SessionListProps) {
+export function SessionList({ sessions, onSelect, onDelete }: SessionListProps) {
   if (sessions.length === 0) {
     return (
       <div className={styles.empty}>
@@ -18,21 +19,32 @@ export function SessionList({ sessions, onSelect }: SessionListProps) {
   return (
     <div className={styles.list}>
       {sessions.map((session) => (
-        <button
-          key={session.id}
-          className={styles.item}
-          onClick={() => onSelect(session.id)}
-        >
-          <div className={styles.info}>
-            <span className={styles.name}>{session.name}</span>
-            <span className={styles.meta}>
-              {session.status} · {formatTime(session.lastActiveAt)}
+        <div key={session.id} className={styles.item}>
+          <button
+            className={styles.selectButton}
+            onClick={() => onSelect(session.id)}
+          >
+            <div className={styles.info}>
+              <span className={styles.name}>{session.name}</span>
+              <span className={styles.meta}>
+                {session.status} · {formatTime(session.lastActiveAt)}
+              </span>
+            </div>
+            <span className={styles.status} data-status={session.status}>
+              {session.status === "running" ? "●" : "○"}
             </span>
-          </div>
-          <span className={styles.status} data-status={session.status}>
-            {session.status === "running" ? "●" : "○"}
-          </span>
-        </button>
+          </button>
+          <button
+            className={styles.deleteButton}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(session.id);
+            }}
+            title="Delete session"
+          >
+            ×
+          </button>
+        </div>
       ))}
     </div>
   );

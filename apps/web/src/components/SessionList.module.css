@@ -12,20 +12,43 @@
 
 .item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem;
   background-color: #1a1a1a;
   border: 1px solid #333;
   border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
   width: 100%;
 }
 
 .item:hover {
   background-color: #222;
   border-color: #444;
+}
+
+.selectButton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  padding: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.deleteButton {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  border-left: 1px solid #333;
+  color: #666;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.deleteButton:hover {
+  color: #f87171;
 }
 
 .info {
