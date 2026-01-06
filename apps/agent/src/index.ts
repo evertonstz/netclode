@@ -5,11 +5,16 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 const port = parseInt(process.env.AGENT_PORT || "3002", 10);
 const workspace = process.env.WORKSPACE || "/workspace";
 
+console.log("[agent] Starting agent server...");
+console.log(`[agent] Config: port=${port}, workspace=${workspace}`);
+console.log(`[agent] Environment: ANTHROPIC_API_KEY=${process.env.ANTHROPIC_API_KEY ? "set" : "NOT SET"}`);
+
 // Map control plane session IDs to SDK session IDs
 const sessionMap = new Map<string, string>();
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${port}`);
+  console.log(`[agent] ${req.method} ${url.pathname}`);
 
   if (url.pathname === "/health") {
     res.writeHead(200);
@@ -23,7 +28,7 @@ const server = createServer(async (req, res) => {
       body += chunk;
     }
     const { text, sessionId } = JSON.parse(body) as { text: string; sessionId?: string };
-    console.error(`[prompt] Received (session=${sessionId}): ${text.slice(0, 50)}...`);
+    console.log(`[agent] Prompt received (session=${sessionId}): "${text.slice(0, 100)}${text.length > 100 ? "..." : ""}"`);
 
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -32,7 +37,9 @@ const server = createServer(async (req, res) => {
     });
 
     const send = (data: object) => {
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
+      const json = JSON.stringify(data);
+      console.log(`[agent] SSE send: ${json.slice(0, 150)}${json.length > 150 ? "..." : ""}`);
+      res.write(`data: ${json}\n\n`);
     };
 
     try {
@@ -40,8 +47,10 @@ const server = createServer(async (req, res) => {
 
       // Look up the SDK session ID from our mapping
       const sdkSessionId = sessionId ? sessionMap.get(sessionId) : undefined;
-      console.error(`[prompt] SDK session lookup: ${sessionId} -> ${sdkSessionId || "(new session)"}`);
+      console.log(`[agent] SDK session lookup: ${sessionId} -> ${sdkSessionId || "(new session)"}`);
+      console.log(`[agent] Current session mappings: ${JSON.stringify(Object.fromEntries(sessionMap))}`);
 
+      console.log(`[agent] Calling Claude Agent SDK query()...`);
       const q = query({
         prompt: text,
         options: {
@@ -54,8 +63,12 @@ const server = createServer(async (req, res) => {
           ...(sdkSessionId && { resume: sdkSessionId }),
         },
       });
+      console.log(`[agent] SDK query created, starting iteration...`);
 
+      let messageCount = 0;
       for await (const message of q) {
+        messageCount++;
+        console.log(`[agent] SDK message #${messageCount}: type=${message.type}${message.type === "system" ? `, subtype=${(message as { subtype?: string }).subtype}` : ""}`);
         switch (message.type) {
           case "system":
             // Capture the SDK session ID from the init message
@@ -63,17 +76,20 @@ const server = createServer(async (req, res) => {
               const existingMapping = sessionMap.get(sessionId);
               if (!existingMapping) {
                 sessionMap.set(sessionId, message.session_id);
-                console.error(`[prompt] Stored session mapping: ${sessionId} -> ${message.session_id}`);
+                console.log(`[agent] Stored session mapping: ${sessionId} -> ${message.session_id}`);
               }
             }
             send({ type: "agent.system", subtype: message.subtype });
             break;
           case "assistant":
             if (message.message?.content) {
+              console.log(`[agent] Assistant message with ${message.message.content.length} blocks`);
               for (const block of message.message.content) {
                 if (block.type === "text") {
+                  console.log(`[agent] Text block: ${block.text.slice(0, 100)}...`);
                   send({ type: "agent.message", content: block.text, partial: false });
                 } else if (block.type === "tool_use") {
+                  console.log(`[agent] Tool use: ${block.name}`);
                   send({
                     type: "agent.event",
                     event: { kind: "tool_start", tool: block.name, toolUseId: block.id, input: block.input },
@@ -86,12 +102,14 @@ const server = createServer(async (req, res) => {
             if (message.message?.content && Array.isArray(message.message.content)) {
               for (const block of message.message.content) {
                 if (typeof block === "object" && block.type === "tool_result") {
+                  console.log(`[agent] Tool result: ${block.tool_use_id}`);
                   send({ type: "agent.event", event: { kind: "tool_end", toolUseId: block.tool_use_id } });
                 }
               }
             }
             break;
           case "result":
+            console.log(`[agent] Result: subtype=${message.subtype}`);
             if (message.subtype === "success") {
               send({ type: "agent.result", result: message.result, numTurns: message.num_turns, costUsd: message.total_cost_usd });
             }
@@ -100,6 +118,7 @@ const server = createServer(async (req, res) => {
             if (message.event.type === "content_block_delta") {
               const delta = message.event.delta;
               if (delta && "text" in delta) {
+                // Don't log every streaming delta, too noisy
                 send({ type: "agent.message", content: delta.text, partial: true });
               }
             }
@@ -107,11 +126,13 @@ const server = createServer(async (req, res) => {
         }
       }
 
+      console.log(`[agent] SDK iteration complete, received ${messageCount} messages`);
       send({ type: "done" });
     } catch (error) {
-      console.error("[prompt] Error:", error);
+      console.error("[agent] Error during prompt:", error);
       send({ type: "error", error: String(error) });
     } finally {
+      console.log(`[agent] Response ended`);
       res.end();
     }
     return;
