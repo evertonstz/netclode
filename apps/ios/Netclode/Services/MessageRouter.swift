@@ -96,6 +96,17 @@ final class MessageRouter: @unchecked Sendable {
         // General errors
         case .error(let message):
             print("Server error: \(message)")
+
+        // Sync responses
+        case .syncResponse(let sessions, _):
+            // Update sessions from server sync
+            sessionStore.setSessions(sessions.map { $0.toSession() })
+
+        case .sessionState(let session, let messages, let events, _):
+            // Load session history from server
+            sessionStore.updateSession(session)
+            chatStore.loadMessages(sessionId: session.id, messages: messages)
+            eventStore.loadEvents(sessionId: session.id, events: events)
         }
     }
 

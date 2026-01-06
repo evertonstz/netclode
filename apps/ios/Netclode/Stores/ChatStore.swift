@@ -52,6 +52,12 @@ final class ChatStore: @unchecked Sendable {
         saveToDisk()
     }
 
+    /// Load messages from server sync response
+    func loadMessages(sessionId: String, messages: [PersistedMessage]) {
+        messagesBySession[sessionId] = messages.map { $0.toChatMessage() }
+        saveToDisk()
+    }
+
     // MARK: - Persistence
 
     private func loadFromDisk() {

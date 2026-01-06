@@ -112,6 +112,9 @@ final class WebSocketService: @unchecked Sendable {
             connectionState = .connected
             startReceiving()
 
+            // Send sync request to get all sessions
+            send(.sync)
+
         } catch {
             print("[WebSocket] Connection failed: \(error.localizedDescription)")
             webSocketTask?.cancel(with: .goingAway, reason: nil)
@@ -223,5 +226,11 @@ final class WebSocketService: @unchecked Sendable {
         } catch {
             print("WebSocket encode error: \(error)")
         }
+    }
+
+    /// Open a session and load its history
+    func openSession(id: String, lastMessageId: String? = nil) {
+        send(.sessionOpen(id: id, lastMessageId: lastMessageId))
+        send(.sessionResume(id: id))
     }
 }

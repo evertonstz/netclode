@@ -1,0 +1,171 @@
+import Foundation
+
+/// Message persisted on the server
+struct PersistedMessage: Codable, Identifiable, Sendable {
+    let id: String
+    let sessionId: String
+    let role: ChatRole
+    let content: String
+    let timestamp: Date
+
+    enum ChatRole: String, Codable, Sendable {
+        case user
+        case assistant
+    }
+
+    /// Convert to ChatMessage for UI display
+    func toChatMessage() -> ChatMessage {
+        ChatMessage(
+            role: role == .user ? .user : .assistant,
+            content: content,
+            timestamp: timestamp
+        )
+    }
+}
+
+/// Event persisted on the server
+struct PersistedEvent: Codable, Sendable {
+    let id: String
+    let sessionId: String
+    let event: RawAgentEventData
+    let timestamp: Date
+
+    /// Raw event data for decoding
+    struct RawAgentEventData: Codable, Sendable {
+        let kind: String
+        let timestamp: Date
+
+        // Tool events
+        let tool: String?
+        let toolUseId: String?
+        let input: [String: AnyCodableValue]?
+        let result: String?
+
+        // File change
+        let path: String?
+        let action: String?
+        let linesAdded: Int?
+        let linesRemoved: Int?
+
+        // Command
+        let command: String?
+        let cwd: String?
+        let exitCode: Int?
+        let output: String?
+
+        // Thinking
+        let content: String?
+
+        // Port detected
+        let port: Int?
+        let process: String?
+        let previewUrl: String?
+
+        // Error
+        let error: String?
+
+        func toAgentEvent() -> AgentEvent {
+            let id = UUID()
+
+            switch kind {
+            case "tool_start":
+                return .toolStart(ToolStartEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    tool: tool ?? "Unknown",
+                    toolUseId: toolUseId ?? "",
+                    input: input ?? [:]
+                ))
+
+            case "tool_end":
+                return .toolEnd(ToolEndEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    tool: tool ?? "Unknown",
+                    toolUseId: toolUseId ?? "",
+                    result: result,
+                    error: error
+                ))
+
+            case "file_change":
+                let fileAction: FileAction
+                switch action {
+                case "create": fileAction = .create
+                case "delete": fileAction = .delete
+                default: fileAction = .edit
+                }
+                return .fileChange(FileChangeEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    path: path ?? "",
+                    action: fileAction,
+                    linesAdded: linesAdded,
+                    linesRemoved: linesRemoved
+                ))
+
+            case "command_start":
+                return .commandStart(CommandStartEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    command: command ?? "",
+                    cwd: cwd
+                ))
+
+            case "command_end":
+                return .commandEnd(CommandEndEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    command: command ?? "",
+                    exitCode: exitCode ?? -1,
+                    output: output
+                ))
+
+            case "thinking":
+                return .thinking(ThinkingEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    content: content ?? ""
+                ))
+
+            case "port_detected":
+                return .portDetected(PortDetectedEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    port: port ?? 0,
+                    process: process,
+                    previewUrl: previewUrl
+                ))
+
+            default:
+                return .thinking(ThinkingEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    content: "Unknown event: \(kind)"
+                ))
+            }
+        }
+    }
+}
+
+/// Session with sync metadata
+struct SessionWithMeta: Codable, Sendable {
+    let id: String
+    let name: String
+    let status: String
+    let repo: String?
+    let createdAt: Date
+    let lastActiveAt: Date
+    let messageCount: Int?
+    let lastMessageId: String?
+
+    func toSession() -> Session {
+        Session(
+            id: id,
+            name: name,
+            status: SessionStatus(rawValue: status) ?? .paused,
+            repo: repo,
+            createdAt: createdAt,
+            lastActiveAt: lastActiveAt
+        )
+    }
+}

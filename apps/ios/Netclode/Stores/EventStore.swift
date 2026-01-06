@@ -29,4 +29,9 @@ final class EventStore: @unchecked Sendable {
     func clearEvents(for sessionId: String) {
         eventsBySession.removeValue(forKey: sessionId)
     }
+
+    /// Load events from server sync response
+    func loadEvents(sessionId: String, events: [PersistedEvent]) {
+        eventsBySession[sessionId] = events.map { $0.event.toAgentEvent() }
+    }
 }

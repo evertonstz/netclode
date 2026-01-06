@@ -15,6 +15,10 @@ enum ServerMessage: Sendable {
     case terminalOutput(sessionId: String, data: String)
 
     case error(message: String)
+
+    // Sync responses
+    case syncResponse(sessions: [SessionWithMeta], serverTime: Date)
+    case sessionState(session: Session, messages: [PersistedMessage], events: [PersistedEvent], hasMore: Bool)
 }
 
 extension ServerMessage: Decodable {
@@ -22,6 +26,7 @@ extension ServerMessage: Decodable {
         case type
         case session, sessions, id, error, message
         case sessionId, content, partial, event, data
+        case serverTime, messages, events, hasMore
     }
 
     init(from decoder: Decoder) throws {
@@ -78,6 +83,18 @@ extension ServerMessage: Decodable {
         case "error":
             let message = try container.decode(String.self, forKey: .message)
             self = .error(message: message)
+
+        case "sync.response":
+            let sessions = try container.decode([SessionWithMeta].self, forKey: .sessions)
+            let serverTime = try container.decode(Date.self, forKey: .serverTime)
+            self = .syncResponse(sessions: sessions, serverTime: serverTime)
+
+        case "session.state":
+            let session = try container.decode(Session.self, forKey: .session)
+            let messages = try container.decode([PersistedMessage].self, forKey: .messages)
+            let events = try container.decode([PersistedEvent].self, forKey: .events)
+            let hasMore = try container.decode(Bool.self, forKey: .hasMore)
+            self = .sessionState(session: session, messages: messages, events: events, hasMore: hasMore)
 
         default:
             throw DecodingError.dataCorruptedError(
