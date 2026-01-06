@@ -104,9 +104,11 @@ final class MessageRouter: @unchecked Sendable {
 
         case .sessionState(let session, let messages, let events, _):
             // Load session history from server
+            print("[MessageRouter] session.state received: \(messages.count) messages, \(events.count) events for session \(session.id)")
             sessionStore.updateSession(session)
             chatStore.loadMessages(sessionId: session.id, messages: messages)
             eventStore.loadEvents(sessionId: session.id, events: events)
+            print("[MessageRouter] Loaded messages and events for session \(session.id)")
         }
     }
 

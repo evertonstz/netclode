@@ -83,11 +83,15 @@ struct WorkspaceView: View {
             }
         }
         .onAppear {
-            // Resume session when entering workspace
-            if let session, session.status == .paused {
-                webSocketService.send(.sessionResume(id: sessionId))
-            }
             sessionStore.setCurrentSession(id: sessionId)
+        }
+        .task {
+            // Wait for connection before opening session
+            // This fetches messages and events from server
+            while !webSocketService.connectionState.isConnected {
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+            }
+            webSocketService.openSession(id: sessionId)
         }
         .onDisappear {
             sessionStore.setCurrentSession(id: nil)

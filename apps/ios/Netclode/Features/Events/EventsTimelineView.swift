@@ -94,7 +94,7 @@ struct EventRow: View {
             ToolEventCard(tool: e.tool, status: e.isSuccess ? .success : .failed, result: e.result, error: e.error, isExpanded: isExpanded)
 
         case .fileChange(let e):
-            FileChangeCard(event: e)
+            FileChangeCard(event: e, isExpanded: isExpanded)
 
         case .commandStart(let e):
             CommandCard(command: e.command, status: .started, cwd: e.cwd, isExpanded: isExpanded)
@@ -106,7 +106,7 @@ struct EventRow: View {
             ThinkingCard(content: e.content, isExpanded: isExpanded)
 
         case .portDetected(let e):
-            PortDetectedCard(event: e)
+            PortDetectedCard(event: e, isExpanded: isExpanded)
         }
     }
 
@@ -172,30 +172,65 @@ struct ToolEventCard: View {
 
                     Image(systemName: status.icon)
                         .foregroundStyle(status.color)
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
 
                 if isExpanded {
                     if let input, !input.isEmpty {
-                        Text("Input: \(input.map { "\($0.key): \($0.value)" }.joined(separator: ", "))")
-                            .font(.netclodeCaption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(3)
+                        DetailSection(label: "INPUT") {
+                            ScrollView {
+                                Text(formatInput(input))
+                                    .font(.netclodeMonospacedSmall)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxHeight: 150)
+                        }
                     }
 
-                    if let result {
-                        Text(result)
-                            .font(.netclodeMonospacedSmall)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(5)
+                    if let result, !result.isEmpty {
+                        DetailSection(label: "RESULT") {
+                            ScrollView {
+                                Text(result)
+                                    .font(.netclodeMonospacedSmall)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxHeight: 200)
+                        }
                     }
 
-                    if let error {
-                        Text("Error: \(error)")
-                            .font(.netclodeCaption)
-                            .foregroundStyle(Theme.Colors.warmCoral)
+                    if let error, !error.isEmpty {
+                        DetailSection(label: "ERROR") {
+                            Text(error)
+                                .font(.netclodeMonospacedSmall)
+                                .foregroundStyle(Theme.Colors.warmCoral)
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private func formatInput(_ input: [String: AnyCodableValue]) -> String {
+        input.map { key, value in
+            "\(key): \(formatValue(value))"
+        }.joined(separator: "\n")
+    }
+
+    private func formatValue(_ value: AnyCodableValue) -> String {
+        switch value {
+        case .string(let s):
+            return s.count > 100 ? String(s.prefix(100)) + "..." : s
+        case .dictionary(let d):
+            return "{\n" + d.map { "  \($0): \($1)" }.joined(separator: "\n") + "\n}"
+        case .array(let a):
+            return "[\(a.map(\.description).joined(separator: ", "))]"
+        default:
+            return value.description
         }
     }
 }
@@ -204,30 +239,52 @@ struct ToolEventCard: View {
 
 struct FileChangeCard: View {
     let event: FileChangeEvent
+    let isExpanded: Bool
 
     var body: some View {
         GlassCard(tint: Theme.Colors.cozyPurple.opacity(0.15), padding: Theme.Spacing.sm) {
-            HStack {
-                Image(systemName: event.action.systemImage)
-                    .foregroundStyle(actionColor)
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                HStack {
+                    Image(systemName: event.action.systemImage)
+                        .foregroundStyle(actionColor)
 
-                VStack(alignment: .leading, spacing: 2) {
                     Text(event.fileName)
                         .font(.netclodeSubheadline)
                         .lineLimit(1)
 
-                    Text(event.path)
-                        .font(.netclodeCaption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    Spacer()
+
+                    if event.linesAdded != nil || event.linesRemoved != nil {
+                        HStack(spacing: Theme.Spacing.xxs) {
+                            if let added = event.linesAdded, added > 0 {
+                                Text("+\(added)")
+                                    .foregroundStyle(Theme.Colors.cozySage)
+                            }
+                            if let removed = event.linesRemoved, removed > 0 {
+                                Text("-\(removed)")
+                                    .foregroundStyle(Theme.Colors.warmCoral)
+                            }
+                        }
+                        .font(.netclodeMonospacedSmall)
+                    }
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
 
-                Spacer()
+                if isExpanded {
+                    DetailSection(label: "PATH") {
+                        Text(event.path)
+                            .font(.netclodeMonospacedSmall)
+                            .foregroundStyle(.secondary)
+                    }
 
-                if event.linesAdded != nil || event.linesRemoved != nil {
-                    Text(event.changeDescription)
-                        .font(.netclodeMonospacedSmall)
-                        .foregroundStyle(.secondary)
+                    DetailSection(label: "ACTION") {
+                        Text(event.action.displayName)
+                            .font(.netclodeCaption)
+                            .foregroundStyle(actionColor)
+                    }
                 }
             }
         }
@@ -273,20 +330,31 @@ struct CommandCard: View {
                         Image(systemName: status.icon)
                             .foregroundStyle(status.color)
                     }
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
 
                 if isExpanded {
                     if let cwd {
-                        Text("in \(cwd)")
-                            .font(.netclodeCaption)
-                            .foregroundStyle(.tertiary)
+                        DetailSection(label: "WORKING DIR") {
+                            Text(cwd)
+                                .font(.netclodeMonospacedSmall)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     if let output, !output.isEmpty {
-                        Text(output)
-                            .font(.netclodeMonospacedSmall)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(10)
+                        DetailSection(label: "OUTPUT") {
+                            ScrollView {
+                                Text(output)
+                                    .font(.netclodeMonospacedSmall)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxHeight: 200)
+                        }
                     }
                 }
             }
@@ -302,16 +370,60 @@ struct ThinkingCard: View {
 
     var body: some View {
         GlassCard(tint: Theme.Colors.cozyLavender.opacity(0.15), padding: Theme.Spacing.sm) {
-            HStack(alignment: .top) {
-                Image(systemName: "brain.head.profile")
-                    .foregroundStyle(Theme.Colors.cozyLavender)
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                HStack(alignment: .top) {
+                    Image(systemName: "brain.head.profile")
+                        .foregroundStyle(Theme.Colors.cozyLavender)
 
-                Text(content)
-                    .font(.netclodeCaption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(isExpanded ? nil : 2)
-                    .italic()
+                    Text("Thinking...")
+                        .font(.netclodeSubheadline)
+                        .foregroundStyle(Theme.Colors.cozyLavender)
+
+                    Spacer()
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                if isExpanded {
+                    ScrollView {
+                        Text(content)
+                            .font(.netclodeCaption)
+                            .foregroundStyle(.secondary)
+                            .italic()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 200)
+                } else {
+                    Text(content)
+                        .font(.netclodeCaption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .italic()
+                }
             }
+        }
+    }
+}
+
+// MARK: - Detail Section Helper
+
+struct DetailSection<Content: View>: View {
+    let label: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .tracking(0.5)
+
+            content
+                .padding(Theme.Spacing.xs)
+                .background(Color.black.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
         }
     }
 }
@@ -320,31 +432,54 @@ struct ThinkingCard: View {
 
 struct PortDetectedCard: View {
     let event: PortDetectedEvent
+    let isExpanded: Bool
 
     var body: some View {
         GlassCard(tint: Theme.Colors.cozyTeal.opacity(0.15), padding: Theme.Spacing.sm) {
-            HStack {
-                Image(systemName: "network")
-                    .foregroundStyle(Theme.Colors.cozyTeal)
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                HStack {
+                    Image(systemName: "network")
+                        .foregroundStyle(Theme.Colors.cozyTeal)
 
-                VStack(alignment: .leading, spacing: 2) {
                     Text("Port \(event.port)")
                         .font(.netclodeSubheadline)
 
-                    if let process = event.process {
-                        Text(process)
-                            .font(.netclodeCaption)
-                            .foregroundStyle(.secondary)
+                    Spacer()
+
+                    if let url = event.previewUrl {
+                        Link(destination: URL(string: url)!) {
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundStyle(Theme.Colors.cozyTeal)
+                        }
                     }
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
 
-                Spacer()
-
-                if let url = event.previewUrl {
-                    Link(destination: URL(string: url)!) {
-                        Image(systemName: "arrow.up.right.square")
-                            .foregroundStyle(Theme.Colors.cozyTeal)
+                if isExpanded {
+                    if let process = event.process {
+                        DetailSection(label: "PROCESS") {
+                            Text(process)
+                                .font(.netclodeMonospacedSmall)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+
+                    if let url = event.previewUrl {
+                        DetailSection(label: "PREVIEW URL") {
+                            Link(destination: URL(string: url)!) {
+                                Text(url)
+                                    .font(.netclodeMonospacedSmall)
+                                    .foregroundStyle(Theme.Colors.cozyTeal)
+                            }
+                        }
+                    }
+                } else if let process = event.process {
+                    Text(process)
+                        .font(.netclodeCaption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

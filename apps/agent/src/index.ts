@@ -91,7 +91,7 @@ const server = createServer(async (req, res) => {
                   console.log(`[agent] Tool use: ${block.name}`);
                   send({
                     type: "agent.event",
-                    event: { kind: "tool_start", tool: block.name, toolUseId: block.id, input: block.input },
+                    event: { kind: "tool_start", tool: block.name, toolUseId: block.id, input: block.input, timestamp: new Date().toISOString() },
                   });
                 }
               }
@@ -102,7 +102,18 @@ const server = createServer(async (req, res) => {
               for (const block of message.message.content) {
                 if (typeof block === "object" && block.type === "tool_result") {
                   console.log(`[agent] Tool result: ${block.tool_use_id}`);
-                  send({ type: "agent.event", event: { kind: "tool_end", toolUseId: block.tool_use_id } });
+                  const isError = block.is_error === true;
+                  send({
+                    type: "agent.event",
+                    event: {
+                      kind: "tool_end",
+                      tool: "unknown", // SDK doesn't provide tool name in result
+                      toolUseId: block.tool_use_id,
+                      result: typeof block.content === "string" ? block.content : undefined,
+                      error: isError ? (typeof block.content === "string" ? block.content : "Tool error") : undefined,
+                      timestamp: new Date().toISOString(),
+                    },
+                  });
                 }
               }
             }

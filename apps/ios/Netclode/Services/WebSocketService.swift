@@ -212,24 +212,29 @@ final class WebSocketService: @unchecked Sendable {
     }
 
     func send(_ message: ClientMessage) {
-        guard connectionState == .connected else { return }
+        guard connectionState == .connected else {
+            print("[WebSocket] send: dropped message (not connected), state=\(connectionState)")
+            return
+        }
 
         do {
             let data = try encoder.encode(message)
             guard let string = String(data: data, encoding: .utf8) else { return }
+            print("[WebSocket] Sending: \(string.prefix(100))")
 
             webSocketTask?.send(.string(string)) { error in
                 if let error {
-                    print("WebSocket send error: \(error)")
+                    print("[WebSocket] send error: \(error)")
                 }
             }
         } catch {
-            print("WebSocket encode error: \(error)")
+            print("[WebSocket] encode error: \(error)")
         }
     }
 
     /// Open a session and load its history
     func openSession(id: String, lastMessageId: String? = nil) {
+        print("[WebSocket] openSession called for \(id), connectionState=\(connectionState)")
         send(.sessionOpen(id: id, lastMessageId: lastMessageId))
         send(.sessionResume(id: id))
     }
