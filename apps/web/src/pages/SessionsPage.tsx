@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSessionStore } from "../stores/sessionStore";
 import { SessionList } from "../components/SessionList";
+import { ThemeToggle } from "../components/ThemeToggle";
 import {
   useWebSocket,
   useWebSocketMessages,
@@ -62,10 +63,16 @@ export function SessionsPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>Netclode</h1>
-        <span className={styles.status} data-connected={connected}>
-          {connected ? "● Connected" : "○ Disconnected"}
-        </span>
+        <div className={styles.headerLeft}>
+          <h1>Netclode</h1>
+          <span className={styles.status} data-connected={connected}>
+            <span className={styles.statusDot} />
+            {connected ? "Connected" : "Disconnected"}
+          </span>
+        </div>
+        <div className={styles.headerRight}>
+          <ThemeToggle />
+        </div>
       </header>
       <main className={styles.main}>
         <SessionList
@@ -78,7 +85,8 @@ export function SessionsPage() {
           onClick={handleCreateSession}
           disabled={!connected || creating}
         >
-          {creating ? "Creating..." : "+ New Session"}
+          <span className={styles.createIcon}>+</span>
+          {creating ? "Creating..." : "New Session"}
         </button>
       </main>
     </div>

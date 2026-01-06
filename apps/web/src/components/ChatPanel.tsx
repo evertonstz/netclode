@@ -47,20 +47,31 @@ export function ChatPanel({
       <div className={styles.messages}>
         {messages.length === 0 && (
           <div className={styles.empty}>
-            <p>Send a prompt to get started</p>
+            <span className={styles.emptyIcon}>💬</span>
+            <p>Ask Claude anything...</p>
           </div>
         )}
         {messages.map((msg, i) => (
-          <div key={i} className={styles.message} data-role={msg.role}>
-            <span className={styles.role}>
-              {msg.role === "user" ? "You" : "Claude"}
-            </span>
-            <div className={styles.content}>{msg.content}</div>
+          <div key={i} className={styles.messageRow} data-role={msg.role}>
+            <div className={styles.avatar} data-role={msg.role}>
+              {msg.role === "user" ? "👤" : "🧠"}
+            </div>
+            <div className={styles.messageContent}>
+              <span className={styles.role}>
+                {msg.role === "user" ? "You" : "Claude"}
+              </span>
+              <div className={styles.message}>
+                <div className={styles.content}>{msg.content}</div>
+              </div>
+            </div>
           </div>
         ))}
         {events.length > 0 && (
           <div className={styles.events}>
-            <span className={styles.eventsLabel}>Activity:</span>
+            <span className={styles.eventsLabel}>
+              <span className={styles.eventsIcon}>⚡</span>
+              Activity
+            </span>
             {events.slice(-5).map((event, i) => (
               <div key={i} className={styles.event}>
                 <span className={styles.eventKind}>{event.kind}</span>
@@ -73,9 +84,12 @@ export function ChatPanel({
         )}
         {isProcessing && (
           <div className={styles.thinking}>
-            <span className={styles.dot}></span>
-            <span className={styles.dot}></span>
-            <span className={styles.dot}></span>
+            <div className={styles.avatar} data-role="assistant">🧠</div>
+            <div className={styles.thinkingBubble}>
+              <span className={styles.dot}></span>
+              <span className={styles.dot}></span>
+              <span className={styles.dot}></span>
+            </div>
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -95,16 +109,18 @@ export function ChatPanel({
             type="button"
             className={styles.interruptButton}
             onClick={onInterrupt}
+            title="Stop"
           >
-            Stop
+            ■
           </button>
         ) : (
           <button
             type="submit"
             className={styles.sendButton}
             disabled={disabled || !input.trim()}
+            title="Send"
           >
-            Send
+            ↑
           </button>
         )}
       </form>

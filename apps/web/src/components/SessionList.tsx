@@ -7,10 +7,19 @@ interface SessionListProps {
   onDelete: (id: string) => void;
 }
 
+const STATUS_ICONS: Record<string, string> = {
+  running: "▶️",
+  ready: "✓",
+  paused: "⏸",
+  error: "⚠",
+  creating: "⏳",
+};
+
 export function SessionList({ sessions, onSelect, onDelete }: SessionListProps) {
   if (sessions.length === 0) {
     return (
       <div className={styles.empty}>
+        <span className={styles.emptyIcon}>📋</span>
         <p>No sessions yet. Create one to get started.</p>
       </div>
     );
@@ -24,15 +33,20 @@ export function SessionList({ sessions, onSelect, onDelete }: SessionListProps) 
             className={styles.selectButton}
             onClick={() => onSelect(session.id)}
           >
+            <div className={styles.statusIcon} data-status={session.status}>
+              {STATUS_ICONS[session.status] || "○"}
+            </div>
             <div className={styles.info}>
               <span className={styles.name}>{session.name}</span>
               <span className={styles.meta}>
-                {session.status} · {formatTime(session.lastActiveAt)}
+                <span className={styles.status} data-status={session.status}>
+                  {session.status}
+                </span>
+                <span>·</span>
+                <span>{formatTime(session.lastActiveAt)}</span>
               </span>
             </div>
-            <span className={styles.status} data-status={session.status}>
-              {session.status === "running" ? "●" : "○"}
-            </span>
+            <span className={styles.chevron}>›</span>
           </button>
           <button
             className={styles.deleteButton}
@@ -42,7 +56,7 @@ export function SessionList({ sessions, onSelect, onDelete }: SessionListProps) 
             }}
             title="Delete session"
           >
-            ×
+            🗑
           </button>
         </div>
       ))}

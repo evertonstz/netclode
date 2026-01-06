@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/ws": {
-        target: "http://localhost:3001",
+        target: process.env.CONTROL_PLANE_URL || "http://localhost:3001",
         ws: true,
         changeOrigin: true,
       },

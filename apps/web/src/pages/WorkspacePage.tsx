@@ -7,6 +7,7 @@ import {
 import { useSessionStore } from "../stores/sessionStore";
 import { ChatPanel } from "../components/ChatPanel";
 import { Terminal } from "../components/Terminal";
+import { ThemeToggle } from "../components/ThemeToggle";
 import type { ServerMessage } from "@netclode/protocol";
 import styles from "./WorkspacePage.module.css";
 
@@ -132,19 +133,29 @@ export function WorkspacePage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <button className={styles.backButton} onClick={() => navigate("/")}>
-          ← Back
-        </button>
-        <span className={styles.sessionId}>
-          {session?.name || `Session ${id?.slice(0, 8)}`}
-        </span>
-        <span className={styles.status} data-status={session?.status}>
-          {connected
-            ? isProcessing
-              ? "Processing..."
-              : session?.status || "Connecting..."
-            : "Disconnected"}
-        </span>
+        <div className={styles.headerLeft}>
+          <button className={styles.backButton} onClick={() => navigate("/")}>
+            ←
+          </button>
+          <div className={styles.sessionInfo}>
+            <span className={styles.sessionName}>
+              {session?.name || "Session"}
+            </span>
+            <span className={styles.sessionId}>
+              {id?.slice(0, 8)}
+            </span>
+          </div>
+        </div>
+        <div className={styles.headerRight}>
+          <span className={styles.status} data-status={session?.status}>
+            {connected
+              ? isProcessing
+                ? "⏳ Processing"
+                : session?.status || "Connecting"
+              : "Disconnected"}
+          </span>
+          <ThemeToggle />
+        </div>
       </header>
       <main className={styles.main}>
         <div className={styles.chatSection}>
