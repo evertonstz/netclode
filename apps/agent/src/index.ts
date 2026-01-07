@@ -43,6 +43,12 @@ console.log(`[agent] Environment: ANTHROPIC_API_KEY=${process.env.ANTHROPIC_API_
 // Map control plane session IDs to SDK session IDs
 const sessionMap = new Map<string, string>();
 
+// Track tool names by toolUseId for matching tool results
+const toolNameMap = new Map<string, string>();
+
+// Track current content block index to toolUseId mapping for streaming
+const blockIndexToToolId = new Map<number, string>();
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${port}`);
   console.log(`[agent] ${req.method} ${url.pathname}`);
@@ -120,11 +126,17 @@ const server = createServer(async (req, res) => {
                   console.log(`[agent] Text block: ${block.text.slice(0, 100)}...`);
                   send({ type: "agent.message", content: block.text, partial: false });
                 } else if (block.type === "tool_use") {
-                  console.log(`[agent] Tool use: ${block.name}`);
-                  send({
-                    type: "agent.event",
-                    event: { kind: "tool_start", tool: block.name, toolUseId: block.id, input: block.input, timestamp: new Date().toISOString() },
-                  });
+                  console.log(`[agent] Tool use: ${block.name} (id=${block.id})`);
+                  // Always store the tool name for later lookup in tool_result
+                  const alreadyEmitted = toolNameMap.has(block.id);
+                  toolNameMap.set(block.id, block.name);
+                  // Only emit tool_start if not already sent via streaming (content_block_start)
+                  if (!alreadyEmitted) {
+                    send({
+                      type: "agent.event",
+                      event: { kind: "tool_start", tool: block.name, toolUseId: block.id, input: block.input, timestamp: new Date().toISOString() },
+                    });
+                  }
                 }
               }
             }
@@ -133,13 +145,15 @@ const server = createServer(async (req, res) => {
             if (message.message?.content && Array.isArray(message.message.content)) {
               for (const block of message.message.content) {
                 if (typeof block === "object" && block.type === "tool_result") {
-                  console.log(`[agent] Tool result: ${block.tool_use_id}`);
+                  const toolName = toolNameMap.get(block.tool_use_id) ?? "unknown";
+                  console.log(`[agent] Tool result: ${toolName} (id=${block.tool_use_id}, mapSize=${toolNameMap.size}, mapKeys=[${[...toolNameMap.keys()].join(",")}])`);
+                  toolNameMap.delete(block.tool_use_id);
                   const isError = block.is_error === true;
                   send({
                     type: "agent.event",
                     event: {
                       kind: "tool_end",
-                      tool: "unknown", // SDK doesn't provide tool name in result
+                      tool: toolName,
                       toolUseId: block.tool_use_id,
                       result: typeof block.content === "string" ? block.content : undefined,
                       error: isError ? (typeof block.content === "string" ? block.content : "Tool error") : undefined,
@@ -157,12 +171,47 @@ const server = createServer(async (req, res) => {
             }
             break;
           case "stream_event":
-            if (message.event.type === "content_block_delta") {
+            if (message.event.type === "content_block_start") {
+              const contentBlock = message.event.content_block;
+              if (contentBlock?.type === "tool_use") {
+                // Track block index -> tool_use_id mapping for input deltas
+                blockIndexToToolId.set(message.event.index, contentBlock.id);
+                toolNameMap.set(contentBlock.id, contentBlock.name);
+                // Emit tool_start early (input will come via deltas)
+                send({
+                  type: "agent.event",
+                  event: {
+                    kind: "tool_start",
+                    tool: contentBlock.name,
+                    toolUseId: contentBlock.id,
+                    input: {}, // Will be populated as deltas arrive
+                    timestamp: new Date().toISOString(),
+                  },
+                });
+              }
+            } else if (message.event.type === "content_block_delta") {
               const delta = message.event.delta;
               if (delta && "text" in delta) {
-                // Don't log every streaming delta, too noisy
+                // Text content streaming
                 send({ type: "agent.message", content: delta.text, partial: true });
+              } else if (delta && "partial_json" in delta) {
+                // Tool input streaming - show input as it's being formed
+                const toolUseId = blockIndexToToolId.get(message.event.index);
+                if (toolUseId) {
+                  send({
+                    type: "agent.event",
+                    event: {
+                      kind: "tool_input",
+                      toolUseId,
+                      inputDelta: delta.partial_json,
+                      timestamp: new Date().toISOString(),
+                    },
+                  });
+                }
               }
+            } else if (message.event.type === "content_block_stop") {
+              // Clean up block index mapping
+              blockIndexToToolId.delete(message.event.index);
             }
             break;
         }
