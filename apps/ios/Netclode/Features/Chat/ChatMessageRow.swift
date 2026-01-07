@@ -6,61 +6,36 @@ struct ChatMessageRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.sm) {
+            // Content
             if message.role == .user {
-                Spacer(minLength: 60)
+                Text(message.content)
+                    .font(.netclodeBody)
+                    .foregroundStyle(.primary)
+                    .textSelection(.enabled)
+            } else {
+                MessageContent(content: message.content, isStreaming: isStreaming)
             }
 
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: Theme.Spacing.xxs) {
-                // Avatar and role
-                HStack(spacing: Theme.Spacing.xs) {
-                    if message.role == .assistant {
-                        avatarView
-                    }
-
-                    Text(message.role == .user ? "You" : "Claude")
-                        .font(.netclodeCaption)
-                        .foregroundStyle(.secondary)
-
-                    if message.role == .user {
-                        avatarView
-                    }
-                }
-
-                // Message content
-                Group {
-                    if message.role == .user {
-                        Text(message.content)
-                            .font(.netclodeBody)
-                            .foregroundStyle(Theme.Colors.userBubbleText)
-                            .textSelection(.enabled)
-                            .padding(Theme.Spacing.md)
-                            .background(Theme.Colors.userBubble)
-                            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
-                    } else {
-                        MessageContent(content: message.content, isStreaming: isStreaming)
-                            .padding(Theme.Spacing.md)
-                            .background(Theme.Colors.assistantBubble)
-                            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
-                    }
-                }
-            }
-
-            if message.role == .assistant {
-                Spacer(minLength: 40)
+            if isStreaming {
+                ProgressView()
+                    .scaleEffect(0.6)
             }
         }
-    }
-
-    private var avatarView: some View {
-        ZStack {
-            Circle()
-                .fill(message.role == .user ? Theme.Colors.userBubble : Theme.Colors.brand)
-                .frame(width: 24, height: 24)
-
-            Image(systemName: message.role == .user ? "person.fill" : "brain.head.profile")
-                .font(.system(size: 12))
-                .foregroundStyle(.white)
-        }
+        .padding(Theme.Spacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            message.role == .user
+                ? Theme.Colors.brand.opacity(0.06)
+                : Color.clear
+        )
+        .overlay(
+            message.role == .user
+                ? Rectangle()
+                    .fill(Theme.Colors.brand)
+                    .frame(width: 2)
+                : nil,
+            alignment: .leading
+        )
     }
 }
 
@@ -88,7 +63,7 @@ struct MessageContent: View {
                 case .text(let text):
                     Text(text)
                         .font(.netclodeBody)
-                        .foregroundStyle(Theme.Colors.assistantBubbleText)
+                        .foregroundStyle(.primary)
                         .textSelection(.enabled)
 
                 case .code(let code, let language):

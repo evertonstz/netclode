@@ -19,7 +19,7 @@ struct ChatInputBar: View {
             // Text input
             ZStack(alignment: .leading) {
                 if text.isEmpty {
-                    Text("Ask Claude anything...")
+                    Text("Reply...")
                         .foregroundStyle(.tertiary)
                         .padding(.horizontal, Theme.Spacing.sm)
                 }
