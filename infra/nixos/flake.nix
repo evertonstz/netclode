@@ -57,8 +57,7 @@
     # Development shell
     devShells.${system}.default = pkgs.mkShell {
       packages = with pkgs; [
-        bun
-        nodejs_22
+        nodejs_24
         kubectl
         k9s
         kubernetes-helm
@@ -69,7 +68,7 @@
 
       shellHook = ''
         echo "Netclode development shell"
-        echo "  - bun: $(bun --version)"
+        echo "  - node: $(node --version)"
         echo "  - kubectl: $(kubectl version --client --short 2>/dev/null || echo 'not connected')"
         echo "  - nix: $(nix --version)"
       '';

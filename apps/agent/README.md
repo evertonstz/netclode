@@ -164,13 +164,13 @@ docker run -v /agent/workspace:/app node:20 npm install
 
 ```bash
 # Install dependencies
-bun install
+npm install
 
 # Run locally (limited without VM environment)
-bun run dev
+npm run dev
 
 # Type check
-bun run typecheck
+npm run typecheck
 ```
 
 ## Building the Agent Image
@@ -188,7 +188,7 @@ nix build .#agent-image
 The image includes:
 
 - NixOS minimal system
-- Bun runtime
+- Node.js runtime
 - Docker daemon
 - Git, gh CLI
 - Common dev tools

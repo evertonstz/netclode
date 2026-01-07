@@ -1,15 +1,15 @@
 # Web App Dockerfile
-FROM oven/bun:1.3-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy workspace files
-COPY package.json bun.lock ./
+# Copy workspace files (skip lock file due to npm optional deps bug)
+COPY package.json ./
 COPY apps/web/package.json apps/web/
 COPY packages/protocol/package.json packages/protocol/
 
-# Install dependencies (not frozen since we only copy subset of workspace)
-RUN bun install
+# Install dependencies fresh to get correct platform-specific optional deps
+RUN npm install
 
 # Copy source code
 COPY apps/web apps/web
@@ -17,7 +17,7 @@ COPY packages/protocol packages/protocol
 
 # Build
 WORKDIR /app/apps/web
-RUN bun run build
+RUN npm run build
 
 # Production image with nginx
 FROM nginx:alpine

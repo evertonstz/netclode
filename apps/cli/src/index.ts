@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import type { ClientMessage, ServerMessage } from "@netclode/protocol";
 import * as readline from "readline";
 

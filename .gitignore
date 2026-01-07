@@ -9,9 +9,6 @@ build/
 result
 result-*
 
-# Bun
-bun.lockb
-
 # Environment
 .env
 .env.local

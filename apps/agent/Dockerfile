@@ -22,8 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PATH="/root/.local/bin:/root/.local/share/mise/shims:${PATH}"
 
 # Install node via mise
-RUN mise install node@22 && \
-    mise use -g node@22 && \
+RUN mise install node@24 && \
+    mise use -g node@24 && \
     mise reshim
 
 # =============================================================================
@@ -74,8 +74,8 @@ COPY --from=builder --chown=agent:agent /build/apps/agent/dist/agent.js /opt/age
 COPY --from=builder --chown=agent:agent /build/apps/agent/node_modules /opt/agent/node_modules
 
 # Copy global npm modules (claude CLI)
-COPY --from=builder --chown=agent:agent /root/.local/share/mise/installs/node/22/lib/node_modules /agent/.local/share/mise/installs/node/22/lib/node_modules
-COPY --from=builder --chown=agent:agent /root/.local/share/mise/installs/node/22/bin /agent/.local/share/mise/installs/node/22/bin
+COPY --from=builder --chown=agent:agent /root/.local/share/mise/installs/node/24/lib/node_modules /agent/.local/share/mise/installs/node/24/lib/node_modules
+COPY --from=builder --chown=agent:agent /root/.local/share/mise/installs/node/24/bin /agent/.local/share/mise/installs/node/24/bin
 
 # Copy entrypoint script
 COPY apps/agent/entrypoint.sh /entrypoint.sh
@@ -85,7 +85,7 @@ WORKDIR /opt/agent
 
 ENV NODE_ENV=production
 ENV HOME=/agent
-ENV PATH="/agent/.local/share/mise/shims:/agent/.local/bin:/agent/.local/share/mise/installs/node/22/bin:${PATH}"
+ENV PATH="/agent/.local/share/mise/shims:/agent/.local/bin:/agent/.local/share/mise/installs/node/24/bin:${PATH}"
 
 EXPOSE 3002
 

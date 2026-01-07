@@ -68,7 +68,7 @@ skopeo copy docker-archive:result docker://ghcr.io/angristan/netclode-agent:late
 
 ```bash
 nix develop
-# Provides: bun, nodejs, kubectl, jq, nixos-rebuild
+# Provides: nodejs, kubectl, jq, nixos-rebuild
 ```
 
 ## Host Modules
@@ -121,7 +121,7 @@ Note: Service exposure to Tailscale is handled by the Tailscale Operator in k8s.
 
 The agent VM is a minimal NixOS system with:
 
-- Bun runtime
+- Node.js runtime
 - Docker daemon
 - Git, gh CLI
 - Common development tools

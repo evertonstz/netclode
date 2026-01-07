@@ -5,7 +5,6 @@
 
 # Dependencies (installed in Docker)
 node_modules
-.bun
 
 # Build artifacts
 dist

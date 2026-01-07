@@ -34,7 +34,7 @@ Self-hosted Claude Code Cloud - persistent sandboxed AI coding agents accessible
 | **Agent VMs** | NixOS-based OCI images |
 | **Storage** | JuiceFS CSI (S3-backed PVCs) |
 | **Networking** | Tailscale Operator + Flannel |
-| **Control Plane** | Bun + TypeScript |
+| **Control Plane** | Node.js + TypeScript |
 
 ## Project Structure
 
@@ -72,10 +72,10 @@ nix develop
 
 # Install dependencies
 cd ../..
-bun install
+npm install
 
 # Run control plane locally
-bun run --cwd apps/control-plane dev
+npm run dev --workspace=@netclode/control-plane
 ```
 
 ### Deploy to Server

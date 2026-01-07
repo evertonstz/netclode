@@ -46,7 +46,7 @@
     nerdctl
 
     # Runtime
-    bun
+    nodejs_24
   ];
 
   # Locale settings

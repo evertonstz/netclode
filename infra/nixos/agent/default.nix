@@ -65,8 +65,7 @@
   # Essential packages
   environment.systemPackages = with pkgs; [
     # Runtime
-    bun
-    nodejs_22
+    nodejs_24
 
     # Dev tools
     git
@@ -112,7 +111,7 @@
       User = "agent";
       Group = "users";
       WorkingDirectory = "/opt/agent";
-      ExecStart = "${pkgs.bun}/bin/bun run src/index.ts";
+      ExecStart = "${pkgs.nodejs_24}/bin/node dist/index.js";
       Restart = "always";
       RestartSec = "2s";
 
