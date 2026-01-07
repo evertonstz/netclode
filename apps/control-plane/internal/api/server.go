@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -43,6 +45,7 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /ws", s.handleWebSocket)
+	mux.HandleFunc("GET /internal/session-config", s.handleSessionConfig)
 
 	s.server = &http.Server{
 		Addr:    addr,
@@ -107,6 +110,48 @@ func (s *Server) gracefulShutdown() error {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
+}
+
+// handleSessionConfig returns session configuration for agents.
+// GET /internal/session-config?session=<sessionID> OR ?pod=<podName>
+func (s *Server) handleSessionConfig(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.URL.Query().Get("session")
+
+	// If no session ID, try to derive from pod name
+	if sessionID == "" {
+		podName := r.URL.Query().Get("pod")
+		if podName != "" {
+			sessionID = extractSessionIDFromPodName(podName)
+		}
+	}
+
+	if sessionID == "" {
+		http.Error(w, "session or pod parameter required", http.StatusBadRequest)
+		return
+	}
+
+	config, err := s.manager.GetSessionConfig(r.Context(), sessionID)
+	if err != nil {
+		slog.Warn("Failed to get session config", "sessionID", sessionID, "error", err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(config)
+}
+
+// extractSessionIDFromPodName extracts session ID from pod name format.
+// Pod names follow patterns like: sess-<sessionID>-<suffix> or <sandboxName>-<suffix>
+func extractSessionIDFromPodName(podName string) string {
+	// Handle direct session format: sess-<sessionID> or sess-<sessionID>-<suffix>
+	if strings.HasPrefix(podName, "sess-") {
+		parts := strings.SplitN(podName, "-", 3)
+		if len(parts) >= 2 {
+			return parts[1]
+		}
+	}
+	return ""
 }
 
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {

@@ -9,6 +9,7 @@ import (
 
 // Runtime defines the interface for Kubernetes operations.
 type Runtime interface {
+	// Direct Sandbox operations (legacy mode)
 	CreateSandbox(ctx context.Context, sessionID string, env map[string]string) error
 	WaitForReady(ctx context.Context, sessionID string, timeout time.Duration) (serviceFQDN string, err error)
 	WatchSandboxReady(sessionID string, callback SandboxReadyCallback)
@@ -17,6 +18,14 @@ type Runtime interface {
 	DeletePVC(ctx context.Context, sessionID string) error
 	DeleteSecret(ctx context.Context, sessionID string) error
 	ListSandboxes(ctx context.Context) ([]SandboxInfo, error)
+
+	// SandboxClaim operations (warm pool mode)
+	CreateSandboxClaim(ctx context.Context, sessionID string) error
+	WaitForClaimBound(ctx context.Context, sessionID string, timeout time.Duration) (sandboxName string, err error)
+	GetSandboxByName(ctx context.Context, name string) (*Sandbox, error)
+	DeleteSandboxClaim(ctx context.Context, sessionID string) error
+	ListSandboxClaims(ctx context.Context) ([]SandboxClaimInfo, error)
+
 	Close()
 }
 

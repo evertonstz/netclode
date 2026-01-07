@@ -141,6 +141,15 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string) (*proto
 }
 
 func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string) {
+	if m.config.UseWarmPool {
+		m.createSandboxViaClaim(ctx, sessionID, repo)
+	} else {
+		m.createSandboxDirect(ctx, sessionID, repo)
+	}
+}
+
+// createSandboxDirect creates a sandbox directly (legacy mode)
+func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string) {
 	env := map[string]string{
 		"SESSION_ID":        sessionID,
 		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
@@ -184,6 +193,71 @@ func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *str
 	}
 
 	slog.Info("Session created and running", "sessionID", sessionID, "fqdn", fqdn)
+}
+
+// createSandboxViaClaim uses SandboxClaim for warm pool allocation
+func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string) {
+	// Create SandboxClaim to request from warm pool
+	if err := m.k8s.CreateSandboxClaim(ctx, sessionID); err != nil {
+		slog.Error("Failed to create sandbox claim", "sessionID", sessionID, "error", err)
+		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
+		m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		return
+	}
+
+	// Wait for claim to be bound
+	sandboxName, err := m.k8s.WaitForClaimBound(ctx, sessionID, sandboxReadyTimeout)
+	if err != nil {
+		slog.Error("Claim failed to bind", "sessionID", sessionID, "error", err)
+		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
+		m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		return
+	}
+
+	slog.Info("Claim bound to sandbox", "sessionID", sessionID, "sandbox", sandboxName)
+
+	// Get sandbox to retrieve serviceFQDN
+	sandbox, err := m.k8s.GetSandboxByName(ctx, sandboxName)
+	if err != nil {
+		slog.Error("Failed to get bound sandbox", "sessionID", sessionID, "sandbox", sandboxName, "error", err)
+		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
+		m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		return
+	}
+
+	fqdn := sandbox.Status.ServiceFQDN
+
+	// Warm pool sandboxes should already be Ready, but verify
+	if !sandbox.IsReady() || fqdn == "" {
+		// Wait for sandbox to become ready (shouldn't happen with warm pool)
+		slog.Warn("Bound sandbox not ready yet, waiting", "sessionID", sessionID, "sandbox", sandboxName)
+		fqdn, err = m.k8s.WaitForReady(ctx, sessionID, sandboxReadyTimeout)
+		if err != nil {
+			slog.Error("Sandbox not ready", "sessionID", sessionID, "error", err)
+			m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
+			m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
+			return
+		}
+	}
+
+	// Update state
+	m.mu.Lock()
+	if state, ok := m.sessions[sessionID]; ok {
+		state.ServiceFQDN = fqdn
+		state.Session.Status = protocol.StatusRunning
+	}
+	m.mu.Unlock()
+
+	if err := m.storage.UpdateSessionStatus(ctx, sessionID, protocol.StatusRunning); err != nil {
+		slog.Error("Failed to update session status", "sessionID", sessionID, "error", err)
+	}
+
+	// Emit update
+	if session := m.getSession(sessionID); session != nil {
+		m.emit(sessionID, protocol.NewSessionUpdated(session))
+	}
+
+	slog.Info("Session created via warm pool", "sessionID", sessionID, "fqdn", fqdn)
 }
 
 func (m *Manager) updateSessionStatus(ctx context.Context, sessionID string, status protocol.SessionStatus) {
@@ -294,14 +368,23 @@ func (m *Manager) Pause(ctx context.Context, id string) (*protocol.Session, erro
 		return nil, fmt.Errorf("session %s not found", id)
 	}
 
+	// Delete claim if using warm pool
+	if m.config.UseWarmPool {
+		if err := m.k8s.DeleteSandboxClaim(ctx, id); err != nil {
+			slog.Warn("Failed to delete sandbox claim", "sessionID", id, "error", err)
+		}
+	}
+
 	// Delete sandbox (but keep PVC)
 	if err := m.k8s.DeleteSandbox(ctx, id); err != nil {
 		slog.Warn("Failed to delete sandbox", "sessionID", id, "error", err)
 	}
 
-	// Delete secret
-	if err := m.k8s.DeleteSecret(ctx, id); err != nil {
-		slog.Warn("Failed to delete secret", "sessionID", id, "error", err)
+	// Delete secret (only in direct mode - warm pool uses shared secret)
+	if !m.config.UseWarmPool {
+		if err := m.k8s.DeleteSecret(ctx, id); err != nil {
+			slog.Warn("Failed to delete secret", "sessionID", id, "error", err)
+		}
 	}
 
 	// Update state
@@ -326,6 +409,7 @@ func (m *Manager) Delete(ctx context.Context, id string) error {
 	m.mu.Unlock()
 
 	// Delete K8s resources
+	_ = m.k8s.DeleteSandboxClaim(ctx, id)
 	_ = m.k8s.DeleteSandbox(ctx, id)
 	_ = m.k8s.DeleteSecret(ctx, id)
 	_ = m.k8s.DeletePVC(ctx, id)
@@ -474,6 +558,29 @@ func (m *Manager) Unsubscribe(id string, sub *Subscriber) {
 	if state != nil {
 		state.Unsubscribe(sub)
 	}
+}
+
+// GetSessionConfig returns session configuration for the agent.
+// This is used by agents to get session-specific config when using warm pools.
+func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (map[string]string, error) {
+	m.mu.RLock()
+	state, ok := m.sessions[sessionID]
+	m.mu.RUnlock()
+
+	if !ok {
+		return nil, fmt.Errorf("session %s not found", sessionID)
+	}
+
+	config := map[string]string{
+		"SESSION_ID":        sessionID,
+		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
+	}
+
+	if state.Session.Repo != nil && *state.Session.Repo != "" {
+		config["GIT_REPO"] = *state.Session.Repo
+	}
+
+	return config, nil
 }
 
 // emit sends a message to all subscribers of a session.

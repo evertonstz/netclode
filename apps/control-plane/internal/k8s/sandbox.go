@@ -24,6 +24,9 @@ import (
 // SandboxReadyCallback is called when a sandbox becomes ready
 type SandboxReadyCallback func(sessionID string, serviceFQDN string, err error)
 
+// ClaimBoundCallback is called when a SandboxClaim is bound to a sandbox
+type ClaimBoundCallback func(sessionID string, sandboxName string, err error)
+
 type k8sRuntime struct {
 	dynamicClient dynamic.Interface
 	clientset     *kubernetes.Clientset
@@ -39,8 +42,13 @@ type k8sRuntime struct {
 	callbacksMu    sync.RWMutex
 
 	// Cache of sandbox states
-	sandboxCache   map[string]*Sandbox
-	cacheMu        sync.RWMutex
+	sandboxCache map[string]*Sandbox
+	cacheMu      sync.RWMutex
+
+	// SandboxClaim informer and cache (for warm pool mode)
+	claimInformer  cache.SharedIndexInformer
+	claimCallbacks map[string]ClaimBoundCallback
+	claimCache     map[string]*SandboxClaim
 }
 
 func newK8sRuntime(cfg *config.Config) (*k8sRuntime, error) {
@@ -67,14 +75,23 @@ func newK8sRuntime(cfg *config.Config) (*k8sRuntime, error) {
 		informerStop:   make(chan struct{}),
 		readyCallbacks: make(map[string]SandboxReadyCallback),
 		sandboxCache:   make(map[string]*Sandbox),
+		claimCallbacks: make(map[string]ClaimBoundCallback),
+		claimCache:     make(map[string]*SandboxClaim),
 	}
 
-	// Setup informer
+	// Setup sandbox informer
 	if err := r.setupInformer(); err != nil {
-		return nil, fmt.Errorf("setup informer: %w", err)
+		return nil, fmt.Errorf("setup sandbox informer: %w", err)
 	}
 
-	slog.Info("Kubernetes client initialized with informer", "namespace", cfg.K8sNamespace)
+	// Setup claim informer if warm pool is enabled
+	if cfg.UseWarmPool {
+		if err := r.setupClaimInformer(); err != nil {
+			return nil, fmt.Errorf("setup claim informer: %w", err)
+		}
+	}
+
+	slog.Info("Kubernetes client initialized with informer", "namespace", cfg.K8sNamespace, "warmPool", cfg.UseWarmPool)
 	return r, nil
 }
 
@@ -527,6 +544,293 @@ func (r *k8sRuntime) ListSandboxes(ctx context.Context) ([]SandboxInfo, error) {
 	}
 
 	return sandboxes, nil
+}
+
+// ============================================================================
+// SandboxClaim operations (warm pool mode)
+// ============================================================================
+
+func sandboxClaimName(sessionID string) string {
+	return "sess-" + sessionID
+}
+
+func (r *k8sRuntime) setupClaimInformer() error {
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
+		r.dynamicClient,
+		30*time.Second,
+		r.namespace,
+		func(opts *metav1.ListOptions) {
+			opts.LabelSelector = "netclode.io/session"
+		},
+	)
+
+	r.claimInformer = factory.ForResource(SandboxClaimGVR).Informer()
+
+	_, err := r.claimInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    r.onClaimAdd,
+		UpdateFunc: r.onClaimUpdate,
+		DeleteFunc: r.onClaimDelete,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Start informer in background
+	go r.claimInformer.Run(r.informerStop)
+
+	// Wait for initial sync
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if !cache.WaitForCacheSync(ctx.Done(), r.claimInformer.HasSynced) {
+		return fmt.Errorf("timeout waiting for claim informer sync")
+	}
+
+	slog.Info("SandboxClaim informer synced")
+	return nil
+}
+
+func (r *k8sRuntime) onClaimAdd(obj interface{}) {
+	claim := r.unstructuredToClaim(obj)
+	if claim == nil {
+		return
+	}
+
+	sessionID := r.getSessionIDFromClaim(claim)
+	slog.Debug("SandboxClaim added", "sessionID", sessionID, "bound", claim.IsBound())
+
+	r.cacheMu.Lock()
+	r.claimCache[sessionID] = claim
+	r.cacheMu.Unlock()
+
+	r.checkAndNotifyClaim(sessionID, claim)
+}
+
+func (r *k8sRuntime) onClaimUpdate(oldObj, newObj interface{}) {
+	claim := r.unstructuredToClaim(newObj)
+	if claim == nil {
+		return
+	}
+
+	sessionID := r.getSessionIDFromClaim(claim)
+	sandboxName := claim.GetBoundSandboxName()
+	slog.Debug("SandboxClaim updated", "sessionID", sessionID, "bound", claim.IsBound(), "sandbox", sandboxName)
+
+	r.cacheMu.Lock()
+	r.claimCache[sessionID] = claim
+	r.cacheMu.Unlock()
+
+	r.checkAndNotifyClaim(sessionID, claim)
+}
+
+func (r *k8sRuntime) onClaimDelete(obj interface{}) {
+	claim := r.unstructuredToClaim(obj)
+	if claim == nil {
+		if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+			claim = r.unstructuredToClaim(tombstone.Obj)
+		}
+	}
+	if claim == nil {
+		return
+	}
+
+	sessionID := r.getSessionIDFromClaim(claim)
+	slog.Debug("SandboxClaim deleted", "sessionID", sessionID)
+
+	r.cacheMu.Lock()
+	delete(r.claimCache, sessionID)
+	r.cacheMu.Unlock()
+}
+
+func (r *k8sRuntime) unstructuredToClaim(obj interface{}) *SandboxClaim {
+	u, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil
+	}
+
+	data, err := u.MarshalJSON()
+	if err != nil {
+		slog.Warn("Failed to marshal unstructured claim", "error", err)
+		return nil
+	}
+
+	var claim SandboxClaim
+	if err := json.Unmarshal(data, &claim); err != nil {
+		slog.Warn("Failed to unmarshal claim", "error", err)
+		return nil
+	}
+
+	return &claim
+}
+
+func (r *k8sRuntime) getSessionIDFromClaim(claim *SandboxClaim) string {
+	if id, ok := claim.Labels["netclode.io/session"]; ok {
+		return id
+	}
+	// Fallback: extract from name
+	name := claim.Name
+	if strings.HasPrefix(name, "sess-") {
+		return strings.TrimPrefix(name, "sess-")
+	}
+	return ""
+}
+
+func (r *k8sRuntime) checkAndNotifyClaim(sessionID string, claim *SandboxClaim) {
+	r.callbacksMu.RLock()
+	callback, ok := r.claimCallbacks[sessionID]
+	r.callbacksMu.RUnlock()
+
+	if !ok {
+		return
+	}
+
+	if claim.IsBound() {
+		// Remove callback before invoking to prevent double-call
+		r.callbacksMu.Lock()
+		delete(r.claimCallbacks, sessionID)
+		r.callbacksMu.Unlock()
+
+		callback(sessionID, claim.GetBoundSandboxName(), nil)
+	} else if errMsg := claim.GetError(); errMsg != "" {
+		r.callbacksMu.Lock()
+		delete(r.claimCallbacks, sessionID)
+		r.callbacksMu.Unlock()
+
+		callback(sessionID, "", fmt.Errorf("claim error: %s", errMsg))
+	}
+}
+
+// CreateSandboxClaim creates a claim to request a sandbox from the warm pool.
+func (r *k8sRuntime) CreateSandboxClaim(ctx context.Context, sessionID string) error {
+	claim := &SandboxClaim{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "extensions.agents.x-k8s.io/v1alpha1",
+			Kind:       "SandboxClaim",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      sandboxClaimName(sessionID),
+			Namespace: r.namespace,
+			Labels: map[string]string{
+				"netclode.io/session": sessionID,
+			},
+		},
+		Spec: SandboxClaimSpec{
+			SandboxTemplateRef: SandboxTemplateRef{
+				Name: r.config.SandboxTemplate,
+			},
+		},
+	}
+
+	data, err := json.Marshal(claim)
+	if err != nil {
+		return fmt.Errorf("marshal claim: %w", err)
+	}
+
+	var u unstructured.Unstructured
+	if err := json.Unmarshal(data, &u.Object); err != nil {
+		return fmt.Errorf("convert to unstructured: %w", err)
+	}
+
+	_, err = r.dynamicClient.Resource(SandboxClaimGVR).Namespace(r.namespace).Create(ctx, &u, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("create claim: %w", err)
+	}
+
+	slog.Info("SandboxClaim created", "sessionID", sessionID, "template", r.config.SandboxTemplate)
+	return nil
+}
+
+// WaitForClaimBound waits for a SandboxClaim to be bound to a sandbox.
+func (r *k8sRuntime) WaitForClaimBound(ctx context.Context, sessionID string, timeout time.Duration) (string, error) {
+	// Check if already bound from cache
+	r.cacheMu.RLock()
+	claim, exists := r.claimCache[sessionID]
+	r.cacheMu.RUnlock()
+
+	if exists && claim.IsBound() {
+		return claim.GetBoundSandboxName(), nil
+	}
+
+	// Setup callback channel
+	resultCh := make(chan struct {
+		sandboxName string
+		err         error
+	}, 1)
+
+	r.callbacksMu.Lock()
+	r.claimCallbacks[sessionID] = func(sid, name string, err error) {
+		resultCh <- struct {
+			sandboxName string
+			err         error
+		}{name, err}
+	}
+	r.callbacksMu.Unlock()
+
+	// Cleanup callback on exit
+	defer func() {
+		r.callbacksMu.Lock()
+		delete(r.claimCallbacks, sessionID)
+		r.callbacksMu.Unlock()
+	}()
+
+	// Wait for result or timeout
+	select {
+	case result := <-resultCh:
+		if result.err != nil {
+			return "", result.err
+		}
+		slog.Info("SandboxClaim bound", "sessionID", sessionID, "sandbox", result.sandboxName)
+		return result.sandboxName, nil
+	case <-time.After(timeout):
+		return "", fmt.Errorf("timeout waiting for claim %s to be bound", sandboxClaimName(sessionID))
+	case <-ctx.Done():
+		return "", ctx.Err()
+	}
+}
+
+// GetSandboxByName retrieves a sandbox by its name.
+func (r *k8sRuntime) GetSandboxByName(ctx context.Context, name string) (*Sandbox, error) {
+	u, err := r.dynamicClient.Resource(SandboxGVR).Namespace(r.namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	sandbox := r.unstructuredToSandbox(u)
+	if sandbox == nil {
+		return nil, fmt.Errorf("failed to parse sandbox %s", name)
+	}
+
+	return sandbox, nil
+}
+
+// DeleteSandboxClaim deletes a SandboxClaim.
+func (r *k8sRuntime) DeleteSandboxClaim(ctx context.Context, sessionID string) error {
+	name := sandboxClaimName(sessionID)
+
+	err := r.dynamicClient.Resource(SandboxClaimGVR).Namespace(r.namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+
+	slog.Info("SandboxClaim deleted", "sessionID", sessionID, "name", name)
+	return nil
+}
+
+// ListSandboxClaims lists all SandboxClaims from cache.
+func (r *k8sRuntime) ListSandboxClaims(ctx context.Context) ([]SandboxClaimInfo, error) {
+	r.cacheMu.RLock()
+	defer r.cacheMu.RUnlock()
+
+	claims := make([]SandboxClaimInfo, 0, len(r.claimCache))
+	for sessionID, claim := range r.claimCache {
+		claims = append(claims, SandboxClaimInfo{
+			SessionID:   sessionID,
+			Bound:       claim.IsBound(),
+			SandboxName: claim.GetBoundSandboxName(),
+		})
+	}
+
+	return claims, nil
 }
 
 // Ensure k8sRuntime implements Runtime

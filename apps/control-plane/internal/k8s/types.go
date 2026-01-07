@@ -238,3 +238,70 @@ func (s *Sandbox) GetError() string {
 	}
 	return ""
 }
+
+// SandboxClaim CRD GVR (extensions API group)
+var SandboxClaimGVR = schema.GroupVersionResource{
+	Group:    "extensions.agents.x-k8s.io",
+	Version:  "v1alpha1",
+	Resource: "sandboxclaims",
+}
+
+// SandboxClaim represents a claim for a sandbox from the warm pool
+type SandboxClaim struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              SandboxClaimSpec   `json:"spec,omitempty"`
+	Status            SandboxClaimStatus `json:"status,omitempty"`
+}
+
+// SandboxClaimSpec defines the desired state of a SandboxClaim
+type SandboxClaimSpec struct {
+	SandboxTemplateRef SandboxTemplateRef `json:"sandboxTemplateRef"`
+}
+
+// SandboxTemplateRef references a SandboxTemplate
+type SandboxTemplateRef struct {
+	Name string `json:"name"`
+}
+
+// SandboxClaimStatus defines the observed state of a SandboxClaim
+type SandboxClaimStatus struct {
+	Conditions []SandboxCondition `json:"conditions,omitempty"`
+	Sandbox    *SandboxReference  `json:"sandbox,omitempty"`
+}
+
+// SandboxReference references an assigned Sandbox
+// Note: CRD uses capital "Name" field
+type SandboxReference struct {
+	Name string `json:"Name"`
+}
+
+// SandboxClaimInfo contains basic information about a claim
+type SandboxClaimInfo struct {
+	SessionID   string
+	Bound       bool
+	SandboxName string
+}
+
+// IsBound returns true if the claim has a sandbox assigned
+func (c *SandboxClaim) IsBound() bool {
+	return c.Status.Sandbox != nil && c.Status.Sandbox.Name != ""
+}
+
+// GetBoundSandboxName returns the name of the bound sandbox, or empty string
+func (c *SandboxClaim) GetBoundSandboxName() string {
+	if c.Status.Sandbox == nil {
+		return ""
+	}
+	return c.Status.Sandbox.Name
+}
+
+// GetError returns the error message from claim conditions
+func (c *SandboxClaim) GetError() string {
+	for _, cond := range c.Status.Conditions {
+		if cond.Type == "Ready" && cond.Status == "False" {
+			return cond.Message
+		}
+	}
+	return ""
+}

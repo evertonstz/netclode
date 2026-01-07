@@ -87,11 +87,42 @@ that includes:
 
 ### Warm Pool
 
-SandboxWarmPool keeps pre-warmed pods with PVCs ready for instant allocation.
+SandboxWarmPool keeps pre-warmed pods with JuiceFS PVCs ready for instant allocation.
 
 **Files:**
 - `sandbox-warmpool.yaml` - SandboxWarmPool resource
 - `sandbox-template.yaml` - SandboxTemplate with volumeClaimTemplates
+
+**Control-Plane Configuration:**
+
+To enable warm pool allocation in the control-plane, set the environment variable:
+
+```yaml
+env:
+  - name: WARM_POOL_ENABLED
+    value: "true"
+```
+
+When enabled, the control-plane creates `SandboxClaim` resources instead of direct `Sandbox` resources. The controller assigns a pre-warmed pod from the pool (or creates a new one if the pool is empty).
+
+**Session Config API:**
+
+Since warm pool pods are already running, they cannot receive per-session environment variables dynamically. Instead, agents call the control-plane API to get session configuration:
+
+```
+GET /internal/session-config?pod=<podName>
+```
+
+Returns:
+```json
+{
+  "SESSION_ID": "abc123",
+  "ANTHROPIC_API_KEY": "sk-ant-xxx",
+  "GIT_REPO": "https://github.com/user/repo"
+}
+```
+
+The pod name is extracted to determine the session ID (format: `sess-<sessionID>-<suffix>`).
 
 ### Storage
 
@@ -253,3 +284,20 @@ kubectl $CTX scale deployment coredns -n kube-system --replicas=2
 # Configure JuiceFS mount pods to use less CPU (see storage.yaml for details)
 # Default is 1 CPU per mount pod - with multiple PVCs this exhausts the node
 ```
+
+### Warm Pool Troubleshooting
+
+**Warm pool not being used:**
+- Verify `WARM_POOL_ENABLED=true` is set in control-plane deployment
+- Check control-plane logs for "warmPool=true" at startup
+- Verify SandboxWarmPool has ready replicas: `kubectl get sandboxwarmpool -n netclode`
+
+**Claims not binding:**
+- Check SandboxClaim status: `kubectl get sandboxclaim -n netclode`
+- Check controller logs: `kubectl logs -n agent-sandbox-system agent-sandbox-controller-0`
+- Verify warm pool has available pods: `kubectl get pods -n netclode -l agents.x-k8s.io/pool`
+
+**Agent not getting session config:**
+- Verify agent can reach control-plane: `curl http://control-plane.netclode.svc.cluster.local:3000/health`
+- Check session exists: `curl http://control-plane:3000/internal/session-config?session=<id>`
+- Check pod name extraction works for the naming pattern
