@@ -1,5 +1,5 @@
 {
-  "name": "@netclode/control-plane",
+  "name": "@netclode/control-plane-ts",
   "version": "0.0.1",
   "type": "module",
   "scripts": {

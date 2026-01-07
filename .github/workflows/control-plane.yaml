@@ -6,13 +6,11 @@ on:
     branches: [main, master]
     paths:
       - "apps/control-plane/**"
-      - "packages/**"
       - ".github/workflows/control-plane.yaml"
   pull_request:
     branches: [main, master]
     paths:
       - "apps/control-plane/**"
-      - "packages/**"
 
 env:
   REGISTRY: ghcr.io
@@ -52,7 +50,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: apps/control-plane
           file: apps/control-plane/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

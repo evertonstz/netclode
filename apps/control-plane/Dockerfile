@@ -1,32 +1,25 @@
-# Control Plane Dockerfile
-FROM oven/bun:1.3-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-# Copy workspace files
-COPY package.json bun.lock ./
-COPY packages/protocol ./packages/protocol
-COPY apps/control-plane ./apps/control-plane
+# Download dependencies first for caching
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Install dependencies (not frozen since we only copy subset of workspace)
-RUN bun install
+# Copy source and build
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o control-plane ./cmd/control-plane
 
-# Build
-WORKDIR /app/apps/control-plane
-RUN bun run build
+# Runtime image
+FROM alpine:3.21
 
-# Production image
-FROM oven/bun:1.3-alpine
+RUN apk --no-cache add ca-certificates
 
-WORKDIR /app
+COPY --from=builder /app/control-plane /control-plane
 
-COPY --from=builder /app/apps/control-plane/dist ./dist
-COPY --from=builder /app/apps/control-plane/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-
-ENV NODE_ENV=production
-ENV PORT=3000
+# Run as non-root user
+USER 65534:65534
 
 EXPOSE 3000
 
-CMD ["bun", "run", "dist/index.js"]
+ENTRYPOINT ["/control-plane"]
