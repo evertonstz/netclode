@@ -170,6 +170,12 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 	fqdn, err := m.k8s.WaitForReady(ctx, sessionID, sandboxReadyTimeout)
 	if err != nil {
 		slog.Error("Sandbox failed to become ready", "sessionID", sessionID, "error", err)
+		// Cleanup: delete the sandbox to avoid resource leak
+		if delErr := m.k8s.DeleteSandbox(ctx, sessionID); delErr != nil {
+			slog.Error("Failed to cleanup sandbox after timeout", "sessionID", sessionID, "error", delErr)
+		} else {
+			slog.Info("Cleaned up sandbox after timeout", "sessionID", sessionID)
+		}
 		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
 		m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
 		return
@@ -209,6 +215,12 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 	sandboxName, err := m.k8s.WaitForClaimBound(ctx, sessionID, sandboxReadyTimeout)
 	if err != nil {
 		slog.Error("Claim failed to bind", "sessionID", sessionID, "error", err)
+		// Cleanup: delete the SandboxClaim
+		if delErr := m.k8s.DeleteSandboxClaim(ctx, sessionID); delErr != nil {
+			slog.Error("Failed to cleanup sandbox claim after timeout", "sessionID", sessionID, "error", delErr)
+		} else {
+			slog.Info("Cleaned up sandbox claim after timeout", "sessionID", sessionID)
+		}
 		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
 		m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
 		return
@@ -226,6 +238,10 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 	sandbox, err := m.k8s.GetSandboxByName(ctx, sandboxName)
 	if err != nil {
 		slog.Error("Failed to get bound sandbox", "sessionID", sessionID, "sandbox", sandboxName, "error", err)
+		// Cleanup: delete the sandbox (claim was already bound)
+		if delErr := m.k8s.DeleteSandbox(ctx, sessionID); delErr != nil {
+			slog.Error("Failed to cleanup sandbox", "sessionID", sessionID, "error", delErr)
+		}
 		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
 		m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
 		return
@@ -247,6 +263,12 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 		fqdn, err = m.k8s.WaitForReady(ctx, sessionID, sandboxReadyTimeout)
 		if err != nil {
 			slog.Error("Sandbox not ready", "sessionID", sessionID, "error", err)
+			// Cleanup: delete the sandbox to avoid resource leak
+			if delErr := m.k8s.DeleteSandbox(ctx, sessionID); delErr != nil {
+				slog.Error("Failed to cleanup sandbox after timeout", "sessionID", sessionID, "error", delErr)
+			} else {
+				slog.Info("Cleaned up sandbox after timeout", "sessionID", sessionID)
+			}
 			m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
 			m.emit(sessionID, protocol.NewSessionError(sessionID, err.Error()))
 			return
