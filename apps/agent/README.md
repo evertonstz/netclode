@@ -76,23 +76,47 @@ ok
 
 ## Claude Agent SDK Integration
 
-The agent uses the Claude Agent SDK for tool execution:
+The agent uses the `query()` async iterator from the Claude Agent SDK to stream events in real-time:
 
 ```typescript
-import { createAgent } from "@anthropic-ai/claude-agent-sdk";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 
-const agent = createAgent({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  allowedTools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
-  permissionMode: "bypassPermissions", // VM handles isolation
+const q = query({
+  prompt: text,
+  options: {
+    cwd: workspaceDir,
+    permissionMode: "bypassPermissions", // VM handles isolation
+    model: "claude-opus-4-5-20251101",
+    persistSession: true,
+    systemPrompt: { type: "preset", preset: "claude_code", append: "..." },
+    ...(sdkSessionId && { resume: sdkSessionId }),
+  },
 });
 
-await agent.run("Fix the bug in auth.ts");
+for await (const message of q) {
+  switch (message.type) {
+    case "system":      // Init, session ID
+    case "assistant":   // Text blocks, tool_use blocks
+    case "user":        // Tool results
+    case "result":      // Final result with cost/turns
+    case "stream_event": // Content deltas for real-time streaming
+  }
+}
 ```
+
+### Message Types
+
+| Type | Description |
+|------|-------------|
+| `system` | Init message with `session_id` for resuming conversations |
+| `assistant` | Claude's response with `text` and `tool_use` content blocks |
+| `user` | Tool results (`tool_result` blocks with `tool_use_id`) |
+| `result` | Final result with `num_turns`, `total_cost_usd` |
+| `stream_event` | Real-time deltas: `content_block_start`, `content_block_delta`, `content_block_stop` |
 
 ### Available Tools
 
-The SDK provides built-in tools:
+The SDK provides built-in tools (all enabled via `bypassPermissions`):
 
 | Tool | Description |
 |------|-------------|
@@ -104,26 +128,6 @@ The SDK provides built-in tools:
 | `Grep` | Search file contents |
 | `WebSearch` | Search the web |
 | `WebFetch` | Fetch URL content |
-
-### Hooks
-
-The agent uses hooks for event streaming:
-
-```typescript
-const hooks = {
-  PostToolUse: [{
-    matcher: ".*",
-    hooks: [(input, toolUseId, context) => {
-      emitEvent({
-        type: "tool_call",
-        tool: input.tool_name,
-        ...
-      });
-      return {};
-    }]
-  }]
-};
-```
 
 ## VM Environment
 
