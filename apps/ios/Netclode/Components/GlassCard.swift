@@ -21,11 +21,9 @@ struct GlassCard<Content: View>: View {
     var body: some View {
         content()
             .padding(padding)
-            .background(Theme.Colors.secondaryBackground)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+            .glassEffect(
+                tint != nil ? .regular.tint(tint!.glassTint) : .regular,
+                in: RoundedRectangle(cornerRadius: cornerRadius)
             )
     }
 }
@@ -53,11 +51,9 @@ struct GlassCardInteractive<Content: View>: View {
     var body: some View {
         content()
             .padding(padding)
-            .background(Theme.Colors.secondaryBackground)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+            .glassEffect(
+                tint != nil ? .regular.interactive().tint(tint!.glassTint) : .regular.interactive(),
+                in: RoundedRectangle(cornerRadius: cornerRadius)
             )
     }
 }
@@ -70,8 +66,10 @@ struct UserMessageCard<Content: View>: View {
     var body: some View {
         content()
             .padding(Theme.Spacing.md)
-            .background(Theme.Colors.userBubble)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
+            .glassEffect(
+                .regular.tint(Theme.Colors.userBubble.glassTint),
+                in: RoundedRectangle(cornerRadius: Theme.Radius.lg)
+            )
     }
 }
 
@@ -81,8 +79,10 @@ struct AssistantMessageCard<Content: View>: View {
     var body: some View {
         content()
             .padding(Theme.Spacing.md)
-            .background(Theme.Colors.assistantBubble)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
+            .glassEffect(
+                .regular,
+                in: RoundedRectangle(cornerRadius: Theme.Radius.lg)
+            )
     }
 }
 

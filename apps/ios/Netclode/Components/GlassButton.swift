@@ -40,11 +40,14 @@ struct GlassButton: View {
                 Text(title)
             }
             .font(.netclodeSubheadline)
+            .fontWeight(.medium)
             .foregroundStyle(.primary)
-            .padding(.horizontal, Theme.Spacing.md)
+            .padding(.horizontal, Theme.Spacing.lg)
             .padding(.vertical, Theme.Spacing.sm)
-            .background(tint ?? Theme.Colors.brand.opacity(0.15))
-            .clipShape(Capsule())
+            .glassEffect(
+                .regular.interactive().tint((tint ?? Theme.Colors.brand).glassTint),
+                in: Capsule()
+            )
         }
         .disabled(isLoading)
     }
@@ -80,11 +83,13 @@ struct GlassIconButton: View {
             action()
         } label: {
             Image(systemName: icon)
-                .font(.system(size: size * 0.4))
+                .font(.system(size: size * 0.4, weight: .medium))
                 .foregroundStyle(.primary)
                 .frame(width: size, height: size)
-                .background(tint ?? Theme.Colors.brand.opacity(0.15))
-                .clipShape(Circle())
+                .glassEffect(
+                    .regular.interactive().tint((tint ?? Theme.Colors.brand).glassTint),
+                    in: Circle()
+                )
         }
     }
 }
@@ -116,12 +121,14 @@ struct FloatingActionButton: View {
             action()
         } label: {
             Image(systemName: icon)
-                .font(.system(size: 24, weight: .medium))
+                .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(tint ?? Theme.Colors.brand)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                .frame(width: 60, height: 60)
+                .glassEffect(
+                    .regular.interactive().tint((tint ?? Theme.Colors.brand).glassTint),
+                    in: Circle()
+                )
+                .shadow(color: (tint ?? Theme.Colors.brand).opacity(0.4), radius: 12, x: 0, y: 6)
         }
     }
 }

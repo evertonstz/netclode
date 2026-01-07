@@ -23,9 +23,8 @@ struct ConnectionStatusBadge: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, Theme.Spacing.sm)
-        .padding(.vertical, Theme.Spacing.xxs)
-        .background(statusColor.opacity(0.1))
-        .clipShape(Capsule())
+        .padding(.vertical, Theme.Spacing.xs)
+        .glassEffect(.regular.tint(statusColor.glassTint), in: Capsule())
     }
 
     private var statusColor: Color {
@@ -65,8 +64,7 @@ struct SessionStatusBadge: View {
         }
         .padding(.horizontal, compact ? Theme.Spacing.xs : Theme.Spacing.sm)
         .padding(.vertical, Theme.Spacing.xxs)
-        .background(status.tintColor.glassTint)
-        .clipShape(Capsule())
+        .glassEffect(.regular.tint(status.tintColor.glassTint), in: Capsule())
     }
 }
 
@@ -86,9 +84,8 @@ struct ProcessingIndicator: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, Theme.Spacing.sm)
-            .padding(.vertical, Theme.Spacing.xxs)
-            .background(Theme.Colors.brand.opacity(0.1))
-            .clipShape(Capsule())
+            .padding(.vertical, Theme.Spacing.xs)
+            .glassEffect(.regular.tint(Theme.Colors.brand.glassTint), in: Capsule())
             .transition(.glassAppear)
         }
     }
