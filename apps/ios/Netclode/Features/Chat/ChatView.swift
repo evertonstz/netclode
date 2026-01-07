@@ -71,7 +71,7 @@ struct ChatView: View {
             if message.role == .user {
                 precedingUserTimestamp = message.timestamp
             } else if message.role == .assistant, !isStreaming, let userTime = precedingUserTimestamp {
-                // Find the end of this turn
+                // Find the end of this turn (must be after user message, before next user message)
                 var turnEndTime: Date?
 
                 if index < messages.count - 1 {
@@ -79,15 +79,15 @@ struct ChatView: View {
                     let nextUserTime = messages[(index + 1)...].first { $0.role == .user }?.timestamp
 
                     if let nextUserTime {
-                        // Find the last event before the next user message
-                        turnEndTime = events.last { $0.timestamp < nextUserTime }?.timestamp
+                        // Find the last event within this turn window
+                        turnEndTime = events.last { $0.timestamp > userTime && $0.timestamp < nextUserTime }?.timestamp
                     } else {
-                        // No more user messages, use last event
-                        turnEndTime = events.last?.timestamp
+                        // No more user messages, use last event after user message
+                        turnEndTime = events.last { $0.timestamp > userTime }?.timestamp
                     }
                 } else {
-                    // Last message - use last event timestamp
-                    turnEndTime = events.last?.timestamp
+                    // Last message - use last event after user message
+                    turnEndTime = events.last { $0.timestamp > userTime }?.timestamp
                 }
 
                 // Fall back to the message's own timestamp if no events found
