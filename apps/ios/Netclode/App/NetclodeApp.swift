@@ -44,6 +44,7 @@ struct NetclodeApp: App {
                 .environment(settingsStore)
                 .environment(webSocketService)
                 .environment(messageRouter)
+                .preferredColorScheme(settingsStore.preferredColorScheme)
                 .onAppear {
                     if !settingsStore.serverURL.isEmpty {
                         webSocketService.connect(to: settingsStore.serverURL)

@@ -24,10 +24,8 @@ struct ConnectionStatusBadge: View {
         }
         .padding(.horizontal, Theme.Spacing.sm)
         .padding(.vertical, Theme.Spacing.xxs)
-        .glassEffect(
-            .regular.tint(statusColor.opacity(0.1)),
-            in: .capsule
-        )
+        .background(statusColor.opacity(0.1))
+        .clipShape(Capsule())
     }
 
     private var statusColor: Color {
@@ -67,10 +65,8 @@ struct SessionStatusBadge: View {
         }
         .padding(.horizontal, compact ? Theme.Spacing.xs : Theme.Spacing.sm)
         .padding(.vertical, Theme.Spacing.xxs)
-        .glassEffect(
-            .regular.tint(status.tintColor.glassTint),
-            in: .capsule
-        )
+        .background(status.tintColor.glassTint)
+        .clipShape(Capsule())
     }
 }
 
@@ -83,7 +79,7 @@ struct ProcessingIndicator: View {
         if isProcessing {
             HStack(spacing: Theme.Spacing.xs) {
                 ProgressView()
-                    .tint(Theme.Colors.cozyPurple)
+                    .tint(Theme.Colors.brand)
 
                 Text("Processing...")
                     .font(.netclodeCaption)
@@ -91,10 +87,8 @@ struct ProcessingIndicator: View {
             }
             .padding(.horizontal, Theme.Spacing.sm)
             .padding(.vertical, Theme.Spacing.xxs)
-            .glassEffect(
-                .regular.tint(Theme.Colors.cozyPurple.opacity(0.1)),
-                in: .capsule
-            )
+            .background(Theme.Colors.brand.opacity(0.1))
+            .clipShape(Capsule())
             .transition(.glassAppear)
         }
     }
@@ -103,45 +97,42 @@ struct ProcessingIndicator: View {
 // MARK: - Preview
 
 #Preview {
-    ZStack {
-        WarmGradientBackground()
+    VStack(spacing: 20) {
+        Text("Connection States")
+            .font(.netclodeHeadline)
 
-        VStack(spacing: 20) {
-            Text("Connection States")
-                .font(.netclodeHeadline)
+        ConnectionStatusBadge(state: .connected)
+        ConnectionStatusBadge(state: .connecting)
+        ConnectionStatusBadge(state: .reconnecting(attempt: 2))
+        ConnectionStatusBadge(state: .disconnected)
 
-            ConnectionStatusBadge(state: .connected)
-            ConnectionStatusBadge(state: .connecting)
-            ConnectionStatusBadge(state: .reconnecting(attempt: 2))
-            ConnectionStatusBadge(state: .disconnected)
+        Divider()
+            .padding(.vertical)
 
-            Divider()
-                .padding(.vertical)
+        Text("Session Statuses")
+            .font(.netclodeHeadline)
 
-            Text("Session Statuses")
-                .font(.netclodeHeadline)
-
-            HStack(spacing: 12) {
-                SessionStatusBadge(status: .creating)
-                SessionStatusBadge(status: .ready)
-                SessionStatusBadge(status: .running)
-            }
-
-            HStack(spacing: 12) {
-                SessionStatusBadge(status: .paused)
-                SessionStatusBadge(status: .error)
-            }
-
-            HStack(spacing: 8) {
-                SessionStatusBadge(status: .running, compact: true)
-                SessionStatusBadge(status: .ready, compact: true)
-            }
-
-            Divider()
-                .padding(.vertical)
-
-            ProcessingIndicator(isProcessing: true)
+        HStack(spacing: 12) {
+            SessionStatusBadge(status: .creating)
+            SessionStatusBadge(status: .ready)
+            SessionStatusBadge(status: .running)
         }
-        .padding()
+
+        HStack(spacing: 12) {
+            SessionStatusBadge(status: .paused)
+            SessionStatusBadge(status: .error)
+        }
+
+        HStack(spacing: 8) {
+            SessionStatusBadge(status: .running, compact: true)
+            SessionStatusBadge(status: .ready, compact: true)
+        }
+
+        Divider()
+            .padding(.vertical)
+
+        ProcessingIndicator(isProcessing: true)
     }
+    .padding()
+    .background(Theme.Colors.background)
 }

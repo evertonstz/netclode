@@ -119,11 +119,11 @@ struct EventsPreview: View {
     let events: [AgentEvent]
 
     var body: some View {
-        GlassCard(tint: Theme.Colors.cozyLavender.opacity(0.15), padding: Theme.Spacing.sm) {
+        GlassCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                 HStack {
                     Image(systemName: "bolt.fill")
-                        .foregroundStyle(Theme.Colors.cozyPurple)
+                        .foregroundStyle(Theme.Colors.brand)
                     Text("Activity")
                         .font(.netclodeCaption)
                         .foregroundStyle(.secondary)
@@ -176,7 +176,7 @@ struct InlineEventRow: View {
             HStack(alignment: .top, spacing: Theme.Spacing.sm) {
                 // Timeline line
                 Rectangle()
-                    .fill(Theme.Colors.gentleGray.opacity(0.3))
+                    .fill(Color.secondary.opacity(0.3))
                     .frame(width: 2)
                     .frame(maxHeight: .infinity)
                     .padding(.leading, Theme.Spacing.md)
@@ -192,7 +192,7 @@ struct InlineEventRow: View {
                         Text(eventLabel)
                             .font(.netclodeCaption)
                             .fontWeight(.medium)
-                            .foregroundStyle(isError ? Theme.Colors.warmCoral : .secondary)
+                            .foregroundStyle(isError ? Theme.Colors.error : .secondary)
 
                         if isInProgress {
                             ProgressView()
@@ -238,13 +238,13 @@ struct InlineEventRow: View {
 
     private var eventColor: Color {
         switch event {
-        case .toolStart, .commandStart: Theme.Colors.gentleBlue
-        case .toolInput: Theme.Colors.gentleBlue
-        case .toolEnd(let e): e.isSuccess ? Theme.Colors.cozySage : Theme.Colors.warmCoral
-        case .commandEnd(let e): e.isSuccess ? Theme.Colors.cozySage : Theme.Colors.warmCoral
-        case .fileChange: Theme.Colors.cozyPurple
-        case .thinking: Theme.Colors.cozyLavender
-        case .portDetected: Theme.Colors.cozyTeal
+        case .toolStart, .commandStart: Theme.Colors.info
+        case .toolInput: Theme.Colors.info
+        case .toolEnd(let e): e.isSuccess ? Theme.Colors.success : Theme.Colors.error
+        case .commandEnd(let e): e.isSuccess ? Theme.Colors.success : Theme.Colors.error
+        case .fileChange: Theme.Colors.brand
+        case .thinking: Theme.Colors.brandLight
+        case .portDetected: Color.cyan
         }
     }
 
@@ -291,7 +291,7 @@ struct InlineEventRow: View {
             HStack {
                 Text("exit \(e.exitCode)")
                     .font(.netclodeMonospacedSmall)
-                    .foregroundStyle(e.isSuccess ? Theme.Colors.cozySage : Theme.Colors.warmCoral)
+                    .foregroundStyle(e.isSuccess ? Theme.Colors.success : Theme.Colors.error)
             }
             if let output = e.output, !output.isEmpty {
                 EventCodeBlock(title: "Output", content: output)
@@ -309,12 +309,12 @@ struct InlineEventRow: View {
                 if let added = e.linesAdded, added > 0 {
                     Text("+\(added)")
                         .font(.netclodeMonospacedSmall)
-                        .foregroundStyle(Theme.Colors.cozySage)
+                        .foregroundStyle(Theme.Colors.success)
                 }
                 if let removed = e.linesRemoved, removed > 0 {
                     Text("-\(removed)")
                         .font(.netclodeMonospacedSmall)
-                        .foregroundStyle(Theme.Colors.warmCoral)
+                        .foregroundStyle(Theme.Colors.error)
                 }
             }
 
@@ -379,11 +379,11 @@ private struct EventCodeBlock: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(content)
                     .font(.netclodeMonospacedSmall)
-                    .foregroundStyle(isError ? Theme.Colors.warmCoral : .secondary)
+                    .foregroundStyle(isError ? Theme.Colors.error : .secondary)
                     .lineLimit(6)
             }
             .padding(Theme.Spacing.xs)
-            .background(Color.black.opacity(0.15))
+            .background(Theme.Colors.codeBackground)
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -18,18 +18,15 @@ struct WorkspaceView: View {
     }
 
     var body: some View {
-        ZStack {
-            WarmGradientBackground()
-
-            Group {
-                switch selectedTab {
-                case .chat:
-                    ChatView(sessionId: sessionId)
-                case .terminal:
-                    TerminalView(sessionId: sessionId)
-                }
+        Group {
+            switch selectedTab {
+            case .chat:
+                ChatView(sessionId: sessionId)
+            case .terminal:
+                TerminalView(sessionId: sessionId)
             }
         }
+        .background(Theme.Colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {

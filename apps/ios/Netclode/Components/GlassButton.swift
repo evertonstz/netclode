@@ -43,11 +43,9 @@ struct GlassButton: View {
             .foregroundStyle(.primary)
             .padding(.horizontal, Theme.Spacing.md)
             .padding(.vertical, Theme.Spacing.sm)
+            .background(tint ?? Theme.Colors.brand.opacity(0.15))
+            .clipShape(Capsule())
         }
-        .glassEffect(
-            .regular.interactive().tint(tint ?? Theme.Colors.buttonTint),
-            in: .capsule
-        )
         .disabled(isLoading)
     }
 }
@@ -85,11 +83,9 @@ struct GlassIconButton: View {
                 .font(.system(size: size * 0.4))
                 .foregroundStyle(.primary)
                 .frame(width: size, height: size)
+                .background(tint ?? Theme.Colors.brand.opacity(0.15))
+                .clipShape(Circle())
         }
-        .glassEffect(
-            .regular.interactive().tint(tint ?? Theme.Colors.buttonTint),
-            in: Circle()
-        )
     }
 }
 
@@ -121,62 +117,52 @@ struct FloatingActionButton: View {
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
                 .frame(width: 56, height: 56)
+                .background(tint ?? Theme.Colors.brand)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         }
-        .glassEffect(
-            .regular.interactive().tint(tint ?? Theme.Colors.warmApricot.opacity(0.4)),
-            in: Circle()
-        )
-        .shadow(
-            color: Theme.Shadow.warm.color,
-            radius: Theme.Shadow.warm.radius,
-            x: Theme.Shadow.warm.x,
-            y: Theme.Shadow.warm.y
-        )
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    ZStack {
-        WarmGradientBackground()
+    VStack(spacing: 20) {
+        GlassButton("Primary Action", icon: "arrow.right") {
+            print("Tapped")
+        }
 
-        VStack(spacing: 20) {
-            GlassButton("Primary Action", icon: "arrow.right") {
-                print("Tapped")
+        GlassButton("Loading...", isLoading: true) {
+            print("Tapped")
+        }
+
+        HStack(spacing: 16) {
+            GlassIconButton(icon: "play.fill") {
+                print("Play")
             }
 
-            GlassButton("Loading...", isLoading: true) {
-                print("Tapped")
+            GlassIconButton(icon: "pause.fill") {
+                print("Pause")
             }
 
-            HStack(spacing: 16) {
-                GlassIconButton(icon: "play.fill") {
-                    print("Play")
-                }
-
-                GlassIconButton(icon: "pause.fill") {
-                    print("Pause")
-                }
-
-                GlassIconButton(icon: "trash", tint: .red.opacity(0.3)) {
-                    print("Delete")
-                }
+            GlassIconButton(icon: "trash", tint: .red.opacity(0.3)) {
+                print("Delete")
             }
+        }
 
+        Spacer()
+
+        HStack {
             Spacer()
-
-            HStack {
-                Spacer()
-                FloatingActionButton(icon: "plus") {
-                    print("Add")
-                }
+            FloatingActionButton(icon: "plus") {
+                print("Add")
             }
-            .padding()
         }
         .padding()
     }
+    .padding()
+    .background(Theme.Colors.background)
     .environment(SettingsStore())
 }

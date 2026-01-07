@@ -32,9 +32,11 @@ struct ChatInputBar: View {
                     .padding(.vertical, Theme.Spacing.xxs)
             }
             .font(.netclodeBody)
-            .glassEffect(
-                .regular.interactive().tint(Theme.Colors.inputTint),
-                in: RoundedRectangle(cornerRadius: Theme.Radius.lg)
+            .background(Theme.Colors.inputBackground)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.lg)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
             )
 
             // Send/Stop button
@@ -48,7 +50,7 @@ struct ChatInputBar: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 44, height: 44)
-                            .background(Theme.Colors.warmCoral)
+                            .background(Theme.Colors.error)
                             .clipShape(Circle())
                     }
                     .transition(.scale.combined(with: .opacity))
@@ -63,8 +65,8 @@ struct ChatInputBar: View {
                             .frame(width: 44, height: 44)
                             .background(
                                 text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? Theme.Colors.gentleGray
-                                    : Theme.Colors.cozyPurple
+                                    ? Color.gray
+                                    : Theme.Colors.brand
                             )
                             .clipShape(Circle())
                     }
@@ -76,11 +78,7 @@ struct ChatInputBar: View {
         }
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.sm)
-        .background {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .ignoresSafeArea()
-        }
+        .background(Theme.Colors.secondaryBackground)
     }
 }
 
@@ -94,7 +92,7 @@ struct StreamingIndicator: View {
             // Avatar
             ZStack {
                 Circle()
-                    .fill(Theme.Colors.warmApricot)
+                    .fill(Theme.Colors.brand)
                     .frame(width: 24, height: 24)
 
                 Image(systemName: "brain.head.profile")
@@ -106,17 +104,15 @@ struct StreamingIndicator: View {
             HStack(spacing: 4) {
                 ForEach(0..<3, id: \.self) { index in
                     Circle()
-                        .fill(Theme.Colors.cozyPurple)
+                        .fill(Theme.Colors.brand)
                         .frame(width: 8, height: 8)
                         .offset(y: animatingDot == index ? -4 : 0)
                 }
             }
             .padding(.horizontal, Theme.Spacing.md)
             .padding(.vertical, Theme.Spacing.sm)
-            .glassEffect(
-                .regular.tint(Theme.Colors.assistantMessageTint),
-                in: RoundedRectangle(cornerRadius: Theme.Radius.md)
-            )
+            .background(Theme.Colors.assistantBubble)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md))
 
             Spacer()
         }
@@ -148,7 +144,7 @@ struct StreamingIndicator: View {
             onInterrupt: {}
         )
     }
-    .background(WarmGradientBackground())
+    .background(Theme.Colors.background)
 }
 
 #Preview("Processing") {
@@ -166,5 +162,5 @@ struct StreamingIndicator: View {
             onInterrupt: {}
         )
     }
-    .background(WarmGradientBackground())
+    .background(Theme.Colors.background)
 }

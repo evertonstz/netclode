@@ -10,8 +10,6 @@ struct SessionsView: View {
 
     var body: some View {
         ZStack {
-            WarmGradientBackground()
-
             Group {
                 if sessionStore.sessions.isEmpty {
                     EmptySessionsView(onCreateTapped: { showCreateSheet = true })
@@ -32,6 +30,7 @@ struct SessionsView: View {
             }
             .padding()
         }
+        .background(Theme.Colors.background)
         .navigationTitle("Sessions")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -92,7 +91,7 @@ struct EmptySessionsView: View {
         VStack(spacing: Theme.Spacing.lg) {
             Image(systemName: "rectangle.stack.badge.plus")
                 .font(.system(size: 64))
-                .foregroundStyle(Theme.Colors.cozyPurple.opacity(0.6))
+                .foregroundStyle(Theme.Colors.brand.opacity(0.6))
 
             VStack(spacing: Theme.Spacing.xs) {
                 Text("No Sessions Yet")

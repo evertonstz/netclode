@@ -5,23 +5,20 @@ struct SettingsView: View {
     @Environment(WebSocketService.self) private var webSocketService
 
     var body: some View {
-        ZStack {
-            WarmGradientBackground()
+        ScrollView {
+            VStack(spacing: Theme.Spacing.lg) {
+                // Server Configuration
+                ServerConfigSection()
 
-            ScrollView {
-                VStack(spacing: Theme.Spacing.lg) {
-                    // Server Configuration
-                    ServerConfigSection()
+                // Appearance
+                AppearanceSection()
 
-                    // Appearance
-                    AppearanceSection()
-
-                    // About
-                    AboutSection()
-                }
-                .padding()
+                // About
+                AboutSection()
             }
+            .padding()
         }
+        .background(Theme.Colors.background)
         .navigationTitle("Settings")
     }
 }
@@ -41,7 +38,7 @@ struct ServerConfigSection: View {
                 // Section header
                 HStack {
                     Image(systemName: "server.rack")
-                        .foregroundStyle(Theme.Colors.cozyPurple)
+                        .foregroundStyle(Theme.Colors.brand)
 
                     Text("Server")
                         .font(.netclodeHeadline)
@@ -120,7 +117,7 @@ struct AppearanceSection: View {
                 // Section header
                 HStack {
                     Image(systemName: "paintbrush.fill")
-                        .foregroundStyle(Theme.Colors.warmApricot)
+                        .foregroundStyle(Theme.Colors.warning)
 
                     Text("Appearance")
                         .font(.netclodeHeadline)
@@ -144,7 +141,7 @@ struct AppearanceSection: View {
                 Toggle(isOn: $settings.hapticFeedbackEnabled) {
                     HStack {
                         Image(systemName: "hand.tap.fill")
-                            .foregroundStyle(Theme.Colors.cozyPurple)
+                            .foregroundStyle(Theme.Colors.brand)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Haptic Feedback")
@@ -156,7 +153,7 @@ struct AppearanceSection: View {
                         }
                     }
                 }
-                .tint(Theme.Colors.cozyPurple)
+                .tint(Theme.Colors.brand)
             }
         }
     }
@@ -171,7 +168,7 @@ struct AboutSection: View {
                 // Section header
                 HStack {
                     Image(systemName: "info.circle.fill")
-                        .foregroundStyle(Theme.Colors.gentleBlue)
+                        .foregroundStyle(Theme.Colors.info)
 
                     Text("About")
                         .font(.netclodeHeadline)
@@ -218,7 +215,7 @@ struct AboutSection: View {
                             Image(systemName: "arrow.up.right.square")
                         }
                         .font(.netclodeBody)
-                        .foregroundStyle(Theme.Colors.gentleBlue)
+                        .foregroundStyle(Theme.Colors.info)
                     }
                 }
             }

@@ -31,9 +31,11 @@ struct GlassTextField: View {
         .font(.netclodeBody)
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.sm)
-        .glassEffect(
-            .regular.interactive().tint(Theme.Colors.inputTint),
-            in: RoundedRectangle(cornerRadius: Theme.Radius.md)
+        .background(Theme.Colors.inputBackground)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.md)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 }
@@ -68,9 +70,11 @@ struct GlassSecureField: View {
         .font(.netclodeBody)
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.sm)
-        .glassEffect(
-            .regular.interactive().tint(Theme.Colors.inputTint),
-            in: RoundedRectangle(cornerRadius: Theme.Radius.md)
+        .background(Theme.Colors.inputBackground)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.md)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 }
@@ -108,9 +112,11 @@ struct GlassTextEditor: View {
         }
         .font(.netclodeBody)
         .padding(Theme.Spacing.sm)
-        .glassEffect(
-            .regular.interactive().tint(Theme.Colors.inputTint),
-            in: RoundedRectangle(cornerRadius: Theme.Radius.md)
+        .background(Theme.Colors.inputBackground)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.md)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 }
@@ -118,18 +124,15 @@ struct GlassTextEditor: View {
 // MARK: - Preview
 
 #Preview {
-    ZStack {
-        WarmGradientBackground()
+    VStack(spacing: 20) {
+        GlassTextField("Server URL", text: .constant(""), icon: "server.rack")
 
-        VStack(spacing: 20) {
-            GlassTextField("Server URL", text: .constant(""), icon: "server.rack")
+        GlassTextField("Session name", text: .constant("My Project"))
 
-            GlassTextField("Session name", text: .constant("My Project"))
+        GlassSecureField("API Key", text: .constant(""))
 
-            GlassSecureField("API Key", text: .constant(""))
-
-            GlassTextEditor("Enter your prompt...", text: .constant(""))
-        }
-        .padding()
+        GlassTextEditor("Enter your prompt...", text: .constant(""))
     }
+    .padding()
+    .background(Theme.Colors.background)
 }

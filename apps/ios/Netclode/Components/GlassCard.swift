@@ -21,9 +21,11 @@ struct GlassCard<Content: View>: View {
     var body: some View {
         content()
             .padding(padding)
-            .glassEffect(
-                .regular.tint(tint ?? .clear),
-                in: RoundedRectangle(cornerRadius: cornerRadius)
+            .background(Theme.Colors.secondaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
             )
     }
 }
@@ -51,22 +53,25 @@ struct GlassCardInteractive<Content: View>: View {
     var body: some View {
         content()
             .padding(padding)
-            .glassEffect(
-                .regular.interactive().tint(tint ?? .clear),
-                in: RoundedRectangle(cornerRadius: cornerRadius)
+            .background(Theme.Colors.secondaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
             )
     }
 }
 
-// MARK: - Specialized Glass Cards
+// MARK: - Specialized Glass Cards (legacy support)
 
 struct UserMessageCard<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        GlassCard(tint: Theme.Colors.userMessageTint) {
-            content()
-        }
+        content()
+            .padding(Theme.Spacing.md)
+            .background(Theme.Colors.userBubble)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
     }
 }
 
@@ -74,9 +79,10 @@ struct AssistantMessageCard<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        GlassCard(tint: Theme.Colors.assistantMessageTint) {
-            content()
-        }
+        content()
+            .padding(Theme.Spacing.md)
+            .background(Theme.Colors.assistantBubble)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
     }
 }
 
@@ -85,7 +91,7 @@ struct StatusCard<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        GlassCard(tint: status.tintColor.glassTint) {
+        GlassCard {
             content()
         }
     }
@@ -94,30 +100,29 @@ struct StatusCard<Content: View>: View {
 // MARK: - Preview
 
 #Preview {
-    ZStack {
-        WarmGradientBackground()
-
-        VStack(spacing: 20) {
-            GlassCard {
-                Text("Regular Glass Card")
-                    .font(.netclodeHeadline)
-            }
-
-            GlassCard(tint: Theme.Colors.cozyPurple.opacity(0.3)) {
-                Text("Tinted Glass Card")
-                    .font(.netclodeHeadline)
-            }
-
-            UserMessageCard {
-                Text("User Message Style")
-                    .font(.netclodeBody)
-            }
-
-            AssistantMessageCard {
-                Text("Assistant Message Style")
-                    .font(.netclodeBody)
-            }
+    VStack(spacing: 20) {
+        GlassCard {
+            Text("Regular Glass Card")
+                .font(.netclodeHeadline)
         }
-        .padding()
+
+        GlassCard {
+            Text("Another Glass Card")
+                .font(.netclodeHeadline)
+        }
+
+        UserMessageCard {
+            Text("User Message Style")
+                .font(.netclodeBody)
+                .foregroundStyle(Theme.Colors.userBubbleText)
+        }
+
+        AssistantMessageCard {
+            Text("Assistant Message Style")
+                .font(.netclodeBody)
+                .foregroundStyle(Theme.Colors.assistantBubbleText)
+        }
     }
+    .padding()
+    .background(Theme.Colors.background)
 }

@@ -29,15 +29,18 @@ struct ChatMessageRow: View {
                 // Message content
                 Group {
                     if message.role == .user {
-                        UserMessageCard {
-                            Text(message.content)
-                                .font(.netclodeBody)
-                                .textSelection(.enabled)
-                        }
+                        Text(message.content)
+                            .font(.netclodeBody)
+                            .foregroundStyle(Theme.Colors.userBubbleText)
+                            .textSelection(.enabled)
+                            .padding(Theme.Spacing.md)
+                            .background(Theme.Colors.userBubble)
+                            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
                     } else {
-                        AssistantMessageCard {
-                            MessageContent(content: message.content, isStreaming: isStreaming)
-                        }
+                        MessageContent(content: message.content, isStreaming: isStreaming)
+                            .padding(Theme.Spacing.md)
+                            .background(Theme.Colors.assistantBubble)
+                            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
                     }
                 }
             }
@@ -51,7 +54,7 @@ struct ChatMessageRow: View {
     private var avatarView: some View {
         ZStack {
             Circle()
-                .fill(message.role == .user ? Theme.Colors.gentleBlue : Theme.Colors.warmApricot)
+                .fill(message.role == .user ? Theme.Colors.userBubble : Theme.Colors.brand)
                 .frame(width: 24, height: 24)
 
             Image(systemName: message.role == .user ? "person.fill" : "brain.head.profile")
@@ -85,6 +88,7 @@ struct MessageContent: View {
                 case .text(let text):
                     Text(text)
                         .font(.netclodeBody)
+                        .foregroundStyle(Theme.Colors.assistantBubbleText)
                         .textSelection(.enabled)
 
                 case .code(let code, let language):
@@ -93,9 +97,10 @@ struct MessageContent: View {
                 case .inlineCode(let code):
                     Text(code)
                         .font(.netclodeMonospacedSmall)
+                        .foregroundStyle(Theme.Colors.codeText)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
-                        .background(Theme.Colors.softCharcoal.opacity(0.1))
+                        .background(Theme.Colors.codeBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
             }
@@ -201,17 +206,18 @@ struct CodeBlock: View {
             }
             .padding(.horizontal, Theme.Spacing.sm)
             .padding(.vertical, Theme.Spacing.xs)
-            .background(Theme.Colors.softCharcoal.opacity(0.05))
+            .background(Theme.Colors.codeBackground.opacity(0.5))
 
             // Code
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(code)
                     .font(.netclodeMonospacedSmall)
+                    .foregroundStyle(Theme.Colors.codeText)
                     .textSelection(.enabled)
                     .padding(Theme.Spacing.sm)
             }
         }
-        .background(Theme.Colors.softCharcoal.opacity(0.08))
+        .background(Theme.Colors.codeBackground)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
     }
 }
@@ -219,15 +225,12 @@ struct CodeBlock: View {
 // MARK: - Preview
 
 #Preview {
-    ZStack {
-        WarmGradientBackground()
-
-        ScrollView {
-            VStack(spacing: 16) {
-                ChatMessageRow(message: ChatMessage.previewUser)
-                ChatMessageRow(message: ChatMessage.previewAssistant)
-            }
-            .padding()
+    ScrollView {
+        VStack(spacing: 16) {
+            ChatMessageRow(message: ChatMessage.previewUser)
+            ChatMessageRow(message: ChatMessage.previewAssistant)
         }
+        .padding()
     }
+    .background(Theme.Colors.background)
 }

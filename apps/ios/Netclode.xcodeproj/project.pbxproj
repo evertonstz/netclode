@@ -30,7 +30,6 @@
 		A10000000000000000000020 /* ChatMessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000020 /* ChatMessageRow.swift */; };
 		A10000000000000000000021 /* ChatInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000021 /* ChatInputBar.swift */; };
 		A10000000000000000000022 /* TerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000022 /* TerminalView.swift */; };
-		A10000000000000000000023 /* EventsTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000023 /* EventsTimelineView.swift */; };
 		A10000000000000000000024 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000024 /* SettingsView.swift */; };
 		A10000000000000000000025 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000025 /* GlassCard.swift */; };
 		A10000000000000000000026 /* GlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000026 /* GlassButton.swift */; };
@@ -68,7 +67,6 @@
 		B10000000000000000000020 /* ChatMessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageRow.swift; sourceTree = "<group>"; };
 		B10000000000000000000021 /* ChatInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInputBar.swift; sourceTree = "<group>"; };
 		B10000000000000000000022 /* TerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalView.swift; sourceTree = "<group>"; };
-		B10000000000000000000023 /* EventsTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsTimelineView.swift; sourceTree = "<group>"; };
 		B10000000000000000000024 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B10000000000000000000025 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
 		B10000000000000000000026 /* GlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassButton.swift; sourceTree = "<group>"; };
@@ -216,7 +214,6 @@
 		E10000000000000000000012 /* Events */ = {
 			isa = PBXGroup;
 			children = (
-				B10000000000000000000023 /* EventsTimelineView.swift */,
 			);
 			path = Events;
 			sourceTree = "<group>";
@@ -377,7 +374,6 @@
 				A10000000000000000000020 /* ChatMessageRow.swift in Sources */,
 				A10000000000000000000021 /* ChatInputBar.swift in Sources */,
 				A10000000000000000000022 /* TerminalView.swift in Sources */,
-				A10000000000000000000023 /* EventsTimelineView.swift in Sources */,
 				A10000000000000000000024 /* SettingsView.swift in Sources */,
 				A10000000000000000000025 /* GlassCard.swift in Sources */,
 				A10000000000000000000026 /* GlassButton.swift in Sources */,

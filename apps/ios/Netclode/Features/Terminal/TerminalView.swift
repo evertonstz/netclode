@@ -10,6 +10,9 @@ struct TerminalView: View {
     @State private var inputText = ""
     @FocusState private var isInputFocused: Bool
 
+    private let terminalBackground = Color(red: 0.1, green: 0.1, blue: 0.12)
+    private let terminalGreen = Color(red: 0.4, green: 0.8, blue: 0.4)
+
     var output: String {
         terminalStore.output(for: sessionId)
     }
@@ -31,7 +34,7 @@ struct TerminalView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(Theme.Spacing.sm)
                 }
-                .background(Theme.Colors.softCharcoal)
+                .background(terminalBackground)
                 .onChange(of: output) {
                     withAnimation {
                         proxy.scrollTo("bottom", anchor: .bottom)
@@ -98,17 +101,21 @@ struct TerminalInputBar: View {
     var isFocused: FocusState<Bool>.Binding
     let onSubmit: () -> Void
 
+    private let terminalBackground = Color(red: 0.1, green: 0.1, blue: 0.12)
+    private let terminalGreen = Color(red: 0.4, green: 0.8, blue: 0.4)
+
     var body: some View {
         HStack(spacing: Theme.Spacing.sm) {
             // Prompt indicator
             Text("$")
                 .font(.netclodeMonospaced)
-                .foregroundStyle(Theme.Colors.cozySage)
+                .foregroundStyle(terminalGreen)
 
             // Text field
             TextField("Enter command...", text: $text)
                 .font(.netclodeMonospaced)
                 .textFieldStyle(.plain)
+                .foregroundStyle(.white)
                 .focused(isFocused)
                 .onSubmit(onSubmit)
                 .submitLabel(.send)
@@ -119,13 +126,13 @@ struct TerminalInputBar: View {
             } label: {
                 Image(systemName: "return")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(text.isEmpty ? Color.gray.opacity(0.5) : Theme.Colors.cozySage)
+                    .foregroundStyle(text.isEmpty ? Color.gray.opacity(0.5) : terminalGreen)
             }
             .disabled(text.isEmpty)
         }
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.sm)
-        .background(Theme.Colors.softCharcoal.opacity(0.95))
+        .background(terminalBackground)
     }
 }
 

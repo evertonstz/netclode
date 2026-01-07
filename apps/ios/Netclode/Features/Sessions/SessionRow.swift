@@ -114,17 +114,14 @@ struct SessionRow: View {
 // MARK: - Preview
 
 #Preview {
-    ZStack {
-        WarmGradientBackground()
-
-        VStack(spacing: 12) {
-            SessionRow(session: Session.previewList[0])
-            SessionRow(session: Session.previewList[1])
-            SessionRow(session: Session.previewList[2])
-            SessionRow(session: Session.previewList[3])
-        }
-        .padding()
+    VStack(spacing: 12) {
+        SessionRow(session: Session.previewList[0])
+        SessionRow(session: Session.previewList[1])
+        SessionRow(session: Session.previewList[2])
+        SessionRow(session: Session.previewList[3])
     }
+    .padding()
+    .background(Theme.Colors.background)
     .environment(SessionStore())
     .environment(WebSocketService())
     .environment(SettingsStore())

@@ -1,34 +1,14 @@
 import SwiftUI
 
-// MARK: - Glass Effect Extensions
+// MARK: - Card Style Extensions
 
 extension View {
-    /// Apply a standard glass card style
-    func glassCardStyle(tint: Color? = nil) -> some View {
+    /// Apply a standard card style
+    func cardStyle(background: Color = Theme.Colors.secondaryBackground) -> some View {
         self
             .padding(Theme.Spacing.md)
-            .glassEffect(
-                .regular.tint(tint ?? .clear),
-                in: RoundedRectangle(cornerRadius: Theme.Radius.lg)
-            )
-    }
-
-    /// Apply an interactive glass style (for buttons, inputs)
-    func glassInteractiveStyle(tint: Color? = nil) -> some View {
-        self
-            .glassEffect(
-                .regular.interactive().tint(tint ?? Theme.Colors.buttonTint),
-                in: RoundedRectangle(cornerRadius: Theme.Radius.md)
-            )
-    }
-
-    /// Apply a pill-shaped glass style
-    func glassPillStyle(tint: Color? = nil) -> some View {
-        self
-            .glassEffect(
-                .regular.tint(tint ?? .clear),
-                in: .capsule
-            )
+            .background(background)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
     }
 
     /// Apply themed shadow
