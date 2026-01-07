@@ -1,31 +1,27 @@
 #!/bin/bash
-set -e
 
 # Ensure directories exist and are owned by agent
 # /agent is HOME (persisted on JuiceFS)
 # /agent/workspace is for the user's code
-# /agent/docker is for Docker data
-mkdir -p /agent/workspace /agent/docker /agent/.local /agent/.cache
-chown -R agent:agent /agent
+mkdir -p /agent/workspace /agent/.local /agent/.cache
+chown -R agent:agent /agent 2>/dev/null || true
 
-# Start Docker daemon with data on JuiceFS
-echo "[entrypoint] Starting Docker daemon..."
-dockerd --storage-driver=overlay2 --data-root=/agent/docker &
+# Try to start Docker daemon in background (optional, may fail in some environments)
+if [ "${ENABLE_DOCKER:-false}" = "true" ]; then
+    echo "[entrypoint] Starting Docker daemon..."
+    mkdir -p /agent/docker
+    dockerd --storage-driver=vfs --data-root=/agent/docker >/dev/null 2>&1 &
 
-# Wait for Docker socket to be ready
-echo "[entrypoint] Waiting for Docker socket..."
-timeout=30
-while [ ! -S /var/run/docker.sock ] && [ $timeout -gt 0 ]; do
-    sleep 1
-    timeout=$((timeout - 1))
-done
-
-if [ ! -S /var/run/docker.sock ]; then
-    echo "[entrypoint] Warning: Docker socket not available after 30s"
+    # Brief wait, but don't block agent startup
+    sleep 2
+    if [ -S /var/run/docker.sock ]; then
+        chmod 666 /var/run/docker.sock 2>/dev/null || true
+        echo "[entrypoint] Docker daemon started"
+    else
+        echo "[entrypoint] Docker daemon not available (continuing without Docker)"
+    fi
 else
-    # Make socket accessible to docker group
-    chmod 666 /var/run/docker.sock
-    echo "[entrypoint] Docker daemon ready"
+    echo "[entrypoint] Docker disabled (set ENABLE_DOCKER=true to enable)"
 fi
 
 # Drop privileges and run agent
