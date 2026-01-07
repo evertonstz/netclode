@@ -34,9 +34,8 @@ COPY --chown=agent apps/agent apps/agent
 
 # Install dependencies and build
 WORKDIR /build/apps/agent
-RUN echo '{"type":"module"}' > package.json && \
-    npm install @anthropic-ai/claude-agent-sdk @anthropic-ai/sdk esbuild && \
-    ./node_modules/.bin/esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/agent.js
+RUN npm install && \
+    npm run build
 
 # Claude CLI
 RUN npm install -g @anthropic-ai/claude-code
