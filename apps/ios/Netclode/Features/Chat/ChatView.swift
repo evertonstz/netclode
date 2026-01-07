@@ -25,56 +25,53 @@ struct ChatView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Messages scroll view
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: Theme.Spacing.md) {
-                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
-                            let isLastAssistant = message.role == .assistant && index == messages.count - 1
-                            ChatMessageRow(message: message, isStreaming: isLastAssistant && isProcessing)
-                                .id(message.id)
-                        }
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: Theme.Spacing.md) {
+                    ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                        let isLastAssistant = message.role == .assistant && index == messages.count - 1
+                        ChatMessageRow(message: message, isStreaming: isLastAssistant && isProcessing)
+                            .id(message.id)
+                    }
 
-                        // Show events inline (always visible)
-                        if !events.isEmpty {
-                            ForEach(events) { event in
-                                InlineEventRow(event: event)
-                            }
+                    // Show events inline (always visible)
+                    if !events.isEmpty {
+                        ForEach(events) { event in
+                            InlineEventRow(event: event)
                         }
+                    }
 
-                        // Streaming indicator
-                        if isProcessing {
-                            StreamingIndicator()
-                                .id("streaming")
-                        }
+                    // Streaming indicator
+                    if isProcessing {
+                        StreamingIndicator()
+                            .id("streaming")
+                    }
 
-                        // Scroll anchor
-                        Color.clear
-                            .frame(height: 1)
-                            .id("bottom")
-                    }
-                    .padding()
+                    // Scroll anchor
+                    Color.clear
+                        .frame(height: 1)
+                        .id("bottom")
                 }
-                .scrollDismissesKeyboard(.interactively)
-                .onChange(of: messages.count) {
-                    withAnimation(.glassSpring) {
-                        proxy.scrollTo("bottom", anchor: .bottom)
-                    }
-                }
-                .onChange(of: events.count) {
-                    withAnimation(.glassSpring) {
-                        proxy.scrollTo("bottom", anchor: .bottom)
-                    }
-                }
-                .onChange(of: isProcessing) {
-                    withAnimation(.glassSpring) {
-                        proxy.scrollTo("bottom", anchor: .bottom)
-                    }
+                .padding()
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: messages.count) {
+                withAnimation(.glassSpring) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
-
-            // Input bar
+            .onChange(of: events.count) {
+                withAnimation(.glassSpring) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
+            }
+            .onChange(of: isProcessing) {
+                withAnimation(.glassSpring) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
             ChatInputBar(
                 text: $inputText,
                 isProcessing: isProcessing,
