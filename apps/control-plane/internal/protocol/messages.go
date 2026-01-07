@@ -49,7 +49,7 @@ type ServerMessage struct {
 	ServerTime string           `json:"serverTime,omitempty"`
 	Messages   []PersistedMessage `json:"messages,omitempty"`
 	Events     []PersistedEvent   `json:"events,omitempty"`
-	HasMore    bool             `json:"hasMore,omitempty"`
+	HasMore    bool             `json:"hasMore"`
 
 	// For sync.response with SessionWithMeta
 	SessionsWithMeta []SessionWithMeta `json:"sessionsWithMeta,omitempty"`

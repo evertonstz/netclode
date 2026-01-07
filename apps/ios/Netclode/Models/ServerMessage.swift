@@ -97,9 +97,9 @@ extension ServerMessage: Decodable {
 
         case "session.state":
             let session = try container.decode(Session.self, forKey: .session)
-            let messages = try container.decode([PersistedMessage].self, forKey: .messages)
-            let events = try container.decode([PersistedEvent].self, forKey: .events)
-            let hasMore = try container.decode(Bool.self, forKey: .hasMore)
+            let messages = try container.decodeIfPresent([PersistedMessage].self, forKey: .messages) ?? []
+            let events = try container.decodeIfPresent([PersistedEvent].self, forKey: .events) ?? []
+            let hasMore = try container.decodeIfPresent(Bool.self, forKey: .hasMore) ?? false
             self = .sessionState(session: session, messages: messages, events: events, hasMore: hasMore)
 
         default:
