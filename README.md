@@ -43,7 +43,9 @@ netclode/
 ├── apps/
 │   ├── control-plane/    # Session management, WebSocket API
 │   ├── agent/            # Runs inside VM, Claude Agent SDK
-│   └── web/              # React web client + nginx
+│   ├── web/              # React web client + nginx
+│   ├── ios/              # iOS 26 app with Liquid Glass UI
+│   └── cli/              # Debug CLI for control plane
 ├── packages/
 │   └── protocol/         # Shared TypeScript types
 ├── infra/
