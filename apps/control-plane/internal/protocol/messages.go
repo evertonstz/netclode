@@ -90,6 +90,9 @@ func NewSessionDeleted(id string) ServerMessage {
 
 // NewSessionListMsg creates a session.list message
 func NewSessionListMsg(sessions []Session) ServerMessage {
+	if sessions == nil {
+		sessions = []Session{}
+	}
 	return ServerMessage{Type: MsgTypeSessionListResponse, Sessions: sessions}
 }
 
