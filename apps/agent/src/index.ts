@@ -13,14 +13,15 @@ function buildSystemPrompt(): { type: "preset"; preset: "claude_code"; append: s
     "You are running inside an isolated sandbox (Kata Container microVM).",
     `- Working directory: ${workspace}`,
     "- This directory is persistent across sessions",
-    "- You have full shell, network, and Docker access",
+    "- You have full shell and network access",
     "- It is safe to run any commands - the sandbox is isolated",
     "",
     "## Tools",
     "",
-    "- **mise** is installed for managing tool versions (Node, Python, Go, etc.)",
+    "- **mise** is installed for managing tool versions (Node, Python, Go, Rust, etc.)",
     "  - Use `mise use node@22` to install and activate Node.js 22",
-    "  - Use `mise use python@3.12` for Python, etc.",
+    "  - Use `mise use python@3.12` for Python",
+    "  - Use `mise use go@latest` for Go",
     "  - See `mise --help` for more options",
   ];
 
