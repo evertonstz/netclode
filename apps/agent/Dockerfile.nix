@@ -26,6 +26,8 @@ RUN nix profile install nixpkgs#nodejs nixpkgs#bashInteractive nixpkgs#coreutils
 FROM base AS builder
 
 ENV PATH="/home/agent/.nix-profile/bin:/nix/var/nix/profiles/default/bin:${PATH}"
+ENV NIX_SSL_CERT_FILE=/home/agent/.nix-profile/etc/ssl/certs/ca-bundle.crt
+ENV SSL_CERT_FILE=/home/agent/.nix-profile/etc/ssl/certs/ca-bundle.crt
 WORKDIR /build
 
 # Copy source files

@@ -21,9 +21,7 @@ dist
 # Infra (not needed in build)
 infra/
 
-# Other apps (agent build only needs apps/agent)
-apps/web/
-apps/control-plane/
+# Apps not needed in builds
 apps/cli/
 apps/ios/
 
