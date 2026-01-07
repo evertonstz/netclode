@@ -224,6 +224,9 @@ func parseAgentEvent(data map[string]interface{}) protocol.AgentEvent {
 	if input, ok := data["input"].(map[string]interface{}); ok {
 		event.Input = input
 	}
+	if inputDelta, ok := data["inputDelta"].(string); ok {
+		event.InputDelta = inputDelta
+	}
 	if result, ok := data["result"].(string); ok {
 		event.Result = &result
 	}
