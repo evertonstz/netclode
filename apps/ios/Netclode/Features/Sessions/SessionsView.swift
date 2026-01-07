@@ -5,30 +5,26 @@ struct SessionsView: View {
     @Environment(WebSocketService.self) private var webSocketService
     @Environment(SettingsStore.self) private var settingsStore
 
-    @State private var showCreateSheet = false
+    @State private var showPromptSheet = false
+    @State private var showSettingsSheet = false
     @State private var selectedSession: Session?
 
     var body: some View {
-        ZStack {
+        VStack(spacing: 0) {
+            // Main content
             Group {
                 if sessionStore.sessions.isEmpty {
-                    EmptySessionsView(onCreateTapped: { showCreateSheet = true })
+                    EmptySessionsView(onCreateTapped: { showPromptSheet = true })
                 } else {
                     sessionListContent
                 }
             }
+            .frame(maxHeight: .infinity)
 
-            // Floating action button
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    FloatingActionButton(icon: "plus") {
-                        showCreateSheet = true
-                    }
-                }
+            // Bottom input bar
+            PromptInputBar {
+                showPromptSheet = true
             }
-            .padding()
         }
         .background(Theme.Colors.background)
         .navigationTitle("Sessions")
@@ -39,14 +35,31 @@ struct SessionsView: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    webSocketService.send(.sessionList)
+                    showSettingsSheet = true
                 } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(.primary)
+                        .frame(width: 34, height: 34)
+                        .glassEffect(.regular.interactive(), in: Circle())
                 }
             }
         }
-        .sheet(isPresented: $showCreateSheet) {
-            CreateSessionSheet()
+        .sheet(isPresented: $showSettingsSheet) {
+            NavigationStack {
+                SettingsView()
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                showSettingsSheet = false
+                            }
+                        }
+                    }
+            }
+        }
+        .fullScreenCover(isPresented: $showPromptSheet) {
+            PromptSheet()
         }
         .navigationDestination(item: $selectedSession) { session in
             WorkspaceView(sessionId: session.id)
@@ -76,9 +89,40 @@ struct SessionsView: View {
                 }
             }
             .padding()
-            .padding(.bottom, 80) // Space for FAB
         }
         .animation(.glassSpring, value: sessionStore.sessions.count)
+    }
+}
+
+// MARK: - Bottom Input Bar
+
+struct PromptInputBar: View {
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: Theme.Spacing.sm) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Theme.Colors.brand)
+
+                Text("Start a new session...")
+                    .font(.netclodeBody)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Theme.Colors.brand)
+            }
+            .padding(.horizontal, Theme.Spacing.md)
+            .padding(.vertical, Theme.Spacing.sm)
+            .glassEffect(.regular.interactive(), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, Theme.Spacing.md)
+        .padding(.vertical, Theme.Spacing.xs)
     }
 }
 
@@ -97,13 +141,13 @@ struct EmptySessionsView: View {
                 Text("No Sessions Yet")
                     .font(.netclodeHeadline)
 
-                Text("Create your first coding session to get started")
+                Text("Start a conversation with Claude to create your first session")
                     .font(.netclodeBody)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
-            GlassButton("Create Session", icon: "plus") {
+            GlassButton("Start Session", icon: "plus") {
                 onCreateTapped()
             }
         }

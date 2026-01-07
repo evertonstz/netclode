@@ -25,6 +25,7 @@
 		A10000000000000000000015 /* SessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* SessionsView.swift */; };
 		A10000000000000000000016 /* SessionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000016 /* SessionRow.swift */; };
 		A10000000000000000000017 /* CreateSessionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* CreateSessionSheet.swift */; };
+		A10000000000000000000037 /* PromptSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000037 /* PromptSheet.swift */; };
 		A10000000000000000000018 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* WorkspaceView.swift */; };
 		A10000000000000000000019 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* ChatView.swift */; };
 		A10000000000000000000020 /* ChatMessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000020 /* ChatMessageRow.swift */; };
@@ -62,6 +63,7 @@
 		B10000000000000000000015 /* SessionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionsView.swift; sourceTree = "<group>"; };
 		B10000000000000000000016 /* SessionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRow.swift; sourceTree = "<group>"; };
 		B10000000000000000000017 /* CreateSessionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateSessionSheet.swift; sourceTree = "<group>"; };
+		B10000000000000000000037 /* PromptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptSheet.swift; sourceTree = "<group>"; };
 		B10000000000000000000018 /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		B10000000000000000000019 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		B10000000000000000000020 /* ChatMessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageRow.swift; sourceTree = "<group>"; };
@@ -181,6 +183,7 @@
 				B10000000000000000000015 /* SessionsView.swift */,
 				B10000000000000000000016 /* SessionRow.swift */,
 				B10000000000000000000017 /* CreateSessionSheet.swift */,
+				B10000000000000000000037 /* PromptSheet.swift */,
 			);
 			path = Sessions;
 			sourceTree = "<group>";
@@ -369,6 +372,7 @@
 				A10000000000000000000015 /* SessionsView.swift in Sources */,
 				A10000000000000000000016 /* SessionRow.swift in Sources */,
 				A10000000000000000000017 /* CreateSessionSheet.swift in Sources */,
+				A10000000000000000000037 /* PromptSheet.swift in Sources */,
 				A10000000000000000000018 /* WorkspaceView.swift in Sources */,
 				A10000000000000000000019 /* ChatView.swift in Sources */,
 				A10000000000000000000020 /* ChatMessageRow.swift in Sources */,
