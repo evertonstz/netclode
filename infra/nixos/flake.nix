@@ -34,26 +34,6 @@
       ];
     };
 
-    # Agent VM NixOS configuration (for building OCI image)
-    nixosConfigurations.agent = nixpkgs.lib.nixosSystem {
-      inherit system;
-      modules = [
-        ./agent
-      ];
-    };
-
-    # Packages
-    packages.${system} = {
-      # Agent rootfs as a tarball (for OCI image)
-      agent-rootfs = self.nixosConfigurations.agent.config.system.build.toplevel;
-
-      # Agent OCI image for containerd
-      agent-image = pkgs.callPackage ./agent/oci.nix {
-        inherit (self.nixosConfigurations.agent) config;
-        inherit pkgs;
-      };
-    };
-
     # Development shell
     devShells.${system}.default = pkgs.mkShell {
       packages = with pkgs; [

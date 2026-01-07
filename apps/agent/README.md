@@ -175,23 +175,20 @@ npm run typecheck
 
 ## Building the Agent Image
 
-The agent is packaged into a NixOS-based OCI image via GitHub Actions:
+The agent is packaged into a Debian-slim + mise OCI image:
 
 ```bash
 # Build image locally
-cd infra/nixos
-nix build .#agent-image
-
-# The result is a Docker/containerd-compatible image
+docker build -t ghcr.io/angristan/netclode-agent:latest -f apps/agent/Dockerfile .
 ```
 
 The image includes:
 
-- NixOS minimal system
-- Node.js runtime
+- Debian bookworm-slim base
+- Node.js via mise (on-demand tooling)
 - Docker daemon
-- Git, gh CLI
-- Common dev tools
+- Git, curl, build-essential
+- Claude CLI
 
 ## Event Types
 

@@ -2,8 +2,8 @@
 #
 # Security note on privileged: true
 # ---------------------------------
-# The agent runs with privileged: true because the NixOS image boots a full
-# init system that needs to mount /proc, /dev, /sys, etc.
+# The agent runs with privileged: true because the image runs Docker-in-Docker
+# which needs to mount /proc, /dev, /sys, etc.
 #
 # This is SAFE because:
 # 1. Kata Containers runs the pod inside an isolated VM with its own kernel

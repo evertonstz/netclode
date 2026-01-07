@@ -15,14 +15,10 @@ infra/nixos/
 │       ├── hardware.nix      # Hardware/cloud-init config
 │       └── disk-config.nix   # Disk partitioning (disko)
 │
-├── modules/
-│   ├── k3s.nix               # k3s + Kata Containers runtime
-│   ├── juicefs.nix           # JuiceFS mount service
-│   └── tailscale.nix         # Tailscale daemon
-│
-└── agent/
-    ├── default.nix           # Agent VM NixOS config
-    └── oci.nix               # OCI image builder
+└── modules/
+    ├── k3s.nix               # k3s + Kata Containers runtime
+    ├── juicefs.nix           # JuiceFS mount service
+    └── tailscale.nix         # Tailscale daemon
 ```
 
 ## Outputs
@@ -30,8 +26,6 @@ infra/nixos/
 | Output | Description |
 |--------|-------------|
 | `nixosConfigurations.netclode` | Host system configuration |
-| `nixosConfigurations.agent` | Agent VM configuration |
-| `packages.x86_64-linux.agent-image` | Agent OCI image |
 | `devShells.x86_64-linux.default` | Development shell |
 
 ## Usage
@@ -52,16 +46,6 @@ For updates after initial install:
 # Sync config and rebuild
 rsync -avz --delete ./ root@<server-ip>:/etc/nixos/
 ssh root@<server-ip> "cd /etc/nixos && nixos-rebuild switch --flake .#netclode"
-```
-
-### Build Agent Image
-
-```bash
-# Build OCI image
-nix build .#agent-image
-
-# Push to GHCR (done automatically by CI)
-skopeo copy docker-archive:result docker://ghcr.io/angristan/netclode-agent:latest
 ```
 
 ### Development Shell
@@ -116,37 +100,6 @@ Tailscale daemon for host access:
 - k3s API exposed on tailscale0:6443
 
 Note: Service exposure to Tailscale is handled by the Tailscale Operator in k8s.
-
-## Agent VM
-
-The agent VM is a minimal NixOS system with:
-
-- Node.js runtime
-- Docker daemon
-- Git, gh CLI
-- Common development tools
-
-It's built as an OCI image and runs inside Kata Containers via the `kata-clh` RuntimeClass.
-
-### Customizing Agent
-
-Edit `agent/default.nix` to add packages:
-
-```nix
-environment.systemPackages = with pkgs; [
-  # Add your packages here
-  python311
-  rustc
-  go
-];
-```
-
-Then rebuild and push:
-
-```bash
-nix build .#agent-image
-# CI handles pushing to GHCR
-```
 
 ## Network Topology
 
