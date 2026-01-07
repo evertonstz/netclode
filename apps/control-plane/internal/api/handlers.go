@@ -55,8 +55,15 @@ func (c *Connection) handleSessionCreate(ctx context.Context, name, repo string)
 		slog.Warn("Failed to subscribe to new session", "sessionID", session.ID, "error", err)
 	}
 
-	// Send created message
-	return c.Send(protocol.NewSessionCreated(session))
+	// Send created message to this client
+	if err := c.Send(protocol.NewSessionCreated(session)); err != nil {
+		return err
+	}
+
+	// Broadcast to all other clients for cross-client sync
+	c.server.BroadcastToAll(protocol.NewSessionCreated(session), c)
+
+	return nil
 }
 
 func (c *Connection) handleSessionList(ctx context.Context) error {
@@ -102,7 +109,15 @@ func (c *Connection) handleSessionDelete(ctx context.Context, id string) error {
 		return err
 	}
 
-	return c.Send(protocol.NewSessionDeleted(id))
+	// Send deleted message to this client
+	if err := c.Send(protocol.NewSessionDeleted(id)); err != nil {
+		return err
+	}
+
+	// Broadcast to all other clients for cross-client sync
+	c.server.BroadcastToAll(protocol.NewSessionDeleted(id), c)
+
+	return nil
 }
 
 func (c *Connection) handlePrompt(ctx context.Context, sessionID, text string) error {

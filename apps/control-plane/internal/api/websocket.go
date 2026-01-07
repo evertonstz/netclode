@@ -15,10 +15,14 @@ import (
 type Connection struct {
 	ws      *websocket.Conn
 	manager *session.Manager
+	server  *Server
 
 	// Channel-based subscriptions
 	subscriptions map[string]*session.Subscriber // sessionID -> subscriber
 	subMu         sync.Mutex
+
+	// Global messages channel (session create/delete events)
+	globalMessages chan protocol.ServerMessage
 
 	// For graceful shutdown
 	done    chan struct{}
@@ -26,18 +30,23 @@ type Connection struct {
 }
 
 // NewConnection creates a new WebSocket connection handler.
-func NewConnection(ws *websocket.Conn, manager *session.Manager) *Connection {
+func NewConnection(ws *websocket.Conn, manager *session.Manager, server *Server) *Connection {
 	return &Connection{
-		ws:            ws,
-		manager:       manager,
-		subscriptions: make(map[string]*session.Subscriber),
-		done:          make(chan struct{}),
+		ws:             ws,
+		manager:        manager,
+		server:         server,
+		subscriptions:  make(map[string]*session.Subscriber),
+		globalMessages: make(chan protocol.ServerMessage, 64),
+		done:           make(chan struct{}),
 	}
 }
 
 // Run handles the WebSocket connection lifecycle.
 func (c *Connection) Run(ctx context.Context) {
 	defer c.Close()
+
+	// Start goroutine to forward global messages
+	go c.forwardGlobalMessages()
 
 	for {
 		select {
@@ -65,6 +74,24 @@ func (c *Connection) Run(ctx context.Context) {
 		if err := c.HandleMessage(ctx, msg); err != nil {
 			slog.Warn("Handler error", "type", msg.Type, "error", err)
 			c.Send(protocol.NewError(err.Error()))
+		}
+	}
+}
+
+// forwardGlobalMessages reads from the global messages channel and sends to WebSocket.
+func (c *Connection) forwardGlobalMessages() {
+	for {
+		select {
+		case msg, ok := <-c.globalMessages:
+			if !ok {
+				return
+			}
+			if err := c.Send(msg); err != nil {
+				slog.Debug("Failed to forward global message", "error", err)
+				return
+			}
+		case <-c.done:
+			return
 		}
 	}
 }

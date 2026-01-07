@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
 	"github.com/angristan/netclode/apps/control-plane/internal/session"
 	"github.com/coder/websocket"
 )
@@ -37,6 +38,21 @@ func NewServer(manager *session.Manager) *Server {
 		manager:    manager,
 		shutdownCh: make(chan struct{}),
 	}
+}
+
+// BroadcastToAll sends a message to all connected clients except the sender.
+func (s *Server) BroadcastToAll(msg protocol.ServerMessage, exclude *Connection) {
+	s.connections.Range(func(key, value interface{}) bool {
+		if conn, ok := key.(*Connection); ok && conn != exclude {
+			// Non-blocking send to avoid blocking broadcast
+			select {
+			case conn.globalMessages <- msg:
+			default:
+				slog.Debug("Skipping global message for slow client")
+			}
+		}
+		return true
+	})
 }
 
 // ListenAndServe starts the HTTP server.
@@ -171,7 +187,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := NewConnection(conn, s.manager)
+	c := NewConnection(conn, s.manager, s)
 
 	// Track connection
 	s.connections.Store(c, struct{}{})
