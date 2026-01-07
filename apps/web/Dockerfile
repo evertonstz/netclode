@@ -9,7 +9,8 @@ COPY apps/web/package.json apps/web/
 COPY packages/protocol/package.json packages/protocol/
 
 # Install dependencies fresh to get correct platform-specific optional deps
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
 
 # Copy source code
 COPY apps/web apps/web

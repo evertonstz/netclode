@@ -42,14 +42,16 @@ COPY apps/agent apps/agent
 
 # Install agent dependencies (fresh package.json without workspace protocol)
 WORKDIR /build/apps/agent
-RUN echo '{"type":"module"}' > package.json && \
+RUN --mount=type=cache,target=/root/.npm \
+    echo '{"type":"module"}' > package.json && \
     npm install @anthropic-ai/claude-agent-sdk @anthropic-ai/sdk
 
 # Bundle agent (inline local dependencies)
 RUN esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/agent.js
 
 # Claude CLI
-RUN npm install -g @anthropic-ai/claude-code
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g @anthropic-ai/claude-code
 
 # =============================================================================
 # Runtime
