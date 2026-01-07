@@ -86,6 +86,19 @@ export function WorkspacePage() {
             setIsProcessing(false);
           }
           break;
+        case "user.message":
+          // User message from another client - add if not duplicate
+          if (msg.sessionId === id) {
+            setMessages((prev) => {
+              // Skip if last message is the same (sent by this client)
+              const last = prev[prev.length - 1];
+              if (last?.role === "user" && last.content === msg.content) {
+                return prev;
+              }
+              return [...prev, { role: "user", content: msg.content }];
+            });
+          }
+          break;
       }
     },
     [id]

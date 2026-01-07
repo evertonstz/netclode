@@ -11,6 +11,7 @@ enum ServerMessage: Sendable {
     case agentEvent(sessionId: String, event: AgentEvent)
     case agentDone(sessionId: String)
     case agentError(sessionId: String, error: String)
+    case userMessage(sessionId: String, content: String)
 
     case terminalOutput(sessionId: String, data: String)
 
@@ -74,6 +75,11 @@ extension ServerMessage: Decodable {
             let sessionId = try container.decode(String.self, forKey: .sessionId)
             let error = try container.decode(String.self, forKey: .error)
             self = .agentError(sessionId: sessionId, error: error)
+
+        case "user.message":
+            let sessionId = try container.decode(String.self, forKey: .sessionId)
+            let content = try container.decode(String.self, forKey: .content)
+            self = .userMessage(sessionId: sessionId, content: content)
 
         case "terminal.output":
             let sessionId = try container.decode(String.self, forKey: .sessionId)

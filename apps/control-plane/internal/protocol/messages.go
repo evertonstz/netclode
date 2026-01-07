@@ -67,6 +67,7 @@ const (
 	MsgTypeAgentMessage        = "agent.message"
 	MsgTypeAgentDone           = "agent.done"
 	MsgTypeAgentError          = "agent.error"
+	MsgTypeUserMessage         = "user.message"
 	MsgTypeError               = "error"
 	MsgTypeSyncResponse        = "sync.response"
 	MsgTypeSessionState        = "session.state"
@@ -121,6 +122,11 @@ func NewAgentDone(sessionID string) ServerMessage {
 // NewAgentError creates an agent.error message
 func NewAgentError(sessionID, err string) ServerMessage {
 	return ServerMessage{Type: MsgTypeAgentError, SessionID: sessionID, Error: err}
+}
+
+// NewUserMessage creates a user.message message for broadcasting user prompts
+func NewUserMessage(sessionID, content string) ServerMessage {
+	return ServerMessage{Type: MsgTypeUserMessage, SessionID: sessionID, Content: content}
 }
 
 // NewError creates a generic error message

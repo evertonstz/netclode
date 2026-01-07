@@ -35,6 +35,7 @@ export type ServerMessage =
     }
   | { type: "agent.done"; sessionId: string }
   | { type: "agent.error"; sessionId: string; error: string }
+  | { type: "user.message"; sessionId: string; content: string }
   | { type: "error"; message: string }
   // Sync responses
   | { type: "sync.response"; sessions: SessionWithMeta[]; serverTime: string }

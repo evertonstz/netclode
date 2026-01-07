@@ -43,6 +43,9 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 		slog.Warn("Failed to persist user message", "sessionID", sessionID, "error", err)
 	}
 
+	// Broadcast user message to all subscribers (for cross-client sync)
+	m.emit(sessionID, protocol.NewUserMessage(sessionID, text))
+
 	// Update session status to running
 	m.updateSessionStatus(ctx, sessionID, protocol.StatusRunning)
 

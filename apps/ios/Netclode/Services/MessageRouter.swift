@@ -89,6 +89,19 @@ final class MessageRouter: @unchecked Sendable {
                 message: ChatMessage(role: .assistant, content: "Error: \(error)")
             )
 
+        case .userMessage(let sessionId, let content):
+            // User message from another client - add if not duplicate
+            let messages = chatStore.messages(for: sessionId)
+            if let lastMessage = messages.last,
+               lastMessage.role == .user && lastMessage.content == content {
+                // Skip duplicate (message was sent by this client)
+                break
+            }
+            chatStore.appendMessage(
+                sessionId: sessionId,
+                message: ChatMessage(role: .user, content: content)
+            )
+
         // Terminal messages
         case .terminalOutput(let sessionId, let data):
             terminalStore.appendOutput(sessionId: sessionId, data: data)
