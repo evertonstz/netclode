@@ -216,6 +216,12 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 
 	slog.Info("Claim bound to sandbox", "sessionID", sessionID, "sandbox", sandboxName)
 
+	// Label the sandbox so the informer can track it
+	if err := m.k8s.LabelSandbox(ctx, sandboxName, sessionID); err != nil {
+		slog.Warn("Failed to label sandbox", "sessionID", sessionID, "sandbox", sandboxName, "error", err)
+		// Continue anyway - labeling is for informer optimization
+	}
+
 	// Get sandbox to retrieve serviceFQDN
 	sandbox, err := m.k8s.GetSandboxByName(ctx, sandboxName)
 	if err != nil {
@@ -227,8 +233,15 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 
 	fqdn := sandbox.Status.ServiceFQDN
 
+	// If fqdn is empty but sandbox is ready, construct it manually.
+	// The warm pool controller doesn't populate serviceFQDN in sandbox status.
+	if fqdn == "" && sandbox.IsReady() {
+		fqdn = fmt.Sprintf("%s.%s.svc.cluster.local", sandboxName, m.config.K8sNamespace)
+		slog.Info("Constructed serviceFQDN", "sessionID", sessionID, "fqdn", fqdn)
+	}
+
 	// Warm pool sandboxes should already be Ready, but verify
-	if !sandbox.IsReady() || fqdn == "" {
+	if !sandbox.IsReady() {
 		// Wait for sandbox to become ready (shouldn't happen with warm pool)
 		slog.Warn("Bound sandbox not ready yet, waiting", "sessionID", sessionID, "sandbox", sandboxName)
 		fqdn, err = m.k8s.WaitForReady(ctx, sessionID, sandboxReadyTimeout)

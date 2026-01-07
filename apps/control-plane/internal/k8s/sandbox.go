@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/kubernetes"
@@ -801,6 +802,21 @@ func (r *k8sRuntime) GetSandboxByName(ctx context.Context, name string) (*Sandbo
 	}
 
 	return sandbox, nil
+}
+
+// LabelSandbox adds the netclode.io/session label to a sandbox so the informer can track it.
+func (r *k8sRuntime) LabelSandbox(ctx context.Context, sandboxName string, sessionID string) error {
+	patch := []byte(fmt.Sprintf(`{"metadata":{"labels":{"netclode.io/session":"%s"}}}`, sessionID))
+
+	_, err := r.dynamicClient.Resource(SandboxGVR).Namespace(r.namespace).Patch(
+		ctx, sandboxName, types.MergePatchType, patch, metav1.PatchOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("patch sandbox: %w", err)
+	}
+
+	slog.Info("Sandbox labeled", "sandbox", sandboxName, "sessionID", sessionID)
+	return nil
 }
 
 // DeleteSandboxClaim deletes a SandboxClaim.

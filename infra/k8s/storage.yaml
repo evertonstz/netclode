@@ -5,34 +5,8 @@
 #    helm repo add juicefs https://juicedata.github.io/charts/
 #    helm install juicefs-csi juicefs/juicefs-csi-driver -n kube-system
 #
-# 2. Configure mount pod resources (IMPORTANT for small nodes):
-#    By default JuiceFS mount pods request 1 CPU each. On a 2-CPU node with
-#    multiple PVCs, this will exhaust all CPU. Apply this ConfigMap to reduce:
-#
-#    kubectl apply -f - <<EOF
-#    apiVersion: v1
-#    kind: ConfigMap
-#    metadata:
-#      name: juicefs-csi-driver-config
-#      namespace: kube-system
-#    data:
-#      config.yaml: |
-#        mountPodPatch:
-#          - resources:
-#              requests:
-#                cpu: 100m
-#                memory: 256Mi
-#          - lifecycle:
-#              preStop:
-#                exec:
-#                  command:
-#                  - sh
-#                  - -c
-#                  - +e
-#                  - umount \${MOUNT_POINT} -l; rmdir \${MOUNT_POINT}; exit 0
-#    EOF
-#
-#    Then restart the CSI controller:
+# 2. Apply the JuiceFS CSI config (removes default CPU requests from mount pods):
+#    kubectl apply -f juicefs-config.yaml
 #    kubectl rollout restart statefulset juicefs-csi-controller -n kube-system
 #
 # 3. Create the juicefs-secret in netclode namespace with:

@@ -166,6 +166,8 @@ kubectl $CTX apply -f extensions.controller.yaml
 # 5. Install runtime and storage prerequisites
 kubectl $CTX apply -f runtime-class.yaml
 kubectl $CTX apply -f storage.yaml
+kubectl $CTX apply -f juicefs-config.yaml
+kubectl $CTX rollout restart statefulset juicefs-csi-controller -n kube-system
 
 # 6. Deploy sandbox template and warm pool
 kubectl $CTX apply -f sandbox-template.yaml

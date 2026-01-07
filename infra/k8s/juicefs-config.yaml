@@ -1,0 +1,31 @@
+# JuiceFS CSI Driver Configuration
+#
+# This ConfigMap configures JuiceFS mount pods to have no CPU/memory requests.
+# By default, JuiceFS mount pods request 1 CPU each, which quickly exhausts
+# node resources when multiple PVCs are in use.
+#
+# Apply with: kubectl apply -f juicefs-config.yaml
+# Then restart: kubectl rollout restart statefulset juicefs-csi-controller -n kube-system
+#
+# Note: Only affects newly created mount pods. Existing pods keep their old config.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: juicefs-csi-driver-config
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/instance: juicefs-csi-driver
+    app.kubernetes.io/name: juicefs-csi-driver
+    app.kubernetes.io/version: master
+data:
+  config.yaml: |
+    mountPodPatch:
+      - lifecycle:
+          preStop:
+            exec:
+              command:
+              - sh
+              - -c
+              - +e
+              - umount ${MOUNT_POINT} -l; rmdir ${MOUNT_POINT}; exit 0
