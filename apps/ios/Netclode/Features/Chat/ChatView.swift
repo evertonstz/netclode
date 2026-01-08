@@ -72,23 +72,17 @@ struct ChatView: View {
                 precedingUserTimestamp = message.timestamp
             } else if message.role == .assistant, !isStreaming, let userTime = precedingUserTimestamp {
                 // Find the end of this turn (must be after user message, before next user message)
-                var turnEndTime: Date?
+                // Use a small buffer after the message timestamp to catch final events
+                let messageEndBound = message.timestamp.addingTimeInterval(2.0)
 
-                if index < messages.count - 1 {
-                    // Find next user message to bound this turn
-                    let nextUserTime = messages[(index + 1)...].first { $0.role == .user }?.timestamp
+                // Find next user message to bound this turn (if any)
+                let nextUserTime = messages[(index + 1)...].first { $0.role == .user }?.timestamp
 
-                    if let nextUserTime {
-                        // Find the last event within this turn window
-                        turnEndTime = events.last { $0.timestamp > userTime && $0.timestamp < nextUserTime }?.timestamp
-                    } else {
-                        // No more user messages, use last event after user message
-                        turnEndTime = events.last { $0.timestamp > userTime }?.timestamp
-                    }
-                } else {
-                    // Last message - use last event after user message
-                    turnEndTime = events.last { $0.timestamp > userTime }?.timestamp
-                }
+                // Use the earlier of: next user message or message end bound
+                let upperBound = nextUserTime.map { min($0, messageEndBound) } ?? messageEndBound
+
+                // Find the last event within this turn window
+                let turnEndTime = events.last { $0.timestamp > userTime && $0.timestamp <= upperBound }?.timestamp
 
                 // Fall back to the message's own timestamp if no events found
                 let endTime = turnEndTime ?? message.timestamp
