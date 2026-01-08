@@ -9,10 +9,10 @@ struct PreviewsView: View {
     @State private var showExposePortSheet = false
     @State private var portToExpose = ""
 
-    /// All port_detected events for this session
-    var portEvents: [PortDetectedEvent] {
+    /// All port_exposed events for this session
+    var portEvents: [PortExposedEvent] {
         eventStore.events(for: sessionId).compactMap { event in
-            if case .portDetected(let e) = event {
+            if case .portExposed(let e) = event {
                 return e
             }
             return nil
@@ -60,7 +60,7 @@ struct PreviewsView: View {
 // MARK: - Preview Card
 
 struct PreviewCard: View {
-    let event: PortDetectedEvent
+    let event: PortExposedEvent
 
     var body: some View {
         GlassCard {

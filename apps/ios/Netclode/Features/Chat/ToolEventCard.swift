@@ -536,10 +536,10 @@ struct ThinkingCard: View {
     }
 }
 
-// MARK: - Port Detected Card
+// MARK: - Port Exposed Card
 
-struct PortDetectedCard: View {
-    let event: PortDetectedEvent
+struct PortExposedCard: View {
+    let event: PortExposedEvent
 
     var body: some View {
         HStack(spacing: Theme.Spacing.sm) {

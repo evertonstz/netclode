@@ -192,8 +192,8 @@ struct ChatView: View {
         case .thinking(let e):
             ThinkingCard(event: e)
 
-        case .portDetected(let e):
-            PortDetectedCard(event: e)
+        case .portExposed(let e):
+            PortExposedCard(event: e)
 
         default:
             EmptyView()
@@ -239,7 +239,7 @@ struct ChatView: View {
             case .thinking(let e):
                 result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
 
-            case .portDetected(let e):
+            case .portExposed(let e):
                 result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
             }
         }

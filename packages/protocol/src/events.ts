@@ -7,7 +7,7 @@ export type AgentEventKind =
   | "command_start"
   | "command_end"
   | "thinking"
-  | "port_detected";
+  | "port_exposed";
 
 export interface BaseAgentEvent {
   kind: AgentEventKind;
@@ -62,8 +62,8 @@ export interface ThinkingEvent extends BaseAgentEvent {
   content: string;
 }
 
-export interface PortDetectedEvent extends BaseAgentEvent {
-  kind: "port_detected";
+export interface PortExposedEvent extends BaseAgentEvent {
+  kind: "port_exposed";
   port: number;
   process?: string;
   previewUrl?: string;
@@ -77,4 +77,4 @@ export type AgentEvent =
   | CommandStartEvent
   | CommandEndEvent
   | ThinkingEvent
-  | PortDetectedEvent;
+  | PortExposedEvent;

@@ -10,7 +10,7 @@ const (
 	EventKindCommandStart AgentEventKind = "command_start"
 	EventKindCommandEnd   AgentEventKind = "command_end"
 	EventKindThinking     AgentEventKind = "thinking"
-	EventKindPortDetected AgentEventKind = "port_detected"
+	EventKindPortExposed AgentEventKind = "port_exposed"
 )
 
 // AgentEvent is a polymorphic event type. Fields are optional based on Kind.

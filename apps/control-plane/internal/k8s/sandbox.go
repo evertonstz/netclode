@@ -613,7 +613,7 @@ func (r *k8sRuntime) DeleteSandboxService(ctx context.Context, sessionID string)
 }
 
 // ExposePort adds a port to the Tailscale service and NetworkPolicy for a sandbox.
-// This is called when a port_detected event is received from the agent.
+// This is called when a port_exposed event is received from the agent.
 func (r *k8sRuntime) ExposePort(ctx context.Context, sessionID string, port int) error {
 	tailscaleSvcName := fmt.Sprintf("ts-%s", sessionID)
 	networkPolicyName := fmt.Sprintf("sess-%s-network-policy", sessionID)

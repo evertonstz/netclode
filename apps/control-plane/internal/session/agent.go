@@ -169,8 +169,8 @@ func (m *Manager) streamSSE(ctx context.Context, sessionID string, body io.Reade
 
 			event := parseAgentEvent(eventData)
 
-			// Inject preview URL for port_detected events (uses Tailscale MagicDNS short hostname)
-			if event.Kind == protocol.EventKindPortDetected && event.Port > 0 {
+			// Inject preview URL for port_exposed events (uses Tailscale MagicDNS short hostname)
+			if event.Kind == protocol.EventKindPortExposed && event.Port > 0 {
 				previewURL := fmt.Sprintf("http://sandbox-%s:%d", sessionID, event.Port)
 				event.PreviewURL = &previewURL
 

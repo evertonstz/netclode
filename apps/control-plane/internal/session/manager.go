@@ -485,9 +485,9 @@ func (m *Manager) ExposePort(ctx context.Context, sessionID string, port int) (s
 
 	previewURL := fmt.Sprintf("http://sandbox-%s:%d", sessionID, port)
 
-	// Create and persist the port_detected event
+	// Create and persist the port_exposed event
 	event := protocol.AgentEvent{
-		Kind:       protocol.EventKindPortDetected,
+		Kind:       protocol.EventKindPortExposed,
 		Timestamp:  time.Now().UTC().Format(time.RFC3339),
 		Port:       port,
 		PreviewURL: &previewURL,

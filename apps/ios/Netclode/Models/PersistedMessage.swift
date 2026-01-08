@@ -127,8 +127,8 @@ struct PersistedEvent: Codable, Sendable {
                     content: content ?? ""
                 ))
 
-            case "port_detected":
-                return .portDetected(PortDetectedEvent(
+            case "port_exposed":
+                return .portExposed(PortExposedEvent(
                     id: id,
                     timestamp: timestamp,
                     port: port ?? 0,

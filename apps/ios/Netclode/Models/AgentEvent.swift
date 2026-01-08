@@ -14,7 +14,7 @@ enum AgentEventKind: String, Codable, Sendable {
     case commandStart = "command_start"
     case commandEnd = "command_end"
     case thinking
-    case portDetected = "port_detected"
+    case portExposed = "port_exposed"
 
     var displayName: String {
         switch self {
@@ -25,7 +25,7 @@ enum AgentEventKind: String, Codable, Sendable {
         case .commandStart: "Command Started"
         case .commandEnd: "Command Finished"
         case .thinking: "Thinking"
-        case .portDetected: "Port Detected"
+        case .portExposed: "Port Exposed"
         }
     }
 
@@ -35,7 +35,7 @@ enum AgentEventKind: String, Codable, Sendable {
         case .fileChange: "doc.fill"
         case .commandStart, .commandEnd: "terminal.fill"
         case .thinking: "brain.head.profile"
-        case .portDetected: "network"
+        case .portExposed: "network"
         }
     }
 }
@@ -66,7 +66,7 @@ enum AgentEvent: Identifiable, Sendable {
     case commandStart(CommandStartEvent)
     case commandEnd(CommandEndEvent)
     case thinking(ThinkingEvent)
-    case portDetected(PortDetectedEvent)
+    case portExposed(PortExposedEvent)
 
     var id: UUID {
         switch self {
@@ -77,7 +77,7 @@ enum AgentEvent: Identifiable, Sendable {
         case .commandStart(let e): e.id
         case .commandEnd(let e): e.id
         case .thinking(let e): e.id
-        case .portDetected(let e): e.id
+        case .portExposed(let e): e.id
         }
     }
 
@@ -90,7 +90,7 @@ enum AgentEvent: Identifiable, Sendable {
         case .commandStart: .commandStart
         case .commandEnd: .commandEnd
         case .thinking: .thinking
-        case .portDetected: .portDetected
+        case .portExposed: .portExposed
         }
     }
 
@@ -103,7 +103,7 @@ enum AgentEvent: Identifiable, Sendable {
         case .commandStart(let e): e.timestamp
         case .commandEnd(let e): e.timestamp
         case .thinking(let e): e.timestamp
-        case .portDetected(let e): e.timestamp
+        case .portExposed(let e): e.timestamp
         }
     }
 }
@@ -188,9 +188,9 @@ struct ThinkingEvent: AgentEventProtocol {
     let content: String
 }
 
-struct PortDetectedEvent: AgentEventProtocol {
+struct PortExposedEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .portDetected
+    let kind: AgentEventKind = .portExposed
     let timestamp: Date
     let port: Int
     let process: String?

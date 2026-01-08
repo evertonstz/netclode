@@ -125,7 +125,7 @@ function EventDetails({ event }: { event: AgentEvent }) {
           </Text>
         </Box>
       );
-    case "port_detected":
+    case "port_exposed":
       return (
         <Stack gap="xs" p="xs">
           <Group gap="xs">
@@ -236,7 +236,7 @@ function InlineToolEvent({ event }: { event: AgentEvent }) {
       case "command_start": return "▶";
       case "command_end": return event.exitCode === 0 ? "✓" : "✗";
       case "thinking": return "💭";
-      case "port_detected": return "🌐";
+      case "port_exposed": return "🌐";
       default: return "•";
     }
   };
@@ -249,7 +249,7 @@ function InlineToolEvent({ event }: { event: AgentEvent }) {
       case "command_start": return `Running command`;
       case "command_end": return `Command ${event.exitCode === 0 ? "completed" : "failed"}`;
       case "thinking": return "Thinking...";
-      case "port_detected": return `Port ${event.port} opened`;
+      case "port_exposed": return `Port ${event.port} opened`;
       default: return String((event as { kind: string }).kind);
     }
   };
@@ -265,7 +265,7 @@ function InlineToolEvent({ event }: { event: AgentEvent }) {
                      event.kind === "command_end" ||
                      event.kind === "file_change" ||
                      event.kind === "thinking" ||
-                     event.kind === "port_detected";
+                     event.kind === "port_exposed";
 
   return (
     <Box
