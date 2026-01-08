@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/kubernetes"
@@ -334,6 +335,11 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string) *Sandbox {
 		},
 		Spec: SandboxSpec{
 			PodTemplate: PodTemplateSpec{
+				Metadata: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"netclode.io/session": sessionID,
+					},
+				},
 				Spec: PodSpec{
 					RuntimeClassName: "kata-clh",
 					Containers: []Container{
@@ -542,6 +548,66 @@ func (r *k8sRuntime) DeleteSecret(ctx context.Context, sessionID string) error {
 	}
 
 	slog.Info("Secret deleted", "sessionID", sessionID, "name", name)
+	return nil
+}
+
+// CreateSandboxService creates a Kubernetes Service for the sandbox with Tailscale annotations.
+// This enables preview URLs for web apps running inside the sandbox.
+func (r *k8sRuntime) CreateSandboxService(ctx context.Context, sessionID string) error {
+	sandboxSvcName := sandboxName(sessionID)
+	tailscaleSvcName := fmt.Sprintf("ts-%s", sessionID)
+
+	// Look up the existing headless service created by the sandbox controller
+	// to get the correct selector labels for the pod
+	existingSvc, err := r.clientset.CoreV1().Services(r.namespace).Get(ctx, sandboxSvcName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get sandbox service: %w", err)
+	}
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      tailscaleSvcName,
+			Namespace: r.namespace,
+			Labels: map[string]string{
+				"netclode.io/session": sessionID,
+			},
+			Annotations: map[string]string{
+				"tailscale.com/expose":   "true",
+				"tailscale.com/hostname": fmt.Sprintf("sandbox-%s", sessionID),
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: existingSvc.Spec.Selector, // Copy selector from sandbox controller's service
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "agent",
+					Port:       3002,
+					TargetPort: intstr.FromInt(3002),
+				},
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+
+	_, err = r.clientset.CoreV1().Services(r.namespace).Create(ctx, service, metav1.CreateOptions{})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("create service: %w", err)
+	}
+
+	slog.Info("Sandbox service created", "sessionID", sessionID, "name", tailscaleSvcName, "hostname", fmt.Sprintf("sandbox-%s", sessionID))
+	return nil
+}
+
+// DeleteSandboxService deletes the Kubernetes Service for a sandbox.
+func (r *k8sRuntime) DeleteSandboxService(ctx context.Context, sessionID string) error {
+	name := fmt.Sprintf("ts-%s", sessionID)
+
+	err := r.clientset.CoreV1().Services(r.namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+
+	slog.Info("Sandbox service deleted", "sessionID", sessionID, "name", name)
 	return nil
 }
 
