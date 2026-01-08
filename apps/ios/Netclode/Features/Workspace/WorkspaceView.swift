@@ -9,9 +9,18 @@ struct WorkspaceView: View {
     @State private var selectedTab: WorkspaceTab = .chat
     @State private var hasOpenedSession = false
 
-    enum WorkspaceTab: String, CaseIterable {
-        case chat = "Chat"
-        case terminal = "Terminal"
+    enum WorkspaceTab: CaseIterable {
+        case chat
+        case terminal
+        case previews
+
+        var icon: String {
+            switch self {
+            case .chat: return "bubble.left.and.bubble.right"
+            case .terminal: return "terminal"
+            case .previews: return "globe"
+            }
+        }
     }
 
     var session: Session? {
@@ -19,21 +28,24 @@ struct WorkspaceView: View {
     }
 
     var body: some View {
-        Group {
-            switch selectedTab {
-            case .chat:
-                ChatView(sessionId: sessionId)
-            case .terminal:
-                TerminalView(sessionId: sessionId)
-            }
+        TabView(selection: $selectedTab) {
+            ChatView(sessionId: sessionId)
+                .tag(WorkspaceTab.chat)
+
+            TerminalView(sessionId: sessionId)
+                .tag(WorkspaceTab.terminal)
+
+            PreviewsView(sessionId: sessionId)
+                .tag(WorkspaceTab.previews)
         }
+        .tabViewStyle(.page(indexDisplayMode: .never))
         .background(Theme.Colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("Tab", selection: $selectedTab) {
                     ForEach(WorkspaceTab.allCases, id: \.self) { tab in
-                        Text(tab.rawValue).tag(tab)
+                        Image(systemName: tab.icon).tag(tab)
                     }
                 }
                 .pickerStyle(.segmented)

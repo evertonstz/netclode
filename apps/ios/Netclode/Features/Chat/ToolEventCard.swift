@@ -546,7 +546,7 @@ struct PortDetectedCard: View {
             HStack(spacing: 4) {
                 Image(systemName: "network")
                     .font(.system(size: 10, weight: .semibold))
-                Text("Port \(event.port)")
+                Text(verbatim: "Port \(event.port)")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
             }
             .foregroundStyle(.cyan)

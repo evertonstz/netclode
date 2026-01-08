@@ -42,8 +42,6 @@ struct ChatView: View {
     @Environment(SettingsStore.self) private var settingsStore
 
     @State private var inputText = ""
-    @State private var showExposePortSheet = false
-    @State private var portToExpose = ""
     @FocusState private var isInputFocused: Bool
 
     var messages: [ChatMessage] {
@@ -157,27 +155,6 @@ struct ChatView: View {
                 onSend: sendMessage,
                 onInterrupt: interruptAgent
             )
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showExposePortSheet = true
-                } label: {
-                    Image(systemName: "network")
-                        .foregroundStyle(.cyan)
-                }
-            }
-        }
-        .sheet(isPresented: $showExposePortSheet) {
-            ExposePortSheet(
-                portText: $portToExpose,
-                onExpose: { port in
-                    webSocketService.send(.portExpose(sessionId: sessionId, port: port))
-                    showExposePortSheet = false
-                    portToExpose = ""
-                }
-            )
-            .presentationDetents([.height(200)])
         }
     }
 
@@ -309,6 +286,9 @@ struct ExposePortSheet: View {
     let onExpose: (Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(SettingsStore.self) private var settingsStore
+
+    @FocusState private var isInputFocused: Bool
 
     private var portNumber: Int? {
         Int(portText)
@@ -322,37 +302,86 @@ struct ExposePortSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: Theme.Spacing.lg) {
-                Text("Expose a port to make it accessible via Tailscale")
-                    .font(.netclodeCaption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                // Header
+                VStack(spacing: Theme.Spacing.md) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 48))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.cyan, .blue],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
 
-                TextField("Port number", text: $portText)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 200)
+                    Text("Expose Port")
+                        .font(.netclodeTitle)
+                }
+                .padding(.top, Theme.Spacing.lg)
 
-                Button {
+                // Input
+                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                    Text("Port Number")
+                        .font(.netclodeSubheadline)
+                        .foregroundStyle(.secondary)
+
+                    GlassTextField(
+                        "8080",
+                        text: $portText,
+                        icon: "number"
+                    )
+                    .keyboardType(.asciiCapableNumberPad)
+                    .textContentType(.none)
+                    .autocorrectionDisabled()
+                    .focused($isInputFocused)
+                }
+                .padding(.horizontal)
+
+                // Info
+                GlassCard {
+                    HStack(alignment: .top, spacing: Theme.Spacing.sm) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundStyle(.cyan)
+
+                        Text("The port will be accessible via Tailscale on your private network.")
+                            .font(.netclodeCaption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer()
+
+                // Action button
+                GlassButton(
+                    "Expose Port",
+                    icon: "arrow.up.right.circle.fill",
+                    tint: .cyan.opacity(0.3)
+                ) {
                     if let port = portNumber, isValidPort {
                         onExpose(port)
                     }
-                } label: {
-                    Label("Expose Port", systemImage: "network")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.cyan)
                 .disabled(!isValidPort)
+                .opacity(isValidPort ? 1 : 0.5)
+                .padding(.horizontal)
+                .padding(.bottom, Theme.Spacing.lg)
             }
-            .padding()
-            .navigationTitle("Expose Port")
+            .background(Theme.Colors.background)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
             }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+        .onAppear {
+            isInputFocused = true
         }
     }
 }
