@@ -79,11 +79,16 @@ in {
     k9s
   ];
 
-  # containerd config template for k3s
-  # k3s reads this from /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+  # containerd config template and Kata shim symlinks
+  # k3s reads config from /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+  # Shim symlinks in /usr/local/bin are created declaratively here
   systemd.tmpfiles.rules = [
     "d /var/lib/rancher/k3s/agent/etc/containerd 0755 root root -"
     "L+ /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl - - - - ${containerdConfigTmpl}"
+    # Kata shim symlinks - containerd looks for these
+    "d /usr/local/bin 0755 root root -"
+    "L+ /usr/local/bin/containerd-shim-kata-v2 - - - - ${kataDir}/bin/containerd-shim-kata-v2"
+    "L+ /usr/local/bin/containerd-shim-kata-fc-v2 - - - - ${kataDir}/bin/containerd-shim-kata-v2"
   ];
 
   # Service to download and install Kata static release
@@ -103,35 +108,25 @@ in {
       KATA_VERSION="${kataVersion}"
       KATA_DIR="${kataDir}"
 
-      # Check if already installed with correct version
-      if [ -f "$KATA_DIR/bin/kata-runtime" ] && [ -f "$KATA_DIR/.version" ] && [ "$(cat $KATA_DIR/.version 2>/dev/null)" = "$KATA_VERSION" ]; then
+      # Download and extract if not already installed
+      if [ ! -f "$KATA_DIR/bin/kata-runtime" ] || [ ! -f "$KATA_DIR/.version" ] || [ "$(cat $KATA_DIR/.version 2>/dev/null)" != "$KATA_VERSION" ]; then
+        echo "Installing Kata Containers $KATA_VERSION..."
+        ${pkgs.curl}/bin/curl -fsSL \
+          "https://github.com/kata-containers/kata-containers/releases/download/$KATA_VERSION/kata-static-$KATA_VERSION-amd64.tar.xz" \
+          | ${pkgs.xz}/bin/xz -d | ${pkgs.gnutar}/bin/tar -xf - -C /
+        echo "$KATA_VERSION" > "$KATA_DIR/.version"
+        echo "Kata Containers $KATA_VERSION installed"
+      else
         echo "Kata $KATA_VERSION already installed"
-        exit 0
       fi
 
-      echo "Installing Kata Containers $KATA_VERSION..."
-
-      # Download and extract
-      ${pkgs.curl}/bin/curl -fsSL \
-        "https://github.com/kata-containers/kata-containers/releases/download/$KATA_VERSION/kata-static-$KATA_VERSION-amd64.tar.xz" \
-        | ${pkgs.xz}/bin/xz -d | ${pkgs.gnutar}/bin/tar -xf - -C /
-
-      # Create symlinks for containerd to find the shim
-      # Link to /usr/local/bin (create if needed) and k3s bin directory
-      mkdir -p /usr/local/bin
-      ln -sf $KATA_DIR/bin/containerd-shim-kata-v2 /usr/local/bin/containerd-shim-kata-v2
-      ln -sf $KATA_DIR/bin/containerd-shim-kata-v2 /usr/local/bin/containerd-shim-kata-fc-v2
-
-      # Also link to k3s bin directory (use wildcard since version changes)
+      # Always ensure k3s bin directory symlinks exist (path is dynamic, can't use tmpfiles)
       for k3s_bin in /var/lib/rancher/k3s/data/*/bin; do
         if [ -d "$k3s_bin" ]; then
           ln -sf $KATA_DIR/bin/containerd-shim-kata-v2 "$k3s_bin/containerd-shim-kata-v2"
           ln -sf $KATA_DIR/bin/containerd-shim-kata-v2 "$k3s_bin/containerd-shim-kata-fc-v2"
         fi
       done
-
-      echo "$KATA_VERSION" > "$KATA_DIR/.version"
-      echo "Kata Containers $KATA_VERSION installed"
     '';
   };
 
