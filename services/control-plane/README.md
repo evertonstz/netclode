@@ -30,19 +30,61 @@ services/control-plane/
 
 ### WebSocket (`/ws`)
 
-Clients connect via WebSocket and send JSON messages:
+Clients connect via WebSocket and exchange JSON messages.
+
+#### Client → Server
+
+| Message Type | Fields | Description |
+|--------------|--------|-------------|
+| `session.create` | `name`, `repo?` | Create new session |
+| `session.list` | | List all sessions |
+| `session.open` | `id`, `lastNotificationId?` | Open session with history |
+| `session.resume` | `id` | Resume paused session |
+| `session.pause` | `id` | Pause session |
+| `session.delete` | `id` | Delete session |
+| `prompt` | `sessionId`, `text` | Send prompt to agent |
+| `prompt.interrupt` | `sessionId` | Interrupt running prompt |
+| `port.expose` | `sessionId`, `port` | Expose port for preview |
+| `terminal.input` | `sessionId`, `data` | Send terminal input |
+| `terminal.resize` | `sessionId`, `cols`, `rows` | Resize terminal |
+| `sync` | | Get all sessions with metadata |
+
+#### Server → Client
 
 | Message Type | Description |
 |--------------|-------------|
-| `session.create` | Create new session |
-| `session.list` | List all sessions |
-| `session.open` | Open session with history (supports `lastNotificationId` for reconnection) |
-| `session.resume` | Resume paused session (creates sandbox) |
-| `session.pause` | Pause session (deletes sandbox, keeps data) |
-| `session.delete` | Delete session and all resources |
-| `prompt` | Send prompt to agent |
-| `prompt.interrupt` | Interrupt running prompt |
-| `sync` | Get all sessions with metadata |
+| `session.created` | Session created |
+| `session.updated` | Session status changed |
+| `session.deleted` | Session deleted |
+| `session.list` | List of sessions |
+| `session.state` | Session with message/event history |
+| `session.error` | Session operation failed |
+| `sync.response` | All sessions with metadata |
+| `agent.message` | Text from agent (`partial` for streaming) |
+| `agent.event` | Tool/command event (see Agent Events below) |
+| `agent.done` | Agent finished processing |
+| `agent.error` | Agent error |
+| `user.message` | User prompt (for cross-client sync) |
+| `port.exposed` | Port exposed with `previewUrl` |
+| `port.error` | Port expose failed |
+| `error` | Generic error |
+
+#### Agent Events
+
+Events emitted during agent execution, delivered via `agent.event`:
+
+| Kind | Description | Fields |
+|------|-------------|--------|
+| `tool_start` | Tool invocation started | `tool`, `toolUseId`, `input` |
+| `tool_input` | Streaming tool input | `toolUseId`, `inputDelta` |
+| `tool_end` | Tool completed | `tool`, `toolUseId`, `result?`, `error?` |
+| `file_change` | File created/edited/deleted | `path`, `action`, `linesAdded?`, `linesRemoved?` |
+| `command_start` | Shell command started | `command`, `cwd?` |
+| `command_end` | Shell command completed | `command`, `exitCode`, `output?` |
+| `thinking` | Agent reasoning | `content` |
+| `port_exposed` | Port exposed for preview | `port`, `process?`, `previewUrl?` |
+
+All events include `kind` and `timestamp` (ISO 8601).
 
 ### HTTP
 

@@ -194,23 +194,29 @@ The image includes:
 - Git, curl, build-essential
 - Claude CLI
 
-## Event Types
+## SSE Event Types
 
-Events emitted during execution:
+Events streamed via Server-Sent Events during prompt execution:
 
-```typescript
-// Tool call started
-{ type: "tool_call", tool: "Read", path: "auth.ts" }
+| Type | Description |
+|------|-------------|
+| `start` | Prompt execution started |
+| `agent.system` | SDK system message (init, session ID) |
+| `agent.message` | Text content from Claude (`partial: true` for streaming) |
+| `agent.event` | Tool/command events (see below) |
+| `agent.result` | Final result with `numTurns` and `costUsd` |
+| `done` | Prompt execution completed |
+| `error` | Error occurred |
 
-// Tool result
-{ type: "tool_result", tool: "Read", content: "..." }
+### Agent Events (`agent.event`)
 
-// Assistant message
-{ type: "assistant", content: "I found the issue..." }
+| Event Kind | Description | Fields |
+|------------|-------------|--------|
+| `tool_start` | Tool invocation started | `tool`, `toolUseId`, `input` |
+| `tool_input` | Streaming tool input | `toolUseId`, `inputDelta` |
+| `tool_end` | Tool completed | `tool`, `toolUseId`, `result?`, `error?` |
 
-// Error
-{ type: "error", message: "Failed to read file" }
-```
+All events include a `timestamp` field (ISO 8601).
 
 ## Debugging
 

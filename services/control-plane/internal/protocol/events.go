@@ -1,5 +1,5 @@
 // Package protocol defines the event types exchanged between the control plane,
-// agents, and clients (iOS, web). See docs/protocol.md for full documentation.
+// agents, and clients (iOS, web).
 package protocol
 
 // AgentEventKind identifies the type of event emitted during agent execution.
