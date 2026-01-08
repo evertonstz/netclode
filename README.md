@@ -175,15 +175,13 @@ After deployment, access via Tailscale:
 
 ### Preview URLs
 
-When an agent starts a web server (e.g., `npm run dev`), a preview URL is automatically generated. The URL appears in the chat when a port is detected:
+Agents can expose ports to make web servers accessible via Tailscale. The preview URL appears in the chat:
 
 ```
-🌐 Port 3000 (node)  [Open →]
+🌐 Port 3000  [Open →]
 ```
 
-Preview URLs use Tailscale MagicDNS: `http://sandbox-{sessionID}:{port}`
-
-These URLs are accessible from any device on your Tailscale network.
+URLs use Tailscale MagicDNS (`http://sandbox-{sessionID}:{port}`) and are accessible from any device on your tailnet.
 
 ### WebSocket API
 

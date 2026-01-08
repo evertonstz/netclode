@@ -1,16 +1,19 @@
+// Package protocol defines the event types exchanged between the control plane,
+// agents, and clients (iOS, web). See docs/protocol.md for full documentation.
 package protocol
 
+// AgentEventKind identifies the type of event emitted during agent execution.
 type AgentEventKind string
 
 const (
-	EventKindToolStart    AgentEventKind = "tool_start"
-	EventKindToolInput    AgentEventKind = "tool_input"
-	EventKindToolEnd      AgentEventKind = "tool_end"
-	EventKindFileChange   AgentEventKind = "file_change"
-	EventKindCommandStart AgentEventKind = "command_start"
-	EventKindCommandEnd   AgentEventKind = "command_end"
-	EventKindThinking     AgentEventKind = "thinking"
-	EventKindPortExposed AgentEventKind = "port_exposed"
+	EventKindToolStart    AgentEventKind = "tool_start"    // Agent started using a tool
+	EventKindToolInput    AgentEventKind = "tool_input"    // Streaming tool input delta
+	EventKindToolEnd      AgentEventKind = "tool_end"      // Tool execution completed
+	EventKindFileChange   AgentEventKind = "file_change"   // File was created/edited/deleted
+	EventKindCommandStart AgentEventKind = "command_start" // Shell command started
+	EventKindCommandEnd   AgentEventKind = "command_end"   // Shell command completed
+	EventKindThinking     AgentEventKind = "thinking"      // Agent thinking/reasoning
+	EventKindPortExposed  AgentEventKind = "port_exposed"  // Port exposed for preview access
 )
 
 // AgentEvent is a polymorphic event type. Fields are optional based on Kind.
