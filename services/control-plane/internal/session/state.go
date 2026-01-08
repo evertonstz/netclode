@@ -1,7 +1,7 @@
 package session
 
 import (
-	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
+	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 )
 
 // SessionState holds the in-memory state for a session.

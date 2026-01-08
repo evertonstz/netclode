@@ -41,10 +41,10 @@ RUN npm install -g esbuild
 
 # Copy source files
 COPY packages/protocol packages/protocol
-COPY apps/agent apps/agent
+COPY services/agent services/agent
 
 # Install agent dependencies (fresh package.json without workspace protocol)
-WORKDIR /build/apps/agent
+WORKDIR /build/services/agent
 RUN --mount=type=cache,target=/root/.npm \
     echo '{"type":"module"}' > package.json && \
     npm install @anthropic-ai/claude-agent-sdk @anthropic-ai/sdk
@@ -75,14 +75,14 @@ RUN mkdir -p /agent/.local /agent/.config && \
     chown -R agent:agent /agent/.local /agent/.config
 
 # Copy bundled app and dependencies
-COPY --from=builder --chown=agent:agent /build/apps/agent/dist/agent.js /opt/agent/
-COPY --from=builder --chown=agent:agent /build/apps/agent/node_modules /opt/agent/node_modules
+COPY --from=builder --chown=agent:agent /build/services/agent/dist/agent.js /opt/agent/
+COPY --from=builder --chown=agent:agent /build/services/agent/node_modules /opt/agent/node_modules
 
 # Copy node to /opt/node (NOT /agent which is a volume mount)
 COPY --from=builder /root/.local/share/mise/installs/node/24 /opt/node
 
 # Copy entrypoint script
-COPY apps/agent/entrypoint.sh /entrypoint.sh
+COPY services/agent/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 WORKDIR /opt/agent

@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/config"
-	"github.com/angristan/netclode/apps/control-plane/internal/k8s"
-	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
-	"github.com/angristan/netclode/apps/control-plane/internal/storage"
+	"github.com/angristan/netclode/services/control-plane/internal/config"
+	"github.com/angristan/netclode/services/control-plane/internal/k8s"
+	"github.com/angristan/netclode/services/control-plane/internal/protocol"
+	"github.com/angristan/netclode/services/control-plane/internal/storage"
 	"github.com/google/uuid"
 )
 

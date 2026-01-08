@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
+	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/redis/go-redis/v9"
 )
 

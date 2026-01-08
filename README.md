@@ -53,9 +53,10 @@ I wanted a self-hosted Claude Code environment with the UX I actually want:
 
 ```
 netclode/
-├── apps/
+├── services/
 │   ├── control-plane/    # Session management, WebSocket API
-│   ├── agent/            # Runs inside VM, Claude Agent SDK
+│   └── agent/            # Runs inside VM, Claude Agent SDK
+├── clients/
 │   ├── web/              # React web client + nginx
 │   ├── ios/              # iOS 26 app with Liquid Glass UI
 │   └── cli/              # Debug CLI for control plane

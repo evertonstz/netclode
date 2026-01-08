@@ -1,4 +1,4 @@
-module github.com/angristan/netclode/apps/control-plane
+module github.com/angristan/netclode/services/control-plane
 
 go 1.25.5
 

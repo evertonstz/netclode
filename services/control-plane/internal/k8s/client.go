@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/config"
+	"github.com/angristan/netclode/services/control-plane/internal/config"
 )
 
 // Runtime defines the interface for Kubernetes operations.

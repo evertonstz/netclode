@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
-	"github.com/angristan/netclode/apps/control-plane/internal/session"
+	"github.com/angristan/netclode/services/control-plane/internal/protocol"
+	"github.com/angristan/netclode/services/control-plane/internal/session"
 	"github.com/coder/websocket"
 )
 

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/config"
+	"github.com/angristan/netclode/services/control-plane/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

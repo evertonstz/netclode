@@ -5,13 +5,13 @@ on:
   push:
     branches: [main, master]
     paths:
-      - "apps/web/**"
+      - "clients/web/**"
       - "packages/**"
       - ".github/workflows/web.yaml"
   pull_request:
     branches: [main, master]
     paths:
-      - "apps/web/**"
+      - "clients/web/**"
       - "packages/**"
 
 env:
@@ -53,7 +53,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/web/Dockerfile
+          file: clients/web/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

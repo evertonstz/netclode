@@ -2,7 +2,8 @@
   "name": "netclode",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "services/*",
+    "clients/*",
     "packages/*"
   ],
   "scripts": {

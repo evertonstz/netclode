@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
-	"github.com/angristan/netclode/apps/control-plane/internal/storage"
+	"github.com/angristan/netclode/services/control-plane/internal/protocol"
+	"github.com/angristan/netclode/services/control-plane/internal/storage"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 )

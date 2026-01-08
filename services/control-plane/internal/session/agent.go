@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
+	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/google/uuid"
 )
 

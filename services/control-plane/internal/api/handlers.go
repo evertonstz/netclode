@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/protocol"
+	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 )
 
 // HandleMessage dispatches a client message to the appropriate handler.

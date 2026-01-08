@@ -5,12 +5,12 @@ on:
   push:
     branches: [main, master]
     paths:
-      - "apps/control-plane/**"
+      - "services/control-plane/**"
       - ".github/workflows/control-plane.yaml"
   pull_request:
     branches: [main, master]
     paths:
-      - "apps/control-plane/**"
+      - "services/control-plane/**"
 
 env:
   REGISTRY: ghcr.io
@@ -50,8 +50,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: apps/control-plane
-          file: apps/control-plane/Dockerfile
+          context: services/control-plane
+          file: services/control-plane/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

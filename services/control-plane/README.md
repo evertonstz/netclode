@@ -15,7 +15,7 @@ The control plane is the backend for Netclode. It:
 ## Architecture
 
 ```
-apps/control-plane/
+services/control-plane/
 ├── cmd/control-plane/     # Entry point
 └── internal/
     ├── api/               # HTTP/WebSocket server

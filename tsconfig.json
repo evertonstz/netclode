@@ -5,9 +5,9 @@
   },
   "references": [
     { "path": "./packages/protocol" },
-    { "path": "./apps/control-plane" },
-    { "path": "./apps/agent" },
-    { "path": "./apps/web" }
+    { "path": "./services/control-plane" },
+    { "path": "./services/agent" },
+    { "path": "./clients/web" }
   ],
   "files": []
 }

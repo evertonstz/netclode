@@ -8,11 +8,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/angristan/netclode/apps/control-plane/internal/api"
-	"github.com/angristan/netclode/apps/control-plane/internal/config"
-	"github.com/angristan/netclode/apps/control-plane/internal/k8s"
-	"github.com/angristan/netclode/apps/control-plane/internal/session"
-	"github.com/angristan/netclode/apps/control-plane/internal/storage"
+	"github.com/angristan/netclode/services/control-plane/internal/api"
+	"github.com/angristan/netclode/services/control-plane/internal/config"
+	"github.com/angristan/netclode/services/control-plane/internal/k8s"
+	"github.com/angristan/netclode/services/control-plane/internal/session"
+	"github.com/angristan/netclode/services/control-plane/internal/storage"
 )
 
 func main() {

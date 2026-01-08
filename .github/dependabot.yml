@@ -6,12 +6,12 @@ updates:
       interval: weekly
 
   - package-ecosystem: gomod
-    directory: /apps/control-plane
+    directory: /services/control-plane
     schedule:
       interval: weekly
 
   - package-ecosystem: swift
-    directory: /apps/ios
+    directory: /clients/ios
     schedule:
       interval: weekly
 

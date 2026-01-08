@@ -5,7 +5,7 @@ Claude Code agent that runs inside sandboxed Kata Container VMs. Uses the Claude
 ## Structure
 
 ```
-apps/agent/
+services/agent/
 ├── src/
 │   ├── index.ts        # HTTP server entry point
 │   ├── config.ts       # Configuration
@@ -183,7 +183,7 @@ The agent is packaged into a Debian-slim + mise OCI image:
 
 ```bash
 # Build image locally
-docker build -t ghcr.io/angristan/netclode-agent:latest -f apps/agent/Dockerfile .
+docker build -t ghcr.io/angristan/netclode-agent:latest -f services/agent/Dockerfile .
 ```
 
 The image includes:
