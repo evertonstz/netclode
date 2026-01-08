@@ -130,8 +130,8 @@ in {
     '';
   };
 
-  # KVM kernel modules
-  boot.kernelModules = ["kvm-intel" "kvm-amd" "vhost_net"];
+  # KVM kernel modules for Kata/Firecracker
+  boot.kernelModules = ["kvm-intel" "kvm-amd" "vhost_net" "vhost_vsock"];
 
   # Open k3s API port on Tailscale
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [6443];
