@@ -30,6 +30,7 @@ type Runtime interface {
 	// Service operations (for Tailscale preview URLs)
 	CreateSandboxService(ctx context.Context, sessionID string) error
 	DeleteSandboxService(ctx context.Context, sessionID string) error
+	ExposePort(ctx context.Context, sessionID string, port int) error
 
 	Close()
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/angristan/netclode/apps/control-plane/internal/config"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -608,6 +609,114 @@ func (r *k8sRuntime) DeleteSandboxService(ctx context.Context, sessionID string)
 	}
 
 	slog.Info("Sandbox service deleted", "sessionID", sessionID, "name", name)
+	return nil
+}
+
+// ExposePort adds a port to the Tailscale service and NetworkPolicy for a sandbox.
+// This is called when a port_detected event is received from the agent.
+func (r *k8sRuntime) ExposePort(ctx context.Context, sessionID string, port int) error {
+	tailscaleSvcName := fmt.Sprintf("ts-%s", sessionID)
+	networkPolicyName := fmt.Sprintf("sess-%s-network-policy", sessionID)
+
+	// 1. Add port to the Tailscale service
+	svc, err := r.clientset.CoreV1().Services(r.namespace).Get(ctx, tailscaleSvcName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get tailscale service: %w", err)
+	}
+
+	// Check if port already exists
+	portName := fmt.Sprintf("preview-%d", port)
+	portExists := false
+	for _, p := range svc.Spec.Ports {
+		if p.Port == int32(port) {
+			portExists = true
+			break
+		}
+	}
+
+	if !portExists {
+		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{
+			Name:       portName,
+			Port:       int32(port),
+			TargetPort: intstr.FromInt(port),
+			Protocol:   corev1.ProtocolTCP,
+		})
+
+		_, err = r.clientset.CoreV1().Services(r.namespace).Update(ctx, svc, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("update service: %w", err)
+		}
+		slog.Info("Added port to Tailscale service", "sessionID", sessionID, "port", port)
+	}
+
+	// 2. Add port to the NetworkPolicy
+	np, err := r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Get(ctx, networkPolicyName, metav1.GetOptions{})
+	if err != nil {
+		// NetworkPolicy might not exist (e.g., if sandbox was created without one)
+		if errors.IsNotFound(err) {
+			slog.Warn("NetworkPolicy not found, skipping", "sessionID", sessionID, "name", networkPolicyName)
+			return nil
+		}
+		return fmt.Errorf("get network policy: %w", err)
+	}
+
+	// Check if an ingress rule for this port from Tailscale already exists
+	tailscaleNSSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"kubernetes.io/metadata.name": "tailscale",
+		},
+	}
+	portProtocol := corev1.ProtocolTCP
+	portVal := intstr.FromInt(port)
+
+	ruleExists := false
+	for _, rule := range np.Spec.Ingress {
+		// Check if this rule is for Tailscale namespace
+		isTailscaleRule := false
+		for _, from := range rule.From {
+			if from.NamespaceSelector != nil &&
+				from.NamespaceSelector.MatchLabels["kubernetes.io/metadata.name"] == "tailscale" {
+				isTailscaleRule = true
+				break
+			}
+		}
+		if isTailscaleRule {
+			// Check if port is in this rule
+			for _, p := range rule.Ports {
+				if p.Port != nil && p.Port.IntValue() == port {
+					ruleExists = true
+					break
+				}
+			}
+		}
+		if ruleExists {
+			break
+		}
+	}
+
+	if !ruleExists {
+		// Add new ingress rule for this port
+		np.Spec.Ingress = append(np.Spec.Ingress, networkingv1.NetworkPolicyIngressRule{
+			From: []networkingv1.NetworkPolicyPeer{
+				{
+					NamespaceSelector: &tailscaleNSSelector,
+				},
+			},
+			Ports: []networkingv1.NetworkPolicyPort{
+				{
+					Protocol: &portProtocol,
+					Port:     &portVal,
+				},
+			},
+		})
+
+		_, err = r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Update(ctx, np, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("update network policy: %w", err)
+		}
+		slog.Info("Added port to NetworkPolicy", "sessionID", sessionID, "port", port)
+	}
+
 	return nil
 }
 
