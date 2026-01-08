@@ -107,11 +107,15 @@ Kata Containers supports multiple VMM (Virtual Machine Monitor) and shared files
 
 **Memory note**: virtiofsd processes allocate shared memory for the DAX cache. This appears as "used" memory (not cache) in htop. To minimize this, the configuration sets `virtio_fs_cache_size = 0`.
 
-**To switch to Firecracker + virtio-9p (experimental on NixOS):**
+**Why not Firecracker?**
 
-1. Change `kata-clh` → `kata-fc` in `k3s.nix`, `runtime-class.yaml`, `sandbox-template.yaml`, `sandbox.go`
-2. Change `configuration-clh.toml` → `configuration-fc.toml` in `k3s.nix`
-3. Note: Firecracker requires the jailer for proper operation, which has path compatibility issues on NixOS
+Firecracker does **not** support virtiofs or virtio-9p. It requires container rootfs to be passed as block devices, which means:
+
+1. **devmapper snapshotter required** - containerd must use devmapper instead of overlayfs
+2. **Dedicated storage setup** - thin-provisioned LVM pool with dedicated block device or loopback file
+3. **Complex NixOS configuration** - LVM, device-mapper, and containerd snapshotter config
+
+This is a fundamentally different storage architecture, not just a VMM swap. The ~10MB memory savings per VM doesn't justify the added complexity for this project.
 
 ### juicefs.nix
 
