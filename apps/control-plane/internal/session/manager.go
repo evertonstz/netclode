@@ -477,6 +477,11 @@ func (m *Manager) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// ExposePort exposes a port for a session via Tailscale.
+func (m *Manager) ExposePort(ctx context.Context, sessionID string, port int) error {
+	return m.k8s.ExposePort(ctx, sessionID, port)
+}
+
 // List returns all sessions, reconciling with K8s state.
 func (m *Manager) List(ctx context.Context) ([]protocol.Session, error) {
 	// Reconcile with K8s
