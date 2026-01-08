@@ -146,6 +146,9 @@ struct ChatView: View {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
+            .onAppear {
+                proxy.scrollTo("bottom", anchor: .bottom)
+            }
         }
         .safeAreaInset(edge: .bottom) {
             ChatInputBar(
