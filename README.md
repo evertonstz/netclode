@@ -2,6 +2,19 @@
 
 Self-hosted Claude Code Cloud - persistent sandboxed AI coding agents accessible from iOS/web, with full shell/Docker/network access, running on a single VPS with microVM isolation.
 
+> [!NOTE]
+> This project is experimental and not ready for self-hosting yet. I'm actively working on it and documentation will improve over time.
+
+## Why I Built This
+
+I wanted a self-hosted Claude Code environment with the UX I actually want:
+
+- **Full YOLO mode** - Docker, root access, install anything - no artificial restrictions
+- **Tailnet integration** - Preview URLs, port forwarding, and access to my infra (like my home Kubernetes cluster) all through Tailscale
+- **JuiceFS for storage** - Offload storage to S3, which plays nicely with the pause/resume system. Spin up ~infinite sessions on a small VPS since paused sessions cost nothing but storage
+- **Live terminal access** - Accesss the sandbox terminal directly from the web/iOS app for debugging, installing tools, running commands
+- **Single-tenant by design** - Optimized for personal use, but the architecture (k3s + control plane + sandboxes) scales naturally to multi-node or multi-tenant if needed
+
 ## Architecture
 
 ```
@@ -92,7 +105,7 @@ doctl compute droplet create netclode \
   --ssh-keys <your-key-id>
 ```
 
-2. **Install NixOS** using nixos-anywhere:
+1. **Install NixOS** using nixos-anywhere:
 
 ```bash
 cd infra/nixos
@@ -101,7 +114,7 @@ nix run github:nix-community/nixos-anywhere -- \
   root@<droplet-ip>
 ```
 
-3. **Configure secrets** (create `.env` file locally):
+1. **Configure secrets** (create `.env` file locally):
 
 ```bash
 cat > .env << 'EOF'
@@ -114,7 +127,7 @@ TS_OAUTH_CLIENT_SECRET=xxx
 EOF
 ```
 
-4. **Deploy secrets and manifests**:
+1. **Deploy secrets and manifests**:
 
 ```bash
 ./scripts/deploy-secrets.sh <server-ip>
@@ -136,6 +149,7 @@ EOF
 ### Tailscale Setup
 
 1. Add ACL tags in Tailscale admin console:
+
    ```json
    {
      "tagOwners": {
@@ -175,21 +189,25 @@ These URLs are accessible from any device on your Tailscale network.
 Connect to `ws://netclode/ws`
 
 **Create Session:**
+
 ```json
 { "type": "session.create", "name": "my-project", "repo": "https://github.com/user/repo" }
 ```
 
 **List Sessions:**
+
 ```json
 { "type": "session.list" }
 ```
 
 **Send Prompt:**
+
 ```json
 { "type": "prompt", "sessionId": "abc123", "text": "Fix the bug in auth.ts" }
 ```
 
 **Pause Session:**
+
 ```json
 { "type": "session.pause", "id": "abc123" }
 ```
@@ -250,6 +268,7 @@ kubectl --context netclode rollout restart deployment -n netclode control-plane
 Images are built automatically via GitHub Actions on push to `master`.
 
 To manually trigger a rebuild:
+
 ```bash
 gh workflow run "Control Plane Image"
 gh workflow run "Web App Image"
@@ -257,6 +276,7 @@ gh workflow run "Agent Image"
 ```
 
 Then restart deployments to pull new images:
+
 ```bash
 kubectl rollout restart deployment -n netclode control-plane web
 ```
