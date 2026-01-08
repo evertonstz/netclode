@@ -78,9 +78,8 @@ RUN mkdir -p /agent/.local /agent/.config && \
 COPY --from=builder --chown=agent:agent /build/apps/agent/dist/agent.js /opt/agent/
 COPY --from=builder --chown=agent:agent /build/apps/agent/node_modules /opt/agent/node_modules
 
-# Copy global npm modules (claude CLI)
-COPY --from=builder --chown=agent:agent /root/.local/share/mise/installs/node/24/lib/node_modules /agent/.local/share/mise/installs/node/24/lib/node_modules
-COPY --from=builder --chown=agent:agent /root/.local/share/mise/installs/node/24/bin /agent/.local/share/mise/installs/node/24/bin
+# Copy node to /opt/node (NOT /agent which is a volume mount)
+COPY --from=builder /root/.local/share/mise/installs/node/24 /opt/node
 
 # Copy entrypoint script
 COPY apps/agent/entrypoint.sh /entrypoint.sh
@@ -90,7 +89,7 @@ WORKDIR /opt/agent
 
 ENV NODE_ENV=production
 ENV HOME=/agent
-ENV PATH="/agent/.local/share/mise/shims:/agent/.local/bin:/agent/.local/share/mise/installs/node/24/bin:${PATH}"
+ENV PATH="/opt/node/bin:${PATH}"
 
 EXPOSE 3002
 
