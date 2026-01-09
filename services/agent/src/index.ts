@@ -5,10 +5,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { WebSocketServer, WebSocket } from "ws";
 import * as pty from "node-pty";
 import type { IPty } from "node-pty";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { dirname } from "path";
 
 const port = parseInt(process.env.AGENT_PORT || "3002", 10);
 const workspaceDir = "/agent/workspace";
 const gitRepo = process.env.GIT_REPO;
+const sessionMappingFile = "/agent/.session-mapping.json";
 
 // Terminal PTY management
 let terminalPty: IPty | null = null;
@@ -111,8 +114,35 @@ console.log("[agent] Starting agent server...");
 console.log(`[agent] Config: port=${port}, workspaceDir=${workspaceDir}`);
 console.log(`[agent] Environment: ANTHROPIC_API_KEY=${process.env.ANTHROPIC_API_KEY ? "set" : "NOT SET"}`);
 
-// Map control plane session IDs to SDK session IDs
-const sessionMap = new Map<string, string>();
+// Load session mapping from file (survives pod restarts)
+function loadSessionMapping(): Map<string, string> {
+  try {
+    if (existsSync(sessionMappingFile)) {
+      const data = JSON.parse(readFileSync(sessionMappingFile, "utf-8"));
+      console.log(`[agent] Loaded ${Object.keys(data).length} session mappings from ${sessionMappingFile}`);
+      return new Map(Object.entries(data));
+    }
+  } catch (err) {
+    console.error(`[agent] Failed to load session mapping:`, err);
+  }
+  return new Map();
+}
+
+function saveSessionMapping(map: Map<string, string>): void {
+  try {
+    const dir = dirname(sessionMappingFile);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(sessionMappingFile, JSON.stringify(Object.fromEntries(map), null, 2));
+    console.log(`[agent] Saved ${map.size} session mappings to ${sessionMappingFile}`);
+  } catch (err) {
+    console.error(`[agent] Failed to save session mapping:`, err);
+  }
+}
+
+// Map control plane session IDs to SDK session IDs (persisted to file)
+const sessionMap = loadSessionMapping();
 
 // Track tool names by toolUseId for matching tool results
 const toolNameMap = new Map<string, string>();
@@ -184,6 +214,7 @@ const server = createServer(async (req, res) => {
               const existingMapping = sessionMap.get(sessionId);
               if (!existingMapping) {
                 sessionMap.set(sessionId, message.session_id);
+                saveSessionMapping(sessionMap);
                 console.log(`[agent] Stored session mapping: ${sessionId} -> ${message.session_id}`);
               }
             }

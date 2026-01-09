@@ -189,6 +189,8 @@ When running inside a Kata Container VM:
   - `/agent/docker` - Docker data
   - `/agent/.local/share/mise` - Installed tools via mise
   - `/agent/.cache` - Package manager caches
+  - `/agent/.claude` - Claude SDK session data (conversation history)
+  - `/agent/.session-mapping.json` - Maps control-plane session IDs to Claude SDK session IDs (enables session resume after sandbox pause/resume)
 - `/opt/agent` - Agent code (read-only)
 - Docker available for container workloads
 - mise for installing language runtimes (Node, Python, Go, Rust, etc.)
