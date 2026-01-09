@@ -106,8 +106,48 @@ This evaluation cost is paid:
 4. **Package → store path lookup table** - Skip eval entirely for known packages
    - Requires maintaining the table (essentially prebuild)
 
-5. **Alternative package managers** - mise, asdf, apk
+5. **Alternative package managers** - mise, asdf, apt
    - Pre-built binaries, no eval needed, fast
+
+## Replit's Approach (and Why It Won't Work For Us)
+
+Replit is often cited as a successful example of Nix in production. However, their approach fundamentally relies on prebuild steps and doesn't support truly on-demand arbitrary package installation.
+
+### How Replit Uses Nix
+
+Based on their open-source [nixmodules](https://github.com/replit/nixmodules) repository:
+
+1. **Pre-built module bundles**: Replit maintains ~41 language/tool modules (python-3.10, nodejs-20, go-1.21, etc.) that are **built ahead of time**, not on-demand.
+
+2. **SquashFS disk images**: Modules are compiled into SquashFS images (`nix build .#bundle-squashfs`) for deployment. This is a CI/CD pipeline step, not a runtime operation.
+
+3. **Version-specific modules**: Each language version is a separate, pre-built module. Want Python 3.12? It must already exist in their module set.
+
+4. **Limited package scope**: Users can only use packages that Replit has pre-configured in their modules. Running `nix-shell -p some-random-package` is not part of their model.
+
+### Why This Doesn't Work For Our Use Case
+
+| Requirement | Replit's Approach | Our Requirement |
+|-------------|-------------------|-----------------|
+| Prebuild steps | Yes - CI builds all modules | No prebuild steps |
+| Arbitrary packages | No - only pre-configured modules | Any nixpkgs package on-demand |
+| Maintenance | Dedicated team maintains 40+ modules | Minimal maintenance overhead |
+| First-use latency | Fast (pre-built) | Must be fast without prebuild |
+
+**Key insight**: Replit solves the eval performance problem by **not doing eval at runtime**. Everything is pre-evaluated and pre-built. When a user selects "Python 3.10", they get a pre-built SquashFS image - no nixpkgs evaluation happens.
+
+This is essentially the "Pre-built profiles" option we rejected because it requires:
+- Maintaining a module set (engineering overhead)
+- Building and distributing bundles (infrastructure overhead)
+- Limiting users to pre-defined packages (flexibility constraint)
+
+If we wanted Replit's approach, we'd need to:
+1. Define which packages/versions to support
+2. Build them into bundles in CI
+3. Distribute bundles to nodes
+4. Accept that users can't install arbitrary packages
+
+At that point, **mise does the same thing with less complexity** - it serves pre-built binaries without requiring us to build or maintain anything.
 
 ## Why We're Abandoning Nix
 
@@ -117,7 +157,9 @@ This evaluation cost is paid:
 
 3. **User requirements incompatible**: "No prebuild steps" + "fast package installation" + "arbitrary packages" cannot all be satisfied with Nix.
 
-4. **Simpler alternatives exist**: Alpine + mise provides fast package installation without the complexity.
+4. **Simpler alternatives exist**: Debian + mise provides fast package installation without the complexity.
+
+5. **Replit's approach requires prebuild**: The most successful production Nix deployment (Replit) avoids eval latency by pre-building everything - which contradicts our "no prebuild" requirement.
 
 ## Lessons Learned
 
@@ -129,10 +171,10 @@ This evaluation cost is paid:
 
 4. **Consider requirements carefully upfront**: "No prebuild" + "fast" + "flexible" is a hard combination.
 
-## Alternative Approach: Alpine + mise
+## Alternative Approach: Debian + mise
 
 The replacement approach:
-- Alpine base image with common tools (`apk add bash nodejs git curl docker`)
+- Debian slim base image with common tools (`apt-get install bash nodejs git curl docker`)
 - `mise` (formerly rtx) for runtime version management
 - Fast installs (~seconds, pre-built binaries)
 - No evaluation step
