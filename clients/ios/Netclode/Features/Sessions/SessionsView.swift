@@ -46,11 +46,10 @@ struct SessionsView: View {
                     showSettingsSheet = true
                 } label: {
                     Image(systemName: "gearshape.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.primary)
-                        .frame(width: 34, height: 34)
-                        .glassEffect(.regular.interactive(), in: Circle())
                 }
+                .buttonStyle(.glassProminent)
+                .buttonBorderShape(.circle)
+                .tint(Theme.Colors.brand)
             }
         }
         .sheet(isPresented: $showSettingsSheet) {
