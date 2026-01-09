@@ -29,8 +29,9 @@ enum ConnectionState: Equatable, Sendable {
     }
 }
 
+@MainActor
 @Observable
-final class WebSocketService: @unchecked Sendable {
+final class WebSocketService {
     private(set) var connectionState: ConnectionState = .disconnected
     private var webSocketTask: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
@@ -38,7 +39,17 @@ final class WebSocketService: @unchecked Sendable {
     private var serverURL: String = ""
     private var isReconnecting = false
 
-    private var continuation: AsyncStream<ServerMessage>.Continuation?
+    // Reuse URLSession instead of creating new ones each connection
+    private let urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        return URLSession(configuration: config)
+    }()
+
+    // AsyncStream created once and reused (not on every access)
+    private var _messagesContinuation: AsyncStream<ServerMessage>.Continuation?
+    private var _messagesStream: AsyncStream<ServerMessage>?
+
     private let encoder = JSONEncoder()
     private let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -50,9 +61,14 @@ final class WebSocketService: @unchecked Sendable {
     private let reconnectDelay: UInt64 = 3_000_000_000 // 3 seconds
 
     var messages: AsyncStream<ServerMessage> {
-        AsyncStream { continuation in
-            self.continuation = continuation
+        if let stream = _messagesStream {
+            return stream
         }
+        let stream = AsyncStream<ServerMessage> { [weak self] continuation in
+            self?._messagesContinuation = continuation
+        }
+        _messagesStream = stream
+        return stream
     }
 
     func connect(to serverURL: String) {
@@ -89,8 +105,7 @@ final class WebSocketService: @unchecked Sendable {
             return
         }
 
-        let session = URLSession(configuration: .default)
-        webSocketTask = session.webSocketTask(with: url)
+        webSocketTask = urlSession.webSocketTask(with: url)
         webSocketTask?.resume()
 
         // Wait a moment for connection to establish, then verify with ping
@@ -142,7 +157,7 @@ final class WebSocketService: @unchecked Sendable {
                                 try? decoder.decode(ServerMessage.self, from: data)
                             }.value
                             if let serverMessage = decoded {
-                                continuation?.yield(serverMessage)
+                                _messagesContinuation?.yield(serverMessage)
                             }
                         }
                     case .data(let data):
@@ -152,7 +167,7 @@ final class WebSocketService: @unchecked Sendable {
                             try? decoder.decode(ServerMessage.self, from: data)
                         }.value
                         if let serverMessage = decoded {
-                            continuation?.yield(serverMessage)
+                            _messagesContinuation?.yield(serverMessage)
                         }
                     @unknown default:
                         break

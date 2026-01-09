@@ -1,7 +1,8 @@
 import Foundation
 
+@MainActor
 @Observable
-final class MessageRouter: @unchecked Sendable {
+final class MessageRouter {
     private let webSocketService: WebSocketService
     private let sessionStore: SessionStore
     private let chatStore: ChatStore
@@ -31,14 +32,11 @@ final class MessageRouter: @unchecked Sendable {
             guard let self else { return }
 
             for await message in webSocketService.messages {
-                await MainActor.run {
-                    self.route(message)
-                }
+                self.route(message)
             }
         }
     }
 
-    @MainActor
     private func route(_ message: ServerMessage) {
         switch message {
         // Session messages
@@ -140,7 +138,6 @@ final class MessageRouter: @unchecked Sendable {
         routingTask?.cancel()
     }
 
-    @MainActor
     static var preview: MessageRouter {
         MessageRouter(
             webSocketService: WebSocketService(),
