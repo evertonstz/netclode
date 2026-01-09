@@ -158,6 +158,8 @@ struct PromptInputBar: View {
         .buttonStyle(.plain)
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.xs)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
     }
 }
 
