@@ -137,16 +137,21 @@ final class WebSocketService: @unchecked Sendable {
                     case .string(let text):
                         print("[WebSocket] Received: \(text.prefix(200))")
                         if let data = text.data(using: .utf8) {
-                            do {
-                                let serverMessage = try decoder.decode(ServerMessage.self, from: data)
+                            // Decode on background thread to avoid blocking
+                            let decoded = await Task.detached(priority: .userInitiated) { [decoder] in
+                                try? decoder.decode(ServerMessage.self, from: data)
+                            }.value
+                            if let serverMessage = decoded {
                                 continuation?.yield(serverMessage)
-                            } catch {
-                                print("[WebSocket] Decode error: \(error)")
                             }
                         }
                     case .data(let data):
                         print("[WebSocket] Received binary data: \(data.count) bytes")
-                        if let serverMessage = try? decoder.decode(ServerMessage.self, from: data) {
+                        // Decode on background thread to avoid blocking
+                        let decoded = await Task.detached(priority: .userInitiated) { [decoder] in
+                            try? decoder.decode(ServerMessage.self, from: data)
+                        }.value
+                        if let serverMessage = decoded {
                             continuation?.yield(serverMessage)
                         }
                     @unknown default:

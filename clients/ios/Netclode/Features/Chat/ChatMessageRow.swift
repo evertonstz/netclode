@@ -71,6 +71,10 @@ struct MessageContent: View {
     let content: String
     var isStreaming: Bool = false
 
+    // Pre-compiled regex patterns (expensive to compile, so do it once)
+    private static let inlineCodePattern = try! Regex(#"`([^`]+)`"#)
+    private static let codeBlockPattern = try! Regex(#"```(\w*)\n?([\s\S]*?)```"#)
+
     private var processedContent: String {
         guard isStreaming else { return content }
 
@@ -108,9 +112,8 @@ struct MessageContent: View {
     private func parseInlineCode(_ text: String) -> AttributedString {
         var result = AttributedString()
         var remaining = text
-        let inlineCodePattern = try! Regex(#"`([^`]+)`"#)
 
-        while let match = remaining.firstMatch(of: inlineCodePattern) {
+        while let match = remaining.firstMatch(of: Self.inlineCodePattern) {
             // Add text before the inline code
             let before = String(remaining[..<match.range.lowerBound])
             if !before.isEmpty {
@@ -142,10 +145,7 @@ struct MessageContent: View {
         var blocks: [ContentBlock] = []
         var remaining = processedContent
 
-        // Simple parsing for code blocks using Regex
-        let codeBlockPattern = try! Regex(#"```(\w*)\n?([\s\S]*?)```"#)
-
-        while let match = remaining.firstMatch(of: codeBlockPattern) {
+        while let match = remaining.firstMatch(of: Self.codeBlockPattern) {
             let before = String(remaining[..<match.range.lowerBound])
             if !before.isEmpty {
                 blocks.append(.text(before))

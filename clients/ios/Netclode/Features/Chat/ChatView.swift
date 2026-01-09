@@ -44,6 +44,10 @@ struct ChatView: View {
     @State private var inputText = ""
     @FocusState private var isInputFocused: Bool
 
+    // Cached timeline to avoid recomputing on every view update
+    @State private var cachedTimeline: [TimelineItem] = []
+    @State private var timelineVersion: Int = 0
+
     var messages: [ChatMessage] {
         chatStore.messages(for: sessionId)
     }
@@ -57,7 +61,7 @@ struct ChatView: View {
     }
 
     /// Unified timeline combining messages and events, sorted by timestamp
-    var timeline: [TimelineItem] {
+    private func computeTimeline() -> [TimelineItem] {
         var items: [TimelineItem] = []
 
         // Add messages with turn duration calculation
@@ -106,7 +110,7 @@ struct ChatView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: Theme.Spacing.md) {
-                    ForEach(timeline) { item in
+                    ForEach(cachedTimeline) { item in
                         timelineItemView(item)
                             .id(item.id)
                     }
@@ -126,22 +130,30 @@ struct ChatView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) {
+                updateTimelineIfNeeded()
                 withAnimation(.glassSpring) {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
             .onChange(of: events.count) {
+                updateTimelineIfNeeded()
                 withAnimation(.glassSpring) {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
             .onChange(of: isProcessing) {
+                updateTimelineIfNeeded()
                 withAnimation(.glassSpring) {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
             .onAppear {
+                updateTimelineIfNeeded()
                 proxy.scrollTo("bottom", anchor: .bottom)
+            }
+            .task(id: sessionId) {
+                // Recompute timeline when session changes
+                updateTimelineIfNeeded()
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -273,6 +285,16 @@ struct ChatView: View {
             HapticFeedback.warning()
         }
         webSocketService.send(.promptInterrupt(sessionId: sessionId))
+    }
+
+    /// Update cached timeline only when data changes
+    private func updateTimelineIfNeeded() {
+        // Compute new version based on data state
+        let newVersion = messages.count + events.count + (isProcessing ? 1000 : 0)
+        guard newVersion != timelineVersion else { return }
+
+        timelineVersion = newVersion
+        cachedTimeline = computeTimeline()
     }
 }
 

@@ -82,6 +82,7 @@ struct ChatInputBar: View {
 
 struct StreamingIndicator: View {
     @State private var animatingDot = 0
+    @State private var animationTimer: Timer?
 
     var body: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.sm) {
@@ -113,14 +114,24 @@ struct StreamingIndicator: View {
         .onAppear {
             startAnimation()
         }
+        .onDisappear {
+            stopAnimation()
+        }
     }
 
     private func startAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
+        // Invalidate any existing timer first
+        animationTimer?.invalidate()
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
             withAnimation(.bouncy) {
                 animatingDot = (animatingDot + 1) % 3
             }
         }
+    }
+
+    private func stopAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
     }
 }
 

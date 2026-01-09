@@ -75,22 +75,11 @@ struct TerminalRenderer: View {
     let output: String
 
     var body: some View {
-        Text(parseANSI(output))
+        // ANSI codes are now pre-stripped in TerminalStore for performance
+        Text(output)
             .font(.netclodeMonospaced)
             .foregroundStyle(.white)
             .textSelection(.enabled)
-    }
-
-    private func parseANSI(_ text: String) -> AttributedString {
-        // Simple ANSI parsing - strip escape codes for basic display
-        // A full implementation would handle colors, styles, cursor movement
-        let stripped = text.replacingOccurrences(
-            of: "\\x1B\\[[0-9;]*[a-zA-Z]",
-            with: "",
-            options: .regularExpression
-        )
-
-        return AttributedString(stripped)
     }
 }
 
