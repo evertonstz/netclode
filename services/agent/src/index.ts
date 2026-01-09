@@ -348,7 +348,7 @@ const server = createServer(async (req, res) => {
     try {
       const anthropic = new Anthropic();
       const response = await anthropic.messages.create({
-        model: "claude-4-haiku-20250414",
+        model: "claude-haiku-4-5-20251101",
         max_tokens: 30,
         messages: [
           {

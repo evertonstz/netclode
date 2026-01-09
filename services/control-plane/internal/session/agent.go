@@ -322,7 +322,8 @@ func (m *Manager) generateSessionTitle(ctx context.Context, sessionID, fqdn, pro
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		slog.Warn("Title generation failed", "sessionID", sessionID, "status", resp.StatusCode)
+		respBody, _ := io.ReadAll(resp.Body)
+		slog.Warn("Title generation failed", "sessionID", sessionID, "status", resp.StatusCode, "response", string(respBody))
 		return
 	}
 
