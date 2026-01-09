@@ -21,40 +21,40 @@ type ClientMessage struct {
 
 // Client message types
 const (
-	MsgTypeSessionCreate    = "session.create"
-	MsgTypeSessionList      = "session.list"
-	MsgTypeSessionResume    = "session.resume"
-	MsgTypeSessionPause     = "session.pause"
-	MsgTypeSessionDelete    = "session.delete"
-	MsgTypePrompt           = "prompt"
-	MsgTypePromptInterrupt  = "prompt.interrupt"
-	MsgTypeTerminalInput    = "terminal.input"
-	MsgTypeTerminalResize   = "terminal.resize"
-	MsgTypePortExpose       = "port.expose"
-	MsgTypeSync             = "sync"
-	MsgTypeSessionOpen      = "session.open"
+	MsgTypeSessionCreate   = "session.create"
+	MsgTypeSessionList     = "session.list"
+	MsgTypeSessionResume   = "session.resume"
+	MsgTypeSessionPause    = "session.pause"
+	MsgTypeSessionDelete   = "session.delete"
+	MsgTypePrompt          = "prompt"
+	MsgTypePromptInterrupt = "prompt.interrupt"
+	MsgTypeTerminalInput   = "terminal.input"
+	MsgTypeTerminalResize  = "terminal.resize"
+	MsgTypePortExpose      = "port.expose"
+	MsgTypeSync            = "sync"
+	MsgTypeSessionOpen     = "session.open"
 )
 
 // ServerMessage represents all possible server-to-client messages.
 type ServerMessage struct {
-	Type       string           `json:"type"`
-	Session    *Session         `json:"session,omitempty"`
-	Sessions   []Session        `json:"sessions,omitempty"`
-	ID         string           `json:"id,omitempty"`
-	SessionID  string           `json:"sessionId,omitempty"`
-	Error      string           `json:"error,omitempty"`
-	Message    string           `json:"message,omitempty"`
-	Data       string           `json:"data,omitempty"`
-	Event      *AgentEvent      `json:"event,omitempty"`
-	Content    string           `json:"content,omitempty"`
-	Partial    *bool            `json:"partial,omitempty"`
-	MessageID  string           `json:"messageId,omitempty"`
-	ServerTime string           `json:"serverTime,omitempty"`
+	Type       string             `json:"type"`
+	Session    *Session           `json:"session,omitempty"`
+	Sessions   []Session          `json:"sessions,omitempty"`
+	ID         string             `json:"id,omitempty"`
+	SessionID  string             `json:"sessionId,omitempty"`
+	Error      string             `json:"error,omitempty"`
+	Message    string             `json:"message,omitempty"`
+	Data       string             `json:"data,omitempty"`
+	Event      *AgentEvent        `json:"event,omitempty"`
+	Content    string             `json:"content,omitempty"`
+	Partial    *bool              `json:"partial,omitempty"`
+	MessageID  string             `json:"messageId,omitempty"`
+	ServerTime string             `json:"serverTime,omitempty"`
 	Messages   []PersistedMessage `json:"messages,omitempty"`
 	Events     []PersistedEvent   `json:"events,omitempty"`
-	HasMore    bool             `json:"hasMore"`
-	Port       int              `json:"port,omitempty"`
-	PreviewURL string           `json:"previewUrl,omitempty"`
+	HasMore    bool               `json:"hasMore"`
+	Port       int                `json:"port,omitempty"`
+	PreviewURL string             `json:"previewUrl,omitempty"`
 
 	// For sync.response with SessionWithMeta
 	SessionsWithMeta []SessionWithMeta `json:"sessionsWithMeta,omitempty"`
@@ -155,6 +155,11 @@ func NewPortExposed(sessionID string, port int, previewURL string) ServerMessage
 // NewPortError creates a port.error message
 func NewPortError(sessionID string, port int, err string) ServerMessage {
 	return ServerMessage{Type: MsgTypePortError, SessionID: sessionID, Port: port, Error: err}
+}
+
+// NewTerminalOutput creates a terminal.output message
+func NewTerminalOutput(sessionID, data string) ServerMessage {
+	return ServerMessage{Type: MsgTypeTerminalOutput, SessionID: sessionID, Data: data}
 }
 
 // NewSyncResponse creates a sync.response message

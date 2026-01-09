@@ -67,6 +67,7 @@ Clients connect via WebSocket and exchange JSON messages.
 | `user.message` | User prompt (for cross-client sync) |
 | `port.exposed` | Port exposed with `previewUrl` |
 | `port.error` | Port expose failed |
+| `terminal.output` | Terminal output data |
 | `error` | Generic error |
 
 #### Agent Events
@@ -133,6 +134,7 @@ The notifications stream contains all real-time updates:
 | `user_message` | User prompts (for cross-client sync) |
 | `agent_done` | Agent finished processing |
 | `agent_error` | Agent encountered an error |
+| `terminal_output` | Terminal output data (ephemeral, not persisted) |
 
 ### Why Redis Streams?
 

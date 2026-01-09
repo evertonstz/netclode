@@ -94,6 +94,37 @@ Health check.
 ok
 ```
 
+### WebSocket /terminal/ws
+
+Interactive terminal via WebSocket. The PTY is spawned lazily on first input.
+
+**Client → Server messages:**
+
+| Type | Fields | Description |
+|------|--------|-------------|
+| `input` | `data` | Write data to terminal stdin |
+| `resize` | `cols`, `rows` | Resize terminal dimensions |
+
+**Server → Client messages:**
+
+| Type | Fields | Description |
+|------|--------|-------------|
+| `output` | `data` | Terminal stdout/stderr data |
+
+**Example:**
+```json
+// Client sends input
+{"type": "input", "data": "ls -la\n"}
+
+// Client resizes terminal
+{"type": "resize", "cols": 120, "rows": 40}
+
+// Server sends output
+{"type": "output", "data": "total 48\ndrwxr-xr-x..."}
+```
+
+The control plane connects to this endpoint and bridges it to iOS/web clients via `terminal.input`, `terminal.resize`, and `terminal.output` messages.
+
 ## Claude Agent SDK Integration
 
 The agent uses the `query()` async iterator from the Claude Agent SDK to stream events in real-time:

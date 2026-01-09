@@ -1,11 +1,81 @@
 #!/usr/bin/env node
-import { createServer } from "http";
+import { createServer, IncomingMessage } from "http";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import Anthropic from "@anthropic-ai/sdk";
+import { WebSocketServer, WebSocket } from "ws";
+import * as pty from "node-pty";
+import type { IPty } from "node-pty";
 
 const port = parseInt(process.env.AGENT_PORT || "3002", 10);
 const workspaceDir = "/agent/workspace";
 const gitRepo = process.env.GIT_REPO;
+
+// Terminal PTY management
+let terminalPty: IPty | null = null;
+const terminalWss = new WebSocketServer({ noServer: true });
+
+function ensureTerminalPty(cols: number = 80, rows: number = 24): IPty {
+  if (!terminalPty) {
+    console.log(`[agent] Spawning PTY: shell=${process.env.SHELL || "/bin/bash"}, cols=${cols}, rows=${rows}`);
+    terminalPty = pty.spawn(process.env.SHELL || "/bin/bash", [], {
+      name: "xterm-256color",
+      cwd: workspaceDir,
+      cols,
+      rows,
+      env: process.env as Record<string, string>,
+    });
+
+    terminalPty.onData((data: string) => {
+      // Broadcast to all connected WebSocket clients
+      const message = JSON.stringify({ type: "output", data });
+      for (const client of terminalWss.clients) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(message);
+        }
+      }
+    });
+
+    terminalPty.onExit(({ exitCode, signal }) => {
+      console.log(`[agent] PTY exited: code=${exitCode}, signal=${signal}`);
+      terminalPty = null;
+    });
+  }
+  return terminalPty;
+}
+
+// Handle WebSocket connections for terminal
+terminalWss.on("connection", (ws: WebSocket) => {
+  console.log("[agent] Terminal WebSocket connected");
+
+  ws.on("message", (raw: Buffer) => {
+    try {
+      const msg = JSON.parse(raw.toString()) as { type: string; data?: string; cols?: number; rows?: number };
+      
+      if (msg.type === "input" && msg.data) {
+        const p = ensureTerminalPty();
+        p.write(msg.data);
+      } else if (msg.type === "resize" && msg.cols && msg.rows) {
+        if (terminalPty) {
+          console.log(`[agent] Resizing PTY: cols=${msg.cols}, rows=${msg.rows}`);
+          terminalPty.resize(msg.cols, msg.rows);
+        } else {
+          // Spawn with requested size
+          ensureTerminalPty(msg.cols, msg.rows);
+        }
+      }
+    } catch (err) {
+      console.error("[agent] Terminal message parse error:", err);
+    }
+  });
+
+  ws.on("close", () => {
+    console.log("[agent] Terminal WebSocket disconnected");
+  });
+
+  ws.on("error", (err: Error) => {
+    console.error("[agent] Terminal WebSocket error:", err);
+  });
+});
 
 function buildSystemPrompt(): { type: "preset"; preset: "claude_code"; append: string } {
   const lines = [
@@ -271,6 +341,19 @@ const server = createServer(async (req, res) => {
 
   res.writeHead(404);
   res.end("Not found");
+});
+
+// Handle WebSocket upgrade for terminal
+server.on("upgrade", (request: IncomingMessage, socket, head) => {
+  const url = new URL(request.url || "/", `http://localhost:${port}`);
+  
+  if (url.pathname === "/terminal/ws") {
+    terminalWss.handleUpgrade(request, socket, head, (ws) => {
+      terminalWss.emit("connection", ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
 });
 
 server.listen(port, () => {

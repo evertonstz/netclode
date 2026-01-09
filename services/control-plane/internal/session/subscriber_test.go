@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/angristan/netclode/services/control-plane/internal/storage"
-	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -218,10 +218,10 @@ func TestNotificationToServerMessage(t *testing.T) {
 	streamID := "1234567890-0"
 
 	tests := []struct {
-		name           string
-		notification   storage.Notification
-		expectedType   string
-		checkFunc      func(t *testing.T, msg protocol.ServerMessage)
+		name         string
+		notification storage.Notification
+		expectedType string
+		checkFunc    func(t *testing.T, msg protocol.ServerMessage)
 	}{
 		{
 			name: "event notification",
@@ -334,6 +334,22 @@ func TestNotificationToServerMessage(t *testing.T) {
 				}
 				if msg.Partial == nil || *msg.Partial {
 					t.Error("expected partial to be false")
+				}
+			},
+		},
+		{
+			name: "terminal_output notification",
+			notification: storage.Notification{
+				Type:    "terminal_output",
+				Payload: json.RawMessage(`{"sessionId":"sess-1","data":"$ ls\nfile.txt\n"}`),
+			},
+			expectedType: protocol.MsgTypeTerminalOutput,
+			checkFunc: func(t *testing.T, msg protocol.ServerMessage) {
+				if msg.Data != "$ ls\nfile.txt\n" {
+					t.Errorf("expected terminal data '$ ls\\nfile.txt\\n', got %s", msg.Data)
+				}
+				if msg.SessionID != sessionID {
+					t.Errorf("expected sessionID %s, got %s", sessionID, msg.SessionID)
 				}
 			},
 		},

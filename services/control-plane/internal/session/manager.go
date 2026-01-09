@@ -21,9 +21,10 @@ const (
 
 // Manager handles session lifecycle and agent communication.
 type Manager struct {
-	storage storage.Storage
-	k8s     k8s.Runtime
-	config  *config.Config
+	storage  storage.Storage
+	k8s      k8s.Runtime
+	config   *config.Config
+	terminal *TerminalManager
 
 	sessions map[string]*SessionState
 	mu       sync.RWMutex
@@ -31,12 +32,17 @@ type Manager struct {
 
 // NewManager creates a new session manager.
 func NewManager(store storage.Storage, k8sRuntime k8s.Runtime, cfg *config.Config) *Manager {
-	return &Manager{
+	m := &Manager{
 		storage:  store,
 		k8s:      k8sRuntime,
 		config:   cfg,
 		sessions: make(map[string]*SessionState),
 	}
+
+	// Initialize terminal manager with emit callback
+	m.terminal = NewTerminalManager(m.emitTerminalOutput)
+
+	return m
 }
 
 // Initialize loads sessions from storage and reconciles with K8s state.
@@ -91,8 +97,11 @@ func (m *Manager) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// Close closes all session states.
+// Close closes all session states and the terminal manager.
 func (m *Manager) Close() {
+	// Close terminal manager first
+	m.terminal.Close()
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -436,6 +445,9 @@ func (m *Manager) Pause(ctx context.Context, id string) (*protocol.Session, erro
 		return nil, fmt.Errorf("session %s not found", id)
 	}
 
+	// Disconnect terminal WebSocket
+	m.terminal.Disconnect(id)
+
 	// Delete claim if using warm pool
 	if m.config.UseWarmPool {
 		if err := m.k8s.DeleteSandboxClaim(ctx, id); err != nil {
@@ -473,6 +485,9 @@ func (m *Manager) Pause(ctx context.Context, id string) (*protocol.Session, erro
 
 // Delete deletes a session and all its resources.
 func (m *Manager) Delete(ctx context.Context, id string) error {
+	// Disconnect terminal WebSocket
+	m.terminal.Disconnect(id)
+
 	// Close the session state (stops broadcast loop)
 	m.mu.Lock()
 	if state, ok := m.sessions[id]; ok {
@@ -795,6 +810,60 @@ func (m *Manager) emit(ctx context.Context, sessionID string, msg protocol.Serve
 	if notification != nil {
 		m.publishNotification(ctx, sessionID, notification)
 	}
+}
+
+// emitTerminalOutput broadcasts terminal output to all connected clients.
+func (m *Manager) emitTerminalOutput(ctx context.Context, sessionID, data string) {
+	msg := protocol.NewTerminalOutput(sessionID, data)
+
+	// Terminal output is ephemeral (not persisted), so we broadcast directly
+	// to all subscribed clients without going through Redis Streams.
+	notification := &storage.Notification{
+		Type:      "terminal_output",
+		Payload:   json.RawMessage(fmt.Sprintf(`{"sessionId":%q,"data":%q}`, sessionID, data)),
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	}
+	m.publishNotification(ctx, sessionID, notification)
+
+	_ = msg // Suppress unused variable warning - msg is used for type reference
+}
+
+// SendTerminalInput sends input to the agent terminal.
+func (m *Manager) SendTerminalInput(ctx context.Context, sessionID, data string) error {
+	state := m.getState(sessionID)
+	if state == nil {
+		return fmt.Errorf("session %s not found", sessionID)
+	}
+
+	if state.ServiceFQDN == "" {
+		return fmt.Errorf("session %s is not running", sessionID)
+	}
+
+	// Ensure terminal connection exists
+	if err := m.terminal.EnsureConnected(ctx, sessionID, state.ServiceFQDN); err != nil {
+		return fmt.Errorf("connect to terminal: %w", err)
+	}
+
+	return m.terminal.SendInput(sessionID, data)
+}
+
+// ResizeTerminal resizes the agent terminal.
+func (m *Manager) ResizeTerminal(ctx context.Context, sessionID string, cols, rows int) error {
+	state := m.getState(sessionID)
+	if state == nil {
+		return fmt.Errorf("session %s not found", sessionID)
+	}
+
+	if state.ServiceFQDN == "" {
+		return fmt.Errorf("session %s is not running", sessionID)
+	}
+
+	// Ensure terminal connection exists
+	if err := m.terminal.EnsureConnected(ctx, sessionID, state.ServiceFQDN); err != nil {
+		return fmt.Errorf("connect to terminal: %w", err)
+	}
+
+	return m.terminal.Resize(sessionID, cols, rows)
 }
 
 // serverMessageToNotification converts a protocol.ServerMessage to a storage.Notification.

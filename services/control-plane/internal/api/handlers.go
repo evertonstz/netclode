@@ -145,15 +145,25 @@ func (c *Connection) handlePromptInterrupt(ctx context.Context, sessionID string
 }
 
 func (c *Connection) handleTerminalInput(ctx context.Context, sessionID, data string) error {
-	// Terminal input not yet implemented
-	slog.Debug("Terminal input received", "sessionID", sessionID, "dataLen", len(data))
-	return nil
+	if sessionID == "" {
+		return fmt.Errorf("sessionId is required")
+	}
+	if data == "" {
+		return nil // Empty input is a no-op
+	}
+
+	return c.manager.SendTerminalInput(ctx, sessionID, data)
 }
 
 func (c *Connection) handleTerminalResize(ctx context.Context, sessionID string, cols, rows int) error {
-	// Terminal resize not yet implemented
-	slog.Debug("Terminal resize received", "sessionID", sessionID, "cols", cols, "rows", rows)
-	return nil
+	if sessionID == "" {
+		return fmt.Errorf("sessionId is required")
+	}
+	if cols <= 0 || rows <= 0 {
+		return fmt.Errorf("invalid terminal dimensions: cols=%d, rows=%d", cols, rows)
+	}
+
+	return c.manager.ResizeTerminal(ctx, sessionID, cols, rows)
 }
 
 func (c *Connection) handleSync(ctx context.Context) error {

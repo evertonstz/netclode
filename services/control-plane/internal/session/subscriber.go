@@ -20,11 +20,11 @@ const (
 // StreamSubscriber reads notifications from a Redis Stream for a session.
 // It provides cursor-based reading that survives reconnection.
 type StreamSubscriber struct {
-	sessionID        string
+	sessionID          string
 	lastNotificationID string // Redis Stream cursor ("$" = new only, "0" = from beginning)
-	messages         chan protocol.ServerMessage
-	done             chan struct{}
-	client           *redis.Client
+	messages           chan protocol.ServerMessage
+	done               chan struct{}
+	client             *redis.Client
 }
 
 // NewStreamSubscriber creates a new subscriber for the given session.
@@ -37,11 +37,11 @@ func NewStreamSubscriber(sessionID, lastNotificationID string, client *redis.Cli
 		lastNotificationID = "$"
 	}
 	return &StreamSubscriber{
-		sessionID:        sessionID,
+		sessionID:          sessionID,
 		lastNotificationID: lastNotificationID,
-		messages:         make(chan protocol.ServerMessage, 64),
-		done:             make(chan struct{}),
-		client:           client,
+		messages:           make(chan protocol.ServerMessage, 64),
+		done:               make(chan struct{}),
+		client:             client,
 	}
 }
 
@@ -221,6 +221,18 @@ func notificationToServerMessage(sessionID string, n *storage.Notification, stre
 		msg.ID = streamID
 		return msg, nil
 
+	case "terminal_output":
+		var payload struct {
+			SessionID string `json:"sessionId"`
+			Data      string `json:"data"`
+		}
+		if err := json.Unmarshal(n.Payload, &payload); err != nil {
+			return protocol.ServerMessage{}, err
+		}
+		msg := protocol.NewTerminalOutput(sessionID, payload.Data)
+		msg.ID = streamID
+		return msg, nil
+
 	default:
 		// Unknown type - return a generic message
 		return protocol.ServerMessage{
@@ -230,4 +242,3 @@ func notificationToServerMessage(sessionID string, n *storage.Notification, stre
 		}, nil
 	}
 }
-
