@@ -135,6 +135,13 @@ struct ChatView: View {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
+            .onChange(of: messages.last?.content) {
+                // Update when streaming content changes (count stays same but content grows)
+                updateTimelineIfNeeded()
+                withAnimation(.glassSpring) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
+            }
             .onChange(of: events.count) {
                 updateTimelineIfNeeded()
                 withAnimation(.glassSpring) {

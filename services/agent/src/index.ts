@@ -206,6 +206,8 @@ const server = createServer(async (req, res) => {
           allowDangerouslySkipPermissions: true,
           model: "claude-opus-4-5-20251101",
           persistSession: true,
+          includePartialMessages: true, // Enable streaming events
+          maxThinkingTokens: 10000, // Enable extended thinking
           systemPrompt: buildSystemPrompt(),
           ...(sdkSessionId && { resume: sdkSessionId }),
         },

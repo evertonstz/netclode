@@ -66,9 +66,14 @@ struct SessionsView: View {
                         }
                     }
             }
+            .environment(webSocketService)
+            .environment(settingsStore)
         }
         .fullScreenCover(isPresented: $showPromptSheet) {
             PromptSheet()
+                .environment(webSocketService)
+                .environment(settingsStore)
+                .environment(sessionStore)
         }
         .navigationDestination(item: $selectedSession) { session in
             WorkspaceView(sessionId: session.id)
