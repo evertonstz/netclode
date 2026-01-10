@@ -107,7 +107,9 @@ enum PreviewData {
         .thinking(ThinkingEvent(
             id: UUID(),
             timestamp: Date().addingTimeInterval(-100),
-            content: "The middleware is updated. Now I need to modify the login endpoint to return JWT tokens instead of setting session cookies."
+            thinkingId: "thinking_preview_1",
+            content: "The middleware is updated. Now I need to modify the login endpoint to return JWT tokens instead of setting session cookies.",
+            partial: false
         ))
     ]
 

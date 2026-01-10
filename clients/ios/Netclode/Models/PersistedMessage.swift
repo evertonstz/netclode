@@ -55,6 +55,8 @@ struct PersistedEvent: Codable, Sendable {
 
         // Thinking
         let content: String?
+        let thinkingId: String?
+        let partial: Bool?
 
         // Port detected
         let port: Int?
@@ -124,7 +126,9 @@ struct PersistedEvent: Codable, Sendable {
                 return .thinking(ThinkingEvent(
                     id: id,
                     timestamp: timestamp,
-                    content: content ?? ""
+                    thinkingId: thinkingId ?? "thinking_\(id.uuidString)",
+                    content: content ?? "",
+                    partial: partial ?? false
                 ))
 
             case "port_exposed":
@@ -140,7 +144,9 @@ struct PersistedEvent: Codable, Sendable {
                 return .thinking(ThinkingEvent(
                     id: id,
                     timestamp: timestamp,
-                    content: "Unknown event: \(kind)"
+                    thinkingId: "unknown_\(id.uuidString)",
+                    content: "Unknown event: \(kind)",
+                    partial: false
                 ))
             }
         }
