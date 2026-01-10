@@ -19,6 +19,10 @@ struct NetclodeApp: App {
         let events = EventStore()
         let terminal = TerminalStore()
         let ws = WebSocketService()
+        
+        // Wire up terminal store to WebSocket for input handling
+        terminal.webSocketService = ws
+        
         let router = MessageRouter(
             webSocketService: ws,
             sessionStore: sessions,

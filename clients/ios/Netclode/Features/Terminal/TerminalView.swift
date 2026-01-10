@@ -5,150 +5,53 @@ struct TerminalView: View {
 
     @Environment(TerminalStore.self) private var terminalStore
     @Environment(WebSocketService.self) private var webSocketService
-    @Environment(SettingsStore.self) private var settingsStore
-
-    @State private var inputText = ""
-    @FocusState private var isInputFocused: Bool
-
-    private let terminalBackground = Color(red: 0.1, green: 0.1, blue: 0.12)
-    private let terminalGreen = Color(red: 0.4, green: 0.8, blue: 0.4)
-
-    var output: String {
-        terminalStore.output(for: sessionId)
-    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Terminal output
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        TerminalRenderer(output: output)
-                            .id("output")
-
-                        // Scroll anchor
-                        Color.clear
-                            .frame(height: 1)
-                            .id("bottom")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(Theme.Spacing.sm)
-                }
-                .background(terminalBackground)
-                .onChange(of: output) {
-                    withAnimation {
-                        proxy.scrollTo("bottom", anchor: .bottom)
+        GeometryReader { geometry in
+            SwiftTerminalView(bridge: terminalStore.bridge(for: sessionId))
+                .onAppear {
+                    // Send initial terminal size based on view size
+                    // SwiftTerm will report actual size via delegate
+                    let bridge = terminalStore.bridge(for: sessionId)
+                    if bridge.cols > 0 && bridge.rows > 0 {
+                        webSocketService.send(.terminalResize(
+                            sessionId: sessionId,
+                            cols: bridge.cols,
+                            rows: bridge.rows
+                        ))
                     }
                 }
-            }
-
-            // Input bar
-            TerminalInputBar(
-                text: $inputText,
-                isFocused: $isInputFocused,
-                onSubmit: sendInput
-            )
         }
-        .onAppear {
-            // Notify server of terminal size
-            // Using standard terminal dimensions
-            webSocketService.send(.terminalResize(sessionId: sessionId, cols: 80, rows: 24))
-        }
-    }
-
-    private func sendInput() {
-        guard !inputText.isEmpty else { return }
-
-        if settingsStore.hapticFeedbackEnabled {
-            HapticFeedback.light()
-        }
-
-        // Send input with newline
-        webSocketService.send(.terminalInput(sessionId: sessionId, data: inputText + "\n"))
-        inputText = ""
-    }
-}
-
-// MARK: - Terminal Renderer
-
-struct TerminalRenderer: View {
-    let output: String
-
-    var body: some View {
-        // ANSI codes are now pre-stripped in TerminalStore for performance
-        Text(output)
-            .font(.netclodeMonospaced)
-            .foregroundStyle(.white)
-            .textSelection(.enabled)
-    }
-}
-
-// MARK: - Terminal Input Bar
-
-struct TerminalInputBar: View {
-    @Binding var text: String
-    var isFocused: FocusState<Bool>.Binding
-    let onSubmit: () -> Void
-
-    private let terminalBackground = Color(red: 0.1, green: 0.1, blue: 0.12)
-    private let terminalGreen = Color(red: 0.4, green: 0.8, blue: 0.4)
-
-    var body: some View {
-        HStack(spacing: Theme.Spacing.sm) {
-            // Prompt indicator
-            Text("$")
-                .font(.netclodeMonospaced)
-                .foregroundStyle(terminalGreen)
-
-            // Text field
-            TextField("Enter command...", text: $text)
-                .font(.netclodeMonospaced)
-                .textFieldStyle(.plain)
-                .foregroundStyle(.white)
-                .focused(isFocused)
-                .onSubmit(onSubmit)
-                .submitLabel(.send)
-
-            // Send button
-            Button {
-                onSubmit()
-            } label: {
-                Image(systemName: "return")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(text.isEmpty ? Color.gray.opacity(0.5) : terminalGreen)
-            }
-            .disabled(text.isEmpty)
-        }
-        .padding(.horizontal, Theme.Spacing.md)
-        .padding(.vertical, Theme.Spacing.sm)
-        .background(terminalBackground)
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    let store = TerminalStore()
-    store.appendOutput(sessionId: "test", data: """
-    $ ls -la
+    let terminalStore = TerminalStore()
+    let webSocketService = WebSocketService()
+    terminalStore.webSocketService = webSocketService
+    
+    // Add sample output with ANSI colors
+    terminalStore.appendOutput(sessionId: "test", data: """
+    \u{1B}[32m$\u{1B}[0m ls -la
     total 48
-    drwxr-xr-x  12 user  staff   384 Jan  6 10:30 .
-    drwxr-xr-x   5 user  staff   160 Jan  5 14:20 ..
+    drwxr-xr-x  12 user  staff   384 Jan  6 10:30 \u{1B}[34m.\u{1B}[0m
+    drwxr-xr-x   5 user  staff   160 Jan  5 14:20 \u{1B}[34m..\u{1B}[0m
     -rw-r--r--   1 user  staff  1234 Jan  6 10:30 README.md
-    -rw-r--r--   1 user  staff  5678 Jan  6 10:25 package.json
-    drwxr-xr-x   8 user  staff   256 Jan  6 10:30 src
+    -rw-r--r--   1 user  staff  5678 Jan  6 10:25 \u{1B}[33mpackage.json\u{1B}[0m
+    drwxr-xr-x   8 user  staff   256 Jan  6 10:30 \u{1B}[34msrc\u{1B}[0m
 
-    $ npm run build
+    \u{1B}[32m$\u{1B}[0m npm run build
     Building project...
-    ✓ Compiled successfully in 2.3s
+    \u{1B}[32m✓\u{1B}[0m Compiled successfully in 2.3s
 
-    $\u{0020}
+    \u{1B}[32m$\u{1B}[0m\u{0020}
     """)
 
     return NavigationStack {
         TerminalView(sessionId: "test")
     }
-    .environment(store)
-    .environment(WebSocketService())
-    .environment(SettingsStore())
+    .environment(terminalStore)
+    .environment(webSocketService)
 }

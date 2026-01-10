@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D10000000000000000000002 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = P20000000000000000000001 /* SwiftTerm */; };
 		A10000000000000000000001 /* NetclodeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* NetclodeApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* ContentView.swift */; };
 		A10000000000000000000003 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* Session.swift */; };
@@ -17,6 +18,8 @@
 		A10000000000000000000036 /* PersistedMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000036 /* PersistedMessage.swift */; };
 		A10000000000000000000008 /* WebSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* WebSocketService.swift */; };
 		A10000000000000000000009 /* MessageRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* MessageRouter.swift */; };
+		A10000000000000000000040 /* SwiftTermBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000040 /* SwiftTermBridge.swift */; };
+		A10000000000000000000041 /* SwiftTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000041 /* SwiftTerminalView.swift */; };
 		A10000000000000000000010 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* SessionStore.swift */; };
 		A10000000000000000000011 /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* ChatStore.swift */; };
 		A10000000000000000000012 /* EventStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000012 /* EventStore.swift */; };
@@ -56,6 +59,8 @@
 		B10000000000000000000036 /* PersistedMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistedMessage.swift; sourceTree = "<group>"; };
 		B10000000000000000000008 /* WebSocketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketService.swift; sourceTree = "<group>"; };
 		B10000000000000000000009 /* MessageRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageRouter.swift; sourceTree = "<group>"; };
+		B10000000000000000000040 /* SwiftTermBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftTermBridge.swift; sourceTree = "<group>"; };
+		B10000000000000000000041 /* SwiftTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftTerminalView.swift; sourceTree = "<group>"; };
 		B10000000000000000000010 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		B10000000000000000000011 /* ChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStore.swift; sourceTree = "<group>"; };
 		B10000000000000000000012 /* EventStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStore.swift; sourceTree = "<group>"; };
@@ -91,6 +96,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D10000000000000000000002 /* SwiftTerm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,6 +156,7 @@
 			children = (
 				B10000000000000000000008 /* WebSocketService.swift */,
 				B10000000000000000000009 /* MessageRouter.swift */,
+				B10000000000000000000040 /* SwiftTermBridge.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -213,6 +220,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000000000000000000022 /* TerminalView.swift */,
+				B10000000000000000000041 /* SwiftTerminalView.swift */,
 			);
 			path = Terminal;
 			sourceTree = "<group>";
@@ -302,6 +310,7 @@
 			);
 			name = Netclode;
 			packageProductDependencies = (
+				P20000000000000000000001 /* SwiftTerm */,
 			);
 			productName = Netclode;
 			productReference = C10000000000000000000001 /* Netclode.app */;
@@ -332,6 +341,9 @@
 			mainGroup = E10000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
+			packageReferences = (
+				P10000000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+			);
 			productRefGroup = E10000000000000000000099 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -382,6 +394,8 @@
 				A10000000000000000000021 /* ChatInputBar.swift in Sources */,
 				A10000000000000000000038 /* ToolEventCard.swift in Sources */,
 				A10000000000000000000022 /* TerminalView.swift in Sources */,
+				A10000000000000000000040 /* SwiftTermBridge.swift in Sources */,
+				A10000000000000000000041 /* SwiftTerminalView.swift in Sources */,
 				A10000000000000000000024 /* SettingsView.swift in Sources */,
 				A10000000000000000000025 /* GlassCard.swift in Sources */,
 				A10000000000000000000026 /* GlassButton.swift in Sources */,
@@ -605,6 +619,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		P10000000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.2.5;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		P20000000000000000000001 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = P10000000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F30000000000000000000001 /* Project object */;
 }

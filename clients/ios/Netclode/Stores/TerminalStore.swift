@@ -3,53 +3,65 @@ import Foundation
 @MainActor
 @Observable
 final class TerminalStore {
-    /// Raw output (with ANSI codes)
-    private var rawOutputBySession: [String: String] = [:]
-    /// Pre-processed output (ANSI stripped) for display
-    private(set) var outputBySession: [String: String] = [:]
-
-    private let maxOutputLength = 50_000
-
-    // Pre-compiled regex for ANSI escape codes (compiled once, not per-render)
-    private static let ansiPattern = try! NSRegularExpression(
-        pattern: "\\x1B\\[[0-9;]*[a-zA-Z]",
-        options: []
-    )
-
-    func output(for sessionId: String) -> String {
-        outputBySession[sessionId] ?? ""
-    }
-
-    func appendOutput(sessionId: String, data: String) {
-        var rawOutput = rawOutputBySession[sessionId] ?? ""
-        rawOutput += data
-
-        // Trim if too long, keeping the most recent content
-        if rawOutput.count > maxOutputLength {
-            let startIndex = rawOutput.index(rawOutput.endIndex, offsetBy: -maxOutputLength)
-            rawOutput = String(rawOutput[startIndex...])
+    /// Raw output buffer per session (for session restore)
+    private var rawOutputBySession: [String: [UInt8]] = [:]
+    
+    /// Bridges per session
+    private var bridgesBySession: [String: SwiftTermBridge] = [:]
+    
+    /// Reference to WebSocket service (set during init)
+    weak var webSocketService: WebSocketService?
+    
+    private let maxOutputLength = 100_000 // 100KB buffer per session
+    
+    /// Get or create a bridge for a session
+    func bridge(for sessionId: String) -> SwiftTermBridge {
+        if let existing = bridgesBySession[sessionId] {
+            return existing
         }
-
-        rawOutputBySession[sessionId] = rawOutput
-
-        // Pre-process ANSI codes (do this once on append, not on every render)
-        let stripped = Self.stripANSI(rawOutput)
-        outputBySession[sessionId] = stripped
+        
+        let bridge = SwiftTermBridge(sessionId: sessionId, webSocketService: webSocketService)
+        bridgesBySession[sessionId] = bridge
+        
+        // Feed any buffered output to the new bridge
+        if let bufferedOutput = rawOutputBySession[sessionId], !bufferedOutput.isEmpty {
+            bridge.feedData(bufferedOutput)
+        }
+        
+        return bridge
     }
-
+    
+    /// Append output for a session (called from MessageRouter)
+    func appendOutput(sessionId: String, data: String) {
+        guard let bytes = data.data(using: .utf8) else { return }
+        let byteArray = [UInt8](bytes)
+        
+        // Buffer raw output
+        var buffer = rawOutputBySession[sessionId] ?? []
+        buffer.append(contentsOf: byteArray)
+        
+        // Trim if too long, keeping the most recent content
+        if buffer.count > maxOutputLength {
+            buffer.removeFirst(buffer.count - maxOutputLength)
+        }
+        rawOutputBySession[sessionId] = buffer
+        
+        // Feed to bridge if it exists
+        if let bridge = bridgesBySession[sessionId] {
+            bridge.feedData(byteArray)
+        }
+    }
+    
+    /// Clear output and bridge for a session
     func clearOutput(for sessionId: String) {
         rawOutputBySession.removeValue(forKey: sessionId)
-        outputBySession.removeValue(forKey: sessionId)
+        if let bridge = bridgesBySession.removeValue(forKey: sessionId) {
+            bridge.detach()
+        }
     }
-
-    /// Strip ANSI escape codes from text
-    private static func stripANSI(_ text: String) -> String {
-        let range = NSRange(text.startIndex..., in: text)
-        return ansiPattern.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: range,
-            withTemplate: ""
-        )
+    
+    /// Get buffered output for a session (for debugging/export)
+    func bufferedOutput(for sessionId: String) -> [UInt8] {
+        rawOutputBySession[sessionId] ?? []
     }
 }
