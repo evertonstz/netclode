@@ -1,103 +1,113 @@
 # Netclode iOS
 
-A beautiful iOS 26 app for Netclode - your self-hosted Claude Code Cloud platform.
+Native iOS 26 app for Netclode. Built with SwiftUI and the Liquid Glass API.
 
 ## Features
 
-- **Liquid Glass Design** - Built with Apple's iOS 26 Liquid Glass design system
-- **Session Management** - Create, pause, resume, and delete coding sessions
-- **Real-time Chat** - Stream responses from Claude with live updates
-- **Terminal Emulator** - Full terminal access to your sandbox
-- **Configurable Server** - Connect to any Netclode instance on your Tailscale network
+- Session management (create, pause, resume, delete)
+- Real-time chat with streaming responses
+- Terminal emulator via [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm)
+- Connects over Tailscale
 
 ## Requirements
 
-- iOS 26.2+
+- iOS 26.2+ / macOS
 - Xcode 17.0+
 - Swift 6.2+
+
+## Building
+
+```bash
+open Netclode.xcodeproj
+# ⌘R
+```
+
+## Usage
+
+1. Open the app
+2. Settings → enter your server URL (e.g., `netclode.your-tailnet.ts.net`)
+3. Connect
+4. Tap + to create a session
 
 ## Architecture
 
 ```
 Netclode/
-├── App/                    # App entry point
-├── Models/                 # Data models (Session, Messages, Events)
-├── Services/               # WebSocket connection & message routing
-├── Stores/                 # State management (@Observable)
-├── Features/               # Feature modules
-│   ├── Sessions/           # Session list & prompt sheet
-│   ├── Workspace/          # Workspace container (Chat + Terminal tabs)
-│   ├── Chat/               # Chat interface
-│   ├── Terminal/           # Terminal emulator
-│   └── Settings/           # App settings
-├── Components/             # Reusable UI components
-├── Design/                 # Theme, colors, animations
-└── Extensions/             # Swift extensions
+├── App/                    # Entry point
+├── Models/                 # Session, Messages, Events, ChatMessage
+├── Services/               # WebSocketService, MessageRouter
+├── Stores/                 # @Observable state (Session, Chat, Event, Terminal, Settings)
+├── Features/
+│   ├── Sessions/           # Session list, creation
+│   ├── Workspace/          # Chat + Terminal tabs
+│   ├── Chat/               # Chat UI
+│   ├── Terminal/           # SwiftTerm wrapper
+│   └── Settings/           # Server config
+├── Components/             # GlassCard, GlassButton, GlassTextField
+├── Design/                 # Theme, colors
+└── Extensions/
 ```
 
-## Design System
+## WebSocket protocol
 
-### Liquid Glass
+The app communicates with the control plane via WebSocket.
 
-The app uses iOS 26's Liquid Glass API throughout:
-
-```swift
-// Glass card
-.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
-
-// Interactive glass (buttons, inputs)
-.glassEffect(.regular.interactive().tint(color), in: .capsule)
-
-// Morphing glass groups
-GlassEffectContainer(spacing: 12) { ... }
-```
-
-### Color Palette
-
-Warm, cozy colors that complement the glass effects:
-
-- **Warm Cream** - Base background
-- **Warm Apricot** - Primary accent
-- **Cozy Purple** - Interactive elements
-- **Cozy Lavender** - Thinking/processing states
-- **Gentle Blue** - User messages
-- **Cozy Sage** - Success states
-
-## WebSocket Protocol
-
-The app communicates with the Netclode control plane via WebSocket:
-
-### Client → Server
+Client → Server:
 
 ```swift
-ClientMessage.sessionCreate(name: "My Project", repo: nil)
 ClientMessage.sessionList
-ClientMessage.sessionResume(id: "session-id")
-ClientMessage.prompt(sessionId: "id", text: "Fix the bug")
-ClientMessage.terminalInput(sessionId: "id", data: "ls -la\n")
+ClientMessage.sessionCreate(name: "My Project", repo: nil)
+ClientMessage.sessionOpen(id: "xxx", lastNotificationId: nil)
+ClientMessage.sessionResume(id: "xxx")
+ClientMessage.sessionPause(id: "xxx")
+ClientMessage.prompt(sessionId: "xxx", text: "Fix the bug")
+ClientMessage.terminalInput(sessionId: "xxx", data: "ls\n")
 ```
 
-### Server → Client
+Server → Client:
 
 ```swift
+ServerMessage.sessionList(sessions: [...])
 ServerMessage.sessionCreated(session: Session)
-ServerMessage.agentMessage(sessionId: "id", content: "...", partial: true)
-ServerMessage.agentEvent(sessionId: "id", event: AgentEvent)
-ServerMessage.terminalOutput(sessionId: "id", data: "...")
+ServerMessage.agentMessage(sessionId: "xxx", content: "...", partial: true)
+ServerMessage.agentEvent(sessionId: "xxx", event: AgentEvent)
+ServerMessage.terminalOutput(sessionId: "xxx", data: "...")
 ```
 
-## Building
+On reconnect, the app sends `lastNotificationId` to resume from where it left off.
 
-1. Open `Netclode.xcodeproj` in Xcode 17+
-2. Select your target device (iOS 26 Simulator or device)
-3. Build and run (⌘R)
+## State management
 
-## Configuration
+Uses `@Observable` + SwiftUI Environment:
 
-1. Launch the app
-2. Tap the gear icon in the top-right toolbar
-3. Enter your Netclode server URL (e.g., `netclode.your-tailnet.ts.net`)
-4. Tap Connect
+```swift
+@Observable
+class SessionStore {
+    var sessions: [Session] = []
+    var currentSessionId: String?
+}
+
+@Environment(SessionStore.self) private var sessionStore
+```
+
+## Liquid Glass
+
+The app uses iOS 26's glass effects:
+
+```swift
+.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+.glassEffect(.regular.interactive().tint(color), in: .capsule)
+```
+
+## Terminal
+
+Terminal emulation uses [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm). The app sends `terminal.input` messages to the control plane, which proxies them to the agent's PTY. Output comes back via `terminal.output`.
+
+```
+SwiftTerminalView ──► WebSocketService ──► Control Plane ──► Agent PTY
+```
+
+`SwiftTermBridge.swift` adapts SwiftTerm's `LocalProcessTerminalView` delegate to work over WebSocket instead of a local process.
 
 ## License
 

@@ -1,301 +1,155 @@
 # Netclode
 
-Self-hosted Claude Code Cloud - persistent sandboxed AI coding agents accessible from iOS/web, with full shell/Docker/network access, running on a single VPS with microVM isolation.
+Self-hosted coding agent. Persistent sandboxed sessions accessible from iOS/web, with full shell/Docker/network access, running on a single VPS with microVM isolation.
 
 > [!NOTE]
-> This project is experimental and not ready for self-hosting yet. I'm actively working on it and documentation will improve over time.
+> This is experimental and not ready for self-hosting. I'm building it for myself and iterating quickly.
 
-## Why I Built This
+## Why
 
 I wanted a self-hosted Claude Code environment with the UX I actually want:
 
-- **Full YOLO mode** - Docker, root access, install anything - no artificial restrictions
-- **Tailnet integration** - Preview URLs, port forwarding, and access to my infra (like my home Kubernetes cluster) all through Tailscale
-- **JuiceFS for storage** - Offload storage to S3, which plays nicely with the pause/resume system. Spin up ~infinite sessions on a small VPS since paused sessions cost nothing but storage
-- **Live terminal access** - Access the sandbox terminal directly from the web/iOS app for debugging, installing tools, running commands
-- **Single-tenant by design** - Optimized for personal use, but the architecture (k3s + control plane + sandboxes) scales naturally to multi-node or multi-tenant if needed
+- **Full YOLO mode** - Docker, root access, install anything. The VM handles isolation.
+- **Tailnet integration** - Preview URLs, port forwarding, access to my infra (like my home k8s cluster) through Tailscale.
+- **JuiceFS for storage** - Storage offloaded to S3. Paused sessions cost nothing but storage.
+- **Live terminal access** - Drop into the sandbox shell from the app. Debug, install tools, run commands.
+- **Single-tenant by design** - Optimized for personal use. Architecture scales to multi-node or multi-tenant if needed.
 
-## Architecture
+## How it works
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │  VPS (NixOS + k3s)                                                  │
 ├─────────────────────────────────────────────────────────────────────┤
-│  k3s Cluster                                                        │
-│  ├── control-plane (Deployment)                                     │
-│  │   └── WebSocket API, Session Manager                             │
-│  ├── web (Deployment)                                               │
-│  │   └── React SPA + nginx proxy                                    │
-│  ├── Agent Sandboxes (Kata VMs via RuntimeClass)                    │
-│  │   └── /agent → JuiceFS PVC (home + workspace + docker)           │
-│  └── Tailscale Operator                                             │
-│       └── Exposes services to your tailnet                          │
 │                                                                     │
-│  JuiceFS CSI ────────────────────────────────► S3 (R2/B2)          │
-│                                                                     │
-│  Tailscale ──────────────────────────────────► Your devices         │
-└─────────────────────────────────────────────────────────────────────┘
+│   ┌─────────────────┐      ┌─────────────────────────────────────┐  │
+│   │  Control Plane  │◄────►│  Agent Sandbox (Kata Container VM)  │  │
+│   │  Go + Redis     │      │  Claude Agent SDK + mise + Docker   │  │
+│   └────────┬────────┘      └─────────────────────────────────────┘  │
+│            │                         ▲                              │
+│            │                         │ Warm pool pre-boots VMs      │
+│   ┌────────┴────────┐                │                              │
+│   │      Redis      │      ┌─────────┴─────────┐                    │
+│   │ sessions/events │      │   JuiceFS CSI     │───► S3             │
+│   └────────┬────────┘      └───────────────────┘                    │
+│            │                                                        │
+│   ┌────────▼────────┐                                               │
+│   │   Tailscale     │                                               │
+│   │   Operator      │                                               │
+│   └────────┬────────┘                                               │
+│            │                                                        │
+└────────────┼────────────────────────────────────────────────────────┘
+             │
+             ▼
+    ┌────────────────┐
+    │  iOS/Mac app   │  ◄── Main interface
+    │  Web client    │
+    └────────────────┘
 ```
+
+1. iOS app connects to control plane via WebSocket over Tailscale
+2. Control plane grabs a pre-booted VM from the warm pool (or creates one)
+3. Prompts go to the Claude Agent SDK running inside the VM
+4. Responses stream back in real-time via Redis Streams (no missed events on reconnect)
+5. Pause deletes the VM, but JuiceFS PVC keeps the data (workspace, mise tools, Docker)
+6. Resume mounts the same storage in a new VM, conversation continues
+
+### Why JuiceFS
+
+JuiceFS is a POSIX filesystem backed by S3:
+
+- **Pause**: VM deleted, PVC retained. Data lives in S3, costs ~$0.01/GB/month.
+- **Resume**: New VM mounts the same PVC. Workspace, installed tools, Docker images, SDK session all still there.
+
+Dozens of paused sessions on a small VPS. Only running sessions consume compute.
+
+### Kata Containers
+
+Each agent runs in a Kata Container, a lightweight VM using Cloud Hypervisor. Separate kernel, memory, filesystem per agent.
+
+Why Cloud Hypervisor over Firecracker? Firecracker doesn't support virtiofs, which means you'd need devmapper snapshotter and a more complex storage setup. Cloud Hypervisor + virtiofs is simpler and performs well enough.
+
+### Sandbox CRDs
+
+Sandboxes are managed via custom k8s resources:
+
+- `Sandbox` - A running agent VM
+- `SandboxClaim` - Request for a sandbox (can be satisfied from warm pool)
+- `SandboxTemplate` - Pod spec + PVC templates for sandboxes
+- `SandboxWarmPool` - Maintains N pre-booted VMs ready for instant allocation
+
+The [agent-sandbox-controller](https://github.com/angristan/agent-sandbox) reconciles these. It's a fork of [kubernetes-sigs/agent-sandbox](https://github.com/kubernetes-sigs/agent-sandbox) with additions:
+
+- `volumeClaimTemplates` in SandboxTemplate (upstream only supports ephemeral storage)
+- PVC adoption when SandboxClaim binds to a warm pool pod
 
 ## Stack
 
 | Component | Technology |
 |-----------|------------|
-| **Host OS** | NixOS (fully declarative) |
-| **Orchestration** | k3s (lightweight Kubernetes) |
-| **VM Runtime** | Kata Containers (Firecracker) via RuntimeClass |
-| **Agent VMs** | NixOS-based OCI images |
-| **Storage** | JuiceFS CSI (S3-backed PVCs) |
-| **Networking** | Tailscale Operator + Flannel |
-| **Control Plane** | Node.js + TypeScript |
+| Host OS | NixOS (fully declarative) |
+| Orchestration | k3s |
+| VM Runtime | Kata Containers (Cloud Hypervisor) |
+| Storage | JuiceFS CSI → S3, Redis |
+| Networking | Tailscale Operator |
+| Control Plane | Go + Redis |
+| Agent | Node.js + Claude Agent SDK |
+| iOS/Mac | SwiftUI (iOS 26 Liquid Glass) |
+| Web | React + Mantine + Vite |
 
-## Project Structure
+## Clients
+
+Main interface is the **iOS/Mac app** (SwiftUI, iOS 26 Liquid Glass). Also a **web client** (React + Mantine).
+
+## Project structure
 
 ```
 netclode/
-├── services/
-│   ├── control-plane/    # Session management, WebSocket API
-│   └── agent/            # Runs inside VM, Claude Agent SDK
 ├── clients/
-│   ├── web/              # React web client + nginx
-│   ├── ios/              # iOS 26 app with Liquid Glass UI
-│   └── cli/              # Debug CLI for control plane
+│   ├── ios/              # iOS/Mac app (SwiftUI)
+│   ├── web/              # Web client (React)
+│   └── cli/              # Debug CLI
+├── services/
+│   ├── control-plane/    # Session orchestration (Go)
+│   └── agent/            # Claude Agent SDK runner (Node.js)
 ├── packages/
 │   └── protocol/         # Shared TypeScript types
 ├── infra/
-│   ├── nixos/            # NixOS configuration (host + agent VM)
+│   ├── nixos/            # NixOS configuration
 │   └── k8s/              # Kubernetes manifests
-├── .github/
-│   └── workflows/        # CI/CD for container images
-└── scripts/              # Deployment scripts
+└── docs/                 # Setup guides
 ```
 
-## Quick Start
-
-### Prerequisites
-
-- [Nix](https://nixos.org/download.html) with flakes enabled
-- A VPS with KVM support (DigitalOcean, Hetzner, etc.)
-- S3-compatible storage (Cloudflare R2, Backblaze B2)
-- Tailscale account with OAuth client configured
-
-### Local Development
-
-```bash
-# Enter development shell
-cd infra/nixos
-nix develop
-
-# Install dependencies
-cd ../..
-npm install
-
-# Run control plane locally
-npm run dev --workspace=@netclode/control-plane
-```
-
-### Deploy to Server
-
-1. **Create the droplet** (DigitalOcean example):
-
-```bash
-doctl compute droplet create netclode \
-  --size s-2vcpu-8gb-amd \
-  --image debian-13-x64 \
-  --region fra1 \
-  --ssh-keys <your-key-id>
-```
-
-1. **Install NixOS** using nixos-anywhere:
-
-```bash
-cd infra/nixos
-nix run github:nix-community/nixos-anywhere -- \
-  --flake .#netclode \
-  root@<droplet-ip>
-```
-
-1. **Configure secrets** (create `.env` file locally):
-
-```bash
-cat > .env << 'EOF'
-ANTHROPIC_API_KEY=sk-ant-xxx
-JUICEFS_BUCKET=https://your-bucket.r2.cloudflarestorage.com
-AWS_ACCESS_KEY_ID=xxx
-AWS_SECRET_ACCESS_KEY=xxx
-TS_OAUTH_CLIENT_ID=xxx
-TS_OAUTH_CLIENT_SECRET=xxx
-EOF
-```
-
-1. **Deploy secrets and manifests**:
-
-```bash
-./scripts/deploy-secrets.sh <server-ip>
-./scripts/deploy-k8s.sh <server-ip>
-```
-
-## Configuration
-
-### Environment Variables
-
-**Control Plane** (via k8s Secret `netclode-secrets`):
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ANTHROPIC_API_KEY` | Anthropic API key | Required |
-| `PORT` | HTTP server port | `3000` |
-| `K8S_NAMESPACE` | Kubernetes namespace | `netclode` |
-
-### Tailscale Setup
-
-1. Add ACL tags in Tailscale admin console:
-
-   ```json
-   {
-     "tagOwners": {
-       "tag:k8s-operator": ["autogroup:admin"],
-       "tag:k8s": ["tag:k8s-operator"]
-     }
-   }
-   ```
-
-2. Create OAuth client with `tag:k8s-operator` permission
-
-3. Enable MagicDNS in Tailscale settings
-
-## Usage
-
-### Access Services
-
-After deployment, access via Tailscale:
-
-- **Web App**: `http://netclode-web`
-- **Control Plane API**: `http://netclode`
-
-### Preview URLs
-
-Agents can expose ports to make web servers accessible via Tailscale. The preview URL appears in the chat:
-
-```
-🌐 Port 3000  [Open →]
-```
-
-URLs use Tailscale MagicDNS (`http://sandbox-{sessionID}:{port}`) and are accessible from any device on your tailnet.
-
-### WebSocket API
-
-Connect to `ws://netclode/ws`
-
-**Create Session:**
-
-```json
-{ "type": "session.create", "name": "my-project", "repo": "https://github.com/user/repo" }
-```
-
-**List Sessions:**
-
-```json
-{ "type": "session.list" }
-```
-
-**Send Prompt:**
-
-```json
-{ "type": "prompt", "sessionId": "abc123", "text": "Fix the bug in auth.ts" }
-```
-
-**Pause Session:**
-
-```json
-{ "type": "session.pause", "id": "abc123" }
-```
-
-See `packages/protocol/src/messages.ts` for full API.
-
-## Operations
-
-### kubectl Access
-
-Use the `netclode` kubectl context (configured via Tailscale):
-
-```bash
-kubectl --context netclode -n netclode get pods
-kubectl --context netclode -n netclode logs -l app=control-plane -f
-kubectl --context netclode apply -f infra/k8s/control-plane.yaml
-```
-
-Or SSH to the server:
-
-```bash
-ssh root@netclode
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-kubectl -n netclode get pods
-```
-
-### View Logs
-
-```bash
-# Control plane logs
-kubectl --context netclode -n netclode logs -l app=control-plane -f
-
-# Web app logs
-kubectl --context netclode -n netclode logs -l app=web -f
-
-# k3s/kubelet logs (SSH required)
-ssh root@netclode journalctl -u k3s -f
-```
-
-### Manage Pods
-
-```bash
-# List all pods
-kubectl --context netclode get pods -A
-
-# Describe a pod
-kubectl --context netclode describe pod -n netclode <pod-name>
-
-# Exec into control plane
-kubectl --context netclode exec -it -n netclode deploy/control-plane -- sh
-
-# Restart a deployment
-kubectl --context netclode rollout restart deployment -n netclode control-plane
-```
-
-### Update Images
-
-Images are built automatically via GitHub Actions on push to `master`.
-
-To manually trigger a rebuild:
-
-```bash
-gh workflow run "Control Plane Image"
-gh workflow run "Web App Image"
-gh workflow run "Agent Image"
-```
-
-Then restart deployments to pull new images:
-
-```bash
-kubectl rollout restart deployment -n netclode control-plane web
-```
-
-### Rollback NixOS
-
-```bash
-# List generations
-nixos-rebuild list-generations
-
-# Rollback
-nixos-rebuild switch --rollback
-```
-
-## Security
-
-- **VM Isolation**: Each agent session runs in a separate Kata Container (Firecracker microVM)
-- **Network Isolation**: Kubernetes NetworkPolicy blocks agent access to internal networks
-- **Storage Isolation**: Each agent gets its own PVC via JuiceFS CSI
-- **Access Control**: Tailscale restricts access to your devices only
+## Getting started
+
+See [docs/deployment.md](docs/deployment.md) for full setup.
+
+Quick version:
+
+1. Provision a VPS with nested virtualization support (DigitalOcean, Vultr)
+2. Install NixOS via nixos-anywhere
+3. Configure secrets (Anthropic API key, S3 credentials, Tailscale OAuth)
+4. Deploy k8s manifests
+5. Connect via Tailscale
+
+## Docs
+
+- [Deployment](docs/deployment.md) - Full setup
+- [Operations](docs/operations.md) - Day-to-day management
+- [iOS App](clients/ios/README.md)
+- [Web App](clients/web/README.md)
+- [Control Plane](services/control-plane/README.md)
+- [Agent](services/agent/README.md)
+- [Infrastructure](infra/k8s/README.md)
+
+## Future
+
+- OpenCode server/SDK support
+- GitHub integration (clone repo on session start, push commits)
+- Code diff viewer
+- Notifications (iOS push, etc.)
+- Plan mode
+- Custom environment support
 
 ## License
 

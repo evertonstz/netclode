@@ -1,13 +1,20 @@
 # Agent
 
-Claude Code agent that runs inside sandboxed Kata Container VMs. Uses the Claude Agent SDK to execute coding tasks.
+Claude Code agent that runs inside Kata Container VMs. Uses the Claude Agent SDK to execute coding tasks.
+
+## What it does
+
+- Executes prompts via the SDK's `query()` async iterator
+- Full access to Docker, root, any tools - VM handles isolation
+- Persistent workspace survives pause/resume
+- Terminal access via WebSocket
 
 ## Structure
 
 ```
 services/agent/
 ├── src/
-│   ├── index.ts        # HTTP server entry point
+│   ├── index.ts        # HTTP server
 │   ├── config.ts       # Configuration
 │   ├── sdk/
 │   │   ├── agent.ts    # Claude Agent SDK wrapper
@@ -15,119 +22,81 @@ services/agent/
 │   ├── events/
 │   │   └── emitter.ts  # Event streaming
 │   └── ipc/
-│       └── handler.ts  # IPC message handling
+│       └── handler.ts
 ├── package.json
 └── tsconfig.json
 ```
 
 ## Configuration
 
-Environment variables (injected via k8s Secret):
-
 | Variable | Description |
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key |
-| `SESSION_ID` | Current session ID |
-| `GIT_REPO` | (Optional) Git repo URL to clone into workspace |
+| `SESSION_ID` | Session ID |
+| `GIT_REPO` | Optional repo to clone |
 
 ## API
 
-The agent exposes an HTTP API on port 3002:
+HTTP on port `3002`.
 
 ### POST /prompt
 
-Execute a prompt and stream results via SSE.
+Execute a prompt, stream results via SSE.
 
-**Request:**
+Request:
 ```json
-{
-  "sessionId": "abc123",
-  "text": "Fix the bug in auth.ts"
-}
+{"sessionId": "abc123", "text": "Fix the bug in auth.ts"}
 ```
 
-**Response:** Server-Sent Events stream
-
+Response (SSE):
 ```
 data: {"type":"tool_call","tool":"Read","path":"auth.ts"}
-
-data: {"type":"tool_result","content":"..."}
-
 data: {"type":"assistant","content":"I found the issue..."}
 ```
 
 ### POST /interrupt
 
-Interrupt the current operation.
-
-**Response:**
-```json
-{ "ok": true }
-```
+Interrupt current operation. Returns `{"ok": true}`.
 
 ### POST /generate-title
 
-Generate a session title using Claude Haiku based on the user's prompt.
+Generate session title from first prompt.
 
-**Request:**
+Request:
 ```json
-{
-  "prompt": "Build a REST API with user authentication"
-}
+{"prompt": "Build a REST API"}
 ```
 
-**Response:**
+Response:
 ```json
-{
-  "title": "REST API Authentication"
-}
+{"title": "REST API"}
 ```
-
-This endpoint is called by the control plane after the first agent response to generate a meaningful session title.
 
 ### GET /health
 
-Health check.
-
-**Response:**
-```
-ok
-```
+Returns `ok`.
 
 ### WebSocket /terminal/ws
 
-Interactive terminal via WebSocket. The PTY is spawned lazily on first input.
+Interactive terminal.
 
-**Client → Server messages:**
+Client → Server:
+- `{"type": "input", "data": "ls\n"}`
+- `{"type": "resize", "cols": 80, "rows": 24}`
 
-| Type | Fields | Description |
-|------|--------|-------------|
-| `input` | `data` | Write data to terminal stdin |
-| `resize` | `cols`, `rows` | Resize terminal dimensions |
+Server → Client:
+- `{"type": "output", "data": "..."}`
 
-**Server → Client messages:**
+The PTY is managed by [node-pty](https://github.com/microsoft/node-pty). It's spawned lazily on first input (not on WebSocket connect) to avoid idle shell processes. The shell runs as root in `/agent/workspace`.
 
-| Type | Fields | Description |
-|------|--------|-------------|
-| `output` | `data` | Terminal stdout/stderr data |
-
-**Example:**
-```json
-// Client sends input
-{"type": "input", "data": "ls -la\n"}
-
-// Client resizes terminal
-{"type": "resize", "cols": 120, "rows": 40}
-
-// Server sends output
-{"type": "output", "data": "total 48\ndrwxr-xr-x..."}
+```
+iOS/Web ──► Control Plane ──► Agent ──► node-pty ──► bash
+              (proxy)         (WS)       (PTY)
 ```
 
-The control plane connects to this endpoint and bridges it to iOS/web clients via `terminal.input`, `terminal.resize`, and `terminal.output` messages.
+The control plane maintains a WebSocket connection to the agent and bridges messages. Multiple clients can share the same terminal session.
 
-## Claude Agent SDK Integration
-
-The agent uses the `query()` async iterator from the Claude Agent SDK to stream events in real-time:
+## Claude Agent SDK
 
 ```typescript
 import { query } from "@anthropic-ai/claude-agent-sdk";
@@ -136,7 +105,7 @@ const q = query({
   prompt: text,
   options: {
     cwd: workspaceDir,
-    permissionMode: "bypassPermissions", // VM handles isolation
+    permissionMode: "bypassPermissions",
     model: "claude-opus-4-5-20251101",
     persistSession: true,
     systemPrompt: { type: "preset", preset: "claude_code", append: "..." },
@@ -145,156 +114,104 @@ const q = query({
 });
 
 for await (const message of q) {
-  switch (message.type) {
-    case "system":      // Init, session ID
-    case "assistant":   // Text blocks, tool_use blocks
-    case "user":        // Tool results
-    case "result":      // Final result with cost/turns
-    case "stream_event": // Content deltas for real-time streaming
-  }
+  // system, assistant, user, result, stream_event
 }
 ```
 
-### Message Types
+Available tools (all enabled via `bypassPermissions`): Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch.
 
-| Type | Description |
-|------|-------------|
-| `system` | Init message with `session_id` for resuming conversations |
-| `assistant` | Claude's response with `text` and `tool_use` content blocks |
-| `user` | Tool results (`tool_result` blocks with `tool_use_id`) |
-| `result` | Final result with `num_turns`, `total_cost_usd` |
-| `stream_event` | Real-time deltas: `content_block_start`, `content_block_delta`, `content_block_stop` |
+## VM environment
 
-### Available Tools
+```
+/agent/                     # Home (JuiceFS PVC, persistent)
+├── workspace/              # User's code (Claude's cwd)
+├── docker/                 # Docker data
+├── .local/share/mise/      # Installed tools
+├── .cache/                 # Package caches
+├── .claude/                # SDK session data
+└── .session-mapping.json   # Session ID mapping
 
-The SDK provides built-in tools (all enabled via `bypassPermissions`):
+/opt/agent/                 # Agent code (read-only)
+```
 
-| Tool | Description |
-|------|-------------|
-| `Read` | Read file contents |
-| `Write` | Write file contents |
-| `Edit` | Edit file with string replacement |
-| `Bash` | Execute shell commands |
-| `Glob` | Find files by pattern |
-| `Grep` | Search file contents |
-| `WebSearch` | Search the web |
-| `WebFetch` | Fetch URL content |
+### Session ID mapping
 
-## VM Environment
+The control plane assigns session IDs (`sess-abc123`). The Claude Agent SDK has its own session IDs for conversation persistence. These are different.
 
-When running inside a Kata Container VM:
+When you pause and resume a session, you get a new VM, but the JuiceFS PVC is the same. The agent needs to know which SDK session to resume.
 
-- `/agent` - Home directory (JuiceFS PVC, persistent)
-  - `/agent/workspace` - User's code/projects (cwd for Claude)
-  - `/agent/docker` - Docker data
-  - `/agent/.local/share/mise` - Installed tools via mise
-  - `/agent/.cache` - Package manager caches
-  - `/agent/.claude` - Claude SDK session data (conversation history)
-  - `/agent/.session-mapping.json` - Maps control-plane session IDs to Claude SDK session IDs (enables session resume after sandbox pause/resume)
-- `/opt/agent` - Agent code (read-only)
-- Docker available for container workloads
-- mise for installing language runtimes (Node, Python, Go, Rust, etc.)
-- Internet access (no internal network access)
+`.session-mapping.json` maps control-plane session IDs to SDK session IDs:
 
-### Installing Dependencies
+```json
+{
+  "sess-abc123": "sdk-session-xyz789"
+}
+```
 
-The agent can install tools via mise (persistent across sessions):
+On first prompt, the agent stores the SDK session ID. On resume, it reads the mapping and passes `resume: sdkSessionId` to the SDK's `query()` call. Conversations survive pause/resume.
+
+Tools persist via mise:
 
 ```bash
-# Install and activate Node.js
 mise use node@22
-
-# Install Python
 mise use python@3.12
-
-# Install Go
 mise use go@latest
 ```
 
-Docker is also available:
+Docker is available:
 
 ```bash
 docker run -v /agent/workspace:/app node:20 npm install
 ```
 
+### Network isolation
+
+Agents have internet access but are blocked from reaching cluster internals via NetworkPolicy:
+
+- Can reach: internet (any external IP)
+- Blocked: pod network (10.42.0.0/16), service network (10.43.0.0/16), node IPs
+
+This prevents a compromised agent from attacking other pods, the k8s API, or Redis. The only allowed internal traffic is to the control plane (for session config and health checks).
+
+### Port exposure (previews)
+
+When a client sends `port.expose`, the control plane creates a Tailscale Service for the sandbox pod, giving it a MagicDNS hostname like `sandbox-abc123.tailnet-name.ts.net`.
+
+The preview URL is then `http://sandbox-abc123.tailnet-name.ts.net:3000`. Accessible from any device on your tailnet.
+
 ## Development
 
 ```bash
-# Install dependencies
 npm install
-
-# Run locally (limited without VM environment)
 npm run dev
-
-# Type check
 npm run typecheck
 ```
 
-## Building the Agent Image
-
-The agent is packaged into a Debian-slim + mise OCI image:
+## Docker image
 
 ```bash
-# Build image locally
 docker build -t ghcr.io/angristan/netclode-agent:latest -f services/agent/Dockerfile .
 ```
 
-The image includes:
-
-- Debian bookworm-slim base
-- Node.js via mise (on-demand tooling)
-- Docker daemon
-- Git, curl, build-essential
-- Claude CLI
-
-## SSE Event Types
-
-Events streamed via Server-Sent Events during prompt execution:
-
-| Type | Description |
-|------|-------------|
-| `start` | Prompt execution started |
-| `agent.system` | SDK system message (init, session ID) |
-| `agent.message` | Text content from Claude (`partial: true` for streaming) |
-| `agent.event` | Tool/command events (see below) |
-| `agent.result` | Final result with `numTurns` and `costUsd` |
-| `done` | Prompt execution completed |
-| `error` | Error occurred |
-
-### Agent Events (`agent.event`)
-
-| Event Kind | Description | Fields |
-|------------|-------------|--------|
-| `tool_start` | Tool invocation started | `tool`, `toolUseId`, `input` |
-| `tool_input` | Streaming tool input | `toolUseId`, `inputDelta` |
-| `tool_end` | Tool completed | `tool`, `toolUseId`, `result?`, `error?` |
-
-All events include a `timestamp` field (ISO 8601).
+Includes Debian bookworm-slim, Node.js via mise, Docker, Git, curl, build-essential, Claude CLI.
 
 ## Debugging
 
-From the k8s cluster (when an agent pod is running):
-
 ```bash
-# List agent pods
+# List pods
 kubectl get pods -n netclode -l sandbox=true
 
-# View agent logs
-kubectl logs -n netclode <agent-pod-name> -f
+# Logs
+kubectl logs -n netclode <agent-pod> -f
 
-# Exec into agent pod
-kubectl exec -it -n netclode <agent-pod-name> -- /bin/bash
+# Exec
+kubectl exec -it -n netclode <agent-pod> -- /bin/bash
 ```
 
 Inside the VM:
 
 ```bash
-# Check agent process
 ps aux | grep node
-
-# View workspace
 ls -la /agent/workspace
-
-# Test connectivity
 curl http://control-plane.netclode.svc.cluster.local:80/health
 ```
