@@ -19,6 +19,9 @@ final class SwiftTermBridge: TerminalViewDelegate {
     private(set) var cols: Int = 80
     private(set) var rows: Int = 24
     
+    /// Whether the terminal has received its first valid size
+    private var hasReceivedInitialSize = false
+    
     init(sessionId: String, webSocketService: WebSocketService?) {
         self.sessionId = sessionId
         self.webSocketService = webSocketService
@@ -29,17 +32,15 @@ final class SwiftTermBridge: TerminalViewDelegate {
         self.terminalView = terminal
         terminal.terminalDelegate = self
         
-        // Feed any pending data (already preprocessed)
-        if !pendingData.isEmpty {
-            terminal.feed(byteArray: ArraySlice(pendingData))
-            pendingData.removeAll()
-        }
+        // Don't feed pending data here - wait for sizeChanged callback
+        // to ensure terminal has correct dimensions before rendering buffered content
     }
     
     /// Detach the terminal view
     func detach() {
         terminalView?.terminalDelegate = nil
         terminalView = nil
+        hasReceivedInitialSize = false
     }
     
     /// Feed data from WebSocket to the terminal
@@ -48,10 +49,11 @@ final class SwiftTermBridge: TerminalViewDelegate {
         let byteArray = [UInt8](bytes)
         let processed = preprocessBytes(byteArray)
         
-        if let terminal = terminalView {
+        // Only feed directly if terminal is attached AND has received valid size
+        if let terminal = terminalView, hasReceivedInitialSize {
             terminal.feed(byteArray: ArraySlice(processed))
         } else {
-            // Buffer until terminal is attached
+            // Buffer until terminal is attached and sized
             pendingData.append(contentsOf: processed)
             
             // Limit buffer size (100KB)
@@ -65,7 +67,8 @@ final class SwiftTermBridge: TerminalViewDelegate {
     func feedData(_ bytes: [UInt8]) {
         let processed = preprocessBytes(bytes)
         
-        if let terminal = terminalView {
+        // Only feed directly if terminal is attached AND has received valid size
+        if let terminal = terminalView, hasReceivedInitialSize {
             terminal.feed(byteArray: ArraySlice(processed))
         } else {
             pendingData.append(contentsOf: processed)
@@ -124,6 +127,16 @@ final class SwiftTermBridge: TerminalViewDelegate {
             self.cols = newCols
             self.rows = newRows
             self.webSocketService?.send(.terminalResize(sessionId: self.sessionId, cols: newCols, rows: newRows))
+            
+            // Feed pending data after first valid size is received
+            // This ensures buffered content renders with correct column width
+            if !self.hasReceivedInitialSize && newCols > 0 && newRows > 0 {
+                self.hasReceivedInitialSize = true
+                if !self.pendingData.isEmpty {
+                    source.feed(byteArray: ArraySlice(self.pendingData))
+                    self.pendingData.removeAll()
+                }
+            }
         }
     }
     

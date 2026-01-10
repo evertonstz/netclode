@@ -9,6 +9,9 @@ struct SwiftTerminalView: UIViewRepresentable {
     func makeUIView(context: Context) -> SwiftTerm.TerminalView {
         let terminal = SwiftTerm.TerminalView(frame: .zero)
         
+        // Enable auto-resizing so the terminal fills its container
+        terminal.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        
         // Configure terminal appearance
         configureAppearance(terminal)
         
@@ -21,6 +24,12 @@ struct SwiftTerminalView: UIViewRepresentable {
     func updateUIView(_ terminal: SwiftTerm.TerminalView, context: Context) {
         // Update colors when theme changes
         updateColors(terminal)
+        
+        // Force layout update to ensure correct terminal size on Mac Catalyst
+        #if targetEnvironment(macCatalyst)
+        terminal.setNeedsLayout()
+        terminal.layoutIfNeeded()
+        #endif
     }
     
     static func dismantleUIView(_ terminal: SwiftTerm.TerminalView, coordinator: ()) {
