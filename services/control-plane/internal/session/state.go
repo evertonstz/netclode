@@ -7,8 +7,9 @@ import (
 // SessionState holds the in-memory state for a session.
 // Real-time updates are handled via Redis Streams, not in-memory channels.
 type SessionState struct {
-	Session     *protocol.Session
-	ServiceFQDN string // DNS name of the agent service when running
+	Session       *protocol.Session
+	ServiceFQDN   string // DNS name of the agent service when running
+	PendingPrompt string // Prompt queued before sandbox was ready
 }
 
 // NewSessionState creates a new session state.

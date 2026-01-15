@@ -21,6 +21,7 @@ const (
 )
 
 // SendPrompt sends a prompt to the agent and streams the response.
+// If the sandbox isn't ready yet, queues the prompt to be sent when ready.
 func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error {
 	state := m.getState(sessionID)
 	if state == nil {
@@ -28,7 +29,10 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 	}
 
 	if state.ServiceFQDN == "" {
-		return fmt.Errorf("session %s is not running", sessionID)
+		// Sandbox not ready yet - queue the prompt
+		slog.Info("Queueing prompt until sandbox is ready", "sessionID", sessionID)
+		state.PendingPrompt = text
+		return nil
 	}
 
 	// Persist user message
