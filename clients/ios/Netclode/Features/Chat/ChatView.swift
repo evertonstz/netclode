@@ -109,7 +109,7 @@ struct ChatView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: Theme.Spacing.md) {
+                LazyVStack(spacing: Theme.Spacing.sm) {
                     ForEach(cachedTimeline) { item in
                         timelineItemView(item)
                             .id(item.id)

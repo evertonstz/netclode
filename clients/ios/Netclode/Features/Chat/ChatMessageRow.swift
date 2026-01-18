@@ -87,7 +87,7 @@ struct MessageContent: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             ForEach(Array(parseContent().enumerated()), id: \.offset) { _, block in
                 switch block {
                 case .text(let text):
@@ -146,7 +146,7 @@ struct MessageContent: View {
         var remaining = processedContent
 
         while let match = remaining.firstMatch(of: Self.codeBlockPattern) {
-            let before = String(remaining[..<match.range.lowerBound])
+            let before = String(remaining[..<match.range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
             if !before.isEmpty {
                 blocks.append(.text(before))
             }
@@ -158,8 +158,8 @@ struct MessageContent: View {
             remaining = String(remaining[match.range.upperBound...])
         }
 
-        if !remaining.isEmpty {
-            blocks.append(.text(remaining))
+        if !remaining.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            blocks.append(.text(remaining.trimmingCharacters(in: .whitespacesAndNewlines)))
         }
 
         return blocks.isEmpty ? [.text(content)] : blocks
