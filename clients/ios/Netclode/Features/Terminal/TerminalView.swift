@@ -18,6 +18,7 @@ struct TerminalView: View {
         SwiftTerminalView(bridge: terminalStore.bridge(for: sessionId))
             .ignoresSafeArea(.all)
             .background(terminalBackgroundColor)
+            .focusEffectDisabled()
             .onAppear {
                 // Send initial terminal size to trigger PTY spawn
                 let bridge = terminalStore.bridge(for: sessionId)

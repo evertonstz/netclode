@@ -12,6 +12,17 @@ struct SwiftTerminalView: UIViewRepresentable {
         // Enable auto-resizing so the terminal fills its container
         terminal.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         
+        // Remove any layer borders
+        terminal.layer.borderWidth = 0
+        terminal.layer.borderColor = nil
+        
+        // Disable focus effect on Mac Catalyst
+        #if targetEnvironment(macCatalyst)
+        if #available(iOS 15.0, *) {
+            terminal.focusEffect = nil
+        }
+        #endif
+        
         // Configure terminal appearance
         configureAppearance(terminal)
         

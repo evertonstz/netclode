@@ -48,6 +48,8 @@ struct WorkspaceView: View {
                 .tag(WorkspaceTab.previews)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .scrollIndicators(.hidden)
+        .scrollContentBackground(.hidden)
         // Use terminal background when on terminal tab to prevent color bleeding
         .background(selectedTab == .terminal ? terminalBackgroundColor : Theme.Colors.background)
         .navigationBarTitleDisplayMode(.inline)
