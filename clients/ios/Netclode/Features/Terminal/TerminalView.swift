@@ -16,7 +16,7 @@ struct TerminalView: View {
     
     var body: some View {
         SwiftTerminalView(bridge: terminalStore.bridge(for: sessionId))
-            .ignoresSafeArea(.all)
+            .ignoresSafeArea(.keyboard)
             .background(terminalBackgroundColor)
             .focusEffectDisabled()
             .onAppear {

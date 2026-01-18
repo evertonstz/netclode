@@ -5,6 +5,7 @@ struct ContentView: View {
         NavigationStack {
             SessionsView()
         }
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
     }
 }
 

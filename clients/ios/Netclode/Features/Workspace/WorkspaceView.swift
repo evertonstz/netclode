@@ -28,31 +28,19 @@ struct WorkspaceView: View {
         sessionStore.sessions.first { $0.id == sessionId }
     }
 
-    @Environment(\.colorScheme) private var colorScheme
-    
-    private var terminalBackgroundColor: Color {
-        colorScheme == .dark
-            ? Color(red: 0.1, green: 0.1, blue: 0.12)
-            : Color(red: 0.98, green: 0.98, blue: 0.98)
-    }
-    
     var body: some View {
-        TabView(selection: $selectedTab) {
-            ChatView(sessionId: sessionId)
-                .tag(WorkspaceTab.chat)
-
-            TerminalView(sessionId: sessionId)
-                .tag(WorkspaceTab.terminal)
-
-            PreviewsView(sessionId: sessionId)
-                .tag(WorkspaceTab.previews)
+        Group {
+            switch selectedTab {
+            case .chat:
+                ChatView(sessionId: sessionId)
+            case .terminal:
+                TerminalView(sessionId: sessionId)
+            case .previews:
+                PreviewsView(sessionId: sessionId)
+            }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .scrollIndicators(.hidden)
-        .scrollContentBackground(.hidden)
-        // Use terminal background when on terminal tab to prevent color bleeding
-        .background(selectedTab == .terminal ? terminalBackgroundColor : Theme.Colors.background)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("Tab", selection: $selectedTab) {
@@ -127,7 +115,6 @@ struct WorkspaceView: View {
                 }
             }
         }
-        .toolbar(.hidden, for: .tabBar)
     }
 }
 

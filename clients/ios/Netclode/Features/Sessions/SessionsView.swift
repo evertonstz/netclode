@@ -26,6 +26,7 @@ struct SessionsView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 6) {
