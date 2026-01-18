@@ -208,8 +208,8 @@ struct CodeBlock: View {
                     }
                 }
             }
-            .padding(.horizontal, Theme.Spacing.sm)
-            .padding(.vertical, Theme.Spacing.xs)
+            .padding(.horizontal, Theme.Spacing.xs)
+            .padding(.vertical, Theme.Spacing.xxs)
             .background(Theme.Colors.codeBackground.opacity(0.5))
 
             // Code
@@ -218,7 +218,7 @@ struct CodeBlock: View {
                     .font(.netclodeMonospacedSmall)
                     .foregroundStyle(Theme.Colors.codeText)
                     .textSelection(.enabled)
-                    .padding(Theme.Spacing.sm)
+                    .padding(Theme.Spacing.xs)
             }
         }
         .background(Theme.Colors.codeBackground)
