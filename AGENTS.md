@@ -38,11 +38,8 @@ After pushing changes, CI builds Docker images. To deploy:
 # Wait for CI to complete
 gh run watch
 
-# Rollout all deployments (control-plane, web)
-./scripts/rollout.sh
-
-# Or rollout specific deployment
-./scripts/rollout.sh control-plane
+# Rollout control-plane
+make rollout-control-plane
 ```
 
 ### Manual kubectl access
@@ -66,11 +63,9 @@ kubectl -n netclode get pods
 ## Architecture
 
 - **control-plane**: API server, WebSocket handler, session manager
-- **web**: React frontend
 - **agent**: Runs inside sandboxes created by control-plane (not a separate deployment)
 
 ## Tailscale Hostnames
 
 - `netclode-host` - The server itself
 - `netclode-control-plane` - Control plane service (port 80)
-- `netclode-web` - Web frontend service (port 80)

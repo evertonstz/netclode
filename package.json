@@ -2,13 +2,10 @@
   "name": "netclode",
   "private": true,
   "workspaces": [
-    "services/*",
-    "clients/*",
-    "packages/*"
+    "services/*"
   ],
   "scripts": {
     "dev:agent": "npm run dev --workspace=@netclode/agent",
-    "dev:web": "npm run dev --workspace=@netclode/web",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
