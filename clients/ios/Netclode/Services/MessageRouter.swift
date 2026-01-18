@@ -96,7 +96,6 @@ final class MessageRouter {
                 }
                 // If hasStreamingAssistant, the content is already there from partials - nothing to do
             }
-            sessionStore.setProcessing(for: sessionId, processing: true)
 
         case .agentEvent(let sessionId, let event):
             // Handle thinking events specially for streaming

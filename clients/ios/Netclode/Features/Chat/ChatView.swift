@@ -47,6 +47,7 @@ struct ChatView: View {
     // Cached timeline to avoid recomputing on every view update
     @State private var cachedTimeline: [TimelineItem] = []
     @State private var lastContentLength: Int = 0
+    @State private var lastThinkingContentLength: Int = 0
 
     var messages: [ChatMessage] {
         chatStore.messages(for: sessionId)
@@ -58,6 +59,16 @@ struct ChatView: View {
 
     var isProcessing: Bool {
         sessionStore.isProcessing(sessionId)
+    }
+
+    /// Total content length of all thinking events (to detect streaming updates)
+    private var thinkingContentLength: Int {
+        events.reduce(0) { sum, event in
+            if case .thinking(let e) = event {
+                return sum + e.content.count
+            }
+            return sum
+        }
     }
 
     /// Unified timeline combining messages and events, sorted by timestamp
@@ -143,6 +154,13 @@ struct ChatView: View {
                 }
             }
             .onChange(of: events.count) {
+                updateTimelineIfNeeded()
+                withAnimation(.glassSpring) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
+            }
+            .onChange(of: thinkingContentLength) {
+                // Update when thinking content changes (streaming thinking events)
                 updateTimelineIfNeeded()
                 withAnimation(.glassSpring) {
                     proxy.scrollTo("bottom", anchor: .bottom)
@@ -280,6 +298,9 @@ struct ChatView: View {
             message: ChatMessage(role: .user, content: text)
         )
 
+        // Mark as processing before sending
+        sessionStore.setProcessing(for: sessionId, processing: true)
+
         // Send to server
         webSocketService.send(.prompt(sessionId: sessionId, text: text))
 
@@ -298,6 +319,7 @@ struct ChatView: View {
     private func updateTimelineIfNeeded() {
         // Compute new version based on data state including content length
         let currentContentLength = messages.last?.content.count ?? 0
+        let currentThinkingLength = thinkingContentLength
         let dataChanged = messages.count != cachedTimeline.filter {
             if case .message = $0 { return true }
             return false
@@ -305,10 +327,12 @@ struct ChatView: View {
             if case .event = $0 { return true }
             return false
         }.count || currentContentLength != lastContentLength
+            || currentThinkingLength != lastThinkingContentLength
 
         guard dataChanged else { return }
 
         lastContentLength = currentContentLength
+        lastThinkingContentLength = currentThinkingLength
         cachedTimeline = computeTimeline()
     }
 }
