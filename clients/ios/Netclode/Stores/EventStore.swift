@@ -114,6 +114,37 @@ final class EventStore {
 
     /// Load events from server sync response
     func loadEvents(sessionId: String, events: [PersistedEvent]) {
-        eventsBySession[sessionId] = events.map { $0.event.toAgentEvent() }
+        // Aggregate thinking events by thinkingId to avoid fragmented display
+        var aggregatedEvents: [AgentEvent] = []
+        var thinkingIndex: [String: Int] = [:] // thinkingId -> index in aggregatedEvents
+
+        for persistedEvent in events {
+            let event = persistedEvent.event.toAgentEvent()
+
+            if case .thinking(let thinkingEvent) = event {
+                if let existingIndex = thinkingIndex[thinkingEvent.thinkingId] {
+                    // Append content to existing thinking event
+                    if case .thinking(let existing) = aggregatedEvents[existingIndex] {
+                        let updated = ThinkingEvent(
+                            id: existing.id,
+                            timestamp: existing.timestamp,
+                            thinkingId: existing.thinkingId,
+                            content: existing.content + thinkingEvent.content,
+                            // Mark as not partial if we receive a final event
+                            partial: thinkingEvent.partial && existing.partial
+                        )
+                        aggregatedEvents[existingIndex] = .thinking(updated)
+                    }
+                } else {
+                    // New thinking event
+                    thinkingIndex[thinkingEvent.thinkingId] = aggregatedEvents.count
+                    aggregatedEvents.append(event)
+                }
+            } else {
+                aggregatedEvents.append(event)
+            }
+        }
+
+        eventsBySession[sessionId] = aggregatedEvents
     }
 }
