@@ -46,22 +46,13 @@ final class MessageRouter {
         case .sessionCreated(let session):
             print("[MessageRouter] session.created received: id=\(session.id), pendingPromptText=\(sessionStore.pendingPromptText ?? "nil")")
             sessionStore.addSession(session)
-            
-            // If there's a pending prompt, send it immediately and navigate
-            if let promptText = sessionStore.pendingPromptText {
+
+            // If there's a pending prompt, set up navigation
+            // Note: The prompt itself is sent via initialPrompt in session.create,
+            // and the backend will broadcast user.message which we handle separately
+            if sessionStore.pendingPromptText != nil {
                 sessionStore.pendingSessionId = session.id
-                print("[MessageRouter] Sending initial prompt immediately for session \(session.id)")
-                
-                // Add user message to chat
-                chatStore.appendMessage(
-                    sessionId: session.id,
-                    message: ChatMessage(role: .user, content: promptText)
-                )
-                
-                // Send to agent immediately
-                webSocketService.send(.prompt(sessionId: session.id, text: promptText))
-                
-                // Clear pending state
+                print("[MessageRouter] Session created with initial prompt, navigating to session \(session.id)")
                 sessionStore.pendingPromptText = nil
             }
 

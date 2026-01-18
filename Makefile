@@ -17,6 +17,15 @@ rollout-web: ## Rollout web
 
 rollout-all: rollout-control-plane rollout-web ## Rollout all deployments
 
+drain-warmpool: ## Drain warm pool to pick up new agent image
+	@echo "Scaling warm pool to 0..."
+	kubectl --context $(CONTEXT) -n $(NAMESPACE) patch sandboxwarmpool netclode-agent-pool -p '{"spec":{"replicas":0}}' --type=merge
+	@echo "Waiting for warm pods to terminate..."
+	@sleep 5
+	@echo "Scaling warm pool back to 1..."
+	kubectl --context $(CONTEXT) -n $(NAMESPACE) patch sandboxwarmpool netclode-agent-pool -p '{"spec":{"replicas":1}}' --type=merge
+	@echo "Warm pool refreshed"
+
 deploy: ## Wait for CI then rollout all
 	gh run watch $$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
 	$(MAKE) rollout-all

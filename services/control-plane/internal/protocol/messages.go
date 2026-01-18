@@ -17,6 +17,7 @@ type ClientMessage struct {
 	Port               int     `json:"port,omitempty"`
 	LastMessageID      *string `json:"lastMessageId,omitempty"`
 	LastNotificationID *string `json:"lastNotificationId,omitempty"` // For cursor-based reconnection
+	InitialPrompt      string  `json:"initialPrompt,omitempty"`      // For session.create with immediate prompt
 }
 
 // Client message types

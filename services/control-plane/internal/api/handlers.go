@@ -13,7 +13,7 @@ import (
 func (c *Connection) HandleMessage(ctx context.Context, msg protocol.ClientMessage) error {
 	switch msg.Type {
 	case protocol.MsgTypeSessionCreate:
-		return c.handleSessionCreate(ctx, msg.Name, msg.Repo)
+		return c.handleSessionCreate(ctx, msg.Name, msg.Repo, msg.InitialPrompt)
 	case protocol.MsgTypeSessionList:
 		return c.handleSessionList(ctx)
 	case protocol.MsgTypeSessionResume:
@@ -41,7 +41,7 @@ func (c *Connection) HandleMessage(ctx context.Context, msg protocol.ClientMessa
 	}
 }
 
-func (c *Connection) handleSessionCreate(ctx context.Context, name, repo string) error {
+func (c *Connection) handleSessionCreate(ctx context.Context, name, repo, initialPrompt string) error {
 	var repoPtr *string
 	if repo != "" {
 		repoPtr = &repo
@@ -65,6 +65,14 @@ func (c *Connection) handleSessionCreate(ctx context.Context, name, repo string)
 
 	// Broadcast to all other clients for cross-client sync
 	c.server.BroadcastToAll(protocol.NewSessionCreated(session), c)
+
+	// Send initial prompt if provided
+	if initialPrompt != "" {
+		slog.Info("Sending initial prompt", "sessionID", session.ID)
+		if err := c.manager.SendPrompt(ctx, session.ID, initialPrompt); err != nil {
+			slog.Warn("Failed to send initial prompt", "sessionID", session.ID, "error", err)
+		}
+	}
 
 	return nil
 }

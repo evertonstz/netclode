@@ -67,7 +67,7 @@ async function testAutoNaming(): Promise<void> {
       switch (msg.type) {
         case "sync.response":
           // Create a test session
-          console.log("Creating test session...");
+          console.log("Creating test session with initial prompt...");
           ws.send(
             JSON.stringify({
               type: "session.create",
