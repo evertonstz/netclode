@@ -22,6 +22,22 @@ open Netclode.xcodeproj
 # ⌘R
 ```
 
+## Testing
+
+Run unit tests from Xcode (`⌘U`) or via command line:
+
+```bash
+# From repo root
+make test-ios
+
+# Or directly
+cd clients/ios
+xcodebuild test -scheme NetclodeTests -destination 'platform=macOS'
+```
+
+Tests cover:
+- `EventStore.loadEvents()` - aggregates thinking events by `thinkingId`, merges `tool_input_complete` into `tool_start`
+
 ## Usage
 
 1. Open the app
