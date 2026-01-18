@@ -944,9 +944,23 @@ func (m *Manager) emitTerminalOutput(ctx context.Context, sessionID, data string
 
 	// Terminal output is ephemeral (not persisted), so we broadcast directly
 	// to all subscribed clients without going through Redis Streams.
+	// Use json.Marshal to properly encode the data (handles escape sequences correctly)
+	payload := struct {
+		SessionID string `json:"sessionId"`
+		Data      string `json:"data"`
+	}{
+		SessionID: sessionID,
+		Data:      data,
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		slog.Warn("Failed to marshal terminal output", "sessionID", sessionID, "error", err)
+		return
+	}
+
 	notification := &storage.Notification{
 		Type:      "terminal_output",
-		Payload:   json.RawMessage(fmt.Sprintf(`{"sessionId":%q,"data":%q}`, sessionID, data)),
+		Payload:   json.RawMessage(payloadBytes),
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
 	m.publishNotification(ctx, sessionID, notification)
