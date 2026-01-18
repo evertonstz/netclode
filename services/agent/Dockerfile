@@ -43,19 +43,14 @@ WORKDIR /build
 # Install esbuild for bundling
 RUN npm install -g esbuild
 
-# Copy source files
-COPY packages/protocol packages/protocol
+# Copy agent source
 COPY services/agent services/agent
 
 # Install agent dependencies
-# Remove workspace protocol reference (it's bundled by esbuild) and install
 WORKDIR /build/services/agent
-RUN --mount=type=cache,target=/root/.npm \
-    cat package.json | sed '/"@netclode\/protocol"/d' > package.tmp.json && \
-    mv package.tmp.json package.json && \
-    npm install
+RUN --mount=type=cache,target=/root/.npm npm install
 
-# Bundle agent (inline local dependencies)
+# Bundle agent
 RUN esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/agent.js
 
 # Claude CLI
