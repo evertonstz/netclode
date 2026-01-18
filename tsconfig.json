@@ -4,10 +4,7 @@
     "noEmit": true
   },
   "references": [
-    { "path": "./packages/protocol" },
-    { "path": "./services/control-plane" },
-    { "path": "./services/agent" },
-    { "path": "./clients/web" }
+    { "path": "./services/agent" }
   ],
   "files": []
 }

@@ -21,7 +21,6 @@ dist
 infra/
 
 # Apps not needed in builds
-clients/cli/
 clients/ios/
 
 # Scripts

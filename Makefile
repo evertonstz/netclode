@@ -1,7 +1,7 @@
 CONTEXT ?= netclode
 NAMESPACE ?= netclode
 
-.PHONY: rollout rollout-control-plane rollout-web rollout-all deploy test-ios
+.PHONY: rollout rollout-control-plane deploy test-ios
 
 rollout: ## Rollout a deployment: make rollout target=control-plane
 ifndef target
@@ -12,11 +12,6 @@ endif
 rollout-control-plane: ## Rollout control-plane
 	kubectl --context $(CONTEXT) -n $(NAMESPACE) rollout restart deployment/control-plane
 
-rollout-web: ## Rollout web
-	kubectl --context $(CONTEXT) -n $(NAMESPACE) rollout restart deployment/web
-
-rollout-all: rollout-control-plane rollout-web ## Rollout all deployments
-
 drain-warmpool: ## Drain warm pool to pick up new agent image
 	@echo "Scaling warm pool to 0..."
 	kubectl --context $(CONTEXT) -n $(NAMESPACE) patch sandboxwarmpool netclode-agent-pool -p '{"spec":{"replicas":0}}' --type=merge
@@ -26,9 +21,9 @@ drain-warmpool: ## Drain warm pool to pick up new agent image
 	kubectl --context $(CONTEXT) -n $(NAMESPACE) patch sandboxwarmpool netclode-agent-pool -p '{"spec":{"replicas":1}}' --type=merge
 	@echo "Warm pool refreshed"
 
-deploy: ## Wait for CI then rollout all
+deploy: ## Wait for CI then rollout control-plane
 	gh run watch $$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
-	$(MAKE) rollout-all
+	$(MAKE) rollout-control-plane
 
 test-ios: ## Run iOS unit tests
 	cd clients/ios && xcodebuild test -scheme NetclodeTests -destination 'platform=macOS' -quiet

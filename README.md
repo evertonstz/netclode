@@ -1,6 +1,6 @@
 # Netclode
 
-Self-hosted coding agent. Persistent sandboxed sessions accessible from iOS/web, with full shell/Docker/network access, running on a single VPS with microVM isolation.
+Self-hosted coding agent. Persistent sandboxed sessions accessible from iOS, with full shell/Docker/network access, running on a single VPS with microVM isolation.
 
 > [!NOTE]
 > This is experimental and not ready for self-hosting. I'm building it for myself and iterating quickly.
@@ -43,7 +43,6 @@ I wanted a self-hosted Claude Code environment with the UX I actually want:
              ▼
     ┌────────────────┐
     │  iOS/Mac app   │  ◄── Main interface
-    │  Web client    │
     └────────────────┘
 ```
 
@@ -95,25 +94,20 @@ The [agent-sandbox-controller](https://github.com/angristan/agent-sandbox) recon
 | Control Plane | Go + Redis |
 | Agent | Node.js + Claude Agent SDK |
 | iOS/Mac | SwiftUI (iOS 26 Liquid Glass) |
-| Web | React + Mantine + Vite |
 
-## Clients
+## Client
 
-Main interface is the **iOS/Mac app** (SwiftUI, iOS 26 Liquid Glass). Also a **web client** (React + Mantine).
+Main interface is the **iOS/Mac app** (SwiftUI, iOS 26 Liquid Glass).
 
 ## Project structure
 
 ```
 netclode/
 ├── clients/
-│   ├── ios/              # iOS/Mac app (SwiftUI)
-│   ├── web/              # Web client (React)
-│   └── cli/              # Debug CLI
+│   └── ios/              # iOS/Mac app (SwiftUI)
 ├── services/
 │   ├── control-plane/    # Session orchestration (Go)
 │   └── agent/            # Claude Agent SDK runner (Node.js)
-├── packages/
-│   └── protocol/         # Shared TypeScript types
 ├── infra/
 │   ├── nixos/            # NixOS configuration
 │   └── k8s/              # Kubernetes manifests
@@ -137,7 +131,6 @@ Quick version:
 - [Deployment](docs/deployment.md) - Full setup
 - [Operations](docs/operations.md) - Day-to-day management
 - [iOS App](clients/ios/README.md)
-- [Web App](clients/web/README.md)
 - [Control Plane](services/control-plane/README.md)
 - [Agent](services/agent/README.md)
 - [Infrastructure](infra/k8s/README.md)
