@@ -43,12 +43,10 @@ struct ChatMessageRow: View {
                 : Color.clear
         )
         .overlay(
-            isUser
-                ? Rectangle()
-                    .fill(Theme.Colors.brand)
-                    .frame(width: 2)
-                : nil,
-            alignment: .trailing
+            Rectangle()
+                .fill(Theme.Colors.brand)
+                .frame(width: 2),
+            alignment: isUser ? .trailing : .leading
         )
     }
 
