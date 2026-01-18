@@ -6,22 +6,29 @@ struct TerminalView: View {
     @Environment(TerminalStore.self) private var terminalStore
     @Environment(WebSocketService.self) private var webSocketService
 
+    @Environment(\.colorScheme) private var colorScheme
+    
+    private var terminalBackgroundColor: Color {
+        colorScheme == .dark
+            ? Color(red: 0.1, green: 0.1, blue: 0.12)
+            : Color(red: 0.98, green: 0.98, blue: 0.98)
+    }
+    
     var body: some View {
-        GeometryReader { geometry in
-            SwiftTerminalView(bridge: terminalStore.bridge(for: sessionId))
-                .onAppear {
-                    // Send initial terminal size based on view size
-                    // SwiftTerm will report actual size via delegate
-                    let bridge = terminalStore.bridge(for: sessionId)
-                    if bridge.cols > 0 && bridge.rows > 0 {
-                        webSocketService.send(.terminalResize(
-                            sessionId: sessionId,
-                            cols: bridge.cols,
-                            rows: bridge.rows
-                        ))
-                    }
+        SwiftTerminalView(bridge: terminalStore.bridge(for: sessionId))
+            .ignoresSafeArea(.all)
+            .background(terminalBackgroundColor)
+            .onAppear {
+                // Send initial terminal size to trigger PTY spawn
+                let bridge = terminalStore.bridge(for: sessionId)
+                if bridge.cols > 0 && bridge.rows > 0 {
+                    webSocketService.send(.terminalResize(
+                        sessionId: sessionId,
+                        cols: bridge.cols,
+                        rows: bridge.rows
+                    ))
                 }
-        }
+            }
     }
 }
 

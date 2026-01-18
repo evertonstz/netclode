@@ -95,7 +95,8 @@ RUN echo 'export MISE_DATA_DIR=/agent/.local/share/mise' >> /etc/profile.d/mise.
     chmod +x /etc/profile.d/mise.sh && \
     echo 'export MISE_DATA_DIR=/agent/.local/share/mise' >> /etc/bash.bashrc && \
     echo 'export MISE_CACHE_DIR=/agent/.cache/mise' >> /etc/bash.bashrc && \
-    echo 'export PATH="/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:$PATH"' >> /etc/bash.bashrc
+    echo 'export PATH="/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:$PATH"' >> /etc/bash.bashrc && \
+    echo 'export PS1='"'"'\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '"'" >> /etc/bash.bashrc
 
 # Copy entrypoint script
 COPY services/agent/entrypoint.sh /entrypoint.sh
