@@ -21,7 +21,8 @@ let currentGithubToken: string | null = null;
 // Initialize session with config provided by control-plane
 async function initializeForSession(
   sessionId: string, 
-  config: { GIT_REPO?: string; GITHUB_TOKEN?: string }
+  config: { GIT_REPO?: string; GITHUB_TOKEN?: string },
+  send: (data: object) => void
 ): Promise<void> {
   if (initializedSessionId === sessionId) {
     return; // Already initialized for this session
@@ -36,12 +37,51 @@ async function initializeForSession(
     // Clone/update repository if configured
     if (currentGitRepo) {
       console.log(`[agent] Setting up repository: ${currentGitRepo}`);
+      
+      // Send clone start event via SSE
+      send({
+        type: "agent.event",
+        event: {
+          kind: "repo_clone",
+          status: "cloning",
+          repo: currentGitRepo,
+          message: "Cloning repository...",
+          timestamp: new Date().toISOString(),
+        }
+      });
+      
       await setupRepository(currentGitRepo, workspaceDir, sessionId, currentGithubToken || undefined);
+      
+      // Send clone success event via SSE
+      send({
+        type: "agent.event",
+        event: {
+          kind: "repo_clone",
+          status: "success",
+          repo: currentGitRepo,
+          message: "Repository cloned successfully",
+          timestamp: new Date().toISOString(),
+        }
+      });
     }
     
     initializedSessionId = sessionId;
   } catch (error) {
     console.error(`[agent] Error initializing session:`, error);
+    
+    // Send clone error event via SSE
+    if (currentGitRepo) {
+      send({
+        type: "agent.event",
+        event: {
+          kind: "repo_clone",
+          status: "error",
+          repo: currentGitRepo,
+          message: `Failed to clone: ${error instanceof Error ? error.message : String(error)}`,
+          timestamp: new Date().toISOString(),
+        }
+      });
+    }
   }
 }
 
@@ -232,12 +272,12 @@ const server = createServer(async (req, res) => {
     };
 
     try {
+      send({ type: "start" });
+
       // Initialize repo for this session if config provided
       if (sessionId && config) {
-        await initializeForSession(sessionId, config);
+        await initializeForSession(sessionId, config, send);
       }
-
-      send({ type: "start" });
 
       // Reset streaming state for this request
       textWasStreamed = false;
