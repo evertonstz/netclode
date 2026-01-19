@@ -31,7 +31,7 @@ struct ChatMessageRow: View {
             // Duration indicator for completed assistant messages
             if message.role == .assistant, !isStreaming, let duration = turnDuration {
                 Text(formatDuration(duration))
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .font(.system(size: TypeScale.tiny, weight: .medium, design: .monospaced))
                     .foregroundStyle(.tertiary)
             }
         }

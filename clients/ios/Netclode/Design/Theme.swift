@@ -146,12 +146,22 @@ extension Color {
 
 // MARK: - Typography
 
+enum TypeScale {
+    static let body: CGFloat = 15
+    static let small: CGFloat = 13
+    static let caption: CGFloat = 12
+    static let tiny: CGFloat = 11
+    static let micro: CGFloat = 10
+}
+
 extension Font {
     static let netclodeTitle = Font.system(.largeTitle, design: .rounded, weight: .bold)
     static let netclodeHeadline = Font.system(.headline, design: .rounded, weight: .semibold)
     static let netclodeSubheadline = Font.system(.subheadline, design: .rounded, weight: .medium)
-    static let netclodeBody = Font.system(.body, design: .rounded)
-    static let netclodeCaption = Font.system(.caption, design: .rounded)
-    static let netclodeMonospaced = Font.system(.body, design: .monospaced)
-    static let netclodeMonospacedSmall = Font.system(.caption, design: .monospaced)
+    static let netclodeBody = Font.system(size: TypeScale.body, weight: .regular, design: .rounded)
+    static let netclodeCaption = Font.system(size: TypeScale.caption, weight: .regular, design: .rounded)
+    static let netclodeSmall = Font.system(size: TypeScale.small, weight: .regular, design: .rounded)
+    static let netclodeMonospaced = Font.system(size: TypeScale.body, weight: .regular, design: .monospaced)
+    static let netclodeMonospacedSmall = Font.system(size: TypeScale.small, weight: .regular, design: .monospaced)
+    static let netclodeMonospacedCaption = Font.system(size: TypeScale.caption, weight: .regular, design: .monospaced)
 }

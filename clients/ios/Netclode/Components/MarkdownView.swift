@@ -14,17 +14,76 @@ struct MarkdownView: View {
     var body: some View {
         Markdown(markdownContent)
             .markdownTheme(
-                .gitHub.text {
-                    ForegroundColor(.primary)
-                    BackgroundColor(nil)  // Remove the gray background from GitHub theme
-                }
+                .gitHub
+                    .text {
+                        ForegroundColor(.primary)
+                        BackgroundColor(nil)  // Remove the gray background from GitHub theme
+                        FontSize(15)
+                    }
+                    .heading1 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 16, bottom: 8)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(20)
+                            }
+                    }
+                    .heading2 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 14, bottom: 6)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(18)
+                            }
+                    }
+                    .heading3 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 12, bottom: 4)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(16)
+                            }
+                    }
+                    .heading4 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 10, bottom: 4)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(15)
+                            }
+                    }
+                    .heading5 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 8, bottom: 4)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(15)
+                            }
+                    }
+                    .heading6 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 8, bottom: 4)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(15)
+                                ForegroundColor(.secondary)
+                            }
+                    }
+                    .paragraph { configuration in
+                        configuration.label
+                            .markdownMargin(top: 0, bottom: 8)
+                    }
+                    .listItem { configuration in
+                        configuration.label
+                            .markdownMargin(top: 2, bottom: 2)
+                    }
             )
             .markdownBlockStyle(\.codeBlock) { configuration in
                 NetclodeCodeBlockView(configuration: configuration)
             }
             .markdownTextStyle(\.code) {
                 FontFamilyVariant(.monospaced)
-                FontSize(.em(0.85))
+                FontSize(13)
                 BackgroundColor(MarkdownColors.codeBackground)
                 ForegroundColor(MarkdownColors.codeText)
             }
@@ -83,7 +142,7 @@ private struct NetclodeCodeBlockView: View {
             HStack {
                 if let language = configuration.language, !language.isEmpty {
                     Text(language.lowercased())
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .font(.system(size: TypeScale.caption, weight: .medium, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
 
@@ -94,10 +153,10 @@ private struct NetclodeCodeBlockView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: TypeScale.caption, weight: .medium))
                         if copied {
                             Text("Copied")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.system(size: TypeScale.caption, weight: .medium))
                         }
                     }
                     .foregroundStyle(copied ? .green : .secondary)
@@ -118,7 +177,7 @@ private struct NetclodeCodeBlockView: View {
                 configuration.label
                     .markdownTextStyle {
                         FontFamilyVariant(.monospaced)
-                        FontSize(.em(0.85))
+                        FontSize(13)
                     }
                     .padding(.horizontal, 12)
                     .padding(.bottom, 12)

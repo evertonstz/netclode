@@ -56,7 +56,7 @@ struct ToolEventCard: View {
 
                     // Expand chevron
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: TypeScale.micro, weight: .semibold))
                         .foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
@@ -82,9 +82,9 @@ struct ToolEventCard: View {
     private var toolBadge: some View {
         HStack(spacing: 4) {
             Image(systemName: toolIcon)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: TypeScale.tiny, weight: .semibold))
             Text(toolName)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.system(size: TypeScale.caption, weight: .semibold, design: .monospaced))
         }
         .foregroundStyle(badgeColor)
         .padding(.horizontal, 8)
@@ -132,11 +132,11 @@ struct ToolEventCard: View {
                 .scaleEffect(0.6)
         } else if isSuccess {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 14))
+                .font(.system(size: TypeScale.body))
                 .foregroundStyle(Theme.Colors.success)
         } else {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 14))
+                .font(.system(size: TypeScale.body))
                 .foregroundStyle(Theme.Colors.error)
         }
     }
@@ -280,7 +280,7 @@ private struct InputRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.xs) {
             Text(key)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(.system(size: TypeScale.tiny, weight: .medium, design: .monospaced))
                 .foregroundStyle(.tertiary)
                 .frame(minWidth: 60, alignment: .trailing)
 
@@ -320,7 +320,7 @@ private struct ExpandableSection<Content: View>: View {
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
 
                     Text(title)
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: TypeScale.micro, weight: .semibold))
                         .tracking(0.5)
                 }
                 .foregroundStyle(.tertiary)
@@ -367,9 +367,9 @@ struct CommandEventCard: View {
                     // Bash badge
                     HStack(spacing: 4) {
                         Image(systemName: "terminal")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: TypeScale.tiny, weight: .semibold))
                         Text("Bash")
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .font(.system(size: TypeScale.caption, weight: .semibold, design: .monospaced))
                     }
                     .foregroundStyle(.green)
                     .padding(.horizontal, 8)
@@ -388,7 +388,7 @@ struct CommandEventCard: View {
                     // Exit code if finished
                     if let end = endEvent {
                         Text("exit \(end.exitCode)")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .font(.system(size: TypeScale.tiny, weight: .medium, design: .monospaced))
                             .foregroundStyle(isSuccess ? Theme.Colors.success : Theme.Colors.error)
                     }
 
@@ -398,17 +398,17 @@ struct CommandEventCard: View {
                             .scaleEffect(0.6)
                     } else if isSuccess {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 14))
+                            .font(.system(size: TypeScale.body))
                             .foregroundStyle(Theme.Colors.success)
                     } else {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
+                            .font(.system(size: TypeScale.body))
                             .foregroundStyle(Theme.Colors.error)
                     }
 
                     // Expand chevron
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: TypeScale.micro, weight: .semibold))
                         .foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
@@ -430,7 +430,7 @@ struct CommandEventCard: View {
 
                     if let cwd = startEvent?.cwd {
                         Text("in \(cwd)")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.system(size: TypeScale.tiny, design: .monospaced))
                             .foregroundStyle(.tertiary)
                     }
 
@@ -465,9 +465,9 @@ struct FileChangeCard: View {
             // File action badge
             HStack(spacing: 4) {
                 Image(systemName: event.action.systemImage)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: TypeScale.tiny, weight: .semibold))
                 Text(event.action.displayName)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(size: TypeScale.caption, weight: .semibold, design: .monospaced))
             }
             .foregroundStyle(actionColor)
             .padding(.horizontal, 8)
@@ -486,12 +486,12 @@ struct FileChangeCard: View {
             // Line changes
             if let added = event.linesAdded, added > 0 {
                 Text("+\(added)")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.system(size: TypeScale.caption, weight: .medium, design: .monospaced))
                     .foregroundStyle(Theme.Colors.success)
             }
             if let removed = event.linesRemoved, removed > 0 {
                 Text("-\(removed)")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.system(size: TypeScale.caption, weight: .medium, design: .monospaced))
                     .foregroundStyle(Theme.Colors.error)
             }
         }
@@ -521,7 +521,7 @@ struct ThinkingCard: View {
             // Header row with icon and status
             HStack(spacing: Theme.Spacing.sm) {
                 Image(systemName: "brain.head.profile")
-                    .font(.system(size: 12))
+                    .font(.system(size: TypeScale.caption))
                     .foregroundStyle(Theme.Colors.brandLight)
                     .opacity(event.partial ? 1.0 : 0.7)
 
@@ -547,7 +547,7 @@ struct ThinkingCard: View {
                         }
                     } label: {
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 10))
+                            .font(.system(size: TypeScale.micro))
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -556,7 +556,7 @@ struct ThinkingCard: View {
 
             // Content
             Text(event.content)
-                .font(.netclodeCaption)
+                .font(.netclodeSmall)
                 .foregroundStyle(.secondary)
                 .italic()
                 .lineLimit(isExpanded || event.partial ? nil : 3)
@@ -579,9 +579,9 @@ struct PortExposedCard: View {
         HStack(spacing: Theme.Spacing.sm) {
             HStack(spacing: 4) {
                 Image(systemName: "network")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: TypeScale.tiny, weight: .semibold))
                 Text(verbatim: "Port \(event.port)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(size: TypeScale.caption, weight: .semibold, design: .monospaced))
             }
             .foregroundStyle(.cyan)
             .padding(.horizontal, 8)
@@ -612,7 +612,7 @@ struct PortExposedCard: View {
                 } label: {
                     HStack(spacing: 4) {
                         Text("Open")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: TypeScale.caption, weight: .medium))
                         Image(systemName: "chevron.down")
                             .font(.system(size: 8))
                     }
@@ -678,7 +678,7 @@ struct RepoCloneCard: View {
         HStack(spacing: Theme.Spacing.sm) {
             // GitHub icon
             Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: TypeScale.body, weight: .medium))
                 .foregroundStyle(statusColor)
                 .frame(width: 24, height: 24)
                 .background(statusColor.opacity(0.15))
@@ -687,12 +687,12 @@ struct RepoCloneCard: View {
             // Repo info
             VStack(alignment: .leading, spacing: 2) {
                 Text(repoDisplayName)
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .font(.system(size: TypeScale.small, weight: .medium, design: .monospaced))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Text(event.message)
-                    .font(.system(size: 11))
+                    .font(.system(size: TypeScale.caption))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -705,7 +705,7 @@ struct RepoCloneCard: View {
                     .scaleEffect(0.7)
             } else {
                 Image(systemName: statusIcon)
-                    .font(.system(size: 16))
+                    .font(.system(size: TypeScale.body + 1))
                     .foregroundStyle(statusColor)
             }
         }

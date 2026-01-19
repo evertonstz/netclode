@@ -42,7 +42,7 @@ struct ChatInputBar: View {
                         onInterrupt()
                     } label: {
                         Image(systemName: "stop.fill")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: TypeScale.body, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: inputHeight, height: inputHeight)
                             .glassEffect(
@@ -57,7 +57,7 @@ struct ChatInputBar: View {
                         onSend()
                     } label: {
                         Image(systemName: "arrow.up")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: TypeScale.body, weight: .semibold))
                             .foregroundStyle(canSend ? .white : .secondary)
                             .frame(width: inputHeight, height: inputHeight)
                             .glassEffect(
@@ -88,7 +88,7 @@ struct StreamingIndicator: View {
         HStack(alignment: .top, spacing: Theme.Spacing.sm) {
             // Avatar
             Image(systemName: "brain.head.profile")
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: TypeScale.body, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: 28, height: 28)
                 .glassEffect(
