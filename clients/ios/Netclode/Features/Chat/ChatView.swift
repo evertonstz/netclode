@@ -232,6 +232,9 @@ struct ChatView: View {
         case .portExposed(let e):
             PortExposedCard(event: e)
 
+        case .repoClone(let e):
+            RepoCloneCard(event: e)
+
         default:
             EmptyView()
         }
@@ -280,7 +283,18 @@ struct ChatView: View {
                 result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
 
             case .repoClone(let e):
-                result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
+                // Group by repo - update existing entry if same repo, otherwise add new
+                if let index = result.lastIndex(where: {
+                    if case .repoClone(let existing) = $0.event {
+                        return existing.repo == e.repo
+                    }
+                    return false
+                }) {
+                    // Update the existing entry with the latest event
+                    result[index] = GroupedEvent(id: result[index].id, event: event, timestamp: result[index].timestamp)
+                } else {
+                    result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
+                }
             }
         }
 

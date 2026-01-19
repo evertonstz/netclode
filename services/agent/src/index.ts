@@ -43,7 +43,7 @@ async function initializeForSession(
         type: "agent.event",
         event: {
           kind: "repo_clone",
-          status: "cloning",
+          stage: "cloning",
           repo: currentGitRepo,
           message: "Cloning repository...",
           timestamp: new Date().toISOString(),
@@ -57,7 +57,7 @@ async function initializeForSession(
         type: "agent.event",
         event: {
           kind: "repo_clone",
-          status: "success",
+          stage: "done",
           repo: currentGitRepo,
           message: "Repository cloned successfully",
           timestamp: new Date().toISOString(),
@@ -75,7 +75,7 @@ async function initializeForSession(
         type: "agent.event",
         event: {
           kind: "repo_clone",
-          status: "error",
+          stage: "error",
           repo: currentGitRepo,
           message: `Failed to clone: ${error instanceof Error ? error.message : String(error)}`,
           timestamp: new Date().toISOString(),

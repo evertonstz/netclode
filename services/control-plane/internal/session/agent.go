@@ -318,6 +318,17 @@ func parseAgentEvent(data map[string]interface{}) protocol.AgentEvent {
 		event.PreviewURL = &previewURL
 	}
 
+	// Repo clone events
+	if repo, ok := data["repo"].(string); ok {
+		event.Repo = repo
+	}
+	if stage, ok := data["stage"].(string); ok {
+		event.Stage = stage
+	}
+	if message, ok := data["message"].(string); ok {
+		event.Message = message
+	}
+
 	return event
 }
 

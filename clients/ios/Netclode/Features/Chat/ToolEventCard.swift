@@ -627,6 +627,95 @@ struct PortExposedCard: View {
     }
 }
 
+// MARK: - Repo Clone Card
+
+struct RepoCloneCard: View {
+    let event: RepoCloneEvent
+
+    private var statusColor: Color {
+        switch event.stage {
+        case .starting, .cloning:
+            return .cyan
+        case .done:
+            return Theme.Colors.success
+        case .error:
+            return Theme.Colors.error
+        }
+    }
+
+    private var statusIcon: String {
+        switch event.stage {
+        case .starting:
+            return "arrow.down.circle"
+        case .cloning:
+            return "arrow.down.circle"
+        case .done:
+            return "checkmark.circle.fill"
+        case .error:
+            return "xmark.circle.fill"
+        }
+    }
+
+    private var isInProgress: Bool {
+        event.stage == .starting || event.stage == .cloning
+    }
+
+    /// Extracts "owner/repo" from various URL formats
+    private var repoDisplayName: String {
+        let repo = event.repo
+        // Handle github.com/owner/repo, https://github.com/owner/repo, etc.
+        if let range = repo.range(of: "github.com/") {
+            let afterGithub = String(repo[range.upperBound...])
+            // Remove .git suffix if present
+            let cleaned = afterGithub.replacingOccurrences(of: ".git", with: "")
+            return cleaned
+        }
+        // Fallback: just return the repo as-is
+        return repo
+    }
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.sm) {
+            // GitHub icon
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(statusColor)
+                .frame(width: 24, height: 24)
+                .background(statusColor.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            // Repo info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(repoDisplayName)
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text(event.message)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            // Status indicator
+            if isInProgress {
+                ProgressView()
+                    .scaleEffect(0.7)
+            } else {
+                Image(systemName: statusIcon)
+                    .font(.system(size: 16))
+                    .foregroundStyle(statusColor)
+            }
+        }
+        .padding(.horizontal, Theme.Spacing.sm)
+        .padding(.vertical, Theme.Spacing.sm)
+        .background(Theme.Colors.codeBackground.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
+    }
+}
+
 // MARK: - Previews
 
 #Preview("Tool Event - Running") {
