@@ -38,7 +38,7 @@ func Load() *Config {
 		RedisURL:              getEnv("REDIS_URL", "redis://redis-sessions.netclode.svc.cluster.local:6379"),
 		MaxMessagesPerSession: getEnvInt("MAX_MESSAGES_PER_SESSION", 1000),
 		MaxEventsPerSession:   getEnvInt("MAX_EVENTS_PER_SESSION", 100),
-		UseWarmPool:           getEnvBool("WARM_POOL_ENABLED", false),
+		UseWarmPool:           getEnvBool("WARM_POOL_ENABLED", true),
 		MaxActiveSessions:     getEnvInt("MAX_ACTIVE_SESSIONS", 5),
 
 		// GitHub App integration

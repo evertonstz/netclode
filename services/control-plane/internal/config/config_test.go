@@ -75,20 +75,20 @@ func TestGetEnvBool(t *testing.T) {
 }
 
 func TestLoadWithWarmPoolEnabled(t *testing.T) {
-	// Test default (disabled)
+	// Test default (enabled)
 	os.Unsetenv("WARM_POOL_ENABLED")
 	cfg := Load()
-	if cfg.UseWarmPool {
-		t.Error("UseWarmPool should be false by default")
+	if !cfg.UseWarmPool {
+		t.Error("UseWarmPool should be true by default")
 	}
 
-	// Test enabled
-	os.Setenv("WARM_POOL_ENABLED", "true")
+	// Test explicitly disabled
+	os.Setenv("WARM_POOL_ENABLED", "false")
 	defer os.Unsetenv("WARM_POOL_ENABLED")
 
 	cfg = Load()
-	if !cfg.UseWarmPool {
-		t.Error("UseWarmPool should be true when WARM_POOL_ENABLED=true")
+	if cfg.UseWarmPool {
+		t.Error("UseWarmPool should be false when WARM_POOL_ENABLED=false")
 	}
 }
 
@@ -114,8 +114,8 @@ func TestLoadWithMaxActiveSessions(t *testing.T) {
 	// Test default
 	os.Unsetenv("MAX_ACTIVE_SESSIONS")
 	cfg := Load()
-	if cfg.MaxActiveSessions != 2 {
-		t.Errorf("MaxActiveSessions = %d, want %d", cfg.MaxActiveSessions, 2)
+	if cfg.MaxActiveSessions != 5 {
+		t.Errorf("MaxActiveSessions = %d, want %d", cfg.MaxActiveSessions, 5)
 	}
 
 	// Test custom value
