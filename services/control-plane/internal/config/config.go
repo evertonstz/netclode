@@ -38,7 +38,7 @@ func Load() *Config {
 		MaxMessagesPerSession: getEnvInt("MAX_MESSAGES_PER_SESSION", 1000),
 		MaxEventsPerSession:   getEnvInt("MAX_EVENTS_PER_SESSION", 100),
 		UseWarmPool:           getEnvBool("WARM_POOL_ENABLED", false),
-		MaxActiveSessions:     getEnvInt("MAX_ACTIVE_SESSIONS", 2),
+		MaxActiveSessions:     getEnvInt("MAX_ACTIVE_SESSIONS", 5),
 
 		// GitHub App integration
 		GitHubAppID:          getEnvInt64("GITHUB_APP_ID", 0),
