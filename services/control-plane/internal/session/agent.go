@@ -120,6 +120,7 @@ func (m *Manager) streamSSE(ctx context.Context, sessionID, fqdn, originalPrompt
 	var contentBuilder strings.Builder
 	messageID := "msg_" + uuid.NewString()[:12]
 	titleGenerated := false
+	thinkingBuffers := make(map[string]string) // Aggregate thinking content by thinkingId
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -200,16 +201,25 @@ func (m *Manager) streamSSE(ctx context.Context, sessionID, fqdn, originalPrompt
 				}
 			}
 
-			// Only persist events needed for history (skip streaming deltas)
-			// Streaming deltas (tool_input, partial thinking) are for real-time display only
+			// Handle persistence - aggregate thinking, skip tool_input deltas
 			shouldPersist := true
 			switch event.Kind {
 			case protocol.EventKindToolInput:
 				// tool_input deltas are only for real-time streaming
 				shouldPersist = false
 			case protocol.EventKindThinking:
-				// Only persist final thinking events (partial=false), skip streaming deltas
-				shouldPersist = !event.Partial
+				// Aggregate thinking content by thinkingId
+				if event.Partial {
+					// Accumulate partial content
+					thinkingBuffers[event.ThinkingID] += event.Content
+					shouldPersist = false
+				} else {
+					// Final event - persist with accumulated content
+					if accumulated, ok := thinkingBuffers[event.ThinkingID]; ok {
+						event.Content = accumulated
+						delete(thinkingBuffers, event.ThinkingID)
+					}
+				}
 			}
 
 			if shouldPersist {
