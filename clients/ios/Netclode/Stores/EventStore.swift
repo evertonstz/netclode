@@ -68,7 +68,7 @@ final class EventStore {
             }
             return false
         }) {
-            if case .thinking(var thinkingEvent) = events[index] {
+            if case .thinking(let thinkingEvent) = events[index] {
                 // Create a new event with partial = false
                 let finalizedEvent = ThinkingEvent(
                     id: thinkingEvent.id,

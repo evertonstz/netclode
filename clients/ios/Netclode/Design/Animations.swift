@@ -1,3 +1,6 @@
+#if canImport(UIKit)
+import UIKit
+#endif
 import SwiftUI
 
 extension Animation {
@@ -107,6 +110,8 @@ struct ConditionalPulsingModifier: ViewModifier {
 
 // MARK: - Haptic Feedback
 
+#if canImport(UIKit)
+@MainActor
 enum HapticFeedback {
     static func light() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -136,3 +141,4 @@ enum HapticFeedback {
         UISelectionFeedbackGenerator().selectionChanged()
     }
 }
+#endif

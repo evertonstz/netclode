@@ -123,8 +123,10 @@ struct StreamingIndicator: View {
         // Invalidate any existing timer first
         animationTimer?.invalidate()
         animationTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
-            withAnimation(.bouncy) {
-                animatingDot = (animatingDot + 1) % 3
+            MainActor.assumeIsolated {
+                withAnimation(.bouncy) {
+                    animatingDot = (animatingDot + 1) % 3
+                }
             }
         }
     }

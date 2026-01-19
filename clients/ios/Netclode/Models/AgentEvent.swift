@@ -123,7 +123,7 @@ enum AgentEvent: Identifiable, Sendable {
 
 struct ToolStartEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .toolStart
+    var kind: AgentEventKind { .toolStart }
     let timestamp: Date
     let tool: String
     let toolUseId: String
@@ -133,7 +133,7 @@ struct ToolStartEvent: AgentEventProtocol {
 
 struct ToolInputEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .toolInput
+    var kind: AgentEventKind { .toolInput }
     let timestamp: Date
     let toolUseId: String
     let parentToolUseId: String?  // Set when this tool runs inside a Task/subagent
@@ -142,7 +142,7 @@ struct ToolInputEvent: AgentEventProtocol {
 
 struct ToolInputCompleteEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .toolInputComplete
+    var kind: AgentEventKind { .toolInputComplete }
     let timestamp: Date
     let toolUseId: String
     let parentToolUseId: String?  // Set when this tool runs inside a Task/subagent
@@ -151,7 +151,7 @@ struct ToolInputCompleteEvent: AgentEventProtocol {
 
 struct ToolEndEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .toolEnd
+    var kind: AgentEventKind { .toolEnd }
     let timestamp: Date
     let tool: String
     let toolUseId: String
@@ -164,7 +164,7 @@ struct ToolEndEvent: AgentEventProtocol {
 
 struct FileChangeEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .fileChange
+    var kind: AgentEventKind { .fileChange }
     let timestamp: Date
     let path: String
     let action: FileAction
@@ -189,7 +189,7 @@ struct FileChangeEvent: AgentEventProtocol {
 
 struct CommandStartEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .commandStart
+    var kind: AgentEventKind { .commandStart }
     let timestamp: Date
     let command: String
     let cwd: String?
@@ -197,7 +197,7 @@ struct CommandStartEvent: AgentEventProtocol {
 
 struct CommandEndEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .commandEnd
+    var kind: AgentEventKind { .commandEnd }
     let timestamp: Date
     let command: String
     let exitCode: Int
@@ -208,7 +208,7 @@ struct CommandEndEvent: AgentEventProtocol {
 
 struct ThinkingEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .thinking
+    var kind: AgentEventKind { .thinking }
     let timestamp: Date
     let thinkingId: String  // Correlate streaming updates for same thinking block
     var content: String     // Mutable to accumulate streaming content
@@ -217,7 +217,7 @@ struct ThinkingEvent: AgentEventProtocol {
 
 struct PortExposedEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .portExposed
+    var kind: AgentEventKind { .portExposed }
     let timestamp: Date
     let port: Int
     let process: String?
@@ -234,7 +234,7 @@ enum RepoCloneStage: String, Codable, Sendable {
 
 struct RepoCloneEvent: AgentEventProtocol {
     let id: UUID
-    let kind: AgentEventKind = .repoClone
+    var kind: AgentEventKind { .repoClone }
     let timestamp: Date
     let repo: String
     let stage: RepoCloneStage
