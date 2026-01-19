@@ -162,6 +162,30 @@ final class MessageRouterTests: XCTestCase {
         router.stop()
     }
 
+    // MARK: - GitHub Repos Tests
+
+    @MainActor
+    func testGitHubReposUpdatesStore() {
+        let githubStore = GitHubStore()
+        let router = makeRouter(githubStore: githubStore)
+
+        XCTAssertTrue(githubStore.repos.isEmpty)
+
+        // When: Receiving github.repos
+        let repos = [
+            GitHubRepo(name: "netclode", fullName: "angristan/netclode", isPrivate: false, description: "Self hosted coding agent"),
+            GitHubRepo(name: "dotfiles", fullName: "angristan/dotfiles", isPrivate: true, description: nil)
+        ]
+        router.route(.githubRepos(repos: repos))
+
+        // Then: Store should have repos
+        XCTAssertEqual(githubStore.repos.count, 2)
+        XCTAssertEqual(githubStore.repos.first?.fullName, "angristan/dotfiles") // Sorted alphabetically
+        XCTAssertFalse(githubStore.isLoading)
+
+        router.stop()
+    }
+
     // MARK: - Helpers
 
     @MainActor

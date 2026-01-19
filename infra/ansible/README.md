@@ -72,6 +72,11 @@ DO_SPACES_ACCESS_KEY=your-spaces-access-key
 DO_SPACES_SECRET_KEY=your-spaces-secret-key
 JUICEFS_BUCKET=https://fra1.digitaloceanspaces.com/your-bucket
 JUICEFS_META_URL=redis://redis-juicefs.netclode.svc.cluster.local:6379/0
+
+# GitHub App (optional - for repo picker)
+GITHUB_APP_ID=123456
+GITHUB_APP_PRIVATE_KEY_B64=base64-encoded-pem-private-key
+GITHUB_INSTALLATION_ID=12345678
 ```
 
 Deploy secrets:
@@ -89,7 +94,7 @@ This creates:
 - `tailscale-authkey` - Tailscale auth key (optional)
 
 **Kubernetes secrets** (in `netclode` namespace):
-- `netclode-secrets` - Contains `anthropic-api-key`
+- `netclode-secrets` - Contains `anthropic-api-key`, and optionally `github-app-id`, `github-app-private-key`, `github-installation-id`
 - `juicefs-secret` - Contains S3 credentials and JuiceFS metadata URL
 
 ## Usage

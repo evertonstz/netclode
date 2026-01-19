@@ -176,6 +176,9 @@ final class EventStoreTests: XCTestCase {
                 port: nil,
                 process: nil,
                 previewUrl: nil,
+                repo: nil,
+                stage: nil,
+                message: nil,
                 error: nil
             ),
             timestamp: Date()
@@ -212,6 +215,9 @@ final class EventStoreTests: XCTestCase {
                 port: nil,
                 process: nil,
                 previewUrl: nil,
+                repo: nil,
+                stage: nil,
+                message: nil,
                 error: nil
             ),
             timestamp: Date()
@@ -247,6 +253,9 @@ final class EventStoreTests: XCTestCase {
                 port: nil,
                 process: nil,
                 previewUrl: nil,
+                repo: nil,
+                stage: nil,
+                message: nil,
                 error: nil
             ),
             timestamp: Date()
@@ -282,6 +291,9 @@ final class EventStoreTests: XCTestCase {
                 port: nil,
                 process: nil,
                 previewUrl: nil,
+                repo: nil,
+                stage: nil,
+                message: nil,
                 error: nil
             ),
             timestamp: Date()
@@ -318,6 +330,9 @@ final class EventStoreTests: XCTestCase {
                 port: nil,
                 process: nil,
                 previewUrl: nil,
+                repo: nil,
+                stage: nil,
+                message: nil,
                 error: nil
             ),
             timestamp: Date()
