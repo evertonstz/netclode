@@ -40,8 +40,8 @@ type k8sRuntime struct {
 	informer     cache.SharedIndexInformer
 	informerStop chan struct{}
 
-	// Callbacks for sandbox ready notifications
-	readyCallbacks map[string]SandboxReadyCallback
+	// Callbacks for sandbox ready notifications (multiple waiters supported)
+	readyCallbacks map[string][]SandboxReadyCallback
 	callbacksMu    sync.RWMutex
 
 	// Cache of sandbox states
@@ -76,7 +76,7 @@ func newK8sRuntime(cfg *config.Config) (*k8sRuntime, error) {
 		namespace:      cfg.K8sNamespace,
 		config:         cfg,
 		informerStop:   make(chan struct{}),
-		readyCallbacks: make(map[string]SandboxReadyCallback),
+		readyCallbacks: make(map[string][]SandboxReadyCallback),
 		sandboxCache:   make(map[string]*Sandbox),
 		claimCallbacks: make(map[string]ClaimBoundCallback),
 		claimCache:     make(map[string]*SandboxClaim),
@@ -221,10 +221,10 @@ func (r *k8sRuntime) getSessionID(sandbox *Sandbox) string {
 
 func (r *k8sRuntime) checkAndNotify(sessionID string, sandbox *Sandbox) {
 	r.callbacksMu.RLock()
-	callback, ok := r.readyCallbacks[sessionID]
+	callbacks, ok := r.readyCallbacks[sessionID]
 	r.callbacksMu.RUnlock()
 
-	if !ok {
+	if !ok || len(callbacks) == 0 {
 		return
 	}
 
@@ -235,12 +235,16 @@ func (r *k8sRuntime) checkAndNotify(sessionID string, sandbox *Sandbox) {
 			fqdn = fmt.Sprintf("%s.%s.svc.cluster.local", sandbox.Name, r.namespace)
 		}
 
-		// Remove callback before invoking to prevent double-call
+		// Remove all callbacks before invoking to prevent double-call
 		r.callbacksMu.Lock()
+		callbacksCopy := r.readyCallbacks[sessionID]
 		delete(r.readyCallbacks, sessionID)
 		r.callbacksMu.Unlock()
 
-		callback(sessionID, fqdn, nil)
+		// Notify all waiters
+		for _, callback := range callbacksCopy {
+			callback(sessionID, fqdn, nil)
+		}
 	} else if errMsg := sandbox.GetError(); errMsg != "" {
 		// Log error but don't fail immediately - some errors are transient
 		// (e.g., "Operation cannot be fulfilled" conflicts with sandbox controller)
@@ -420,21 +424,18 @@ func (r *k8sRuntime) WaitForReady(ctx context.Context, sessionID string, timeout
 		err  error
 	}, 1)
 
+	// Append callback to slice (supports multiple concurrent waiters)
 	r.callbacksMu.Lock()
-	r.readyCallbacks[sessionID] = func(sid string, fqdn string, err error) {
+	r.readyCallbacks[sessionID] = append(r.readyCallbacks[sessionID], func(sid string, fqdn string, err error) {
 		resultCh <- struct {
 			fqdn string
 			err  error
 		}{fqdn, err}
-	}
+	})
 	r.callbacksMu.Unlock()
 
-	// Cleanup callback on exit
-	defer func() {
-		r.callbacksMu.Lock()
-		delete(r.readyCallbacks, sessionID)
-		r.callbacksMu.Unlock()
-	}()
+	// Note: No cleanup needed here - checkAndNotify clears all callbacks when sandbox becomes ready.
+	// If this goroutine times out, the callback stays but is harmless (sends to buffered channel).
 
 	// Wait for result or timeout
 	select {
@@ -476,9 +477,9 @@ func (r *k8sRuntime) WatchSandboxReady(sessionID string, callback SandboxReadyCa
 		}
 	}
 
-	// Register callback for future updates
+	// Register callback for future updates (append to support multiple waiters)
 	r.callbacksMu.Lock()
-	r.readyCallbacks[sessionID] = callback
+	r.readyCallbacks[sessionID] = append(r.readyCallbacks[sessionID], callback)
 	r.callbacksMu.Unlock()
 }
 

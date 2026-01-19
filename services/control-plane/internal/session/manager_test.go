@@ -25,14 +25,14 @@ type mockRuntime struct {
 	createdClaims    []string
 	createdServices  []string
 	labeledSandboxes map[string]string // sandboxName -> sessionID
-	readyCallbacks   map[string]k8s.SandboxReadyCallback
+	readyCallbacks   map[string][]k8s.SandboxReadyCallback
 }
 
 func newMockRuntime() *mockRuntime {
 	return &mockRuntime{
 		sandboxes:        make(map[string]*k8s.SandboxStatusInfo),
 		labeledSandboxes: make(map[string]string),
-		readyCallbacks:   make(map[string]k8s.SandboxReadyCallback),
+		readyCallbacks:   make(map[string][]k8s.SandboxReadyCallback),
 	}
 }
 
@@ -51,7 +51,7 @@ func (m *mockRuntime) WaitForReady(ctx context.Context, sessionID string, timeou
 func (m *mockRuntime) WatchSandboxReady(sessionID string, callback k8s.SandboxReadyCallback) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.readyCallbacks[sessionID] = callback
+	m.readyCallbacks[sessionID] = append(m.readyCallbacks[sessionID], callback)
 }
 
 func (m *mockRuntime) GetStatus(ctx context.Context, sessionID string) (*k8s.SandboxStatusInfo, error) {
