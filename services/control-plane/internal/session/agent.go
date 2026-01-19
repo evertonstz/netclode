@@ -62,10 +62,19 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 func (m *Manager) callAgentPrompt(ctx context.Context, sessionID, fqdn, text string) {
 	url := fmt.Sprintf("http://%s:3002/prompt", fqdn)
 
-	body, _ := json.Marshal(map[string]string{
+	// Build request body with session config included
+	reqBody := map[string]interface{}{
 		"sessionId": sessionID,
 		"text":      text,
-	})
+	}
+
+	// Include session config so agent doesn't need to fetch it
+	config, err := m.GetSessionConfig(ctx, sessionID)
+	if err == nil {
+		reqBody["config"] = config
+	}
+
+	body, _ := json.Marshal(reqBody)
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	if err != nil {

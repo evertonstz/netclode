@@ -12,38 +12,24 @@ import { setupRepository } from "./git.js";
 const port = parseInt(process.env.AGENT_PORT || "3002", 10);
 const workspaceDir = "/agent/workspace";
 const sessionMappingFile = "/agent/.session-mapping.json";
-const controlPlaneUrl = process.env.CONTROL_PLANE_URL || "http://control-plane.netclode.svc.cluster.local";
 
 // Track which session we've initialized the repo for
 let initializedSessionId: string | null = null;
 let currentGitRepo: string | null = null;
 let currentGithubToken: string | null = null;
 
-// Fetch session config from control-plane and setup repo if needed
-async function initializeForSession(sessionId: string): Promise<void> {
+// Initialize session with config provided by control-plane
+async function initializeForSession(
+  sessionId: string, 
+  config: { GIT_REPO?: string; GITHUB_TOKEN?: string }
+): Promise<void> {
   if (initializedSessionId === sessionId) {
     return; // Already initialized for this session
   }
 
-  console.log(`[agent] Fetching session config for ${sessionId}...`);
+  console.log(`[agent] Initializing session ${sessionId} with config: GIT_REPO=${config.GIT_REPO ? "set" : "unset"}, GITHUB_TOKEN=${config.GITHUB_TOKEN ? "set" : "unset"}`);
   
   try {
-    const configUrl = `${controlPlaneUrl}/internal/session-config?session=${sessionId}`;
-    const response = await fetch(configUrl);
-    
-    if (!response.ok) {
-      console.error(`[agent] Failed to fetch session config: ${response.status}`);
-      return;
-    }
-    
-    const config = await response.json() as { 
-      GIT_REPO?: string; 
-      GITHUB_TOKEN?: string;
-      SESSION_ID?: string;
-    };
-    
-    console.log(`[agent] Session config received: GIT_REPO=${config.GIT_REPO ? "set" : "unset"}, GITHUB_TOKEN=${config.GITHUB_TOKEN ? "set" : "unset"}`);
-    
     currentGitRepo = config.GIT_REPO || null;
     currentGithubToken = config.GITHUB_TOKEN || null;
     
@@ -226,7 +212,11 @@ const server = createServer(async (req, res) => {
     for await (const chunk of req) {
       body += chunk;
     }
-    const { text, sessionId } = JSON.parse(body) as { text: string; sessionId?: string };
+    const { text, sessionId, config } = JSON.parse(body) as { 
+      text: string; 
+      sessionId?: string;
+      config?: { GIT_REPO?: string; GITHUB_TOKEN?: string };
+    };
     console.log(`[agent] Prompt received (session=${sessionId}): "${text.slice(0, 100)}${text.length > 100 ? "..." : ""}"`);
 
     res.writeHead(200, {
@@ -242,9 +232,9 @@ const server = createServer(async (req, res) => {
     };
 
     try {
-      // Initialize repo for this session if needed (fetch config from control-plane)
-      if (sessionId) {
-        await initializeForSession(sessionId);
+      // Initialize repo for this session if config provided
+      if (sessionId && config) {
+        await initializeForSession(sessionId, config);
       }
 
       send({ type: "start" });
