@@ -184,12 +184,10 @@ func (m *Manager) streamSSE(ctx context.Context, sessionID, fqdn, originalPrompt
 		case "agent.event":
 			eventData, ok := payload["event"].(map[string]interface{})
 			if !ok {
-				slog.Warn("Invalid event data format", "sessionID", sessionID)
 				continue
 			}
 
 			event := parseAgentEvent(eventData)
-			slog.Info("Parsed agent event", "sessionID", sessionID, "kind", event.Kind)
 
 			// Inject preview URL for port_exposed events (uses Tailscale MagicDNS short hostname)
 			if event.Kind == protocol.EventKindPortExposed && event.Port > 0 {
@@ -202,19 +200,31 @@ func (m *Manager) streamSSE(ctx context.Context, sessionID, fqdn, originalPrompt
 				}
 			}
 
-			// Persist event
-			persistedEvent := &protocol.PersistedEvent{
-				ID:        "evt_" + uuid.NewString()[:12],
-				SessionID: sessionID,
-				Event:     event,
-				Timestamp: time.Now().UTC().Format(time.RFC3339),
-			}
-			if err := m.storage.AppendEvent(ctx, persistedEvent); err != nil {
-				slog.Warn("Failed to persist event", "sessionID", sessionID, "kind", event.Kind, "error", err)
-			} else {
-				slog.Info("Persisted event", "sessionID", sessionID, "kind", event.Kind, "eventID", persistedEvent.ID)
+			// Only persist events needed for history (skip streaming deltas)
+			// Streaming deltas (tool_input, partial thinking) are for real-time display only
+			shouldPersist := true
+			switch event.Kind {
+			case protocol.EventKindToolInput:
+				// tool_input deltas are only for real-time streaming
+				shouldPersist = false
+			case protocol.EventKindThinking:
+				// Only persist final thinking events (partial=false), skip streaming deltas
+				shouldPersist = !event.Partial
 			}
 
+			if shouldPersist {
+				persistedEvent := &protocol.PersistedEvent{
+					ID:        "evt_" + uuid.NewString()[:12],
+					SessionID: sessionID,
+					Event:     event,
+					Timestamp: time.Now().UTC().Format(time.RFC3339),
+				}
+				if err := m.storage.AppendEvent(ctx, persistedEvent); err != nil {
+					slog.Warn("Failed to persist event", "sessionID", sessionID, "kind", event.Kind, "error", err)
+				}
+			}
+
+			// Always emit to real-time subscribers
 			m.emit(ctx, sessionID, protocol.NewAgentEvent(sessionID, &event))
 
 		case "error", "agent.error":

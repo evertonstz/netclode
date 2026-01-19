@@ -180,8 +180,8 @@ func (r *RedisStorage) DeleteSession(ctx context.Context, id string) error {
 	pipe.SRem(ctx, keySessionsAll, id)
 	pipe.Del(ctx, sessionKey(id))
 	pipe.Del(ctx, messagesKey(id))
-	pipe.Del(ctx, eventsStreamKey(id))           // Delete events stream
-	pipe.Del(ctx, NotificationsStreamKey(id))  // Delete notifications stream
+	pipe.Del(ctx, eventsStreamKey(id))        // Delete events stream
+	pipe.Del(ctx, NotificationsStreamKey(id)) // Delete notifications stream
 	_, err := pipe.Exec(ctx)
 	return err
 }
@@ -269,15 +269,12 @@ func (r *RedisStorage) AppendEvent(ctx context.Context, evt *protocol.PersistedE
 
 	streamKey := eventsStreamKey(evt.SessionID)
 
-	// Add to stream with auto-generated ID
+	// Add to stream with auto-generated ID (no limit - events cleaned up on session delete)
 	_, err = r.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: streamKey,
 		Values: map[string]interface{}{
 			"data": string(data),
 		},
-		// Use MAXLEN ~ to approximately limit stream size (efficient trimming)
-		MaxLen: int64(r.config.MaxEventsPerSession),
-		Approx: true,
 	}).Result()
 
 	return err

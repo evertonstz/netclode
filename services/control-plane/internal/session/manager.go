@@ -703,7 +703,6 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit in
 	if err != nil {
 		return nil, nil, nil, false, "", fmt.Errorf("get events: %w", err)
 	}
-	slog.Info("GetWithHistory: loaded events", "sessionID", id, "eventCount", len(events))
 
 	// Get the latest notification ID for cursor-based subscription
 	// This allows the client to subscribe starting from where the history ends
@@ -720,16 +719,8 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit in
 	}
 
 	evtSlice := make([]protocol.PersistedEvent, len(events))
-	repoCloneCount := 0
 	for i, e := range events {
 		evtSlice[i] = *e
-		if e.Event.Kind == protocol.EventKindRepoClone {
-			repoCloneCount++
-			slog.Info("GetWithHistory: found repo_clone event", "sessionID", id, "eventID", e.ID, "repo", e.Event.Repo, "stage", e.Event.Stage)
-		}
-	}
-	if repoCloneCount > 0 {
-		slog.Info("GetWithHistory: repo_clone events found", "sessionID", id, "count", repoCloneCount)
 	}
 
 	hasMore := len(messages) >= messageLimit

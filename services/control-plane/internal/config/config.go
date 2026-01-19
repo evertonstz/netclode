@@ -36,7 +36,7 @@ func Load() *Config {
 		DefaultMemoryMB:       getEnvInt("DEFAULT_MEMORY_MB", 2048),
 		RedisURL:              getEnv("REDIS_URL", "redis://redis-sessions.netclode.svc.cluster.local:6379"),
 		MaxMessagesPerSession: getEnvInt("MAX_MESSAGES_PER_SESSION", 1000),
-		MaxEventsPerSession:   getEnvInt("MAX_EVENTS_PER_SESSION", 50),
+		MaxEventsPerSession:   getEnvInt("MAX_EVENTS_PER_SESSION", 100),
 		UseWarmPool:           getEnvBool("WARM_POOL_ENABLED", false),
 		MaxActiveSessions:     getEnvInt("MAX_ACTIVE_SESSIONS", 2),
 
