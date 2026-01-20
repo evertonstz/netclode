@@ -195,7 +195,18 @@ final class MessageRouter {
         case .sessionState(let session, let messages, let events, _, let lastNotificationId):
             // Load session history from server
             print("[MessageRouter] session.state received: \(messages.count) messages, \(events.count) events for session \(session.id)")
-            sessionStore.updateSession(session)
+            
+            // Don't downgrade status from running to transitional states (stale response)
+            let currentSession = sessionStore.sessions.first { $0.id == session.id }
+            if currentSession?.status == .running && (session.status == .creating || session.status == .resuming) {
+                print("[MessageRouter] Ignoring stale status \(session.status) for running session")
+                // Update session but keep current status
+                var updatedSession = session
+                updatedSession.status = .running
+                sessionStore.updateSession(updatedSession)
+            } else {
+                sessionStore.updateSession(session)
+            }
             
             // Only load server messages if we don't already have local messages
             // (to avoid overwriting locally added user message from initial prompt)

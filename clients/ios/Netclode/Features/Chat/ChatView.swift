@@ -281,9 +281,9 @@ struct ChatView: View {
         }
         .onAppear {
             lastKnownStatus = session?.status
-            // Only show pill on appear for transitional states (not running - that's stable)
+            // Show pill on appear for all active states
             if let status = session?.status, 
-               status == .creating || status == .resuming {
+               status == .creating || status == .resuming || status == .running {
                 showStatusPill = true
                 // Auto-hide after 2 seconds
                 hideStatusPillTask?.cancel()
