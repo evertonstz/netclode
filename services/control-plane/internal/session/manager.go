@@ -102,7 +102,8 @@ func (m *Manager) Initialize(ctx context.Context) error {
 			}
 		} else if sb.Ready {
 			state.ServiceFQDN = sb.ServiceFQDN
-			if state.Session.Status == protocol.StatusCreating {
+			// Reset to ready if was creating or running (we lost the SSE connection on restart)
+			if state.Session.Status == protocol.StatusCreating || state.Session.Status == protocol.StatusRunning {
 				state.Session.Status = protocol.StatusReady
 				_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusReady)
 			}
