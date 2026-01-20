@@ -279,12 +279,15 @@ struct ChatView: View {
                 }
             }
         }
-        .onAppear {
+        .task(id: sessionId) {
+            // Use task(id:) instead of onAppear to ensure it fires on navigation
             lastKnownStatus = session?.status
             // Show pill on appear for all active states
             if let status = session?.status, 
                status == .creating || status == .resuming || status == .running {
-                showStatusPill = true
+                withAnimation {
+                    showStatusPill = true
+                }
                 // Auto-hide after 2 seconds
                 hideStatusPillTask?.cancel()
                 hideStatusPillTask = Task {
