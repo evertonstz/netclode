@@ -142,7 +142,7 @@ extension Color {
 
     /// Returns a glass-compatible tint version of this color
     var glassTint: Color {
-        self.opacity(0.25)
+        self.opacity(0.5)
     }
 }
 

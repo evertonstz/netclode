@@ -41,13 +41,11 @@ struct GlassButton: View {
             }
             .font(.netclodeSubheadline)
             .fontWeight(.medium)
-            .foregroundStyle(.primary)
+            .foregroundStyle(.white)
             .padding(.horizontal, Theme.Spacing.lg)
             .padding(.vertical, Theme.Spacing.sm)
-            .glassEffect(
-                .regular.interactive().tint((tint ?? Theme.Colors.brand).glassTint),
-                in: Capsule()
-            )
+            .background(.ultraThinMaterial, in: Capsule())
+            .glassEffect(.regular.interactive(), in: Capsule())
         }
         .disabled(isLoading)
     }
@@ -83,13 +81,8 @@ struct GlassIconButton: View {
             action()
         } label: {
             Image(systemName: icon)
-                .font(.system(size: size * 0.4, weight: .medium))
-                .foregroundStyle(.primary)
-                .frame(width: size, height: size)
-                .glassEffect(
-                    .regular.interactive().tint((tint ?? Theme.Colors.brand).glassTint),
-                    in: Circle()
-                )
+                .font(.system(size: size * 0.5, weight: .medium))
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -122,13 +115,9 @@ struct FloatingActionButton: View {
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .frame(width: 60, height: 60)
-                .glassEffect(
-                    .regular.interactive().tint((tint ?? Theme.Colors.brand).glassTint),
-                    in: Circle()
-                )
-                .shadow(color: (tint ?? Theme.Colors.brand).opacity(0.4), radius: 12, x: 0, y: 6)
+                .glassEffect(.regular.interactive(), in: Circle())
         }
     }
 }

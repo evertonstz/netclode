@@ -45,14 +45,9 @@ struct SessionsView: View {
             }
 
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
+                GlassIconButton(icon: "gearshape.fill", size: 36) {
                     showSettingsSheet = true
-                } label: {
-                    Image(systemName: "gearshape.fill")
                 }
-                .buttonStyle(.glassProminent)
-                .buttonBorderShape(.circle)
-                .tint(Theme.Colors.brand)
             }
         }
         .sheet(isPresented: $showSettingsSheet) {
@@ -172,20 +167,16 @@ struct PromptInputBar: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: Theme.Spacing.sm) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Theme.Colors.brand)
-
+            HStack {
                 Text("Start a new session...")
                     .font(.netclodeBody)
                     .foregroundStyle(.secondary)
-
+                
                 Spacer()
-
+                
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: 24))
-                    .foregroundStyle(Theme.Colors.brand)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, Theme.Spacing.md)
             .padding(.vertical, Theme.Spacing.sm)
