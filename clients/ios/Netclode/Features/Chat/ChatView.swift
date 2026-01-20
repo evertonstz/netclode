@@ -78,8 +78,8 @@ struct ChatView: View {
     @State private var isScrollingUp = false
     @State private var hideStatusPillTask: Task<Void, Never>?
     
-    // Track if initial scroll to bottom has been done
-    @State private var hasScrolledToBottom = false
+    // Track scroll state - hide content until positioned
+    @State private var isContentVisible = false
 
     var messages: [ChatMessage] {
         chatStore.messages(for: sessionId)
@@ -155,90 +155,52 @@ struct ChatView: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: Theme.Spacing.sm) {
-                    // Scroll position tracker
-                    GeometryReader { geo in
-                        Color.clear
-                            .preference(
-                                key: ScrollOffsetKey.self,
-                                value: geo.frame(in: .named("scroll")).minY
-                            )
-                    }
-                    .frame(height: 0)
-                    
-                    ForEach(cachedTimeline) { item in
-                        timelineItemView(item)
-                            .id(item.id)
-                    }
-
-                    // Streaming indicator (shows at end when processing)
-                    if isProcessing {
-                        StreamingIndicator()
-                            .id("streaming")
-                    }
-
-                    // Scroll anchor
-                    Color.clear
-                        .frame(height: 1)
-                        .id("bottom")
-                }
-                .padding()
-            }
-            .coordinateSpace(name: "scroll")
-            .onPreferenceChange(ScrollOffsetKey.self) { offset in
-                let scrollingUp = offset > lastScrollOffset
-                if scrollingUp != isScrollingUp {
-                    isScrollingUp = scrollingUp
-                    withAnimation(.snappy) {
-                        showStatusPill = scrollingUp
+            scrollContent
+                .opacity(isContentVisible ? 1 : 0)
+                .onChange(of: messages.count) {
+                    updateTimelineIfNeeded()
+                    withAnimation(.glassSpring) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
                     }
                 }
-                lastScrollOffset = offset
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .onChange(of: messages.count) {
-                updateTimelineIfNeeded()
-                withAnimation(.glassSpring) {
-                    proxy.scrollTo("bottom", anchor: .bottom)
+                .onChange(of: messages.last?.content) {
+                    updateTimelineIfNeeded()
+                    withAnimation(.glassSpring) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                    }
                 }
-            }
-            .onChange(of: messages.last?.content) {
-                // Update when streaming content changes (count stays same but content grows)
-                updateTimelineIfNeeded()
-                withAnimation(.glassSpring) {
-                    proxy.scrollTo("bottom", anchor: .bottom)
+                .onChange(of: events.count) {
+                    updateTimelineIfNeeded()
+                    withAnimation(.glassSpring) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                    }
                 }
-            }
-            .onChange(of: events.count) {
-                updateTimelineIfNeeded()
-                withAnimation(.glassSpring) {
-                    proxy.scrollTo("bottom", anchor: .bottom)
+                .onChange(of: thinkingContentLength) {
+                    updateTimelineIfNeeded()
+                    withAnimation(.glassSpring) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                    }
                 }
-            }
-            .onChange(of: thinkingContentLength) {
-                // Update when thinking content changes (streaming thinking events)
-                updateTimelineIfNeeded()
-                withAnimation(.glassSpring) {
-                    proxy.scrollTo("bottom", anchor: .bottom)
+                .onChange(of: isProcessing) {
+                    updateTimelineIfNeeded()
+                    withAnimation(.glassSpring) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                    }
                 }
-            }
-            .onChange(of: isProcessing) {
-                updateTimelineIfNeeded()
-                withAnimation(.glassSpring) {
+                .onAppear {
+                    updateTimelineIfNeeded()
+                    // Scroll immediately then show
                     proxy.scrollTo("bottom", anchor: .bottom)
+                    isContentVisible = true
                 }
-            }
-            .onAppear {
-                updateTimelineIfNeeded()
-                scrollToBottomAfterDelay(proxy: proxy)
-            }
-            .task(id: sessionId) {
-                // Reset scroll tracking when session changes
-                hasScrolledToBottom = false
-                updateTimelineIfNeeded()
-                scrollToBottomAfterDelay(proxy: proxy)
-            }
+                .task(id: sessionId) {
+                    isContentVisible = false
+                    updateTimelineIfNeeded()
+                    // Give layout a moment then scroll and show
+                    try? await Task.sleep(for: .milliseconds(50))
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                    isContentVisible = true
+                }
         }
         .safeAreaInset(edge: .bottom) {
             ChatInputBar(
@@ -301,6 +263,51 @@ struct ChatView: View {
                 }
             }
         }
+    }
+    
+    private var scrollContent: some View {
+        ScrollView {
+            LazyVStack(spacing: Theme.Spacing.sm) {
+                // Scroll position tracker
+                GeometryReader { geo in
+                    Color.clear
+                        .preference(
+                            key: ScrollOffsetKey.self,
+                            value: geo.frame(in: .named("scroll")).minY
+                        )
+                }
+                .frame(height: 0)
+                
+                ForEach(cachedTimeline) { item in
+                    timelineItemView(item)
+                        .id(item.id)
+                }
+
+                // Streaming indicator (shows at end when processing)
+                if isProcessing {
+                    StreamingIndicator()
+                        .id("streaming")
+                }
+
+                // Scroll anchor
+                Color.clear
+                    .frame(height: 1)
+                    .id("bottom")
+            }
+            .padding()
+        }
+        .coordinateSpace(name: "scroll")
+        .onPreferenceChange(ScrollOffsetKey.self) { offset in
+            let scrollingUp = offset > lastScrollOffset
+            if scrollingUp != isScrollingUp {
+                isScrollingUp = scrollingUp
+                withAnimation(.snappy) {
+                    showStatusPill = scrollingUp
+                }
+            }
+            lastScrollOffset = offset
+        }
+        .scrollDismissesKeyboard(.interactively)
     }
 
     @ViewBuilder
@@ -481,14 +488,7 @@ struct ChatView: View {
         cachedTimeline = computeTimeline()
     }
     
-    /// Scroll to bottom after a brief delay to let layout settle
-    private func scrollToBottomAfterDelay(proxy: ScrollViewProxy) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            guard !hasScrolledToBottom else { return }
-            hasScrolledToBottom = true
-            proxy.scrollTo("bottom", anchor: .bottom)
-        }
-    }
+
 }
 
 // MARK: - Scroll Offset Key
