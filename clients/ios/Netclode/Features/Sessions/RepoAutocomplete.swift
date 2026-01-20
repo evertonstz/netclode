@@ -27,6 +27,7 @@ struct RepoAutocomplete: View {
                     text: $text
                 )
                 .font(.netclodeBody)
+                .tint(Theme.Colors.brand)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(.URL)

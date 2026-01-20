@@ -27,6 +27,7 @@ struct GlassTextField: View {
 
             TextField(placeholder, text: $text, axis: axis)
                 .textFieldStyle(.plain)
+                .tint(Theme.Colors.brand)
         }
         .font(.netclodeBody)
         .padding(.horizontal, Theme.Spacing.md)
@@ -66,6 +67,7 @@ struct GlassSecureField: View {
 
             SecureField(placeholder, text: $text)
                 .textFieldStyle(.plain)
+                .tint(Theme.Colors.brand)
         }
         .font(.netclodeBody)
         .padding(.horizontal, Theme.Spacing.md)
@@ -107,6 +109,7 @@ struct GlassTextEditor: View {
 
             TextEditor(text: $text)
                 .scrollContentBackground(.hidden)
+                .tint(Theme.Colors.brand)
                 .background(.clear)
                 .frame(minHeight: minHeight)
         }

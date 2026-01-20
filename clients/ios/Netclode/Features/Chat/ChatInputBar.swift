@@ -27,6 +27,7 @@ struct ChatInputBar: View {
                 TextEditor(text: $text)
                     .focused(isFocused)
                     .scrollContentBackground(.hidden)
+                    .tint(Theme.Colors.brand)
                     .frame(minHeight: inputHeight, maxHeight: maxHeight)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, Theme.Spacing.xs)

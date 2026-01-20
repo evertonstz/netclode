@@ -24,6 +24,7 @@ struct PromptSheet: View {
                     axis: .vertical
                 )
                 .font(.netclodeBody)
+                .tint(Theme.Colors.brand)
                 .lineLimit(3...12)
                 .padding(Theme.Spacing.md)
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.Radius.lg))
