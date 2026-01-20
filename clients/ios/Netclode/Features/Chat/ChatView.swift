@@ -281,6 +281,22 @@ struct ChatView: View {
         }
         .onAppear {
             lastKnownStatus = session?.status
+            // Show pill on appear if session is in an active/transitional state
+            if let status = session?.status, 
+               status == .creating || status == .resuming || status == .running {
+                showStatusPill = true
+                // Auto-hide after 2 seconds
+                hideStatusPillTask?.cancel()
+                hideStatusPillTask = Task {
+                    try? await Task.sleep(for: .seconds(2))
+                    guard !Task.isCancelled else { return }
+                    if !isScrollingUp {
+                        withAnimation {
+                            showStatusPill = false
+                        }
+                    }
+                }
+            }
         }
     }
 
