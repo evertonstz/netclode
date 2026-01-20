@@ -3,7 +3,6 @@ import SwiftUI
 struct ChatInputBar: View {
     @Binding var text: String
     let isProcessing: Bool
-    let sessionStatus: SessionStatus?
     var isFocused: FocusState<Bool>.Binding
     let onSend: () -> Void
     let onInterrupt: () -> Void
@@ -12,7 +11,7 @@ struct ChatInputBar: View {
     private let maxHeight: CGFloat = 100
 
     private var canSend: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && sessionStatus != .error
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var body: some View {
@@ -67,19 +66,6 @@ struct ChatInputBar: View {
                                     : .regular.interactive(),
                                 in: Circle()
                             )
-                            .overlay(alignment: .topTrailing) {
-                                if let status = sessionStatus {
-                                    Circle()
-                                        .fill(status.tintColor.color)
-                                        .frame(width: 10, height: 10)
-                                        .overlay(
-                                            Circle()
-                                                .strokeBorder(.black.opacity(0.2), lineWidth: 1)
-                                        )
-                                        .offset(x: 2, y: -2)
-                                        .pulsing(status == .running)
-                                }
-                            }
                     }
                     .disabled(!canSend)
                     .transition(.scale.combined(with: .opacity))
@@ -160,7 +146,6 @@ struct StreamingIndicator: View {
         ChatInputBar(
             text: .constant(""),
             isProcessing: false,
-            sessionStatus: .ready,
             isFocused: FocusState<Bool>().projectedValue,
             onSend: {},
             onInterrupt: {}
@@ -179,7 +164,6 @@ struct StreamingIndicator: View {
         ChatInputBar(
             text: .constant("Hello"),
             isProcessing: true,
-            sessionStatus: .running,
             isFocused: FocusState<Bool>().projectedValue,
             onSend: {},
             onInterrupt: {}

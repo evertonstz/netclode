@@ -70,6 +70,12 @@ struct ChatView: View {
     @State private var cachedTimeline: [TimelineItem] = []
     @State private var lastContentLength: Int = 0
     @State private var lastThinkingContentLength: Int = 0
+    
+    // Status pill visibility
+    @State private var showStatusPill = false
+    @State private var lastKnownStatus: SessionStatus?
+    @State private var lastScrollOffset: CGFloat = 0
+    @State private var isScrollingUp = false
 
     var messages: [ChatMessage] {
         chatStore.messages(for: sessionId)
@@ -147,6 +153,16 @@ struct ChatView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: Theme.Spacing.sm) {
+                    // Scroll position tracker
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(
+                                key: ScrollOffsetKey.self,
+                                value: geo.frame(in: .named("scroll")).minY
+                            )
+                    }
+                    .frame(height: 0)
+                    
                     ForEach(cachedTimeline) { item in
                         timelineItemView(item)
                             .id(item.id)
@@ -164,6 +180,17 @@ struct ChatView: View {
                         .id("bottom")
                 }
                 .padding()
+            }
+            .coordinateSpace(name: "scroll")
+            .onPreferenceChange(ScrollOffsetKey.self) { offset in
+                let scrollingUp = offset > lastScrollOffset
+                if scrollingUp != isScrollingUp {
+                    isScrollingUp = scrollingUp
+                    withAnimation(.snappy) {
+                        showStatusPill = scrollingUp
+                    }
+                }
+                lastScrollOffset = offset
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) {
@@ -211,11 +238,40 @@ struct ChatView: View {
             ChatInputBar(
                 text: $inputText,
                 isProcessing: isProcessing,
-                sessionStatus: session?.status,
                 isFocused: $isInputFocused,
                 onSend: sendMessage,
                 onInterrupt: interruptAgent
             )
+        }
+        .overlay(alignment: .top) {
+            if showStatusPill, let status = session?.status {
+                StatusPill(status: status)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, Theme.Spacing.sm)
+            }
+        }
+        .animation(.snappy, value: showStatusPill)
+        .onChange(of: session?.status) { oldStatus, newStatus in
+            guard let newStatus, newStatus != lastKnownStatus else { return }
+            lastKnownStatus = newStatus
+            
+            // Show pill briefly on status change (even if not scrolling up)
+            withAnimation {
+                showStatusPill = true
+            }
+            
+            // Auto-hide after 2 seconds only if not scrolling up
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                if !isScrollingUp {
+                    withAnimation {
+                        showStatusPill = false
+                    }
+                }
+            }
+        }
+        .onAppear {
+            lastKnownStatus = session?.status
         }
     }
 
@@ -395,6 +451,39 @@ struct ChatView: View {
         lastContentLength = currentContentLength
         lastThinkingContentLength = currentThinkingLength
         cachedTimeline = computeTimeline()
+    }
+}
+
+// MARK: - Scroll Offset Key
+
+struct ScrollOffsetKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+// MARK: - Status Pill
+
+struct StatusPill: View {
+    let status: SessionStatus
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(status.tintColor.color)
+                .frame(width: 8, height: 8)
+                .pulsing(status == .running)
+            
+            Text(status.displayName)
+                .font(.system(size: 13, weight: .medium))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .glassEffect(
+            .regular.tint(status.tintColor.color.glassTint),
+            in: Capsule()
+        )
     }
 }
 
