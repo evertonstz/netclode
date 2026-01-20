@@ -500,10 +500,14 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 		// Sandbox already running and ready to accept prompts
 		m.mu.Lock()
 		state.ServiceFQDN = status.ServiceFQDN
+		wasAlreadyReady := state.Session.Status == protocol.StatusReady
 		state.Session.Status = protocol.StatusReady
 		m.mu.Unlock()
 
-		_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusReady)
+		// Only update storage if status actually changed
+		if !wasAlreadyReady {
+			_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusReady)
+		}
 		return state.Session, nil
 	}
 
