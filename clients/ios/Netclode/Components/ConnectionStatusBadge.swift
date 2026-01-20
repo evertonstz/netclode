@@ -131,11 +131,12 @@ struct ProcessingIndicator: View {
 
         HStack(spacing: 12) {
             SessionStatusBadge(status: .creating)
+            SessionStatusBadge(status: .resuming)
             SessionStatusBadge(status: .ready)
-            SessionStatusBadge(status: .running)
         }
 
         HStack(spacing: 12) {
+            SessionStatusBadge(status: .running)
             SessionStatusBadge(status: .paused)
             SessionStatusBadge(status: .error)
         }

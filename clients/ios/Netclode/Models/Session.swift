@@ -2,6 +2,7 @@ import Foundation
 
 enum SessionStatus: String, Codable, CaseIterable, Sendable {
     case creating
+    case resuming
     case ready
     case running
     case paused
@@ -14,6 +15,7 @@ enum SessionStatus: String, Codable, CaseIterable, Sendable {
     var systemImage: String {
         switch self {
         case .creating: "hourglass"
+        case .resuming: "arrow.clockwise"
         case .ready: "checkmark.circle.fill"
         case .running: "play.circle.fill"
         case .paused: "pause.circle.fill"
@@ -24,6 +26,7 @@ enum SessionStatus: String, Codable, CaseIterable, Sendable {
     var tintColor: Theme.StatusColor {
         switch self {
         case .creating: .creating
+        case .resuming: .resuming
         case .ready: .ready
         case .running: .running
         case .paused: .paused

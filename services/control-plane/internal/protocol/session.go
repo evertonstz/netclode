@@ -4,6 +4,7 @@ type SessionStatus string
 
 const (
 	StatusCreating SessionStatus = "creating"
+	StatusResuming SessionStatus = "resuming"
 	StatusReady    SessionStatus = "ready"
 	StatusRunning  SessionStatus = "running"
 	StatusPaused   SessionStatus = "paused"

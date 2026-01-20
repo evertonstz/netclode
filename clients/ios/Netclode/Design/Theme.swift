@@ -55,6 +55,7 @@ enum Theme {
 
     enum StatusColor {
         case creating
+        case resuming
         case ready
         case running
         case paused
@@ -63,6 +64,7 @@ enum Theme {
         var color: Color {
             switch self {
             case .creating: Color.orange
+            case .resuming: Color.cyan
             case .ready: Color.green
             case .running: Color.blue
             case .paused: Color.gray

@@ -509,10 +509,10 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 	if status.Exists {
 		// Sandbox exists but not ready yet - just wait for it
 		m.mu.Lock()
-		state.Session.Status = protocol.StatusCreating
+		state.Session.Status = protocol.StatusResuming
 		m.mu.Unlock()
 
-		_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusCreating)
+		_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusResuming)
 
 		// Wait for existing sandbox to become ready
 		go m.waitForSandbox(context.Background(), id)
@@ -520,12 +520,12 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 		return state.Session, nil
 	}
 
-	// No sandbox exists - create new one
+	// No sandbox exists - create new one (resuming from paused state)
 	m.mu.Lock()
-	state.Session.Status = protocol.StatusCreating
+	state.Session.Status = protocol.StatusResuming
 	m.mu.Unlock()
 
-	_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusCreating)
+	_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusResuming)
 
 	// Start sandbox creation in background
 	go m.createSandbox(context.Background(), id, state.Session.Repo, state.Session.RepoAccess)
