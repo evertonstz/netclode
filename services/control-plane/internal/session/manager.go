@@ -610,6 +610,38 @@ func (m *Manager) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// DeleteAll deletes all sessions and their resources.
+// Returns the list of deleted session IDs.
+func (m *Manager) DeleteAll(ctx context.Context) ([]string, error) {
+	// Get all session IDs
+	m.mu.Lock()
+	sessionIDs := make([]string, 0, len(m.sessions))
+	for id := range m.sessions {
+		sessionIDs = append(sessionIDs, id)
+	}
+	m.mu.Unlock()
+
+	var deletedIDs []string
+	var lastErr error
+
+	for _, id := range sessionIDs {
+		if err := m.Delete(ctx, id); err != nil {
+			slog.Error("Failed to delete session during DeleteAll", "sessionID", id, "error", err)
+			lastErr = err
+			continue
+		}
+		deletedIDs = append(deletedIDs, id)
+	}
+
+	slog.Info("DeleteAll completed", "deleted", len(deletedIDs), "total", len(sessionIDs))
+
+	if lastErr != nil {
+		return deletedIDs, fmt.Errorf("some sessions failed to delete: %w", lastErr)
+	}
+
+	return deletedIDs, nil
+}
+
 // ExposePort exposes a port for a session via Tailscale and persists the event.
 func (m *Manager) ExposePort(ctx context.Context, sessionID string, port int) (string, error) {
 	if err := m.k8s.ExposePort(ctx, sessionID, port); err != nil {

@@ -23,19 +23,20 @@ type ClientMessage struct {
 
 // Client message types
 const (
-	MsgTypeSessionCreate   = "session.create"
-	MsgTypeSessionList     = "session.list"
-	MsgTypeSessionResume   = "session.resume"
-	MsgTypeSessionPause    = "session.pause"
-	MsgTypeSessionDelete   = "session.delete"
-	MsgTypePrompt          = "prompt"
-	MsgTypePromptInterrupt = "prompt.interrupt"
-	MsgTypeTerminalInput   = "terminal.input"
-	MsgTypeTerminalResize  = "terminal.resize"
-	MsgTypePortExpose      = "port.expose"
-	MsgTypeSync            = "sync"
-	MsgTypeSessionOpen     = "session.open"
-	MsgTypeGitHubReposList = "github.repos.list"
+	MsgTypeSessionCreate    = "session.create"
+	MsgTypeSessionList      = "session.list"
+	MsgTypeSessionResume    = "session.resume"
+	MsgTypeSessionPause     = "session.pause"
+	MsgTypeSessionDelete    = "session.delete"
+	MsgTypePrompt           = "prompt"
+	MsgTypePromptInterrupt  = "prompt.interrupt"
+	MsgTypeTerminalInput    = "terminal.input"
+	MsgTypeTerminalResize   = "terminal.resize"
+	MsgTypePortExpose       = "port.expose"
+	MsgTypeSync             = "sync"
+	MsgTypeSessionOpen      = "session.open"
+	MsgTypeSessionDeleteAll = "session.deleteAll"
+	MsgTypeGitHubReposList  = "github.repos.list"
 )
 
 // GitHubRepo represents a GitHub repository for the repo picker.
@@ -75,6 +76,9 @@ type ServerMessage struct {
 
 	// For github.repos response
 	Repos []GitHubRepo `json:"repos,omitempty"`
+
+	// For sessions.deletedAll response
+	DeletedIDs []string `json:"deletedIds,omitempty"`
 }
 
 // Server message types
@@ -95,6 +99,7 @@ const (
 	MsgTypePortError           = "port.error"
 	MsgTypeSyncResponse        = "sync.response"
 	MsgTypeSessionState        = "session.state"
+	MsgTypeSessionsDeletedAll  = "sessions.deletedAll"
 	MsgTypeGitHubReposResponse = "github.repos"
 )
 
@@ -111,6 +116,11 @@ func NewSessionUpdated(s *Session) ServerMessage {
 // NewSessionDeleted creates a session.deleted message
 func NewSessionDeleted(id string) ServerMessage {
 	return ServerMessage{Type: MsgTypeSessionDeleted, ID: id}
+}
+
+// NewSessionsDeletedAll creates a sessions.deletedAll message
+func NewSessionsDeletedAll(deletedIDs []string) ServerMessage {
+	return ServerMessage{Type: MsgTypeSessionsDeletedAll, DeletedIDs: deletedIDs}
 }
 
 // NewSessionListMsg creates a session.list message

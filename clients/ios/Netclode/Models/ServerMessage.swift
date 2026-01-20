@@ -4,6 +4,7 @@ enum ServerMessage: Sendable {
     case sessionCreated(session: Session)
     case sessionUpdated(session: Session)
     case sessionDeleted(id: String)
+    case sessionsDeletedAll(deletedIds: [String])
     case sessionList(sessions: [Session])
     case sessionError(id: String?, error: String)
 
@@ -36,6 +37,7 @@ extension ServerMessage: Decodable {
         case port, previewUrl
         case serverTime, messages, events, hasMore, lastNotificationId
         case repos
+        case deletedIds
     }
 
     init(from decoder: Decoder) throws {
@@ -54,6 +56,10 @@ extension ServerMessage: Decodable {
         case "session.deleted":
             let id = try container.decode(String.self, forKey: .id)
             self = .sessionDeleted(id: id)
+
+        case "sessions.deletedAll":
+            let deletedIds = try container.decodeIfPresent([String].self, forKey: .deletedIds) ?? []
+            self = .sessionsDeletedAll(deletedIds: deletedIds)
 
         case "session.list":
             let sessions = try container.decode([Session].self, forKey: .sessions)

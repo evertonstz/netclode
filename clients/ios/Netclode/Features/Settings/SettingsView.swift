@@ -13,6 +13,9 @@ struct SettingsView: View {
                 // Appearance
                 AppearanceSection()
 
+                // Danger Zone
+                DangerZoneSection()
+
                 // About
                 AboutSection()
             }
@@ -155,6 +158,85 @@ struct AppearanceSection: View {
                 }
                 .tint(Theme.Colors.brand)
             }
+        }
+    }
+}
+
+// MARK: - Danger Zone Section
+
+struct DangerZoneSection: View {
+    @Environment(SettingsStore.self) private var settingsStore
+    @Environment(WebSocketService.self) private var webSocketService
+
+    @State private var showDeleteAllConfirmation = false
+    @State private var isDeleting = false
+
+    private var isConnected: Bool {
+        webSocketService.connectionState.isConnected
+    }
+
+    var body: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+                // Section header
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Theme.Colors.error)
+
+                    Text("Danger Zone")
+                        .font(.netclodeHeadline)
+                }
+
+                // Delete all sessions button
+                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                    Text("Delete All Sessions")
+                        .font(.netclodeBody)
+
+                    Text("Permanently delete all sessions, including their sandboxes and data. This action cannot be undone.")
+                        .font(.netclodeCaption)
+                        .foregroundStyle(.secondary)
+
+                    GlassButton(
+                        "Delete All Sessions",
+                        icon: "trash.fill",
+                        tint: Theme.Colors.error,
+                        isLoading: isDeleting
+                    ) {
+                        if settingsStore.hapticFeedbackEnabled {
+                            HapticFeedback.warning()
+                        }
+                        showDeleteAllConfirmation = true
+                    }
+                    .disabled(!isConnected || isDeleting)
+                    .opacity(isConnected ? 1.0 : 0.5)
+
+                    if !isConnected {
+                        Text("Connect to server to delete sessions")
+                            .font(.netclodeCaption)
+                            .foregroundStyle(Theme.Colors.warning)
+                    }
+                }
+            }
+        }
+        .alert("Delete All Sessions?", isPresented: $showDeleteAllConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete All", role: .destructive) {
+                deleteAllSessions()
+            }
+        } message: {
+            Text("This will permanently delete ALL sessions and their data. This action cannot be undone.")
+        }
+    }
+
+    private func deleteAllSessions() {
+        isDeleting = true
+        if settingsStore.hapticFeedbackEnabled {
+            HapticFeedback.warning()
+        }
+        webSocketService.send(.sessionDeleteAll)
+        // Reset after a short delay (server will broadcast the result)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isDeleting = false
         }
     }
 }

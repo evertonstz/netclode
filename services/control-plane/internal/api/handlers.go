@@ -22,6 +22,8 @@ func (c *Connection) HandleMessage(ctx context.Context, msg protocol.ClientMessa
 		return c.handleSessionPause(ctx, msg.ID)
 	case protocol.MsgTypeSessionDelete:
 		return c.handleSessionDelete(ctx, msg.ID)
+	case protocol.MsgTypeSessionDeleteAll:
+		return c.handleSessionDeleteAll(ctx)
 	case protocol.MsgTypePrompt:
 		return c.handlePrompt(ctx, msg.SessionID, msg.Text)
 	case protocol.MsgTypePromptInterrupt:
@@ -151,6 +153,19 @@ func (c *Connection) handleSessionDelete(ctx context.Context, id string) error {
 
 	// Broadcast to all other clients for cross-client sync
 	c.server.BroadcastToAll(protocol.NewSessionDeleted(id), c)
+
+	return nil
+}
+
+func (c *Connection) handleSessionDeleteAll(ctx context.Context) error {
+	deletedIDs, err := c.manager.DeleteAll(ctx)
+	if err != nil {
+		// Still broadcast what was deleted, even if some failed
+		slog.Warn("Some sessions failed to delete", "error", err)
+	}
+
+	// Broadcast to all clients (including this one)
+	c.server.BroadcastToAll(protocol.NewSessionsDeletedAll(deletedIDs), nil)
 
 	return nil
 }

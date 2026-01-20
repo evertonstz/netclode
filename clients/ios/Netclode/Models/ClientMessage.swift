@@ -6,6 +6,7 @@ enum ClientMessage: Encodable, Sendable {
     case sessionResume(id: String)
     case sessionPause(id: String)
     case sessionDelete(id: String)
+    case sessionDeleteAll
     case prompt(sessionId: String, text: String)
     case promptInterrupt(sessionId: String)
     case terminalInput(sessionId: String, data: String)
@@ -47,6 +48,9 @@ enum ClientMessage: Encodable, Sendable {
         case .sessionDelete(let id):
             try container.encode("session.delete", forKey: .type)
             try container.encode(id, forKey: .id)
+
+        case .sessionDeleteAll:
+            try container.encode("session.deleteAll", forKey: .type)
 
         case .prompt(let sessionId, let text):
             try container.encode("prompt", forKey: .type)

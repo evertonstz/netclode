@@ -72,6 +72,17 @@ final class MessageRouter {
             eventStore.clearEvents(for: id)
             terminalStore.clearOutput(for: id)
 
+        case .sessionsDeletedAll(let deletedIds):
+            withAnimation {
+                sessionStore.removeAllSessions()
+            }
+            // Clear all chat, event, and terminal data
+            for id in deletedIds {
+                chatStore.clearMessages(for: id)
+                eventStore.clearEvents(for: id)
+                terminalStore.clearOutput(for: id)
+            }
+
         case .sessionList(let sessions):
             sessionStore.setSessions(sessions)
 

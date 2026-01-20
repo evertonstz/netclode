@@ -51,6 +51,16 @@ final class SessionStore {
         lastNotificationIds.removeValue(forKey: id)
     }
 
+    func removeAllSessions() {
+        sessions.removeAll()
+        currentSessionId = nil
+        processingSessionIds.removeAll()
+        errorsBySession.removeAll()
+        lastNotificationIds.removeAll()
+        pendingPromptText = nil
+        pendingSessionId = nil
+    }
+
     func setCurrentSession(id: String?) {
         currentSessionId = id
     }
