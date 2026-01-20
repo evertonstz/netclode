@@ -70,6 +70,7 @@ struct ChatView: View {
     @State private var cachedTimeline: [TimelineItem] = []
     @State private var lastContentLength: Int = 0
     @State private var lastThinkingContentLength: Int = 0
+    @State private var lastProcessingState: Bool = false
     
     // Status pill visibility
     @State private var showStatusPill = false
@@ -312,8 +313,11 @@ struct ChatView: View {
     @ViewBuilder
     private func timelineItemView(_ item: TimelineItem) -> some View {
         switch item {
-        case .message(let message, let isStreaming, let turnDuration):
-            ChatMessageRow(message: message, isStreaming: isStreaming, turnDuration: turnDuration)
+        case .message(let message, _, let turnDuration):
+            // Compute isStreaming at render time to ensure it reflects current processing state
+            let isLastAssistant = message.role == .assistant && message.id == messages.last?.id
+            let currentlyStreaming = isLastAssistant && isProcessing
+            ChatMessageRow(message: message, isStreaming: currentlyStreaming, turnDuration: turnDuration)
         case .event(let grouped):
             groupedEventView(grouped)
         }
@@ -471,19 +475,28 @@ struct ChatView: View {
         // Compute new version based on data state including content length
         let currentContentLength = messages.last?.content.count ?? 0
         let currentThinkingLength = thinkingContentLength
-        let dataChanged = messages.count != cachedTimeline.filter {
+        let currentProcessing = isProcessing
+        
+        let messageCountChanged = messages.count != cachedTimeline.filter {
             if case .message = $0 { return true }
             return false
-        }.count || events.count != cachedTimeline.filter {
+        }.count
+        let eventCountChanged = events.count != cachedTimeline.filter {
             if case .event = $0 { return true }
             return false
-        }.count || currentContentLength != lastContentLength
-            || currentThinkingLength != lastThinkingContentLength
+        }.count
+        let contentLengthChanged = currentContentLength != lastContentLength
+        let thinkingLengthChanged = currentThinkingLength != lastThinkingContentLength
+        let processingStateChanged = currentProcessing != lastProcessingState
+        
+        let dataChanged = messageCountChanged || eventCountChanged || contentLengthChanged
+            || thinkingLengthChanged || processingStateChanged
 
         guard dataChanged else { return }
 
         lastContentLength = currentContentLength
         lastThinkingContentLength = currentThinkingLength
+        lastProcessingState = currentProcessing
         cachedTimeline = computeTimeline()
     }
     
