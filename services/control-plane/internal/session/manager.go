@@ -451,13 +451,13 @@ func (m *Manager) waitForSandbox(ctx context.Context, sessionID string) {
 	m.mu.Lock()
 	if state, ok := m.sessions[sessionID]; ok {
 		state.ServiceFQDN = fqdn
-		state.Session.Status = protocol.StatusRunning
+		state.Session.Status = protocol.StatusReady
 		pendingPrompt = state.PendingPrompt
 		state.PendingPrompt = "" // Clear it
 	}
 	m.mu.Unlock()
 
-	if err := m.storage.UpdateSessionStatus(ctx, sessionID, protocol.StatusRunning); err != nil {
+	if err := m.storage.UpdateSessionStatus(ctx, sessionID, protocol.StatusReady); err != nil {
 		slog.Error("Failed to update session status", "sessionID", sessionID, "error", err)
 	}
 
@@ -497,13 +497,13 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 	}
 
 	if status.Exists && status.Ready && status.ServiceFQDN != "" {
-		// Sandbox already running
+		// Sandbox already running and ready to accept prompts
 		m.mu.Lock()
 		state.ServiceFQDN = status.ServiceFQDN
-		state.Session.Status = protocol.StatusRunning
+		state.Session.Status = protocol.StatusReady
 		m.mu.Unlock()
 
-		_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusRunning)
+		_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusReady)
 		return state.Session, nil
 	}
 
