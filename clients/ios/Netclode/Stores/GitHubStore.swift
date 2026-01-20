@@ -1,6 +1,6 @@
 import Foundation
 
-/// Store for managing GitHub repository data with caching.
+/// Store for managing GitHub repository data with persistent caching.
 @MainActor
 @Observable
 final class GitHubStore {
@@ -19,10 +19,45 @@ final class GitHubStore {
     /// Cache TTL in seconds (5 minutes)
     private let cacheTTL: TimeInterval = 300
     
+    /// UserDefaults keys for persistence
+    private enum StorageKeys {
+        static let repos = "github_repos_cache"
+        static let lastFetched = "github_repos_last_fetched"
+    }
+    
     /// Whether the cache is stale
     var isCacheStale: Bool {
         guard let lastFetched else { return true }
         return Date().timeIntervalSince(lastFetched) > cacheTTL
+    }
+    
+    init() {
+        loadFromStorage()
+    }
+    
+    // MARK: - Persistence
+    
+    /// Load cached repos from UserDefaults
+    private func loadFromStorage() {
+        if let data = UserDefaults.standard.data(forKey: StorageKeys.repos),
+           let decoded = try? JSONDecoder().decode([GitHubRepo].self, from: data) {
+            self.repos = decoded
+        }
+        
+        if let timestamp = UserDefaults.standard.object(forKey: StorageKeys.lastFetched) as? Date {
+            self.lastFetched = timestamp
+        }
+    }
+    
+    /// Save repos to UserDefaults
+    private func saveToStorage() {
+        if let encoded = try? JSONEncoder().encode(repos) {
+            UserDefaults.standard.set(encoded, forKey: StorageKeys.repos)
+        }
+        
+        if let lastFetched {
+            UserDefaults.standard.set(lastFetched, forKey: StorageKeys.lastFetched)
+        }
     }
     
     /// Filter repos by query string (matches name or fullName)
@@ -55,6 +90,7 @@ final class GitHubStore {
         self.lastFetched = Date()
         self.isLoading = false
         self.errorMessage = nil
+        saveToStorage()
     }
     
     /// Handle error response
@@ -68,5 +104,7 @@ final class GitHubStore {
         repos = []
         lastFetched = nil
         errorMessage = nil
+        UserDefaults.standard.removeObject(forKey: StorageKeys.repos)
+        UserDefaults.standard.removeObject(forKey: StorageKeys.lastFetched)
     }
 }

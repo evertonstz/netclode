@@ -34,9 +34,16 @@ struct PromptSheet: View {
 
                 // Repository section
                 VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                    Text("Repository (optional)")
-                        .font(.netclodeCaption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: Theme.Spacing.xs) {
+                        Image("github-mark")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 14, height: 14)
+                            .foregroundStyle(.secondary)
+                        Text("Repository (optional)")
+                            .font(.netclodeCaption)
+                            .foregroundStyle(.secondary)
+                    }
                     
                     RepoAutocomplete(text: $repoURL)
                     
