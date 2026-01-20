@@ -76,6 +76,9 @@ struct ChatView: View {
     @State private var lastKnownStatus: SessionStatus?
     @State private var lastScrollOffset: CGFloat = 0
     @State private var isScrollingUp = false
+    
+    // Track if initial scroll to bottom has been done
+    @State private var hasScrolledToBottom = false
 
     var messages: [ChatMessage] {
         chatStore.messages(for: sessionId)
@@ -227,11 +230,13 @@ struct ChatView: View {
             }
             .onAppear {
                 updateTimelineIfNeeded()
-                proxy.scrollTo("bottom", anchor: .bottom)
+                scrollToBottomAfterDelay(proxy: proxy)
             }
             .task(id: sessionId) {
-                // Recompute timeline when session changes
+                // Reset scroll tracking when session changes
+                hasScrolledToBottom = false
                 updateTimelineIfNeeded()
+                scrollToBottomAfterDelay(proxy: proxy)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -451,6 +456,15 @@ struct ChatView: View {
         lastContentLength = currentContentLength
         lastThinkingContentLength = currentThinkingLength
         cachedTimeline = computeTimeline()
+    }
+    
+    /// Scroll to bottom after a brief delay to let layout settle
+    private func scrollToBottomAfterDelay(proxy: ScrollViewProxy) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            guard !hasScrolledToBottom else { return }
+            hasScrolledToBottom = true
+            proxy.scrollTo("bottom", anchor: .bottom)
+        }
     }
 }
 
