@@ -229,11 +229,7 @@ func (r *k8sRuntime) checkAndNotify(sessionID string, sandbox *Sandbox) {
 	}
 
 	if sandbox.IsReady() {
-		fqdn := sandbox.Status.ServiceFQDN
-		// Construct FQDN if not set (warm pool controller doesn't populate it)
-		if fqdn == "" {
-			fqdn = fmt.Sprintf("%s.%s.svc.cluster.local", sandbox.Name, r.namespace)
-		}
+		fqdn := r.getServiceFQDN(sandbox)
 
 		// Remove all callbacks before invoking to prevent double-call
 		r.callbacksMu.Lock()
@@ -260,6 +256,16 @@ func (r *k8sRuntime) Close() {
 
 func sandboxName(sessionID string) string {
 	return "sess-" + sessionID
+}
+
+// getServiceFQDN returns the service FQDN for a sandbox.
+// If the sandbox status doesn't have it, we construct it from the sandbox name.
+func (r *k8sRuntime) getServiceFQDN(sandbox *Sandbox) string {
+	if sandbox.Status.ServiceFQDN != "" {
+		return sandbox.Status.ServiceFQDN
+	}
+	// Construct FQDN if not set (warm pool controller doesn't populate it)
+	return fmt.Sprintf("%s.%s.svc.cluster.local", sandbox.Name, r.namespace)
 }
 
 func secretName(sessionID string) string {
@@ -410,12 +416,7 @@ func (r *k8sRuntime) WaitForReady(ctx context.Context, sessionID string, timeout
 	r.cacheMu.RUnlock()
 
 	if exists && sandbox.IsReady() {
-		fqdn := sandbox.Status.ServiceFQDN
-		// Construct FQDN if not set (warm pool controller doesn't populate it)
-		if fqdn == "" {
-			fqdn = fmt.Sprintf("%s.%s.svc.cluster.local", sandbox.Name, r.namespace)
-		}
-		return fqdn, nil
+		return r.getServiceFQDN(sandbox), nil
 	}
 
 	// Setup callback channel
@@ -461,12 +462,7 @@ func (r *k8sRuntime) WatchSandboxReady(sessionID string, callback SandboxReadyCa
 	r.cacheMu.RUnlock()
 
 	if exists && sandbox.IsReady() {
-		fqdn := sandbox.Status.ServiceFQDN
-		// Construct FQDN if not set (warm pool controller doesn't populate it)
-		if fqdn == "" {
-			fqdn = fmt.Sprintf("%s.%s.svc.cluster.local", sandbox.Name, r.namespace)
-		}
-		go callback(sessionID, fqdn, nil)
+		go callback(sessionID, r.getServiceFQDN(sandbox), nil)
 		return
 	}
 
@@ -508,7 +504,7 @@ func (r *k8sRuntime) GetStatus(ctx context.Context, sessionID string) (*SandboxS
 	return &SandboxStatusInfo{
 		Exists:      true,
 		Ready:       sandbox.IsReady(),
-		ServiceFQDN: sandbox.Status.ServiceFQDN,
+		ServiceFQDN: r.getServiceFQDN(sandbox),
 		Error:       sandbox.GetError(),
 	}, nil
 }
@@ -729,7 +725,7 @@ func (r *k8sRuntime) ListSandboxes(ctx context.Context) ([]SandboxInfo, error) {
 	for sessionID, sandbox := range r.sandboxCache {
 		sandboxes = append(sandboxes, SandboxInfo{
 			SessionID:   sessionID,
-			ServiceFQDN: sandbox.Status.ServiceFQDN,
+			ServiceFQDN: r.getServiceFQDN(sandbox),
 			Ready:       sandbox.IsReady(),
 		})
 	}
