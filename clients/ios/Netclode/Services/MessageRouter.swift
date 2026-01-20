@@ -50,11 +50,12 @@ final class MessageRouter {
             print("[MessageRouter] session.created received: id=\(session.id), pendingPromptText=\(sessionStore.pendingPromptText ?? "nil")")
             sessionStore.addSession(session)
 
-            // If there's a pending prompt, set up navigation
+            // If there's a pending prompt, set up navigation and mark as processing
             // Note: The prompt itself is sent via initialPrompt in session.create,
             // and the backend will broadcast user.message which we handle separately
             if sessionStore.pendingPromptText != nil {
                 sessionStore.pendingSessionId = session.id
+                sessionStore.setProcessing(for: session.id, processing: true)
                 print("[MessageRouter] Session created with initial prompt, navigating to session \(session.id)")
                 sessionStore.pendingPromptText = nil
             }
@@ -167,6 +168,8 @@ final class MessageRouter {
                 sessionId: sessionId,
                 message: ChatMessage(role: .user, content: content)
             )
+            // Mark as processing - agent will start working on this message
+            sessionStore.setProcessing(for: sessionId, processing: true)
 
         // Terminal messages
         case .terminalOutput(let sessionId, let data):
