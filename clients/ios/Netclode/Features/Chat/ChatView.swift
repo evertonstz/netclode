@@ -76,6 +76,7 @@ struct ChatView: View {
     @State private var lastKnownStatus: SessionStatus?
     @State private var lastScrollOffset: CGFloat = 0
     @State private var isScrollingUp = false
+    @State private var hideStatusPillTask: Task<Void, Never>?
     
     // Track if initial scroll to bottom has been done
     @State private var hasScrolledToBottom = false
@@ -265,9 +266,12 @@ struct ChatView: View {
                 showStatusPill = true
             }
             
-            // Auto-hide after 2 seconds only if not scrolling up
-            Task {
+            // Cancel previous hide task and start a new one
+            // This ensures we wait 2s after the LAST status change
+            hideStatusPillTask?.cancel()
+            hideStatusPillTask = Task {
                 try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled else { return }
                 if !isScrollingUp {
                     withAnimation {
                         showStatusPill = false
