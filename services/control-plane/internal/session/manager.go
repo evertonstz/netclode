@@ -107,6 +107,14 @@ func (m *Manager) Initialize(ctx context.Context) error {
 				state.Session.Status = protocol.StatusReady
 				_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusReady)
 			}
+		} else {
+			// Sandbox exists but is not ready - mark as paused since we can't communicate with it
+			if state.Session.Status == protocol.StatusRunning || state.Session.Status == protocol.StatusReady {
+				slog.Info("Session sandbox exists but is not ready, marking as paused", "sessionID", id)
+				state.Session.Status = protocol.StatusPaused
+				state.ServiceFQDN = "" // Clear any stale FQDN
+				_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusPaused)
+			}
 		}
 	}
 
