@@ -21,29 +21,36 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ExecutePromptRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	Config        *SessionConfig         `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
+// AgentMessage is sent from agent to control plane.
+type AgentMessage struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Message:
+	//
+	//	*AgentMessage_Register
+	//	*AgentMessage_PromptResponse
+	//	*AgentMessage_TerminalOutput
+	//	*AgentMessage_TitleResponse
+	//	*AgentMessage_GitStatusResponse
+	//	*AgentMessage_GitDiffResponse
+	Message       isAgentMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ExecutePromptRequest) Reset() {
-	*x = ExecutePromptRequest{}
+func (x *AgentMessage) Reset() {
+	*x = AgentMessage{}
 	mi := &file_netclode_v1_agent_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ExecutePromptRequest) String() string {
+func (x *AgentMessage) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ExecutePromptRequest) ProtoMessage() {}
+func (*AgentMessage) ProtoMessage() {}
 
-func (x *ExecutePromptRequest) ProtoReflect() protoreflect.Message {
+func (x *AgentMessage) ProtoReflect() protoreflect.Message {
 	mi := &file_netclode_v1_agent_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,33 +62,340 @@ func (x *ExecutePromptRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ExecutePromptRequest.ProtoReflect.Descriptor instead.
-func (*ExecutePromptRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use AgentMessage.ProtoReflect.Descriptor instead.
+func (*AgentMessage) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ExecutePromptRequest) GetSessionId() string {
+func (x *AgentMessage) GetMessage() isAgentMessage_Message {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetRegister() *AgentRegister {
+	if x != nil {
+		if x, ok := x.Message.(*AgentMessage_Register); ok {
+			return x.Register
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetPromptResponse() *AgentStreamResponse {
+	if x != nil {
+		if x, ok := x.Message.(*AgentMessage_PromptResponse); ok {
+			return x.PromptResponse
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetTerminalOutput() *AgentTerminalOutput {
+	if x != nil {
+		if x, ok := x.Message.(*AgentMessage_TerminalOutput); ok {
+			return x.TerminalOutput
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetTitleResponse() *AgentTitleResponse {
+	if x != nil {
+		if x, ok := x.Message.(*AgentMessage_TitleResponse); ok {
+			return x.TitleResponse
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetGitStatusResponse() *AgentGitStatusResponse {
+	if x != nil {
+		if x, ok := x.Message.(*AgentMessage_GitStatusResponse); ok {
+			return x.GitStatusResponse
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetGitDiffResponse() *AgentGitDiffResponse {
+	if x != nil {
+		if x, ok := x.Message.(*AgentMessage_GitDiffResponse); ok {
+			return x.GitDiffResponse
+		}
+	}
+	return nil
+}
+
+type isAgentMessage_Message interface {
+	isAgentMessage_Message()
+}
+
+type AgentMessage_Register struct {
+	// Registration - sent first when agent connects
+	Register *AgentRegister `protobuf:"bytes,1,opt,name=register,proto3,oneof"`
+}
+
+type AgentMessage_PromptResponse struct {
+	// Streaming responses during prompt execution
+	PromptResponse *AgentStreamResponse `protobuf:"bytes,2,opt,name=prompt_response,json=promptResponse,proto3,oneof"`
+}
+
+type AgentMessage_TerminalOutput struct {
+	// Terminal output
+	TerminalOutput *AgentTerminalOutput `protobuf:"bytes,3,opt,name=terminal_output,json=terminalOutput,proto3,oneof"`
+}
+
+type AgentMessage_TitleResponse struct {
+	// Title generation result
+	TitleResponse *AgentTitleResponse `protobuf:"bytes,4,opt,name=title_response,json=titleResponse,proto3,oneof"`
+}
+
+type AgentMessage_GitStatusResponse struct {
+	// Git status result
+	GitStatusResponse *AgentGitStatusResponse `protobuf:"bytes,5,opt,name=git_status_response,json=gitStatusResponse,proto3,oneof"`
+}
+
+type AgentMessage_GitDiffResponse struct {
+	// Git diff result
+	GitDiffResponse *AgentGitDiffResponse `protobuf:"bytes,6,opt,name=git_diff_response,json=gitDiffResponse,proto3,oneof"`
+}
+
+func (*AgentMessage_Register) isAgentMessage_Message() {}
+
+func (*AgentMessage_PromptResponse) isAgentMessage_Message() {}
+
+func (*AgentMessage_TerminalOutput) isAgentMessage_Message() {}
+
+func (*AgentMessage_TitleResponse) isAgentMessage_Message() {}
+
+func (*AgentMessage_GitStatusResponse) isAgentMessage_Message() {}
+
+func (*AgentMessage_GitDiffResponse) isAgentMessage_Message() {}
+
+// ControlPlaneMessage is sent from control plane to agent.
+type ControlPlaneMessage struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Message:
+	//
+	//	*ControlPlaneMessage_Registered
+	//	*ControlPlaneMessage_ExecutePrompt
+	//	*ControlPlaneMessage_Interrupt
+	//	*ControlPlaneMessage_GenerateTitle
+	//	*ControlPlaneMessage_GetGitStatus
+	//	*ControlPlaneMessage_GetGitDiff
+	//	*ControlPlaneMessage_TerminalInput
+	Message       isControlPlaneMessage_Message `protobuf_oneof:"message"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ControlPlaneMessage) Reset() {
+	*x = ControlPlaneMessage{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ControlPlaneMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ControlPlaneMessage) ProtoMessage() {}
+
+func (x *ControlPlaneMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ControlPlaneMessage.ProtoReflect.Descriptor instead.
+func (*ControlPlaneMessage) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ControlPlaneMessage) GetMessage() isControlPlaneMessage_Message {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *ControlPlaneMessage) GetRegistered() *AgentRegistered {
+	if x != nil {
+		if x, ok := x.Message.(*ControlPlaneMessage_Registered); ok {
+			return x.Registered
+		}
+	}
+	return nil
+}
+
+func (x *ControlPlaneMessage) GetExecutePrompt() *ExecutePromptRequest {
+	if x != nil {
+		if x, ok := x.Message.(*ControlPlaneMessage_ExecutePrompt); ok {
+			return x.ExecutePrompt
+		}
+	}
+	return nil
+}
+
+func (x *ControlPlaneMessage) GetInterrupt() *InterruptRequest {
+	if x != nil {
+		if x, ok := x.Message.(*ControlPlaneMessage_Interrupt); ok {
+			return x.Interrupt
+		}
+	}
+	return nil
+}
+
+func (x *ControlPlaneMessage) GetGenerateTitle() *GenerateTitleRequest {
+	if x != nil {
+		if x, ok := x.Message.(*ControlPlaneMessage_GenerateTitle); ok {
+			return x.GenerateTitle
+		}
+	}
+	return nil
+}
+
+func (x *ControlPlaneMessage) GetGetGitStatus() *GetGitStatusRequest {
+	if x != nil {
+		if x, ok := x.Message.(*ControlPlaneMessage_GetGitStatus); ok {
+			return x.GetGitStatus
+		}
+	}
+	return nil
+}
+
+func (x *ControlPlaneMessage) GetGetGitDiff() *GetGitDiffRequest {
+	if x != nil {
+		if x, ok := x.Message.(*ControlPlaneMessage_GetGitDiff); ok {
+			return x.GetGitDiff
+		}
+	}
+	return nil
+}
+
+func (x *ControlPlaneMessage) GetTerminalInput() *AgentTerminalInput {
+	if x != nil {
+		if x, ok := x.Message.(*ControlPlaneMessage_TerminalInput); ok {
+			return x.TerminalInput
+		}
+	}
+	return nil
+}
+
+type isControlPlaneMessage_Message interface {
+	isControlPlaneMessage_Message()
+}
+
+type ControlPlaneMessage_Registered struct {
+	// Acknowledgment of registration
+	Registered *AgentRegistered `protobuf:"bytes,1,opt,name=registered,proto3,oneof"`
+}
+
+type ControlPlaneMessage_ExecutePrompt struct {
+	// Execute a prompt
+	ExecutePrompt *ExecutePromptRequest `protobuf:"bytes,2,opt,name=execute_prompt,json=executePrompt,proto3,oneof"`
+}
+
+type ControlPlaneMessage_Interrupt struct {
+	// Interrupt current execution
+	Interrupt *InterruptRequest `protobuf:"bytes,3,opt,name=interrupt,proto3,oneof"`
+}
+
+type ControlPlaneMessage_GenerateTitle struct {
+	// Generate title for session
+	GenerateTitle *GenerateTitleRequest `protobuf:"bytes,4,opt,name=generate_title,json=generateTitle,proto3,oneof"`
+}
+
+type ControlPlaneMessage_GetGitStatus struct {
+	// Git status request
+	GetGitStatus *GetGitStatusRequest `protobuf:"bytes,5,opt,name=get_git_status,json=getGitStatus,proto3,oneof"`
+}
+
+type ControlPlaneMessage_GetGitDiff struct {
+	// Git diff request
+	GetGitDiff *GetGitDiffRequest `protobuf:"bytes,6,opt,name=get_git_diff,json=getGitDiff,proto3,oneof"`
+}
+
+type ControlPlaneMessage_TerminalInput struct {
+	// Terminal input
+	TerminalInput *AgentTerminalInput `protobuf:"bytes,7,opt,name=terminal_input,json=terminalInput,proto3,oneof"`
+}
+
+func (*ControlPlaneMessage_Registered) isControlPlaneMessage_Message() {}
+
+func (*ControlPlaneMessage_ExecutePrompt) isControlPlaneMessage_Message() {}
+
+func (*ControlPlaneMessage_Interrupt) isControlPlaneMessage_Message() {}
+
+func (*ControlPlaneMessage_GenerateTitle) isControlPlaneMessage_Message() {}
+
+func (*ControlPlaneMessage_GetGitStatus) isControlPlaneMessage_Message() {}
+
+func (*ControlPlaneMessage_GetGitDiff) isControlPlaneMessage_Message() {}
+
+func (*ControlPlaneMessage_TerminalInput) isControlPlaneMessage_Message() {}
+
+type AgentRegister struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentRegister) Reset() {
+	*x = AgentRegister{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentRegister) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentRegister) ProtoMessage() {}
+
+func (x *AgentRegister) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentRegister.ProtoReflect.Descriptor instead.
+func (*AgentRegister) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AgentRegister) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
 	}
 	return ""
 }
 
-func (x *ExecutePromptRequest) GetText() string {
+func (x *AgentRegister) GetVersion() string {
 	if x != nil {
-		return x.Text
+		return x.Version
 	}
 	return ""
 }
 
-func (x *ExecutePromptRequest) GetConfig() *SessionConfig {
-	if x != nil {
-		return x.Config
-	}
-	return nil
-}
-
-// AgentStreamResponse is streamed back during prompt execution.
 type AgentStreamResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Response:
@@ -98,7 +412,7 @@ type AgentStreamResponse struct {
 
 func (x *AgentStreamResponse) Reset() {
 	*x = AgentStreamResponse{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[1]
+	mi := &file_netclode_v1_agent_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -110,7 +424,7 @@ func (x *AgentStreamResponse) String() string {
 func (*AgentStreamResponse) ProtoMessage() {}
 
 func (x *AgentStreamResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[1]
+	mi := &file_netclode_v1_agent_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -123,7 +437,7 @@ func (x *AgentStreamResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentStreamResponse.ProtoReflect.Descriptor instead.
 func (*AgentStreamResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{1}
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AgentStreamResponse) GetResponse() isAgentStreamResponse_Response {
@@ -169,7 +483,7 @@ func (x *AgentStreamResponse) GetResult() *AgentResult {
 	return nil
 }
 
-func (x *AgentStreamResponse) GetError() *AgentStreamError {
+func (x *AgentStreamResponse) GetError() *AgentError {
 	if x != nil {
 		if x, ok := x.Response.(*AgentStreamResponse_Error); ok {
 			return x.Error
@@ -199,7 +513,7 @@ type AgentStreamResponse_Result struct {
 }
 
 type AgentStreamResponse_Error struct {
-	Error *AgentStreamError `protobuf:"bytes,5,opt,name=error,proto3,oneof"`
+	Error *AgentError `protobuf:"bytes,5,opt,name=error,proto3,oneof"`
 }
 
 func (*AgentStreamResponse_TextDelta) isAgentStreamResponse_Response() {}
@@ -212,7 +526,6 @@ func (*AgentStreamResponse_Result) isAgentStreamResponse_Response() {}
 
 func (*AgentStreamResponse_Error) isAgentStreamResponse_Response() {}
 
-// AgentTextDelta represents a partial text response from the agent.
 type AgentTextDelta struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
@@ -224,7 +537,7 @@ type AgentTextDelta struct {
 
 func (x *AgentTextDelta) Reset() {
 	*x = AgentTextDelta{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[2]
+	mi := &file_netclode_v1_agent_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -236,7 +549,7 @@ func (x *AgentTextDelta) String() string {
 func (*AgentTextDelta) ProtoMessage() {}
 
 func (x *AgentTextDelta) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[2]
+	mi := &file_netclode_v1_agent_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -249,7 +562,7 @@ func (x *AgentTextDelta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentTextDelta.ProtoReflect.Descriptor instead.
 func (*AgentTextDelta) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{2}
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AgentTextDelta) GetContent() string {
@@ -273,7 +586,6 @@ func (x *AgentTextDelta) GetMessageId() string {
 	return ""
 }
 
-// AgentSystemMessage represents system-level messages during execution.
 type AgentSystemMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -283,7 +595,7 @@ type AgentSystemMessage struct {
 
 func (x *AgentSystemMessage) Reset() {
 	*x = AgentSystemMessage{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[3]
+	mi := &file_netclode_v1_agent_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -295,7 +607,7 @@ func (x *AgentSystemMessage) String() string {
 func (*AgentSystemMessage) ProtoMessage() {}
 
 func (x *AgentSystemMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[3]
+	mi := &file_netclode_v1_agent_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,7 +620,7 @@ func (x *AgentSystemMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentSystemMessage.ProtoReflect.Descriptor instead.
 func (*AgentSystemMessage) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{3}
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *AgentSystemMessage) GetMessage() string {
@@ -318,7 +630,6 @@ func (x *AgentSystemMessage) GetMessage() string {
 	return ""
 }
 
-// AgentResult represents the final result of prompt execution.
 type AgentResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	InputTokens   int32                  `protobuf:"varint,1,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
@@ -330,7 +641,7 @@ type AgentResult struct {
 
 func (x *AgentResult) Reset() {
 	*x = AgentResult{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[4]
+	mi := &file_netclode_v1_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -342,7 +653,7 @@ func (x *AgentResult) String() string {
 func (*AgentResult) ProtoMessage() {}
 
 func (x *AgentResult) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[4]
+	mi := &file_netclode_v1_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -355,7 +666,7 @@ func (x *AgentResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentResult.ProtoReflect.Descriptor instead.
 func (*AgentResult) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *AgentResult) GetInputTokens() int32 {
@@ -379,8 +690,7 @@ func (x *AgentResult) GetTotalTurns() int32 {
 	return 0
 }
 
-// AgentStreamError represents an error during prompt execution.
-type AgentStreamError struct {
+type AgentError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	Retryable     bool                   `protobuf:"varint,2,opt,name=retryable,proto3" json:"retryable,omitempty"`
@@ -388,21 +698,21 @@ type AgentStreamError struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AgentStreamError) Reset() {
-	*x = AgentStreamError{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[5]
+func (x *AgentError) Reset() {
+	*x = AgentError{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AgentStreamError) String() string {
+func (x *AgentError) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AgentStreamError) ProtoMessage() {}
+func (*AgentError) ProtoMessage() {}
 
-func (x *AgentStreamError) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[5]
+func (x *AgentError) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -413,23 +723,328 @@ func (x *AgentStreamError) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AgentStreamError.ProtoReflect.Descriptor instead.
-func (*AgentStreamError) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{5}
+// Deprecated: Use AgentError.ProtoReflect.Descriptor instead.
+func (*AgentError) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *AgentStreamError) GetMessage() string {
+func (x *AgentError) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
 }
 
-func (x *AgentStreamError) GetRetryable() bool {
+func (x *AgentError) GetRetryable() bool {
 	if x != nil {
 		return x.Retryable
 	}
 	return false
+}
+
+type AgentTerminalOutput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          string                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentTerminalOutput) Reset() {
+	*x = AgentTerminalOutput{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentTerminalOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentTerminalOutput) ProtoMessage() {}
+
+func (x *AgentTerminalOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentTerminalOutput.ProtoReflect.Descriptor instead.
+func (*AgentTerminalOutput) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *AgentTerminalOutput) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
+}
+
+type AgentTitleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentTitleResponse) Reset() {
+	*x = AgentTitleResponse{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentTitleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentTitleResponse) ProtoMessage() {}
+
+func (x *AgentTitleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentTitleResponse.ProtoReflect.Descriptor instead.
+func (*AgentTitleResponse) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *AgentTitleResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AgentTitleResponse) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+type AgentGitStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Files         []*GitFileChange       `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentGitStatusResponse) Reset() {
+	*x = AgentGitStatusResponse{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentGitStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentGitStatusResponse) ProtoMessage() {}
+
+func (x *AgentGitStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentGitStatusResponse.ProtoReflect.Descriptor instead.
+func (*AgentGitStatusResponse) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AgentGitStatusResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AgentGitStatusResponse) GetFiles() []*GitFileChange {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
+type AgentGitDiffResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Diff          string                 `protobuf:"bytes,2,opt,name=diff,proto3" json:"diff,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentGitDiffResponse) Reset() {
+	*x = AgentGitDiffResponse{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentGitDiffResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentGitDiffResponse) ProtoMessage() {}
+
+func (x *AgentGitDiffResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentGitDiffResponse.ProtoReflect.Descriptor instead.
+func (*AgentGitDiffResponse) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *AgentGitDiffResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AgentGitDiffResponse) GetDiff() string {
+	if x != nil {
+		return x.Diff
+	}
+	return ""
+}
+
+type AgentRegistered struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Success bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error   *string                `protobuf:"bytes,2,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	// Session config passed to agent on registration
+	Config        *SessionConfig `protobuf:"bytes,3,opt,name=config,proto3,oneof" json:"config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AgentRegistered) Reset() {
+	*x = AgentRegistered{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AgentRegistered) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentRegistered) ProtoMessage() {}
+
+func (x *AgentRegistered) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentRegistered.ProtoReflect.Descriptor instead.
+func (*AgentRegistered) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *AgentRegistered) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *AgentRegistered) GetError() string {
+	if x != nil && x.Error != nil {
+		return *x.Error
+	}
+	return ""
+}
+
+func (x *AgentRegistered) GetConfig() *SessionConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+type ExecutePromptRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecutePromptRequest) Reset() {
+	*x = ExecutePromptRequest{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecutePromptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutePromptRequest) ProtoMessage() {}
+
+func (x *ExecutePromptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutePromptRequest.ProtoReflect.Descriptor instead.
+func (*ExecutePromptRequest) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ExecutePromptRequest) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
 }
 
 type InterruptRequest struct {
@@ -440,7 +1055,7 @@ type InterruptRequest struct {
 
 func (x *InterruptRequest) Reset() {
 	*x = InterruptRequest{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[6]
+	mi := &file_netclode_v1_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -452,7 +1067,7 @@ func (x *InterruptRequest) String() string {
 func (*InterruptRequest) ProtoMessage() {}
 
 func (x *InterruptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[6]
+	mi := &file_netclode_v1_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -465,63 +1080,20 @@ func (x *InterruptRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InterruptRequest.ProtoReflect.Descriptor instead.
 func (*InterruptRequest) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{6}
-}
-
-type InterruptResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *InterruptResponse) Reset() {
-	*x = InterruptResponse{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *InterruptResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*InterruptResponse) ProtoMessage() {}
-
-func (x *InterruptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use InterruptResponse.ProtoReflect.Descriptor instead.
-func (*InterruptResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *InterruptResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
 type GenerateTitleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Prompt        string                 `protobuf:"bytes,1,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Prompt        string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GenerateTitleRequest) Reset() {
 	*x = GenerateTitleRequest{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[8]
+	mi := &file_netclode_v1_agent_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -533,7 +1105,7 @@ func (x *GenerateTitleRequest) String() string {
 func (*GenerateTitleRequest) ProtoMessage() {}
 
 func (x *GenerateTitleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[8]
+	mi := &file_netclode_v1_agent_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -546,7 +1118,14 @@ func (x *GenerateTitleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateTitleRequest.ProtoReflect.Descriptor instead.
 func (*GenerateTitleRequest) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GenerateTitleRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
 }
 
 func (x *GenerateTitleRequest) GetPrompt() string {
@@ -556,59 +1135,16 @@ func (x *GenerateTitleRequest) GetPrompt() string {
 	return ""
 }
 
-type GenerateTitleResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GenerateTitleResponse) Reset() {
-	*x = GenerateTitleResponse{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GenerateTitleResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GenerateTitleResponse) ProtoMessage() {}
-
-func (x *GenerateTitleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GenerateTitleResponse.ProtoReflect.Descriptor instead.
-func (*GenerateTitleResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *GenerateTitleResponse) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
 type GetGitStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetGitStatusRequest) Reset() {
 	*x = GetGitStatusRequest{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[10]
+	mi := &file_netclode_v1_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -620,7 +1156,7 @@ func (x *GetGitStatusRequest) String() string {
 func (*GetGitStatusRequest) ProtoMessage() {}
 
 func (x *GetGitStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[10]
+	mi := &file_netclode_v1_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -633,63 +1169,27 @@ func (x *GetGitStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGitStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetGitStatusRequest) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{10}
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{16}
 }
 
-type GetGitStatusResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Files         []*GitFileChange       `protobuf:"bytes,1,rep,name=files,proto3" json:"files,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGitStatusResponse) Reset() {
-	*x = GetGitStatusResponse{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGitStatusResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGitStatusResponse) ProtoMessage() {}
-
-func (x *GetGitStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[11]
+func (x *GetGitStatusRequest) GetRequestId() string {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.RequestId
 	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGitStatusResponse.ProtoReflect.Descriptor instead.
-func (*GetGitStatusResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *GetGitStatusResponse) GetFiles() []*GitFileChange {
-	if x != nil {
-		return x.Files
-	}
-	return nil
+	return ""
 }
 
 type GetGitDiffRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	File          *string                `protobuf:"bytes,1,opt,name=file,proto3,oneof" json:"file,omitempty"` // Specific file, or all if empty
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	File          *string                `protobuf:"bytes,2,opt,name=file,proto3,oneof" json:"file,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetGitDiffRequest) Reset() {
 	*x = GetGitDiffRequest{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[12]
+	mi := &file_netclode_v1_agent_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -701,7 +1201,7 @@ func (x *GetGitDiffRequest) String() string {
 func (*GetGitDiffRequest) ProtoMessage() {}
 
 func (x *GetGitDiffRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[12]
+	mi := &file_netclode_v1_agent_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -714,7 +1214,14 @@ func (x *GetGitDiffRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGitDiffRequest.ProtoReflect.Descriptor instead.
 func (*GetGitDiffRequest) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{12}
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetGitDiffRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
 }
 
 func (x *GetGitDiffRequest) GetFile() string {
@@ -724,76 +1231,32 @@ func (x *GetGitDiffRequest) GetFile() string {
 	return ""
 }
 
-type GetGitDiffResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Diff          string                 `protobuf:"bytes,1,opt,name=diff,proto3" json:"diff,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGitDiffResponse) Reset() {
-	*x = GetGitDiffResponse{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGitDiffResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGitDiffResponse) ProtoMessage() {}
-
-func (x *GetGitDiffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGitDiffResponse.ProtoReflect.Descriptor instead.
-func (*GetGitDiffResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *GetGitDiffResponse) GetDiff() string {
-	if x != nil {
-		return x.Diff
-	}
-	return ""
-}
-
-type TerminalInput struct {
+type AgentTerminalInput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Input:
 	//
-	//	*TerminalInput_Data
-	//	*TerminalInput_Resize
-	Input         isTerminalInput_Input `protobuf_oneof:"input"`
+	//	*AgentTerminalInput_Data
+	//	*AgentTerminalInput_Resize
+	Input         isAgentTerminalInput_Input `protobuf_oneof:"input"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TerminalInput) Reset() {
-	*x = TerminalInput{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[14]
+func (x *AgentTerminalInput) Reset() {
+	*x = AgentTerminalInput{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TerminalInput) String() string {
+func (x *AgentTerminalInput) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TerminalInput) ProtoMessage() {}
+func (*AgentTerminalInput) ProtoMessage() {}
 
-func (x *TerminalInput) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[14]
+func (x *AgentTerminalInput) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -804,53 +1267,53 @@ func (x *TerminalInput) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TerminalInput.ProtoReflect.Descriptor instead.
-func (*TerminalInput) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{14}
+// Deprecated: Use AgentTerminalInput.ProtoReflect.Descriptor instead.
+func (*AgentTerminalInput) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *TerminalInput) GetInput() isTerminalInput_Input {
+func (x *AgentTerminalInput) GetInput() isAgentTerminalInput_Input {
 	if x != nil {
 		return x.Input
 	}
 	return nil
 }
 
-func (x *TerminalInput) GetData() string {
+func (x *AgentTerminalInput) GetData() string {
 	if x != nil {
-		if x, ok := x.Input.(*TerminalInput_Data); ok {
+		if x, ok := x.Input.(*AgentTerminalInput_Data); ok {
 			return x.Data
 		}
 	}
 	return ""
 }
 
-func (x *TerminalInput) GetResize() *TerminalResize {
+func (x *AgentTerminalInput) GetResize() *AgentTerminalResize {
 	if x != nil {
-		if x, ok := x.Input.(*TerminalInput_Resize); ok {
+		if x, ok := x.Input.(*AgentTerminalInput_Resize); ok {
 			return x.Resize
 		}
 	}
 	return nil
 }
 
-type isTerminalInput_Input interface {
-	isTerminalInput_Input()
+type isAgentTerminalInput_Input interface {
+	isAgentTerminalInput_Input()
 }
 
-type TerminalInput_Data struct {
+type AgentTerminalInput_Data struct {
 	Data string `protobuf:"bytes,1,opt,name=data,proto3,oneof"`
 }
 
-type TerminalInput_Resize struct {
-	Resize *TerminalResize `protobuf:"bytes,2,opt,name=resize,proto3,oneof"`
+type AgentTerminalInput_Resize struct {
+	Resize *AgentTerminalResize `protobuf:"bytes,2,opt,name=resize,proto3,oneof"`
 }
 
-func (*TerminalInput_Data) isTerminalInput_Input() {}
+func (*AgentTerminalInput_Data) isAgentTerminalInput_Input() {}
 
-func (*TerminalInput_Resize) isTerminalInput_Input() {}
+func (*AgentTerminalInput_Resize) isAgentTerminalInput_Input() {}
 
-type TerminalResize struct {
+type AgentTerminalResize struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cols          int32                  `protobuf:"varint,1,opt,name=cols,proto3" json:"cols,omitempty"`
 	Rows          int32                  `protobuf:"varint,2,opt,name=rows,proto3" json:"rows,omitempty"`
@@ -858,21 +1321,21 @@ type TerminalResize struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TerminalResize) Reset() {
-	*x = TerminalResize{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[15]
+func (x *AgentTerminalResize) Reset() {
+	*x = AgentTerminalResize{}
+	mi := &file_netclode_v1_agent_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TerminalResize) String() string {
+func (x *AgentTerminalResize) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TerminalResize) ProtoMessage() {}
+func (*AgentTerminalResize) ProtoMessage() {}
 
-func (x *TerminalResize) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[15]
+func (x *AgentTerminalResize) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_agent_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -883,174 +1346,61 @@ func (x *TerminalResize) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TerminalResize.ProtoReflect.Descriptor instead.
-func (*TerminalResize) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{15}
+// Deprecated: Use AgentTerminalResize.ProtoReflect.Descriptor instead.
+func (*AgentTerminalResize) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *TerminalResize) GetCols() int32 {
+func (x *AgentTerminalResize) GetCols() int32 {
 	if x != nil {
 		return x.Cols
 	}
 	return 0
 }
 
-func (x *TerminalResize) GetRows() int32 {
+func (x *AgentTerminalResize) GetRows() int32 {
 	if x != nil {
 		return x.Rows
 	}
 	return 0
 }
 
-type TerminalOutput struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          string                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TerminalOutput) Reset() {
-	*x = TerminalOutput{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TerminalOutput) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TerminalOutput) ProtoMessage() {}
-
-func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TerminalOutput.ProtoReflect.Descriptor instead.
-func (*TerminalOutput) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *TerminalOutput) GetData() string {
-	if x != nil {
-		return x.Data
-	}
-	return ""
-}
-
-type HealthRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *HealthRequest) Reset() {
-	*x = HealthRequest{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HealthRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HealthRequest) ProtoMessage() {}
-
-func (x *HealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HealthRequest.ProtoReflect.Descriptor instead.
-func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{17}
-}
-
-type HealthResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Healthy       bool                   `protobuf:"varint,1,opt,name=healthy,proto3" json:"healthy,omitempty"`
-	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *HealthResponse) Reset() {
-	*x = HealthResponse{}
-	mi := &file_netclode_v1_agent_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HealthResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HealthResponse) ProtoMessage() {}
-
-func (x *HealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_agent_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HealthResponse.ProtoReflect.Descriptor instead.
-func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *HealthResponse) GetHealthy() bool {
-	if x != nil {
-		return x.Healthy
-	}
-	return false
-}
-
-func (x *HealthResponse) GetVersion() string {
-	if x != nil {
-		return x.Version
-	}
-	return ""
-}
-
 var File_netclode_v1_agent_proto protoreflect.FileDescriptor
 
 const file_netclode_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x17netclode/v1/agent.proto\x12\vnetclode.v1\x1a\x18netclode/v1/common.proto\x1a\x18netclode/v1/events.proto\"}\n" +
-	"\x14ExecutePromptRequest\x12\x1d\n" +
+	"\x17netclode/v1/agent.proto\x12\vnetclode.v1\x1a\x18netclode/v1/common.proto\x1a\x18netclode/v1/events.proto\"\xdf\x03\n" +
+	"\fAgentMessage\x128\n" +
+	"\bregister\x18\x01 \x01(\v2\x1a.netclode.v1.AgentRegisterH\x00R\bregister\x12K\n" +
+	"\x0fprompt_response\x18\x02 \x01(\v2 .netclode.v1.AgentStreamResponseH\x00R\x0epromptResponse\x12K\n" +
+	"\x0fterminal_output\x18\x03 \x01(\v2 .netclode.v1.AgentTerminalOutputH\x00R\x0eterminalOutput\x12H\n" +
+	"\x0etitle_response\x18\x04 \x01(\v2\x1f.netclode.v1.AgentTitleResponseH\x00R\rtitleResponse\x12U\n" +
+	"\x13git_status_response\x18\x05 \x01(\v2#.netclode.v1.AgentGitStatusResponseH\x00R\x11gitStatusResponse\x12O\n" +
+	"\x11git_diff_response\x18\x06 \x01(\v2!.netclode.v1.AgentGitDiffResponseH\x00R\x0fgitDiffResponseB\t\n" +
+	"\amessage\"\x8f\x04\n" +
+	"\x13ControlPlaneMessage\x12>\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text\x122\n" +
-	"\x06config\x18\x03 \x01(\v2\x1a.netclode.v1.SessionConfigR\x06config\"\xc5\x02\n" +
+	"registered\x18\x01 \x01(\v2\x1c.netclode.v1.AgentRegisteredH\x00R\n" +
+	"registered\x12J\n" +
+	"\x0eexecute_prompt\x18\x02 \x01(\v2!.netclode.v1.ExecutePromptRequestH\x00R\rexecutePrompt\x12=\n" +
+	"\tinterrupt\x18\x03 \x01(\v2\x1d.netclode.v1.InterruptRequestH\x00R\tinterrupt\x12J\n" +
+	"\x0egenerate_title\x18\x04 \x01(\v2!.netclode.v1.GenerateTitleRequestH\x00R\rgenerateTitle\x12H\n" +
+	"\x0eget_git_status\x18\x05 \x01(\v2 .netclode.v1.GetGitStatusRequestH\x00R\fgetGitStatus\x12B\n" +
+	"\fget_git_diff\x18\x06 \x01(\v2\x1e.netclode.v1.GetGitDiffRequestH\x00R\n" +
+	"getGitDiff\x12H\n" +
+	"\x0eterminal_input\x18\a \x01(\v2\x1f.netclode.v1.AgentTerminalInputH\x00R\rterminalInputB\t\n" +
+	"\amessage\"H\n" +
+	"\rAgentRegister\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\"\xbf\x02\n" +
 	"\x13AgentStreamResponse\x12<\n" +
 	"\n" +
 	"text_delta\x18\x01 \x01(\v2\x1b.netclode.v1.AgentTextDeltaH\x00R\ttextDelta\x12/\n" +
 	"\x05event\x18\x02 \x01(\v2\x17.netclode.v1.AgentEventH\x00R\x05event\x12H\n" +
 	"\x0esystem_message\x18\x03 \x01(\v2\x1f.netclode.v1.AgentSystemMessageH\x00R\rsystemMessage\x122\n" +
-	"\x06result\x18\x04 \x01(\v2\x18.netclode.v1.AgentResultH\x00R\x06result\x125\n" +
-	"\x05error\x18\x05 \x01(\v2\x1d.netclode.v1.AgentStreamErrorH\x00R\x05errorB\n" +
+	"\x06result\x18\x04 \x01(\v2\x18.netclode.v1.AgentResultH\x00R\x06result\x12/\n" +
+	"\x05error\x18\x05 \x01(\v2\x17.netclode.v1.AgentErrorH\x00R\x05errorB\n" +
 	"\n" +
 	"\bresponse\"c\n" +
 	"\x0eAgentTextDelta\x12\x18\n" +
@@ -1064,47 +1414,55 @@ const file_netclode_v1_agent_proto_rawDesc = "" +
 	"\finput_tokens\x18\x01 \x01(\x05R\vinputTokens\x12#\n" +
 	"\routput_tokens\x18\x02 \x01(\x05R\foutputTokens\x12\x1f\n" +
 	"\vtotal_turns\x18\x03 \x01(\x05R\n" +
-	"totalTurns\"J\n" +
-	"\x10AgentStreamError\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1c\n" +
-	"\tretryable\x18\x02 \x01(\bR\tretryable\"\x12\n" +
-	"\x10InterruptRequest\"-\n" +
-	"\x11InterruptResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\".\n" +
-	"\x14GenerateTitleRequest\x12\x16\n" +
-	"\x06prompt\x18\x01 \x01(\tR\x06prompt\"-\n" +
-	"\x15GenerateTitleResponse\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\"\x15\n" +
-	"\x13GetGitStatusRequest\"H\n" +
-	"\x14GetGitStatusResponse\x120\n" +
-	"\x05files\x18\x01 \x03(\v2\x1a.netclode.v1.GitFileChangeR\x05files\"5\n" +
-	"\x11GetGitDiffRequest\x12\x17\n" +
-	"\x04file\x18\x01 \x01(\tH\x00R\x04file\x88\x01\x01B\a\n" +
-	"\x05_file\"(\n" +
-	"\x12GetGitDiffResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"e\n" +
-	"\rTerminalInput\x12\x14\n" +
-	"\x04data\x18\x01 \x01(\tH\x00R\x04data\x125\n" +
-	"\x06resize\x18\x02 \x01(\v2\x1b.netclode.v1.TerminalResizeH\x00R\x06resizeB\a\n" +
-	"\x05input\"8\n" +
-	"\x0eTerminalResize\x12\x12\n" +
-	"\x04cols\x18\x01 \x01(\x05R\x04cols\x12\x12\n" +
-	"\x04rows\x18\x02 \x01(\x05R\x04rows\"$\n" +
-	"\x0eTerminalOutput\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\tR\x04data\"\x0f\n" +
-	"\rHealthRequest\"D\n" +
-	"\x0eHealthResponse\x12\x18\n" +
-	"\ahealthy\x18\x01 \x01(\bR\ahealthy\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion2\xba\x04\n" +
-	"\fAgentService\x12V\n" +
-	"\rExecutePrompt\x12!.netclode.v1.ExecutePromptRequest\x1a .netclode.v1.AgentStreamResponse0\x01\x12J\n" +
-	"\tInterrupt\x12\x1d.netclode.v1.InterruptRequest\x1a\x1e.netclode.v1.InterruptResponse\x12V\n" +
-	"\rGenerateTitle\x12!.netclode.v1.GenerateTitleRequest\x1a\".netclode.v1.GenerateTitleResponse\x12S\n" +
-	"\fGetGitStatus\x12 .netclode.v1.GetGitStatusRequest\x1a!.netclode.v1.GetGitStatusResponse\x12M\n" +
+	"totalTurns\"D\n" +
 	"\n" +
-	"GetGitDiff\x12\x1e.netclode.v1.GetGitDiffRequest\x1a\x1f.netclode.v1.GetGitDiffResponse\x12G\n" +
-	"\bTerminal\x12\x1a.netclode.v1.TerminalInput\x1a\x1b.netclode.v1.TerminalOutput(\x010\x01\x12A\n" +
-	"\x06Health\x12\x1a.netclode.v1.HealthRequest\x1a\x1b.netclode.v1.HealthResponseB\xbb\x01\n" +
+	"AgentError\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1c\n" +
+	"\tretryable\x18\x02 \x01(\bR\tretryable\")\n" +
+	"\x13AgentTerminalOutput\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\tR\x04data\"I\n" +
+	"\x12AgentTitleResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\"i\n" +
+	"\x16AgentGitStatusResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x120\n" +
+	"\x05files\x18\x02 \x03(\v2\x1a.netclode.v1.GitFileChangeR\x05files\"I\n" +
+	"\x14AgentGitDiffResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x12\n" +
+	"\x04diff\x18\x02 \x01(\tR\x04diff\"\x94\x01\n" +
+	"\x0fAgentRegistered\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x19\n" +
+	"\x05error\x18\x02 \x01(\tH\x00R\x05error\x88\x01\x01\x127\n" +
+	"\x06config\x18\x03 \x01(\v2\x1a.netclode.v1.SessionConfigH\x01R\x06config\x88\x01\x01B\b\n" +
+	"\x06_errorB\t\n" +
+	"\a_config\"*\n" +
+	"\x14ExecutePromptRequest\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"\x12\n" +
+	"\x10InterruptRequest\"M\n" +
+	"\x14GenerateTitleRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x16\n" +
+	"\x06prompt\x18\x02 \x01(\tR\x06prompt\"4\n" +
+	"\x13GetGitStatusRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"T\n" +
+	"\x11GetGitDiffRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x17\n" +
+	"\x04file\x18\x02 \x01(\tH\x00R\x04file\x88\x01\x01B\a\n" +
+	"\x05_file\"o\n" +
+	"\x12AgentTerminalInput\x12\x14\n" +
+	"\x04data\x18\x01 \x01(\tH\x00R\x04data\x12:\n" +
+	"\x06resize\x18\x02 \x01(\v2 .netclode.v1.AgentTerminalResizeH\x00R\x06resizeB\a\n" +
+	"\x05input\"=\n" +
+	"\x13AgentTerminalResize\x12\x12\n" +
+	"\x04cols\x18\x01 \x01(\x05R\x04cols\x12\x12\n" +
+	"\x04rows\x18\x02 \x01(\x05R\x04rows2Z\n" +
+	"\fAgentService\x12J\n" +
+	"\aConnect\x12\x19.netclode.v1.AgentMessage\x1a .netclode.v1.ControlPlaneMessage(\x010\x01B\xbb\x01\n" +
 	"\x0fcom.netclode.v1B\n" +
 	"AgentProtoP\x01ZOgithub.com/angristan/netclode/services/control-plane/gen/netclode/v1;netclodev1\xa2\x02\x03NXX\xaa\x02\vNetclode.V1\xca\x02\vNetclode\\V1\xe2\x02\x17Netclode\\V1\\GPBMetadata\xea\x02\fNetclode::V1b\x06proto3"
 
@@ -1120,59 +1478,61 @@ func file_netclode_v1_agent_proto_rawDescGZIP() []byte {
 	return file_netclode_v1_agent_proto_rawDescData
 }
 
-var file_netclode_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_netclode_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_netclode_v1_agent_proto_goTypes = []any{
-	(*ExecutePromptRequest)(nil),  // 0: netclode.v1.ExecutePromptRequest
-	(*AgentStreamResponse)(nil),   // 1: netclode.v1.AgentStreamResponse
-	(*AgentTextDelta)(nil),        // 2: netclode.v1.AgentTextDelta
-	(*AgentSystemMessage)(nil),    // 3: netclode.v1.AgentSystemMessage
-	(*AgentResult)(nil),           // 4: netclode.v1.AgentResult
-	(*AgentStreamError)(nil),      // 5: netclode.v1.AgentStreamError
-	(*InterruptRequest)(nil),      // 6: netclode.v1.InterruptRequest
-	(*InterruptResponse)(nil),     // 7: netclode.v1.InterruptResponse
-	(*GenerateTitleRequest)(nil),  // 8: netclode.v1.GenerateTitleRequest
-	(*GenerateTitleResponse)(nil), // 9: netclode.v1.GenerateTitleResponse
-	(*GetGitStatusRequest)(nil),   // 10: netclode.v1.GetGitStatusRequest
-	(*GetGitStatusResponse)(nil),  // 11: netclode.v1.GetGitStatusResponse
-	(*GetGitDiffRequest)(nil),     // 12: netclode.v1.GetGitDiffRequest
-	(*GetGitDiffResponse)(nil),    // 13: netclode.v1.GetGitDiffResponse
-	(*TerminalInput)(nil),         // 14: netclode.v1.TerminalInput
-	(*TerminalResize)(nil),        // 15: netclode.v1.TerminalResize
-	(*TerminalOutput)(nil),        // 16: netclode.v1.TerminalOutput
-	(*HealthRequest)(nil),         // 17: netclode.v1.HealthRequest
-	(*HealthResponse)(nil),        // 18: netclode.v1.HealthResponse
-	(*SessionConfig)(nil),         // 19: netclode.v1.SessionConfig
-	(*AgentEvent)(nil),            // 20: netclode.v1.AgentEvent
-	(*GitFileChange)(nil),         // 21: netclode.v1.GitFileChange
+	(*AgentMessage)(nil),           // 0: netclode.v1.AgentMessage
+	(*ControlPlaneMessage)(nil),    // 1: netclode.v1.ControlPlaneMessage
+	(*AgentRegister)(nil),          // 2: netclode.v1.AgentRegister
+	(*AgentStreamResponse)(nil),    // 3: netclode.v1.AgentStreamResponse
+	(*AgentTextDelta)(nil),         // 4: netclode.v1.AgentTextDelta
+	(*AgentSystemMessage)(nil),     // 5: netclode.v1.AgentSystemMessage
+	(*AgentResult)(nil),            // 6: netclode.v1.AgentResult
+	(*AgentError)(nil),             // 7: netclode.v1.AgentError
+	(*AgentTerminalOutput)(nil),    // 8: netclode.v1.AgentTerminalOutput
+	(*AgentTitleResponse)(nil),     // 9: netclode.v1.AgentTitleResponse
+	(*AgentGitStatusResponse)(nil), // 10: netclode.v1.AgentGitStatusResponse
+	(*AgentGitDiffResponse)(nil),   // 11: netclode.v1.AgentGitDiffResponse
+	(*AgentRegistered)(nil),        // 12: netclode.v1.AgentRegistered
+	(*ExecutePromptRequest)(nil),   // 13: netclode.v1.ExecutePromptRequest
+	(*InterruptRequest)(nil),       // 14: netclode.v1.InterruptRequest
+	(*GenerateTitleRequest)(nil),   // 15: netclode.v1.GenerateTitleRequest
+	(*GetGitStatusRequest)(nil),    // 16: netclode.v1.GetGitStatusRequest
+	(*GetGitDiffRequest)(nil),      // 17: netclode.v1.GetGitDiffRequest
+	(*AgentTerminalInput)(nil),     // 18: netclode.v1.AgentTerminalInput
+	(*AgentTerminalResize)(nil),    // 19: netclode.v1.AgentTerminalResize
+	(*AgentEvent)(nil),             // 20: netclode.v1.AgentEvent
+	(*GitFileChange)(nil),          // 21: netclode.v1.GitFileChange
+	(*SessionConfig)(nil),          // 22: netclode.v1.SessionConfig
 }
 var file_netclode_v1_agent_proto_depIdxs = []int32{
-	19, // 0: netclode.v1.ExecutePromptRequest.config:type_name -> netclode.v1.SessionConfig
-	2,  // 1: netclode.v1.AgentStreamResponse.text_delta:type_name -> netclode.v1.AgentTextDelta
-	20, // 2: netclode.v1.AgentStreamResponse.event:type_name -> netclode.v1.AgentEvent
-	3,  // 3: netclode.v1.AgentStreamResponse.system_message:type_name -> netclode.v1.AgentSystemMessage
-	4,  // 4: netclode.v1.AgentStreamResponse.result:type_name -> netclode.v1.AgentResult
-	5,  // 5: netclode.v1.AgentStreamResponse.error:type_name -> netclode.v1.AgentStreamError
-	21, // 6: netclode.v1.GetGitStatusResponse.files:type_name -> netclode.v1.GitFileChange
-	15, // 7: netclode.v1.TerminalInput.resize:type_name -> netclode.v1.TerminalResize
-	0,  // 8: netclode.v1.AgentService.ExecutePrompt:input_type -> netclode.v1.ExecutePromptRequest
-	6,  // 9: netclode.v1.AgentService.Interrupt:input_type -> netclode.v1.InterruptRequest
-	8,  // 10: netclode.v1.AgentService.GenerateTitle:input_type -> netclode.v1.GenerateTitleRequest
-	10, // 11: netclode.v1.AgentService.GetGitStatus:input_type -> netclode.v1.GetGitStatusRequest
-	12, // 12: netclode.v1.AgentService.GetGitDiff:input_type -> netclode.v1.GetGitDiffRequest
-	14, // 13: netclode.v1.AgentService.Terminal:input_type -> netclode.v1.TerminalInput
-	17, // 14: netclode.v1.AgentService.Health:input_type -> netclode.v1.HealthRequest
-	1,  // 15: netclode.v1.AgentService.ExecutePrompt:output_type -> netclode.v1.AgentStreamResponse
-	7,  // 16: netclode.v1.AgentService.Interrupt:output_type -> netclode.v1.InterruptResponse
-	9,  // 17: netclode.v1.AgentService.GenerateTitle:output_type -> netclode.v1.GenerateTitleResponse
-	11, // 18: netclode.v1.AgentService.GetGitStatus:output_type -> netclode.v1.GetGitStatusResponse
-	13, // 19: netclode.v1.AgentService.GetGitDiff:output_type -> netclode.v1.GetGitDiffResponse
-	16, // 20: netclode.v1.AgentService.Terminal:output_type -> netclode.v1.TerminalOutput
-	18, // 21: netclode.v1.AgentService.Health:output_type -> netclode.v1.HealthResponse
-	15, // [15:22] is the sub-list for method output_type
-	8,  // [8:15] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	2,  // 0: netclode.v1.AgentMessage.register:type_name -> netclode.v1.AgentRegister
+	3,  // 1: netclode.v1.AgentMessage.prompt_response:type_name -> netclode.v1.AgentStreamResponse
+	8,  // 2: netclode.v1.AgentMessage.terminal_output:type_name -> netclode.v1.AgentTerminalOutput
+	9,  // 3: netclode.v1.AgentMessage.title_response:type_name -> netclode.v1.AgentTitleResponse
+	10, // 4: netclode.v1.AgentMessage.git_status_response:type_name -> netclode.v1.AgentGitStatusResponse
+	11, // 5: netclode.v1.AgentMessage.git_diff_response:type_name -> netclode.v1.AgentGitDiffResponse
+	12, // 6: netclode.v1.ControlPlaneMessage.registered:type_name -> netclode.v1.AgentRegistered
+	13, // 7: netclode.v1.ControlPlaneMessage.execute_prompt:type_name -> netclode.v1.ExecutePromptRequest
+	14, // 8: netclode.v1.ControlPlaneMessage.interrupt:type_name -> netclode.v1.InterruptRequest
+	15, // 9: netclode.v1.ControlPlaneMessage.generate_title:type_name -> netclode.v1.GenerateTitleRequest
+	16, // 10: netclode.v1.ControlPlaneMessage.get_git_status:type_name -> netclode.v1.GetGitStatusRequest
+	17, // 11: netclode.v1.ControlPlaneMessage.get_git_diff:type_name -> netclode.v1.GetGitDiffRequest
+	18, // 12: netclode.v1.ControlPlaneMessage.terminal_input:type_name -> netclode.v1.AgentTerminalInput
+	4,  // 13: netclode.v1.AgentStreamResponse.text_delta:type_name -> netclode.v1.AgentTextDelta
+	20, // 14: netclode.v1.AgentStreamResponse.event:type_name -> netclode.v1.AgentEvent
+	5,  // 15: netclode.v1.AgentStreamResponse.system_message:type_name -> netclode.v1.AgentSystemMessage
+	6,  // 16: netclode.v1.AgentStreamResponse.result:type_name -> netclode.v1.AgentResult
+	7,  // 17: netclode.v1.AgentStreamResponse.error:type_name -> netclode.v1.AgentError
+	21, // 18: netclode.v1.AgentGitStatusResponse.files:type_name -> netclode.v1.GitFileChange
+	22, // 19: netclode.v1.AgentRegistered.config:type_name -> netclode.v1.SessionConfig
+	19, // 20: netclode.v1.AgentTerminalInput.resize:type_name -> netclode.v1.AgentTerminalResize
+	0,  // 21: netclode.v1.AgentService.Connect:input_type -> netclode.v1.AgentMessage
+	1,  // 22: netclode.v1.AgentService.Connect:output_type -> netclode.v1.ControlPlaneMessage
+	22, // [22:23] is the sub-list for method output_type
+	21, // [21:22] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_netclode_v1_agent_proto_init() }
@@ -1182,7 +1542,24 @@ func file_netclode_v1_agent_proto_init() {
 	}
 	file_netclode_v1_common_proto_init()
 	file_netclode_v1_events_proto_init()
+	file_netclode_v1_agent_proto_msgTypes[0].OneofWrappers = []any{
+		(*AgentMessage_Register)(nil),
+		(*AgentMessage_PromptResponse)(nil),
+		(*AgentMessage_TerminalOutput)(nil),
+		(*AgentMessage_TitleResponse)(nil),
+		(*AgentMessage_GitStatusResponse)(nil),
+		(*AgentMessage_GitDiffResponse)(nil),
+	}
 	file_netclode_v1_agent_proto_msgTypes[1].OneofWrappers = []any{
+		(*ControlPlaneMessage_Registered)(nil),
+		(*ControlPlaneMessage_ExecutePrompt)(nil),
+		(*ControlPlaneMessage_Interrupt)(nil),
+		(*ControlPlaneMessage_GenerateTitle)(nil),
+		(*ControlPlaneMessage_GetGitStatus)(nil),
+		(*ControlPlaneMessage_GetGitDiff)(nil),
+		(*ControlPlaneMessage_TerminalInput)(nil),
+	}
+	file_netclode_v1_agent_proto_msgTypes[3].OneofWrappers = []any{
 		(*AgentStreamResponse_TextDelta)(nil),
 		(*AgentStreamResponse_Event)(nil),
 		(*AgentStreamResponse_SystemMessage)(nil),
@@ -1190,9 +1567,10 @@ func file_netclode_v1_agent_proto_init() {
 		(*AgentStreamResponse_Error)(nil),
 	}
 	file_netclode_v1_agent_proto_msgTypes[12].OneofWrappers = []any{}
-	file_netclode_v1_agent_proto_msgTypes[14].OneofWrappers = []any{
-		(*TerminalInput_Data)(nil),
-		(*TerminalInput_Resize)(nil),
+	file_netclode_v1_agent_proto_msgTypes[17].OneofWrappers = []any{}
+	file_netclode_v1_agent_proto_msgTypes[18].OneofWrappers = []any{
+		(*AgentTerminalInput_Data)(nil),
+		(*AgentTerminalInput_Resize)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1200,7 +1578,7 @@ func file_netclode_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_netclode_v1_agent_proto_rawDesc), len(file_netclode_v1_agent_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

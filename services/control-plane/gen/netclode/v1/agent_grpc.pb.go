@@ -19,36 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AgentService_ExecutePrompt_FullMethodName = "/netclode.v1.AgentService/ExecutePrompt"
-	AgentService_Interrupt_FullMethodName     = "/netclode.v1.AgentService/Interrupt"
-	AgentService_GenerateTitle_FullMethodName = "/netclode.v1.AgentService/GenerateTitle"
-	AgentService_GetGitStatus_FullMethodName  = "/netclode.v1.AgentService/GetGitStatus"
-	AgentService_GetGitDiff_FullMethodName    = "/netclode.v1.AgentService/GetGitDiff"
-	AgentService_Terminal_FullMethodName      = "/netclode.v1.AgentService/Terminal"
-	AgentService_Health_FullMethodName        = "/netclode.v1.AgentService/Health"
+	AgentService_Connect_FullMethodName = "/netclode.v1.AgentService/Connect"
 )
 
 // AgentServiceClient is the client API for AgentService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// AgentService handles communication between the control plane and agent sandboxes.
-// Uses Connect protocol (gRPC-compatible) for flexibility.
+// AgentService handles bidirectional communication between agents and control plane.
+// Agents connect to CP (not the other way around).
 type AgentServiceClient interface {
-	// ExecutePrompt sends a prompt to the agent and streams back responses.
-	ExecutePrompt(ctx context.Context, in *ExecutePromptRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AgentStreamResponse], error)
-	// Interrupt stops the current agent execution.
-	Interrupt(ctx context.Context, in *InterruptRequest, opts ...grpc.CallOption) (*InterruptResponse, error)
-	// GenerateTitle generates a session title based on conversation.
-	GenerateTitle(ctx context.Context, in *GenerateTitleRequest, opts ...grpc.CallOption) (*GenerateTitleResponse, error)
-	// GetGitStatus returns the git status of the workspace.
-	GetGitStatus(ctx context.Context, in *GetGitStatusRequest, opts ...grpc.CallOption) (*GetGitStatusResponse, error)
-	// GetGitDiff returns the git diff for the workspace or a specific file.
-	GetGitDiff(ctx context.Context, in *GetGitDiffRequest, opts ...grpc.CallOption) (*GetGitDiffResponse, error)
-	// Terminal establishes a bidirectional stream for PTY I/O.
-	Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TerminalInput, TerminalOutput], error)
-	// Health returns the health status of the agent.
-	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	// Connect establishes a bidirectional stream for all agent-CP communication.
+	Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AgentMessage, ControlPlaneMessage], error)
 }
 
 type agentServiceClient struct {
@@ -59,109 +41,28 @@ func NewAgentServiceClient(cc grpc.ClientConnInterface) AgentServiceClient {
 	return &agentServiceClient{cc}
 }
 
-func (c *agentServiceClient) ExecutePrompt(ctx context.Context, in *ExecutePromptRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AgentStreamResponse], error) {
+func (c *agentServiceClient) Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AgentMessage, ControlPlaneMessage], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &AgentService_ServiceDesc.Streams[0], AgentService_ExecutePrompt_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &AgentService_ServiceDesc.Streams[0], AgentService_Connect_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[ExecutePromptRequest, AgentStreamResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
+	x := &grpc.GenericClientStream[AgentMessage, ControlPlaneMessage]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AgentService_ExecutePromptClient = grpc.ServerStreamingClient[AgentStreamResponse]
-
-func (c *agentServiceClient) Interrupt(ctx context.Context, in *InterruptRequest, opts ...grpc.CallOption) (*InterruptResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InterruptResponse)
-	err := c.cc.Invoke(ctx, AgentService_Interrupt_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *agentServiceClient) GenerateTitle(ctx context.Context, in *GenerateTitleRequest, opts ...grpc.CallOption) (*GenerateTitleResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateTitleResponse)
-	err := c.cc.Invoke(ctx, AgentService_GenerateTitle_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *agentServiceClient) GetGitStatus(ctx context.Context, in *GetGitStatusRequest, opts ...grpc.CallOption) (*GetGitStatusResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetGitStatusResponse)
-	err := c.cc.Invoke(ctx, AgentService_GetGitStatus_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *agentServiceClient) GetGitDiff(ctx context.Context, in *GetGitDiffRequest, opts ...grpc.CallOption) (*GetGitDiffResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetGitDiffResponse)
-	err := c.cc.Invoke(ctx, AgentService_GetGitDiff_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *agentServiceClient) Terminal(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TerminalInput, TerminalOutput], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &AgentService_ServiceDesc.Streams[1], AgentService_Terminal_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[TerminalInput, TerminalOutput]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AgentService_TerminalClient = grpc.BidiStreamingClient[TerminalInput, TerminalOutput]
-
-func (c *agentServiceClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HealthResponse)
-	err := c.cc.Invoke(ctx, AgentService_Health_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
+type AgentService_ConnectClient = grpc.BidiStreamingClient[AgentMessage, ControlPlaneMessage]
 
 // AgentServiceServer is the server API for AgentService service.
 // All implementations must embed UnimplementedAgentServiceServer
 // for forward compatibility.
 //
-// AgentService handles communication between the control plane and agent sandboxes.
-// Uses Connect protocol (gRPC-compatible) for flexibility.
+// AgentService handles bidirectional communication between agents and control plane.
+// Agents connect to CP (not the other way around).
 type AgentServiceServer interface {
-	// ExecutePrompt sends a prompt to the agent and streams back responses.
-	ExecutePrompt(*ExecutePromptRequest, grpc.ServerStreamingServer[AgentStreamResponse]) error
-	// Interrupt stops the current agent execution.
-	Interrupt(context.Context, *InterruptRequest) (*InterruptResponse, error)
-	// GenerateTitle generates a session title based on conversation.
-	GenerateTitle(context.Context, *GenerateTitleRequest) (*GenerateTitleResponse, error)
-	// GetGitStatus returns the git status of the workspace.
-	GetGitStatus(context.Context, *GetGitStatusRequest) (*GetGitStatusResponse, error)
-	// GetGitDiff returns the git diff for the workspace or a specific file.
-	GetGitDiff(context.Context, *GetGitDiffRequest) (*GetGitDiffResponse, error)
-	// Terminal establishes a bidirectional stream for PTY I/O.
-	Terminal(grpc.BidiStreamingServer[TerminalInput, TerminalOutput]) error
-	// Health returns the health status of the agent.
-	Health(context.Context, *HealthRequest) (*HealthResponse, error)
+	// Connect establishes a bidirectional stream for all agent-CP communication.
+	Connect(grpc.BidiStreamingServer[AgentMessage, ControlPlaneMessage]) error
 	mustEmbedUnimplementedAgentServiceServer()
 }
 
@@ -172,26 +73,8 @@ type AgentServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAgentServiceServer struct{}
 
-func (UnimplementedAgentServiceServer) ExecutePrompt(*ExecutePromptRequest, grpc.ServerStreamingServer[AgentStreamResponse]) error {
-	return status.Error(codes.Unimplemented, "method ExecutePrompt not implemented")
-}
-func (UnimplementedAgentServiceServer) Interrupt(context.Context, *InterruptRequest) (*InterruptResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Interrupt not implemented")
-}
-func (UnimplementedAgentServiceServer) GenerateTitle(context.Context, *GenerateTitleRequest) (*GenerateTitleResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GenerateTitle not implemented")
-}
-func (UnimplementedAgentServiceServer) GetGitStatus(context.Context, *GetGitStatusRequest) (*GetGitStatusResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetGitStatus not implemented")
-}
-func (UnimplementedAgentServiceServer) GetGitDiff(context.Context, *GetGitDiffRequest) (*GetGitDiffResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetGitDiff not implemented")
-}
-func (UnimplementedAgentServiceServer) Terminal(grpc.BidiStreamingServer[TerminalInput, TerminalOutput]) error {
-	return status.Error(codes.Unimplemented, "method Terminal not implemented")
-}
-func (UnimplementedAgentServiceServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Health not implemented")
+func (UnimplementedAgentServiceServer) Connect(grpc.BidiStreamingServer[AgentMessage, ControlPlaneMessage]) error {
+	return status.Error(codes.Unimplemented, "method Connect not implemented")
 }
 func (UnimplementedAgentServiceServer) mustEmbedUnimplementedAgentServiceServer() {}
 func (UnimplementedAgentServiceServer) testEmbeddedByValue()                      {}
@@ -214,113 +97,12 @@ func RegisterAgentServiceServer(s grpc.ServiceRegistrar, srv AgentServiceServer)
 	s.RegisterService(&AgentService_ServiceDesc, srv)
 }
 
-func _AgentService_ExecutePrompt_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ExecutePromptRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(AgentServiceServer).ExecutePrompt(m, &grpc.GenericServerStream[ExecutePromptRequest, AgentStreamResponse]{ServerStream: stream})
+func _AgentService_Connect_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AgentServiceServer).Connect(&grpc.GenericServerStream[AgentMessage, ControlPlaneMessage]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AgentService_ExecutePromptServer = grpc.ServerStreamingServer[AgentStreamResponse]
-
-func _AgentService_Interrupt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InterruptRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServiceServer).Interrupt(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AgentService_Interrupt_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServiceServer).Interrupt(ctx, req.(*InterruptRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AgentService_GenerateTitle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateTitleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServiceServer).GenerateTitle(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AgentService_GenerateTitle_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServiceServer).GenerateTitle(ctx, req.(*GenerateTitleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AgentService_GetGitStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGitStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServiceServer).GetGitStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AgentService_GetGitStatus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServiceServer).GetGitStatus(ctx, req.(*GetGitStatusRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AgentService_GetGitDiff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGitDiffRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServiceServer).GetGitDiff(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AgentService_GetGitDiff_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServiceServer).GetGitDiff(ctx, req.(*GetGitDiffRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AgentService_Terminal_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(AgentServiceServer).Terminal(&grpc.GenericServerStream[TerminalInput, TerminalOutput]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AgentService_TerminalServer = grpc.BidiStreamingServer[TerminalInput, TerminalOutput]
-
-func _AgentService_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HealthRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServiceServer).Health(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AgentService_Health_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServiceServer).Health(ctx, req.(*HealthRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
+type AgentService_ConnectServer = grpc.BidiStreamingServer[AgentMessage, ControlPlaneMessage]
 
 // AgentService_ServiceDesc is the grpc.ServiceDesc for AgentService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -328,37 +110,11 @@ func _AgentService_Health_Handler(srv interface{}, ctx context.Context, dec func
 var AgentService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "netclode.v1.AgentService",
 	HandlerType: (*AgentServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Interrupt",
-			Handler:    _AgentService_Interrupt_Handler,
-		},
-		{
-			MethodName: "GenerateTitle",
-			Handler:    _AgentService_GenerateTitle_Handler,
-		},
-		{
-			MethodName: "GetGitStatus",
-			Handler:    _AgentService_GetGitStatus_Handler,
-		},
-		{
-			MethodName: "GetGitDiff",
-			Handler:    _AgentService_GetGitDiff_Handler,
-		},
-		{
-			MethodName: "Health",
-			Handler:    _AgentService_Health_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "ExecutePrompt",
-			Handler:       _AgentService_ExecutePrompt_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "Terminal",
-			Handler:       _AgentService_Terminal_Handler,
+			StreamName:    "Connect",
+			Handler:       _AgentService_Connect_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

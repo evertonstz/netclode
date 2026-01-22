@@ -24,15 +24,26 @@ const (
 // This allows the API layer to broadcast updates to connected clients.
 type SessionUpdateCallback func(session *protocol.Session)
 
+// AgentConnection represents a connected agent that can receive commands.
+type AgentConnection interface {
+	ExecutePrompt(text string) error
+	Interrupt() error
+	GenerateTitle(requestID, prompt string) error
+	GetGitStatus(requestID string) error
+	GetGitDiff(requestID string, file *string) error
+	SendTerminalInput(data string) error
+	ResizeTerminal(cols, rows int) error
+}
+
 // Manager handles session lifecycle and agent communication.
 type Manager struct {
-	storage  storage.Storage
-	k8s      k8s.Runtime
-	config   *config.Config
-	terminal *TerminalManager
-	github   *github.Client // nil if GitHub App not configured
+	storage storage.Storage
+	k8s     k8s.Runtime
+	config  *config.Config
+	github  *github.Client // nil if GitHub App not configured
 
 	sessions map[string]*SessionState
+	agents   map[string]AgentConnection // sessionID -> agent connection
 	mu       sync.RWMutex
 
 	// onSessionUpdated is called when a session is updated internally (e.g., auto-pause).
@@ -41,18 +52,14 @@ type Manager struct {
 
 // NewManager creates a new session manager.
 func NewManager(store storage.Storage, k8sRuntime k8s.Runtime, cfg *config.Config, githubClient *github.Client) *Manager {
-	m := &Manager{
+	return &Manager{
 		storage:  store,
 		k8s:      k8sRuntime,
 		config:   cfg,
 		github:   githubClient,
 		sessions: make(map[string]*SessionState),
+		agents:   make(map[string]AgentConnection),
 	}
-
-	// Initialize terminal manager with emit callback
-	m.terminal = NewTerminalManager(m.emitTerminalOutput, cfg.AgentPort)
-
-	return m
 }
 
 // SetOnSessionUpdated sets a callback that is called when a session is updated internally.
@@ -126,11 +133,8 @@ func (m *Manager) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// Close closes all session states and the terminal manager.
+// Close closes all session states.
 func (m *Manager) Close() {
-	// Close terminal manager first
-	m.terminal.Close()
-
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -556,9 +560,6 @@ func (m *Manager) Pause(ctx context.Context, id string) (*protocol.Session, erro
 		return nil, fmt.Errorf("session %s not found", id)
 	}
 
-	// Disconnect terminal connection
-	m.terminal.Disconnect(id)
-
 	// Delete claim if using warm pool
 	if m.config.UseWarmPool {
 		if err := m.k8s.DeleteSandboxClaim(ctx, id); err != nil {
@@ -596,9 +597,6 @@ func (m *Manager) Pause(ctx context.Context, id string) (*protocol.Session, erro
 
 // Delete deletes a session and all its resources.
 func (m *Manager) Delete(ctx context.Context, id string) error {
-	// Disconnect terminal connection
-	m.terminal.Disconnect(id)
-
 	// Close the session state (stops broadcast loop)
 	m.mu.Lock()
 	if state, ok := m.sessions[id]; ok {
@@ -1081,40 +1079,51 @@ func (m *Manager) emitTerminalOutput(ctx context.Context, sessionID, data string
 
 // SendTerminalInput sends input to the agent terminal.
 func (m *Manager) SendTerminalInput(ctx context.Context, sessionID, data string) error {
-	state := m.getState(sessionID)
-	if state == nil {
-		return fmt.Errorf("session %s not found", sessionID)
+	m.mu.RLock()
+	agent, ok := m.agents[sessionID]
+	m.mu.RUnlock()
+
+	if !ok {
+		return fmt.Errorf("no agent connected for session %s", sessionID)
 	}
 
-	if state.ServiceFQDN == "" {
-		return fmt.Errorf("session %s is not running", sessionID)
-	}
-
-	// Ensure terminal connection exists
-	if err := m.terminal.EnsureConnected(ctx, sessionID, state.ServiceFQDN); err != nil {
-		return fmt.Errorf("connect to terminal: %w", err)
-	}
-
-	return m.terminal.SendInput(sessionID, data)
+	return agent.SendTerminalInput(data)
 }
 
 // ResizeTerminal resizes the agent terminal.
 func (m *Manager) ResizeTerminal(ctx context.Context, sessionID string, cols, rows int) error {
-	state := m.getState(sessionID)
-	if state == nil {
-		return fmt.Errorf("session %s not found", sessionID)
+	m.mu.RLock()
+	agent, ok := m.agents[sessionID]
+	m.mu.RUnlock()
+
+	if !ok {
+		return fmt.Errorf("no agent connected for session %s", sessionID)
 	}
 
-	if state.ServiceFQDN == "" {
-		return fmt.Errorf("session %s is not running", sessionID)
-	}
+	return agent.ResizeTerminal(cols, rows)
+}
 
-	// Ensure terminal connection exists
-	if err := m.terminal.EnsureConnected(ctx, sessionID, state.ServiceFQDN); err != nil {
-		return fmt.Errorf("connect to terminal: %w", err)
-	}
+// RegisterAgentConnection registers an agent connection for a session.
+func (m *Manager) RegisterAgentConnection(sessionID string, conn AgentConnection) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.agents[sessionID] = conn
+	slog.Info("Agent connection registered", "sessionID", sessionID)
+}
 
-	return m.terminal.Resize(sessionID, cols, rows)
+// UnregisterAgentConnection unregisters an agent connection.
+func (m *Manager) UnregisterAgentConnection(sessionID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.agents, sessionID)
+	slog.Info("Agent connection unregistered", "sessionID", sessionID)
+}
+
+// GetAgentConnection returns the agent connection for a session (or nil if not connected).
+func (m *Manager) GetAgentConnection(sessionID string) AgentConnection {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.agents[sessionID]
 }
 
 // serverMessageToNotification converts a protocol.ServerMessage to a storage.Notification.

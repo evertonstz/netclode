@@ -33,41 +33,14 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AgentServiceExecutePromptProcedure is the fully-qualified name of the AgentService's
-	// ExecutePrompt RPC.
-	AgentServiceExecutePromptProcedure = "/netclode.v1.AgentService/ExecutePrompt"
-	// AgentServiceInterruptProcedure is the fully-qualified name of the AgentService's Interrupt RPC.
-	AgentServiceInterruptProcedure = "/netclode.v1.AgentService/Interrupt"
-	// AgentServiceGenerateTitleProcedure is the fully-qualified name of the AgentService's
-	// GenerateTitle RPC.
-	AgentServiceGenerateTitleProcedure = "/netclode.v1.AgentService/GenerateTitle"
-	// AgentServiceGetGitStatusProcedure is the fully-qualified name of the AgentService's GetGitStatus
-	// RPC.
-	AgentServiceGetGitStatusProcedure = "/netclode.v1.AgentService/GetGitStatus"
-	// AgentServiceGetGitDiffProcedure is the fully-qualified name of the AgentService's GetGitDiff RPC.
-	AgentServiceGetGitDiffProcedure = "/netclode.v1.AgentService/GetGitDiff"
-	// AgentServiceTerminalProcedure is the fully-qualified name of the AgentService's Terminal RPC.
-	AgentServiceTerminalProcedure = "/netclode.v1.AgentService/Terminal"
-	// AgentServiceHealthProcedure is the fully-qualified name of the AgentService's Health RPC.
-	AgentServiceHealthProcedure = "/netclode.v1.AgentService/Health"
+	// AgentServiceConnectProcedure is the fully-qualified name of the AgentService's Connect RPC.
+	AgentServiceConnectProcedure = "/netclode.v1.AgentService/Connect"
 )
 
 // AgentServiceClient is a client for the netclode.v1.AgentService service.
 type AgentServiceClient interface {
-	// ExecutePrompt sends a prompt to the agent and streams back responses.
-	ExecutePrompt(context.Context, *connect.Request[v1.ExecutePromptRequest]) (*connect.ServerStreamForClient[v1.AgentStreamResponse], error)
-	// Interrupt stops the current agent execution.
-	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
-	// GenerateTitle generates a session title based on conversation.
-	GenerateTitle(context.Context, *connect.Request[v1.GenerateTitleRequest]) (*connect.Response[v1.GenerateTitleResponse], error)
-	// GetGitStatus returns the git status of the workspace.
-	GetGitStatus(context.Context, *connect.Request[v1.GetGitStatusRequest]) (*connect.Response[v1.GetGitStatusResponse], error)
-	// GetGitDiff returns the git diff for the workspace or a specific file.
-	GetGitDiff(context.Context, *connect.Request[v1.GetGitDiffRequest]) (*connect.Response[v1.GetGitDiffResponse], error)
-	// Terminal establishes a bidirectional stream for PTY I/O.
-	Terminal(context.Context) *connect.BidiStreamForClient[v1.TerminalInput, v1.TerminalOutput]
-	// Health returns the health status of the agent.
-	Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error)
+	// Connect establishes a bidirectional stream for all agent-CP communication.
+	Connect(context.Context) *connect.BidiStreamForClient[v1.AgentMessage, v1.ControlPlaneMessage]
 }
 
 // NewAgentServiceClient constructs a client for the netclode.v1.AgentService service. By default,
@@ -81,46 +54,10 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 	baseURL = strings.TrimRight(baseURL, "/")
 	agentServiceMethods := v1.File_netclode_v1_agent_proto.Services().ByName("AgentService").Methods()
 	return &agentServiceClient{
-		executePrompt: connect.NewClient[v1.ExecutePromptRequest, v1.AgentStreamResponse](
+		connect: connect.NewClient[v1.AgentMessage, v1.ControlPlaneMessage](
 			httpClient,
-			baseURL+AgentServiceExecutePromptProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("ExecutePrompt")),
-			connect.WithClientOptions(opts...),
-		),
-		interrupt: connect.NewClient[v1.InterruptRequest, v1.InterruptResponse](
-			httpClient,
-			baseURL+AgentServiceInterruptProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("Interrupt")),
-			connect.WithClientOptions(opts...),
-		),
-		generateTitle: connect.NewClient[v1.GenerateTitleRequest, v1.GenerateTitleResponse](
-			httpClient,
-			baseURL+AgentServiceGenerateTitleProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("GenerateTitle")),
-			connect.WithClientOptions(opts...),
-		),
-		getGitStatus: connect.NewClient[v1.GetGitStatusRequest, v1.GetGitStatusResponse](
-			httpClient,
-			baseURL+AgentServiceGetGitStatusProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("GetGitStatus")),
-			connect.WithClientOptions(opts...),
-		),
-		getGitDiff: connect.NewClient[v1.GetGitDiffRequest, v1.GetGitDiffResponse](
-			httpClient,
-			baseURL+AgentServiceGetGitDiffProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("GetGitDiff")),
-			connect.WithClientOptions(opts...),
-		),
-		terminal: connect.NewClient[v1.TerminalInput, v1.TerminalOutput](
-			httpClient,
-			baseURL+AgentServiceTerminalProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("Terminal")),
-			connect.WithClientOptions(opts...),
-		),
-		health: connect.NewClient[v1.HealthRequest, v1.HealthResponse](
-			httpClient,
-			baseURL+AgentServiceHealthProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("Health")),
+			baseURL+AgentServiceConnectProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("Connect")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -128,66 +65,18 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // agentServiceClient implements AgentServiceClient.
 type agentServiceClient struct {
-	executePrompt *connect.Client[v1.ExecutePromptRequest, v1.AgentStreamResponse]
-	interrupt     *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
-	generateTitle *connect.Client[v1.GenerateTitleRequest, v1.GenerateTitleResponse]
-	getGitStatus  *connect.Client[v1.GetGitStatusRequest, v1.GetGitStatusResponse]
-	getGitDiff    *connect.Client[v1.GetGitDiffRequest, v1.GetGitDiffResponse]
-	terminal      *connect.Client[v1.TerminalInput, v1.TerminalOutput]
-	health        *connect.Client[v1.HealthRequest, v1.HealthResponse]
+	connect *connect.Client[v1.AgentMessage, v1.ControlPlaneMessage]
 }
 
-// ExecutePrompt calls netclode.v1.AgentService.ExecutePrompt.
-func (c *agentServiceClient) ExecutePrompt(ctx context.Context, req *connect.Request[v1.ExecutePromptRequest]) (*connect.ServerStreamForClient[v1.AgentStreamResponse], error) {
-	return c.executePrompt.CallServerStream(ctx, req)
-}
-
-// Interrupt calls netclode.v1.AgentService.Interrupt.
-func (c *agentServiceClient) Interrupt(ctx context.Context, req *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error) {
-	return c.interrupt.CallUnary(ctx, req)
-}
-
-// GenerateTitle calls netclode.v1.AgentService.GenerateTitle.
-func (c *agentServiceClient) GenerateTitle(ctx context.Context, req *connect.Request[v1.GenerateTitleRequest]) (*connect.Response[v1.GenerateTitleResponse], error) {
-	return c.generateTitle.CallUnary(ctx, req)
-}
-
-// GetGitStatus calls netclode.v1.AgentService.GetGitStatus.
-func (c *agentServiceClient) GetGitStatus(ctx context.Context, req *connect.Request[v1.GetGitStatusRequest]) (*connect.Response[v1.GetGitStatusResponse], error) {
-	return c.getGitStatus.CallUnary(ctx, req)
-}
-
-// GetGitDiff calls netclode.v1.AgentService.GetGitDiff.
-func (c *agentServiceClient) GetGitDiff(ctx context.Context, req *connect.Request[v1.GetGitDiffRequest]) (*connect.Response[v1.GetGitDiffResponse], error) {
-	return c.getGitDiff.CallUnary(ctx, req)
-}
-
-// Terminal calls netclode.v1.AgentService.Terminal.
-func (c *agentServiceClient) Terminal(ctx context.Context) *connect.BidiStreamForClient[v1.TerminalInput, v1.TerminalOutput] {
-	return c.terminal.CallBidiStream(ctx)
-}
-
-// Health calls netclode.v1.AgentService.Health.
-func (c *agentServiceClient) Health(ctx context.Context, req *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error) {
-	return c.health.CallUnary(ctx, req)
+// Connect calls netclode.v1.AgentService.Connect.
+func (c *agentServiceClient) Connect(ctx context.Context) *connect.BidiStreamForClient[v1.AgentMessage, v1.ControlPlaneMessage] {
+	return c.connect.CallBidiStream(ctx)
 }
 
 // AgentServiceHandler is an implementation of the netclode.v1.AgentService service.
 type AgentServiceHandler interface {
-	// ExecutePrompt sends a prompt to the agent and streams back responses.
-	ExecutePrompt(context.Context, *connect.Request[v1.ExecutePromptRequest], *connect.ServerStream[v1.AgentStreamResponse]) error
-	// Interrupt stops the current agent execution.
-	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
-	// GenerateTitle generates a session title based on conversation.
-	GenerateTitle(context.Context, *connect.Request[v1.GenerateTitleRequest]) (*connect.Response[v1.GenerateTitleResponse], error)
-	// GetGitStatus returns the git status of the workspace.
-	GetGitStatus(context.Context, *connect.Request[v1.GetGitStatusRequest]) (*connect.Response[v1.GetGitStatusResponse], error)
-	// GetGitDiff returns the git diff for the workspace or a specific file.
-	GetGitDiff(context.Context, *connect.Request[v1.GetGitDiffRequest]) (*connect.Response[v1.GetGitDiffResponse], error)
-	// Terminal establishes a bidirectional stream for PTY I/O.
-	Terminal(context.Context, *connect.BidiStream[v1.TerminalInput, v1.TerminalOutput]) error
-	// Health returns the health status of the agent.
-	Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error)
+	// Connect establishes a bidirectional stream for all agent-CP communication.
+	Connect(context.Context, *connect.BidiStream[v1.AgentMessage, v1.ControlPlaneMessage]) error
 }
 
 // NewAgentServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -197,64 +86,16 @@ type AgentServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	agentServiceMethods := v1.File_netclode_v1_agent_proto.Services().ByName("AgentService").Methods()
-	agentServiceExecutePromptHandler := connect.NewServerStreamHandler(
-		AgentServiceExecutePromptProcedure,
-		svc.ExecutePrompt,
-		connect.WithSchema(agentServiceMethods.ByName("ExecutePrompt")),
-		connect.WithHandlerOptions(opts...),
-	)
-	agentServiceInterruptHandler := connect.NewUnaryHandler(
-		AgentServiceInterruptProcedure,
-		svc.Interrupt,
-		connect.WithSchema(agentServiceMethods.ByName("Interrupt")),
-		connect.WithHandlerOptions(opts...),
-	)
-	agentServiceGenerateTitleHandler := connect.NewUnaryHandler(
-		AgentServiceGenerateTitleProcedure,
-		svc.GenerateTitle,
-		connect.WithSchema(agentServiceMethods.ByName("GenerateTitle")),
-		connect.WithHandlerOptions(opts...),
-	)
-	agentServiceGetGitStatusHandler := connect.NewUnaryHandler(
-		AgentServiceGetGitStatusProcedure,
-		svc.GetGitStatus,
-		connect.WithSchema(agentServiceMethods.ByName("GetGitStatus")),
-		connect.WithHandlerOptions(opts...),
-	)
-	agentServiceGetGitDiffHandler := connect.NewUnaryHandler(
-		AgentServiceGetGitDiffProcedure,
-		svc.GetGitDiff,
-		connect.WithSchema(agentServiceMethods.ByName("GetGitDiff")),
-		connect.WithHandlerOptions(opts...),
-	)
-	agentServiceTerminalHandler := connect.NewBidiStreamHandler(
-		AgentServiceTerminalProcedure,
-		svc.Terminal,
-		connect.WithSchema(agentServiceMethods.ByName("Terminal")),
-		connect.WithHandlerOptions(opts...),
-	)
-	agentServiceHealthHandler := connect.NewUnaryHandler(
-		AgentServiceHealthProcedure,
-		svc.Health,
-		connect.WithSchema(agentServiceMethods.ByName("Health")),
+	agentServiceConnectHandler := connect.NewBidiStreamHandler(
+		AgentServiceConnectProcedure,
+		svc.Connect,
+		connect.WithSchema(agentServiceMethods.ByName("Connect")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/netclode.v1.AgentService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AgentServiceExecutePromptProcedure:
-			agentServiceExecutePromptHandler.ServeHTTP(w, r)
-		case AgentServiceInterruptProcedure:
-			agentServiceInterruptHandler.ServeHTTP(w, r)
-		case AgentServiceGenerateTitleProcedure:
-			agentServiceGenerateTitleHandler.ServeHTTP(w, r)
-		case AgentServiceGetGitStatusProcedure:
-			agentServiceGetGitStatusHandler.ServeHTTP(w, r)
-		case AgentServiceGetGitDiffProcedure:
-			agentServiceGetGitDiffHandler.ServeHTTP(w, r)
-		case AgentServiceTerminalProcedure:
-			agentServiceTerminalHandler.ServeHTTP(w, r)
-		case AgentServiceHealthProcedure:
-			agentServiceHealthHandler.ServeHTTP(w, r)
+		case AgentServiceConnectProcedure:
+			agentServiceConnectHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -264,30 +105,6 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 // UnimplementedAgentServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAgentServiceHandler struct{}
 
-func (UnimplementedAgentServiceHandler) ExecutePrompt(context.Context, *connect.Request[v1.ExecutePromptRequest], *connect.ServerStream[v1.AgentStreamResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.ExecutePrompt is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.Interrupt is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) GenerateTitle(context.Context, *connect.Request[v1.GenerateTitleRequest]) (*connect.Response[v1.GenerateTitleResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.GenerateTitle is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) GetGitStatus(context.Context, *connect.Request[v1.GetGitStatusRequest]) (*connect.Response[v1.GetGitStatusResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.GetGitStatus is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) GetGitDiff(context.Context, *connect.Request[v1.GetGitDiffRequest]) (*connect.Response[v1.GetGitDiffResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.GetGitDiff is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) Terminal(context.Context, *connect.BidiStream[v1.TerminalInput, v1.TerminalOutput]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.Terminal is not implemented"))
-}
-
-func (UnimplementedAgentServiceHandler) Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.Health is not implemented"))
+func (UnimplementedAgentServiceHandler) Connect(context.Context, *connect.BidiStream[v1.AgentMessage, v1.ControlPlaneMessage]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("netclode.v1.AgentService.Connect is not implemented"))
 }

@@ -7,6 +7,23 @@ import * as pty from "node-pty";
 
 const WORKSPACE_DIR = "/agent/workspace";
 
+// Terminal output callback (set by connect-client)
+let globalTerminalOutputCallback: ((data: string) => void) | null = null;
+
+/**
+ * Set the global terminal output callback
+ */
+export function setTerminalOutputCallback(callback: ((data: string) => void) | null): void {
+  globalTerminalOutputCallback = callback;
+}
+
+/**
+ * Handle terminal input from the control plane (single data write)
+ */
+export function handleTerminalInput(data: string): void {
+  writeToTerminal(data);
+}
+
 // Singleton PTY instance
 let terminalPty: IPty | null = null;
 
@@ -31,6 +48,10 @@ export function ensureTerminalPty(cols: number = 80, rows: number = 24): IPty {
       // Broadcast to all connected terminal streams
       for (const callback of terminalOutputCallbacks) {
         callback(data);
+      }
+      // Also broadcast to global callback (for connect-client)
+      if (globalTerminalOutputCallback) {
+        globalTerminalOutputCallback(data);
       }
     });
 

@@ -14,38 +14,173 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file netclode/v1/agent.proto.
  */
 export const file_netclode_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChduZXRjbG9kZS92MS9hZ2VudC5wcm90bxILbmV0Y2xvZGUudjEiZAoURXhlY3V0ZVByb21wdFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgR0ZXh0GAIgASgJEioKBmNvbmZpZxgDIAEoCzIaLm5ldGNsb2RlLnYxLlNlc3Npb25Db25maWcilQIKE0FnZW50U3RyZWFtUmVzcG9uc2USMQoKdGV4dF9kZWx0YRgBIAEoCzIbLm5ldGNsb2RlLnYxLkFnZW50VGV4dERlbHRhSAASKAoFZXZlbnQYAiABKAsyFy5uZXRjbG9kZS52MS5BZ2VudEV2ZW50SAASOQoOc3lzdGVtX21lc3NhZ2UYAyABKAsyHy5uZXRjbG9kZS52MS5BZ2VudFN5c3RlbU1lc3NhZ2VIABIqCgZyZXN1bHQYBCABKAsyGC5uZXRjbG9kZS52MS5BZ2VudFJlc3VsdEgAEi4KBWVycm9yGAUgASgLMh0ubmV0Y2xvZGUudjEuQWdlbnRTdHJlYW1FcnJvckgAQgoKCHJlc3BvbnNlIkYKDkFnZW50VGV4dERlbHRhEg8KB2NvbnRlbnQYASABKAkSDwoHcGFydGlhbBgCIAEoCBISCgptZXNzYWdlX2lkGAMgASgJIiUKEkFnZW50U3lzdGVtTWVzc2FnZRIPCgdtZXNzYWdlGAEgASgJIk8KC0FnZW50UmVzdWx0EhQKDGlucHV0X3Rva2VucxgBIAEoBRIVCg1vdXRwdXRfdG9rZW5zGAIgASgFEhMKC3RvdGFsX3R1cm5zGAMgASgFIjYKEEFnZW50U3RyZWFtRXJyb3ISDwoHbWVzc2FnZRgBIAEoCRIRCglyZXRyeWFibGUYAiABKAgiEgoQSW50ZXJydXB0UmVxdWVzdCIkChFJbnRlcnJ1cHRSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIIiYKFEdlbmVyYXRlVGl0bGVSZXF1ZXN0Eg4KBnByb21wdBgBIAEoCSImChVHZW5lcmF0ZVRpdGxlUmVzcG9uc2USDQoFdGl0bGUYASABKAkiFQoTR2V0R2l0U3RhdHVzUmVxdWVzdCJBChRHZXRHaXRTdGF0dXNSZXNwb25zZRIpCgVmaWxlcxgBIAMoCzIaLm5ldGNsb2RlLnYxLkdpdEZpbGVDaGFuZ2UiLwoRR2V0R2l0RGlmZlJlcXVlc3QSEQoEZmlsZRgBIAEoCUgAiAEBQgcKBV9maWxlIiIKEkdldEdpdERpZmZSZXNwb25zZRIMCgRkaWZmGAEgASgJIlcKDVRlcm1pbmFsSW5wdXQSDgoEZGF0YRgBIAEoCUgAEi0KBnJlc2l6ZRgCIAEoCzIbLm5ldGNsb2RlLnYxLlRlcm1pbmFsUmVzaXplSABCBwoFaW5wdXQiLAoOVGVybWluYWxSZXNpemUSDAoEY29scxgBIAEoBRIMCgRyb3dzGAIgASgFIh4KDlRlcm1pbmFsT3V0cHV0EgwKBGRhdGEYASABKAkiDwoNSGVhbHRoUmVxdWVzdCIyCg5IZWFsdGhSZXNwb25zZRIPCgdoZWFsdGh5GAEgASgIEg8KB3ZlcnNpb24YAiABKAkyugQKDEFnZW50U2VydmljZRJWCg1FeGVjdXRlUHJvbXB0EiEubmV0Y2xvZGUudjEuRXhlY3V0ZVByb21wdFJlcXVlc3QaIC5uZXRjbG9kZS52MS5BZ2VudFN0cmVhbVJlc3BvbnNlMAESSgoJSW50ZXJydXB0Eh0ubmV0Y2xvZGUudjEuSW50ZXJydXB0UmVxdWVzdBoeLm5ldGNsb2RlLnYxLkludGVycnVwdFJlc3BvbnNlElYKDUdlbmVyYXRlVGl0bGUSIS5uZXRjbG9kZS52MS5HZW5lcmF0ZVRpdGxlUmVxdWVzdBoiLm5ldGNsb2RlLnYxLkdlbmVyYXRlVGl0bGVSZXNwb25zZRJTCgxHZXRHaXRTdGF0dXMSIC5uZXRjbG9kZS52MS5HZXRHaXRTdGF0dXNSZXF1ZXN0GiEubmV0Y2xvZGUudjEuR2V0R2l0U3RhdHVzUmVzcG9uc2USTQoKR2V0R2l0RGlmZhIeLm5ldGNsb2RlLnYxLkdldEdpdERpZmZSZXF1ZXN0Gh8ubmV0Y2xvZGUudjEuR2V0R2l0RGlmZlJlc3BvbnNlEkcKCFRlcm1pbmFsEhoubmV0Y2xvZGUudjEuVGVybWluYWxJbnB1dBobLm5ldGNsb2RlLnYxLlRlcm1pbmFsT3V0cHV0KAEwARJBCgZIZWFsdGgSGi5uZXRjbG9kZS52MS5IZWFsdGhSZXF1ZXN0GhsubmV0Y2xvZGUudjEuSGVhbHRoUmVzcG9uc2VCuwEKD2NvbS5uZXRjbG9kZS52MUIKQWdlbnRQcm90b1ABWk9naXRodWIuY29tL2FuZ3Jpc3Rhbi9uZXRjbG9kZS9zZXJ2aWNlcy9jb250cm9sLXBsYW5lL2dlbi9uZXRjbG9kZS92MTtuZXRjbG9kZXYxogIDTlhYqgILTmV0Y2xvZGUuVjHKAgtOZXRjbG9kZVxWMeICF05ldGNsb2RlXFYxXEdQQk1ldGFkYXRh6gIMTmV0Y2xvZGU6OlYxYgZwcm90bzM", [file_netclode_v1_common, file_netclode_v1_events]);
+  fileDesc("ChduZXRjbG9kZS92MS9hZ2VudC5wcm90bxILbmV0Y2xvZGUudjEiggMKDEFnZW50TWVzc2FnZRIuCghyZWdpc3RlchgBIAEoCzIaLm5ldGNsb2RlLnYxLkFnZW50UmVnaXN0ZXJIABI7Cg9wcm9tcHRfcmVzcG9uc2UYAiABKAsyIC5uZXRjbG9kZS52MS5BZ2VudFN0cmVhbVJlc3BvbnNlSAASOwoPdGVybWluYWxfb3V0cHV0GAMgASgLMiAubmV0Y2xvZGUudjEuQWdlbnRUZXJtaW5hbE91dHB1dEgAEjkKDnRpdGxlX3Jlc3BvbnNlGAQgASgLMh8ubmV0Y2xvZGUudjEuQWdlbnRUaXRsZVJlc3BvbnNlSAASQgoTZ2l0X3N0YXR1c19yZXNwb25zZRgFIAEoCzIjLm5ldGNsb2RlLnYxLkFnZW50R2l0U3RhdHVzUmVzcG9uc2VIABI+ChFnaXRfZGlmZl9yZXNwb25zZRgGIAEoCzIhLm5ldGNsb2RlLnYxLkFnZW50R2l0RGlmZlJlc3BvbnNlSABCCQoHbWVzc2FnZSKxAwoTQ29udHJvbFBsYW5lTWVzc2FnZRIyCgpyZWdpc3RlcmVkGAEgASgLMhwubmV0Y2xvZGUudjEuQWdlbnRSZWdpc3RlcmVkSAASOwoOZXhlY3V0ZV9wcm9tcHQYAiABKAsyIS5uZXRjbG9kZS52MS5FeGVjdXRlUHJvbXB0UmVxdWVzdEgAEjIKCWludGVycnVwdBgDIAEoCzIdLm5ldGNsb2RlLnYxLkludGVycnVwdFJlcXVlc3RIABI7Cg5nZW5lcmF0ZV90aXRsZRgEIAEoCzIhLm5ldGNsb2RlLnYxLkdlbmVyYXRlVGl0bGVSZXF1ZXN0SAASOgoOZ2V0X2dpdF9zdGF0dXMYBSABKAsyIC5uZXRjbG9kZS52MS5HZXRHaXRTdGF0dXNSZXF1ZXN0SAASNgoMZ2V0X2dpdF9kaWZmGAYgASgLMh4ubmV0Y2xvZGUudjEuR2V0R2l0RGlmZlJlcXVlc3RIABI5Cg50ZXJtaW5hbF9pbnB1dBgHIAEoCzIfLm5ldGNsb2RlLnYxLkFnZW50VGVybWluYWxJbnB1dEgAQgkKB21lc3NhZ2UiNAoNQWdlbnRSZWdpc3RlchISCgpzZXNzaW9uX2lkGAEgASgJEg8KB3ZlcnNpb24YAiABKAkijwIKE0FnZW50U3RyZWFtUmVzcG9uc2USMQoKdGV4dF9kZWx0YRgBIAEoCzIbLm5ldGNsb2RlLnYxLkFnZW50VGV4dERlbHRhSAASKAoFZXZlbnQYAiABKAsyFy5uZXRjbG9kZS52MS5BZ2VudEV2ZW50SAASOQoOc3lzdGVtX21lc3NhZ2UYAyABKAsyHy5uZXRjbG9kZS52MS5BZ2VudFN5c3RlbU1lc3NhZ2VIABIqCgZyZXN1bHQYBCABKAsyGC5uZXRjbG9kZS52MS5BZ2VudFJlc3VsdEgAEigKBWVycm9yGAUgASgLMhcubmV0Y2xvZGUudjEuQWdlbnRFcnJvckgAQgoKCHJlc3BvbnNlIkYKDkFnZW50VGV4dERlbHRhEg8KB2NvbnRlbnQYASABKAkSDwoHcGFydGlhbBgCIAEoCBISCgptZXNzYWdlX2lkGAMgASgJIiUKEkFnZW50U3lzdGVtTWVzc2FnZRIPCgdtZXNzYWdlGAEgASgJIk8KC0FnZW50UmVzdWx0EhQKDGlucHV0X3Rva2VucxgBIAEoBRIVCg1vdXRwdXRfdG9rZW5zGAIgASgFEhMKC3RvdGFsX3R1cm5zGAMgASgFIjAKCkFnZW50RXJyb3ISDwoHbWVzc2FnZRgBIAEoCRIRCglyZXRyeWFibGUYAiABKAgiIwoTQWdlbnRUZXJtaW5hbE91dHB1dBIMCgRkYXRhGAEgASgJIjcKEkFnZW50VGl0bGVSZXNwb25zZRISCgpyZXF1ZXN0X2lkGAEgASgJEg0KBXRpdGxlGAIgASgJIlcKFkFnZW50R2l0U3RhdHVzUmVzcG9uc2USEgoKcmVxdWVzdF9pZBgBIAEoCRIpCgVmaWxlcxgCIAMoCzIaLm5ldGNsb2RlLnYxLkdpdEZpbGVDaGFuZ2UiOAoUQWdlbnRHaXREaWZmUmVzcG9uc2USEgoKcmVxdWVzdF9pZBgBIAEoCRIMCgRkaWZmGAIgASgJInwKD0FnZW50UmVnaXN0ZXJlZBIPCgdzdWNjZXNzGAEgASgIEhIKBWVycm9yGAIgASgJSACIAQESLwoGY29uZmlnGAMgASgLMhoubmV0Y2xvZGUudjEuU2Vzc2lvbkNvbmZpZ0gBiAEBQggKBl9lcnJvckIJCgdfY29uZmlnIiQKFEV4ZWN1dGVQcm9tcHRSZXF1ZXN0EgwKBHRleHQYASABKAkiEgoQSW50ZXJydXB0UmVxdWVzdCI6ChRHZW5lcmF0ZVRpdGxlUmVxdWVzdBISCgpyZXF1ZXN0X2lkGAEgASgJEg4KBnByb21wdBgCIAEoCSIpChNHZXRHaXRTdGF0dXNSZXF1ZXN0EhIKCnJlcXVlc3RfaWQYASABKAkiQwoRR2V0R2l0RGlmZlJlcXVlc3QSEgoKcmVxdWVzdF9pZBgBIAEoCRIRCgRmaWxlGAIgASgJSACIAQFCBwoFX2ZpbGUiYQoSQWdlbnRUZXJtaW5hbElucHV0Eg4KBGRhdGEYASABKAlIABIyCgZyZXNpemUYAiABKAsyIC5uZXRjbG9kZS52MS5BZ2VudFRlcm1pbmFsUmVzaXplSABCBwoFaW5wdXQiMQoTQWdlbnRUZXJtaW5hbFJlc2l6ZRIMCgRjb2xzGAEgASgFEgwKBHJvd3MYAiABKAUyWgoMQWdlbnRTZXJ2aWNlEkoKB0Nvbm5lY3QSGS5uZXRjbG9kZS52MS5BZ2VudE1lc3NhZ2UaIC5uZXRjbG9kZS52MS5Db250cm9sUGxhbmVNZXNzYWdlKAEwAUK7AQoPY29tLm5ldGNsb2RlLnYxQgpBZ2VudFByb3RvUAFaT2dpdGh1Yi5jb20vYW5ncmlzdGFuL25ldGNsb2RlL3NlcnZpY2VzL2NvbnRyb2wtcGxhbmUvZ2VuL25ldGNsb2RlL3YxO25ldGNsb2RldjGiAgNOWFiqAgtOZXRjbG9kZS5WMcoCC05ldGNsb2RlXFYx4gIXTmV0Y2xvZGVcVjFcR1BCTWV0YWRhdGHqAgxOZXRjbG9kZTo6VjFiBnByb3RvMw", [file_netclode_v1_common, file_netclode_v1_events]);
 
 /**
- * @generated from message netclode.v1.ExecutePromptRequest
+ * AgentMessage is sent from agent to control plane.
+ *
+ * @generated from message netclode.v1.AgentMessage
  */
-export type ExecutePromptRequest = Message<"netclode.v1.ExecutePromptRequest"> & {
+export type AgentMessage = Message<"netclode.v1.AgentMessage"> & {
+  /**
+   * @generated from oneof netclode.v1.AgentMessage.message
+   */
+  message: {
+    /**
+     * Registration - sent first when agent connects
+     *
+     * @generated from field: netclode.v1.AgentRegister register = 1;
+     */
+    value: AgentRegister;
+    case: "register";
+  } | {
+    /**
+     * Streaming responses during prompt execution
+     *
+     * @generated from field: netclode.v1.AgentStreamResponse prompt_response = 2;
+     */
+    value: AgentStreamResponse;
+    case: "promptResponse";
+  } | {
+    /**
+     * Terminal output
+     *
+     * @generated from field: netclode.v1.AgentTerminalOutput terminal_output = 3;
+     */
+    value: AgentTerminalOutput;
+    case: "terminalOutput";
+  } | {
+    /**
+     * Title generation result
+     *
+     * @generated from field: netclode.v1.AgentTitleResponse title_response = 4;
+     */
+    value: AgentTitleResponse;
+    case: "titleResponse";
+  } | {
+    /**
+     * Git status result
+     *
+     * @generated from field: netclode.v1.AgentGitStatusResponse git_status_response = 5;
+     */
+    value: AgentGitStatusResponse;
+    case: "gitStatusResponse";
+  } | {
+    /**
+     * Git diff result
+     *
+     * @generated from field: netclode.v1.AgentGitDiffResponse git_diff_response = 6;
+     */
+    value: AgentGitDiffResponse;
+    case: "gitDiffResponse";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message netclode.v1.AgentMessage.
+ * Use `create(AgentMessageSchema)` to create a new message.
+ */
+export const AgentMessageSchema: GenMessage<AgentMessage> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 0);
+
+/**
+ * ControlPlaneMessage is sent from control plane to agent.
+ *
+ * @generated from message netclode.v1.ControlPlaneMessage
+ */
+export type ControlPlaneMessage = Message<"netclode.v1.ControlPlaneMessage"> & {
+  /**
+   * @generated from oneof netclode.v1.ControlPlaneMessage.message
+   */
+  message: {
+    /**
+     * Acknowledgment of registration
+     *
+     * @generated from field: netclode.v1.AgentRegistered registered = 1;
+     */
+    value: AgentRegistered;
+    case: "registered";
+  } | {
+    /**
+     * Execute a prompt
+     *
+     * @generated from field: netclode.v1.ExecutePromptRequest execute_prompt = 2;
+     */
+    value: ExecutePromptRequest;
+    case: "executePrompt";
+  } | {
+    /**
+     * Interrupt current execution
+     *
+     * @generated from field: netclode.v1.InterruptRequest interrupt = 3;
+     */
+    value: InterruptRequest;
+    case: "interrupt";
+  } | {
+    /**
+     * Generate title for session
+     *
+     * @generated from field: netclode.v1.GenerateTitleRequest generate_title = 4;
+     */
+    value: GenerateTitleRequest;
+    case: "generateTitle";
+  } | {
+    /**
+     * Git status request
+     *
+     * @generated from field: netclode.v1.GetGitStatusRequest get_git_status = 5;
+     */
+    value: GetGitStatusRequest;
+    case: "getGitStatus";
+  } | {
+    /**
+     * Git diff request
+     *
+     * @generated from field: netclode.v1.GetGitDiffRequest get_git_diff = 6;
+     */
+    value: GetGitDiffRequest;
+    case: "getGitDiff";
+  } | {
+    /**
+     * Terminal input
+     *
+     * @generated from field: netclode.v1.AgentTerminalInput terminal_input = 7;
+     */
+    value: AgentTerminalInput;
+    case: "terminalInput";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message netclode.v1.ControlPlaneMessage.
+ * Use `create(ControlPlaneMessageSchema)` to create a new message.
+ */
+export const ControlPlaneMessageSchema: GenMessage<ControlPlaneMessage> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 1);
+
+/**
+ * @generated from message netclode.v1.AgentRegister
+ */
+export type AgentRegister = Message<"netclode.v1.AgentRegister"> & {
   /**
    * @generated from field: string session_id = 1;
    */
   sessionId: string;
 
   /**
-   * @generated from field: string text = 2;
+   * @generated from field: string version = 2;
    */
-  text: string;
-
-  /**
-   * @generated from field: netclode.v1.SessionConfig config = 3;
-   */
-  config?: SessionConfig;
+  version: string;
 };
 
 /**
- * Describes the message netclode.v1.ExecutePromptRequest.
- * Use `create(ExecutePromptRequestSchema)` to create a new message.
+ * Describes the message netclode.v1.AgentRegister.
+ * Use `create(AgentRegisterSchema)` to create a new message.
  */
-export const ExecutePromptRequestSchema: GenMessage<ExecutePromptRequest> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 0);
+export const AgentRegisterSchema: GenMessage<AgentRegister> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 2);
 
 /**
- * AgentStreamResponse is streamed back during prompt execution.
- *
  * @generated from message netclode.v1.AgentStreamResponse
  */
 export type AgentStreamResponse = Message<"netclode.v1.AgentStreamResponse"> & {
@@ -78,9 +213,9 @@ export type AgentStreamResponse = Message<"netclode.v1.AgentStreamResponse"> & {
     case: "result";
   } | {
     /**
-     * @generated from field: netclode.v1.AgentStreamError error = 5;
+     * @generated from field: netclode.v1.AgentError error = 5;
      */
-    value: AgentStreamError;
+    value: AgentError;
     case: "error";
   } | { case: undefined; value?: undefined };
 };
@@ -90,11 +225,9 @@ export type AgentStreamResponse = Message<"netclode.v1.AgentStreamResponse"> & {
  * Use `create(AgentStreamResponseSchema)` to create a new message.
  */
 export const AgentStreamResponseSchema: GenMessage<AgentStreamResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 1);
+  messageDesc(file_netclode_v1_agent, 3);
 
 /**
- * AgentTextDelta represents a partial text response from the agent.
- *
  * @generated from message netclode.v1.AgentTextDelta
  */
 export type AgentTextDelta = Message<"netclode.v1.AgentTextDelta"> & {
@@ -119,11 +252,9 @@ export type AgentTextDelta = Message<"netclode.v1.AgentTextDelta"> & {
  * Use `create(AgentTextDeltaSchema)` to create a new message.
  */
 export const AgentTextDeltaSchema: GenMessage<AgentTextDelta> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 2);
+  messageDesc(file_netclode_v1_agent, 4);
 
 /**
- * AgentSystemMessage represents system-level messages during execution.
- *
  * @generated from message netclode.v1.AgentSystemMessage
  */
 export type AgentSystemMessage = Message<"netclode.v1.AgentSystemMessage"> & {
@@ -138,11 +269,9 @@ export type AgentSystemMessage = Message<"netclode.v1.AgentSystemMessage"> & {
  * Use `create(AgentSystemMessageSchema)` to create a new message.
  */
 export const AgentSystemMessageSchema: GenMessage<AgentSystemMessage> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 3);
+  messageDesc(file_netclode_v1_agent, 5);
 
 /**
- * AgentResult represents the final result of prompt execution.
- *
  * @generated from message netclode.v1.AgentResult
  */
 export type AgentResult = Message<"netclode.v1.AgentResult"> & {
@@ -167,14 +296,12 @@ export type AgentResult = Message<"netclode.v1.AgentResult"> & {
  * Use `create(AgentResultSchema)` to create a new message.
  */
 export const AgentResultSchema: GenMessage<AgentResult> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 4);
+  messageDesc(file_netclode_v1_agent, 6);
 
 /**
- * AgentStreamError represents an error during prompt execution.
- *
- * @generated from message netclode.v1.AgentStreamError
+ * @generated from message netclode.v1.AgentError
  */
-export type AgentStreamError = Message<"netclode.v1.AgentStreamError"> & {
+export type AgentError = Message<"netclode.v1.AgentError"> & {
   /**
    * @generated from field: string message = 1;
    */
@@ -187,11 +314,140 @@ export type AgentStreamError = Message<"netclode.v1.AgentStreamError"> & {
 };
 
 /**
- * Describes the message netclode.v1.AgentStreamError.
- * Use `create(AgentStreamErrorSchema)` to create a new message.
+ * Describes the message netclode.v1.AgentError.
+ * Use `create(AgentErrorSchema)` to create a new message.
  */
-export const AgentStreamErrorSchema: GenMessage<AgentStreamError> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 5);
+export const AgentErrorSchema: GenMessage<AgentError> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 7);
+
+/**
+ * @generated from message netclode.v1.AgentTerminalOutput
+ */
+export type AgentTerminalOutput = Message<"netclode.v1.AgentTerminalOutput"> & {
+  /**
+   * @generated from field: string data = 1;
+   */
+  data: string;
+};
+
+/**
+ * Describes the message netclode.v1.AgentTerminalOutput.
+ * Use `create(AgentTerminalOutputSchema)` to create a new message.
+ */
+export const AgentTerminalOutputSchema: GenMessage<AgentTerminalOutput> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 8);
+
+/**
+ * @generated from message netclode.v1.AgentTitleResponse
+ */
+export type AgentTitleResponse = Message<"netclode.v1.AgentTitleResponse"> & {
+  /**
+   * @generated from field: string request_id = 1;
+   */
+  requestId: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+};
+
+/**
+ * Describes the message netclode.v1.AgentTitleResponse.
+ * Use `create(AgentTitleResponseSchema)` to create a new message.
+ */
+export const AgentTitleResponseSchema: GenMessage<AgentTitleResponse> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 9);
+
+/**
+ * @generated from message netclode.v1.AgentGitStatusResponse
+ */
+export type AgentGitStatusResponse = Message<"netclode.v1.AgentGitStatusResponse"> & {
+  /**
+   * @generated from field: string request_id = 1;
+   */
+  requestId: string;
+
+  /**
+   * @generated from field: repeated netclode.v1.GitFileChange files = 2;
+   */
+  files: GitFileChange[];
+};
+
+/**
+ * Describes the message netclode.v1.AgentGitStatusResponse.
+ * Use `create(AgentGitStatusResponseSchema)` to create a new message.
+ */
+export const AgentGitStatusResponseSchema: GenMessage<AgentGitStatusResponse> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 10);
+
+/**
+ * @generated from message netclode.v1.AgentGitDiffResponse
+ */
+export type AgentGitDiffResponse = Message<"netclode.v1.AgentGitDiffResponse"> & {
+  /**
+   * @generated from field: string request_id = 1;
+   */
+  requestId: string;
+
+  /**
+   * @generated from field: string diff = 2;
+   */
+  diff: string;
+};
+
+/**
+ * Describes the message netclode.v1.AgentGitDiffResponse.
+ * Use `create(AgentGitDiffResponseSchema)` to create a new message.
+ */
+export const AgentGitDiffResponseSchema: GenMessage<AgentGitDiffResponse> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 11);
+
+/**
+ * @generated from message netclode.v1.AgentRegistered
+ */
+export type AgentRegistered = Message<"netclode.v1.AgentRegistered"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: optional string error = 2;
+   */
+  error?: string;
+
+  /**
+   * Session config passed to agent on registration
+   *
+   * @generated from field: optional netclode.v1.SessionConfig config = 3;
+   */
+  config?: SessionConfig;
+};
+
+/**
+ * Describes the message netclode.v1.AgentRegistered.
+ * Use `create(AgentRegisteredSchema)` to create a new message.
+ */
+export const AgentRegisteredSchema: GenMessage<AgentRegistered> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 12);
+
+/**
+ * @generated from message netclode.v1.ExecutePromptRequest
+ */
+export type ExecutePromptRequest = Message<"netclode.v1.ExecutePromptRequest"> & {
+  /**
+   * @generated from field: string text = 1;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message netclode.v1.ExecutePromptRequest.
+ * Use `create(ExecutePromptRequestSchema)` to create a new message.
+ */
+export const ExecutePromptRequestSchema: GenMessage<ExecutePromptRequest> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 13);
 
 /**
  * @generated from message netclode.v1.InterruptRequest
@@ -204,31 +460,19 @@ export type InterruptRequest = Message<"netclode.v1.InterruptRequest"> & {
  * Use `create(InterruptRequestSchema)` to create a new message.
  */
 export const InterruptRequestSchema: GenMessage<InterruptRequest> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 6);
-
-/**
- * @generated from message netclode.v1.InterruptResponse
- */
-export type InterruptResponse = Message<"netclode.v1.InterruptResponse"> & {
-  /**
-   * @generated from field: bool success = 1;
-   */
-  success: boolean;
-};
-
-/**
- * Describes the message netclode.v1.InterruptResponse.
- * Use `create(InterruptResponseSchema)` to create a new message.
- */
-export const InterruptResponseSchema: GenMessage<InterruptResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 7);
+  messageDesc(file_netclode_v1_agent, 14);
 
 /**
  * @generated from message netclode.v1.GenerateTitleRequest
  */
 export type GenerateTitleRequest = Message<"netclode.v1.GenerateTitleRequest"> & {
   /**
-   * @generated from field: string prompt = 1;
+   * @generated from field: string request_id = 1;
+   */
+  requestId: string;
+
+  /**
+   * @generated from field: string prompt = 2;
    */
   prompt: string;
 };
@@ -238,29 +482,16 @@ export type GenerateTitleRequest = Message<"netclode.v1.GenerateTitleRequest"> &
  * Use `create(GenerateTitleRequestSchema)` to create a new message.
  */
 export const GenerateTitleRequestSchema: GenMessage<GenerateTitleRequest> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 8);
-
-/**
- * @generated from message netclode.v1.GenerateTitleResponse
- */
-export type GenerateTitleResponse = Message<"netclode.v1.GenerateTitleResponse"> & {
-  /**
-   * @generated from field: string title = 1;
-   */
-  title: string;
-};
-
-/**
- * Describes the message netclode.v1.GenerateTitleResponse.
- * Use `create(GenerateTitleResponseSchema)` to create a new message.
- */
-export const GenerateTitleResponseSchema: GenMessage<GenerateTitleResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 9);
+  messageDesc(file_netclode_v1_agent, 15);
 
 /**
  * @generated from message netclode.v1.GetGitStatusRequest
  */
 export type GetGitStatusRequest = Message<"netclode.v1.GetGitStatusRequest"> & {
+  /**
+   * @generated from field: string request_id = 1;
+   */
+  requestId: string;
 };
 
 /**
@@ -268,33 +499,19 @@ export type GetGitStatusRequest = Message<"netclode.v1.GetGitStatusRequest"> & {
  * Use `create(GetGitStatusRequestSchema)` to create a new message.
  */
 export const GetGitStatusRequestSchema: GenMessage<GetGitStatusRequest> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 10);
-
-/**
- * @generated from message netclode.v1.GetGitStatusResponse
- */
-export type GetGitStatusResponse = Message<"netclode.v1.GetGitStatusResponse"> & {
-  /**
-   * @generated from field: repeated netclode.v1.GitFileChange files = 1;
-   */
-  files: GitFileChange[];
-};
-
-/**
- * Describes the message netclode.v1.GetGitStatusResponse.
- * Use `create(GetGitStatusResponseSchema)` to create a new message.
- */
-export const GetGitStatusResponseSchema: GenMessage<GetGitStatusResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 11);
+  messageDesc(file_netclode_v1_agent, 16);
 
 /**
  * @generated from message netclode.v1.GetGitDiffRequest
  */
 export type GetGitDiffRequest = Message<"netclode.v1.GetGitDiffRequest"> & {
   /**
-   * Specific file, or all if empty
-   *
-   * @generated from field: optional string file = 1;
+   * @generated from field: string request_id = 1;
+   */
+  requestId: string;
+
+  /**
+   * @generated from field: optional string file = 2;
    */
   file?: string;
 };
@@ -304,31 +521,14 @@ export type GetGitDiffRequest = Message<"netclode.v1.GetGitDiffRequest"> & {
  * Use `create(GetGitDiffRequestSchema)` to create a new message.
  */
 export const GetGitDiffRequestSchema: GenMessage<GetGitDiffRequest> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 12);
+  messageDesc(file_netclode_v1_agent, 17);
 
 /**
- * @generated from message netclode.v1.GetGitDiffResponse
+ * @generated from message netclode.v1.AgentTerminalInput
  */
-export type GetGitDiffResponse = Message<"netclode.v1.GetGitDiffResponse"> & {
+export type AgentTerminalInput = Message<"netclode.v1.AgentTerminalInput"> & {
   /**
-   * @generated from field: string diff = 1;
-   */
-  diff: string;
-};
-
-/**
- * Describes the message netclode.v1.GetGitDiffResponse.
- * Use `create(GetGitDiffResponseSchema)` to create a new message.
- */
-export const GetGitDiffResponseSchema: GenMessage<GetGitDiffResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 13);
-
-/**
- * @generated from message netclode.v1.TerminalInput
- */
-export type TerminalInput = Message<"netclode.v1.TerminalInput"> & {
-  /**
-   * @generated from oneof netclode.v1.TerminalInput.input
+   * @generated from oneof netclode.v1.AgentTerminalInput.input
    */
   input: {
     /**
@@ -338,24 +538,24 @@ export type TerminalInput = Message<"netclode.v1.TerminalInput"> & {
     case: "data";
   } | {
     /**
-     * @generated from field: netclode.v1.TerminalResize resize = 2;
+     * @generated from field: netclode.v1.AgentTerminalResize resize = 2;
      */
-    value: TerminalResize;
+    value: AgentTerminalResize;
     case: "resize";
   } | { case: undefined; value?: undefined };
 };
 
 /**
- * Describes the message netclode.v1.TerminalInput.
- * Use `create(TerminalInputSchema)` to create a new message.
+ * Describes the message netclode.v1.AgentTerminalInput.
+ * Use `create(AgentTerminalInputSchema)` to create a new message.
  */
-export const TerminalInputSchema: GenMessage<TerminalInput> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 14);
+export const AgentTerminalInputSchema: GenMessage<AgentTerminalInput> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 18);
 
 /**
- * @generated from message netclode.v1.TerminalResize
+ * @generated from message netclode.v1.AgentTerminalResize
  */
-export type TerminalResize = Message<"netclode.v1.TerminalResize"> & {
+export type AgentTerminalResize = Message<"netclode.v1.AgentTerminalResize"> & {
   /**
    * @generated from field: int32 cols = 1;
    */
@@ -368,140 +568,28 @@ export type TerminalResize = Message<"netclode.v1.TerminalResize"> & {
 };
 
 /**
- * Describes the message netclode.v1.TerminalResize.
- * Use `create(TerminalResizeSchema)` to create a new message.
+ * Describes the message netclode.v1.AgentTerminalResize.
+ * Use `create(AgentTerminalResizeSchema)` to create a new message.
  */
-export const TerminalResizeSchema: GenMessage<TerminalResize> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 15);
+export const AgentTerminalResizeSchema: GenMessage<AgentTerminalResize> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_agent, 19);
 
 /**
- * @generated from message netclode.v1.TerminalOutput
- */
-export type TerminalOutput = Message<"netclode.v1.TerminalOutput"> & {
-  /**
-   * @generated from field: string data = 1;
-   */
-  data: string;
-};
-
-/**
- * Describes the message netclode.v1.TerminalOutput.
- * Use `create(TerminalOutputSchema)` to create a new message.
- */
-export const TerminalOutputSchema: GenMessage<TerminalOutput> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 16);
-
-/**
- * @generated from message netclode.v1.HealthRequest
- */
-export type HealthRequest = Message<"netclode.v1.HealthRequest"> & {
-};
-
-/**
- * Describes the message netclode.v1.HealthRequest.
- * Use `create(HealthRequestSchema)` to create a new message.
- */
-export const HealthRequestSchema: GenMessage<HealthRequest> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 17);
-
-/**
- * @generated from message netclode.v1.HealthResponse
- */
-export type HealthResponse = Message<"netclode.v1.HealthResponse"> & {
-  /**
-   * @generated from field: bool healthy = 1;
-   */
-  healthy: boolean;
-
-  /**
-   * @generated from field: string version = 2;
-   */
-  version: string;
-};
-
-/**
- * Describes the message netclode.v1.HealthResponse.
- * Use `create(HealthResponseSchema)` to create a new message.
- */
-export const HealthResponseSchema: GenMessage<HealthResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_agent, 18);
-
-/**
- * AgentService handles communication between the control plane and agent sandboxes.
- * Uses Connect protocol (gRPC-compatible) for flexibility.
+ * AgentService handles bidirectional communication between agents and control plane.
+ * Agents connect to CP (not the other way around).
  *
  * @generated from service netclode.v1.AgentService
  */
 export const AgentService: GenService<{
   /**
-   * ExecutePrompt sends a prompt to the agent and streams back responses.
+   * Connect establishes a bidirectional stream for all agent-CP communication.
    *
-   * @generated from rpc netclode.v1.AgentService.ExecutePrompt
+   * @generated from rpc netclode.v1.AgentService.Connect
    */
-  executePrompt: {
-    methodKind: "server_streaming";
-    input: typeof ExecutePromptRequestSchema;
-    output: typeof AgentStreamResponseSchema;
-  },
-  /**
-   * Interrupt stops the current agent execution.
-   *
-   * @generated from rpc netclode.v1.AgentService.Interrupt
-   */
-  interrupt: {
-    methodKind: "unary";
-    input: typeof InterruptRequestSchema;
-    output: typeof InterruptResponseSchema;
-  },
-  /**
-   * GenerateTitle generates a session title based on conversation.
-   *
-   * @generated from rpc netclode.v1.AgentService.GenerateTitle
-   */
-  generateTitle: {
-    methodKind: "unary";
-    input: typeof GenerateTitleRequestSchema;
-    output: typeof GenerateTitleResponseSchema;
-  },
-  /**
-   * GetGitStatus returns the git status of the workspace.
-   *
-   * @generated from rpc netclode.v1.AgentService.GetGitStatus
-   */
-  getGitStatus: {
-    methodKind: "unary";
-    input: typeof GetGitStatusRequestSchema;
-    output: typeof GetGitStatusResponseSchema;
-  },
-  /**
-   * GetGitDiff returns the git diff for the workspace or a specific file.
-   *
-   * @generated from rpc netclode.v1.AgentService.GetGitDiff
-   */
-  getGitDiff: {
-    methodKind: "unary";
-    input: typeof GetGitDiffRequestSchema;
-    output: typeof GetGitDiffResponseSchema;
-  },
-  /**
-   * Terminal establishes a bidirectional stream for PTY I/O.
-   *
-   * @generated from rpc netclode.v1.AgentService.Terminal
-   */
-  terminal: {
+  connect: {
     methodKind: "bidi_streaming";
-    input: typeof TerminalInputSchema;
-    output: typeof TerminalOutputSchema;
-  },
-  /**
-   * Health returns the health status of the agent.
-   *
-   * @generated from rpc netclode.v1.AgentService.Health
-   */
-  health: {
-    methodKind: "unary";
-    input: typeof HealthRequestSchema;
-    output: typeof HealthResponseSchema;
+    input: typeof AgentMessageSchema;
+    output: typeof ControlPlaneMessageSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_netclode_v1_agent, 0);

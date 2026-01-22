@@ -5,144 +5,160 @@ package netclode.v1;
 import "netclode/v1/common.proto";
 import "netclode/v1/events.proto";
 
-// AgentService handles communication between the control plane and agent sandboxes.
-// Uses Connect protocol (gRPC-compatible) for flexibility.
+// AgentService handles bidirectional communication between agents and control plane.
+// Agents connect to CP (not the other way around).
 service AgentService {
-  // ExecutePrompt sends a prompt to the agent and streams back responses.
-  rpc ExecutePrompt(ExecutePromptRequest) returns (stream AgentStreamResponse);
+  // Connect establishes a bidirectional stream for all agent-CP communication.
+  rpc Connect(stream AgentMessage) returns (stream ControlPlaneMessage);
+}
 
-  // Interrupt stops the current agent execution.
-  rpc Interrupt(InterruptRequest) returns (InterruptResponse);
+// AgentMessage is sent from agent to control plane.
+message AgentMessage {
+  oneof message {
+    // Registration - sent first when agent connects
+    AgentRegister register = 1;
+    
+    // Streaming responses during prompt execution
+    AgentStreamResponse prompt_response = 2;
+    
+    // Terminal output
+    AgentTerminalOutput terminal_output = 3;
+    
+    // Title generation result
+    AgentTitleResponse title_response = 4;
+    
+    // Git status result
+    AgentGitStatusResponse git_status_response = 5;
+    
+    // Git diff result
+    AgentGitDiffResponse git_diff_response = 6;
+  }
+}
 
-  // GenerateTitle generates a session title based on conversation.
-  rpc GenerateTitle(GenerateTitleRequest) returns (GenerateTitleResponse);
-
-  // GetGitStatus returns the git status of the workspace.
-  rpc GetGitStatus(GetGitStatusRequest) returns (GetGitStatusResponse);
-
-  // GetGitDiff returns the git diff for the workspace or a specific file.
-  rpc GetGitDiff(GetGitDiffRequest) returns (GetGitDiffResponse);
-
-  // Terminal establishes a bidirectional stream for PTY I/O.
-  rpc Terminal(stream TerminalInput) returns (stream TerminalOutput);
-
-  // Health returns the health status of the agent.
-  rpc Health(HealthRequest) returns (HealthResponse);
+// ControlPlaneMessage is sent from control plane to agent.
+message ControlPlaneMessage {
+  oneof message {
+    // Acknowledgment of registration
+    AgentRegistered registered = 1;
+    
+    // Execute a prompt
+    ExecutePromptRequest execute_prompt = 2;
+    
+    // Interrupt current execution
+    InterruptRequest interrupt = 3;
+    
+    // Generate title for session
+    GenerateTitleRequest generate_title = 4;
+    
+    // Git status request
+    GetGitStatusRequest get_git_status = 5;
+    
+    // Git diff request
+    GetGitDiffRequest get_git_diff = 6;
+    
+    // Terminal input
+    AgentTerminalInput terminal_input = 7;
+  }
 }
 
 // ============================================================================
-// ExecutePrompt
+// Agent -> Control Plane Messages
 // ============================================================================
 
-message ExecutePromptRequest {
+message AgentRegister {
   string session_id = 1;
-  string text = 2;
-  SessionConfig config = 3;
+  string version = 2;
 }
 
-// AgentStreamResponse is streamed back during prompt execution.
 message AgentStreamResponse {
   oneof response {
     AgentTextDelta text_delta = 1;
     AgentEvent event = 2;
     AgentSystemMessage system_message = 3;
     AgentResult result = 4;
-    AgentStreamError error = 5;
+    AgentError error = 5;
   }
 }
 
-// AgentTextDelta represents a partial text response from the agent.
 message AgentTextDelta {
   string content = 1;
   bool partial = 2;
   string message_id = 3;
 }
 
-// AgentSystemMessage represents system-level messages during execution.
 message AgentSystemMessage {
   string message = 1;
 }
 
-// AgentResult represents the final result of prompt execution.
 message AgentResult {
   int32 input_tokens = 1;
   int32 output_tokens = 2;
   int32 total_turns = 3;
 }
 
-// AgentStreamError represents an error during prompt execution.
-message AgentStreamError {
+message AgentError {
   string message = 1;
   bool retryable = 2;
 }
 
-// ============================================================================
-// Interrupt
-// ============================================================================
-
-message InterruptRequest {}
-
-message InterruptResponse {
-  bool success = 1;
-}
-
-// ============================================================================
-// GenerateTitle
-// ============================================================================
-
-message GenerateTitleRequest {
-  string prompt = 1;
-}
-
-message GenerateTitleResponse {
-  string title = 1;
-}
-
-// ============================================================================
-// Git Operations
-// ============================================================================
-
-message GetGitStatusRequest {}
-
-message GetGitStatusResponse {
-  repeated GitFileChange files = 1;
-}
-
-message GetGitDiffRequest {
-  optional string file = 1; // Specific file, or all if empty
-}
-
-message GetGitDiffResponse {
-  string diff = 1;
-}
-
-// ============================================================================
-// Terminal
-// ============================================================================
-
-message TerminalInput {
-  oneof input {
-    string data = 1;
-    TerminalResize resize = 2;
-  }
-}
-
-message TerminalResize {
-  int32 cols = 1;
-  int32 rows = 2;
-}
-
-message TerminalOutput {
+message AgentTerminalOutput {
   string data = 1;
 }
 
+message AgentTitleResponse {
+  string request_id = 1;
+  string title = 2;
+}
+
+message AgentGitStatusResponse {
+  string request_id = 1;
+  repeated GitFileChange files = 2;
+}
+
+message AgentGitDiffResponse {
+  string request_id = 1;
+  string diff = 2;
+}
+
 // ============================================================================
-// Health
+// Control Plane -> Agent Messages
 // ============================================================================
 
-message HealthRequest {}
+message AgentRegistered {
+  bool success = 1;
+  optional string error = 2;
+  // Session config passed to agent on registration
+  optional SessionConfig config = 3;
+}
 
-message HealthResponse {
-  bool healthy = 1;
-  string version = 2;
+message ExecutePromptRequest {
+  string text = 1;
+}
+
+message InterruptRequest {}
+
+message GenerateTitleRequest {
+  string request_id = 1;
+  string prompt = 2;
+}
+
+message GetGitStatusRequest {
+  string request_id = 1;
+}
+
+message GetGitDiffRequest {
+  string request_id = 1;
+  optional string file = 2;
+}
+
+message AgentTerminalInput {
+  oneof input {
+    string data = 1;
+    AgentTerminalResize resize = 2;
+  }
+}
+
+message AgentTerminalResize {
+  int32 cols = 1;
+  int32 rows = 2;
 }

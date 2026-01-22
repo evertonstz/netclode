@@ -100,11 +100,18 @@ func (s *Server) ListenAndServe(ctx context.Context, httpAddr string, cfg *confi
 		}
 	}()
 
-	// Create Connect handler
+	// Create Connect handler with both ClientService and AgentService
 	connectMux := http.NewServeMux()
+
+	// ClientService for iOS clients
 	clientHandler := NewConnectClientServiceHandler(s.manager, s)
-	path, handler := netclodev1connect.NewClientServiceHandler(clientHandler)
-	connectMux.Handle(path, handler)
+	clientPath, clientHandlerFunc := netclodev1connect.NewClientServiceHandler(clientHandler)
+	connectMux.Handle(clientPath, clientHandlerFunc)
+
+	// AgentService for agents connecting from sandboxes
+	agentHandler := NewConnectAgentServiceHandler(s.manager, s)
+	agentPath, agentHandlerFunc := netclodev1connect.NewAgentServiceHandler(agentHandler)
+	connectMux.Handle(agentPath, agentHandlerFunc)
 
 	// Start Connect server - either with tsnet (HTTPS) or h2c (HTTP/2 cleartext)
 	if cfg.UseTailscale() {

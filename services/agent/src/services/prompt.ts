@@ -35,6 +35,31 @@ function generateThinkingId(): string {
 let currentGitRepo: string | null = null;
 let currentGithubToken: string | null = null;
 
+// Interrupt signal
+let interruptSignal = false;
+
+/**
+ * Set the interrupt signal (called when interrupt request is received)
+ */
+export function setInterruptSignal(): void {
+  interruptSignal = true;
+  console.log("[prompt] Interrupt signal set");
+}
+
+/**
+ * Clear the interrupt signal (called at start of prompt execution)
+ */
+export function clearInterruptSignal(): void {
+  interruptSignal = false;
+}
+
+/**
+ * Check if interrupt was requested
+ */
+export function isInterrupted(): boolean {
+  return interruptSignal;
+}
+
 export function getCurrentGitRepo(): string | null {
   return currentGitRepo;
 }
