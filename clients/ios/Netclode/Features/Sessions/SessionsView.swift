@@ -186,13 +186,13 @@ struct PromptInputBar: View {
             }
             .padding(.horizontal, Theme.Spacing.md)
             .padding(.vertical, Theme.Spacing.sm)
+            .frame(maxWidth: .infinity)
+            .contentShape(Capsule())
             .glassEffect(.regular.interactive(), in: Capsule())
         }
         .buttonStyle(.plain)
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.xs)
-        .frame(maxWidth: .infinity)
-        .contentShape(Rectangle())
     }
 }
 
