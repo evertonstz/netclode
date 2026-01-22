@@ -216,12 +216,8 @@ final class MessageRouter {
             print("[MessageRouter] session.state received: status=\(session.status) (was \(currentSession?.status.rawValue ?? "nil")), \(messages.count) messages, \(events.count) events")
             sessionStore.updateSession(session)
             
-            // Only load server messages if we don't already have local messages
-            // (to avoid overwriting locally added user message from initial prompt)
-            let existingMessages = chatStore.messages(for: session.id)
-            if existingMessages.isEmpty {
-                chatStore.loadMessages(sessionId: session.id, messages: messages)
-            }
+            // Always load messages from server - server is authoritative
+            chatStore.loadMessages(sessionId: session.id, messages: messages)
             
             eventStore.loadEvents(sessionId: session.id, events: events)
             // Store the notification cursor for reconnection
