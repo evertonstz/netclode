@@ -29,7 +29,7 @@ flowchart LR
         TS["Tailscale Ingress<br/><sub>TLS · HTTP/2</sub>"]
         CP["Control Plane<br/><sub>Go</sub>"]
         REDIS[("Redis<br/><sub>Sessions</sub>")]
-        POOL["Warm Pool"]
+        POOL["agent-sandbox<br/><sub>Warm Pool</sub>"]
         JFS[("JuiceFS")]
 
         subgraph SANDBOX["Sandbox · Kata VM<br/><sub>Cloud Hypervisor</sub>"]
