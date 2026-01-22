@@ -17,41 +17,89 @@ I wanted a self-hosted Claude Code environment with the UX I actually want:
 
 ## How it works
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  VPS (NixOS + k3s)                                                  │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│   ┌─────────────────┐      ┌─────────────────────────────────────┐  │
-│   │  Control Plane  │◄────►│  Agent Sandbox (Kata Container VM)  │  │
-│   │  Go + Redis     │      │  Claude Agent SDK + mise + Docker   │  │
-│   └────────┬────────┘      └─────────────────────────────────────┘  │
-│            │                         ▲                              │
-│            │                         │ Warm pool pre-boots VMs      │
-│   ┌────────┴────────┐                │                              │
-│   │      Redis      │      ┌─────────┴─────────┐                    │
-│   │ sessions/events │      │   JuiceFS CSI     │───► S3             │
-│   └────────┬────────┘      └───────────────────┘                    │
-│            │                                                        │
-│   ┌────────▼────────┐                                               │
-│   │   Tailscale     │                                               │
-│   │   Operator      │                                               │
-│   └────────┬────────┘                                               │
-│            │                                                        │
-└────────────┼────────────────────────────────────────────────────────┘
-             │
-             ▼
-    ┌────────────────┐
-    │  iOS/Mac app   │  ◄── Main interface
-    └────────────────┘
+### Architecture
+
+```mermaid
+flowchart LR
+    subgraph CLIENT["Client"]
+        APP["iOS / macOS<br/><sub>SwiftUI</sub>"]
+    end
+
+    subgraph VPS["VPS · k3s"]
+        TS["Tailscale Ingress<br/><sub>TLS · HTTP/2</sub>"]
+        CP["Control Plane<br/><sub>Go</sub>"]
+        REDIS[("Redis<br/><sub>Sessions · Events</sub>")]
+        POOL["Warm Pool<br/><sub>Pre-booted VMs</sub>"]
+        JFS["JuiceFS CSI<br/><sub>POSIX on S3. Offloaded persistant storage</sub>"]
+
+        subgraph SANDBOX["Sandbox · Kata VM · Cloud Hypervisor<br/><sub>mise for any runtime</sub>"]
+            AGENT["Agent<br/><sub>Claude Code SDK · Node.js</sub>"]
+            DOCKER["Docker daemon"]
+        end
+    end
+
+    S3[("S3")]
+    ANTHROPIC["Anthropic API"]
+
+    APP <-->|"Connect RPC<br/>HTTPS/H2"| TS
+    TS <-->|"Connect RPC<br/>h2c"| CP
+    CP <-->|"Redis streams"| REDIS
+    CP <-->|"Connect RPC<br/>gRPC/h2c"| AGENT
+    POOL -.->|"allocate"| SANDBOX
+    JFS --> SANDBOX
+    JFS --> S3
+    AGENT --> ANTHROPIC
 ```
 
-1. iOS app connects to control plane via Connect protocol (gRPC-compatible) over Tailscale
-2. Control plane grabs a pre-booted VM from the warm pool (or creates one)
-3. Prompts go to the Claude Agent SDK running inside the VM
-4. Responses stream back in real-time via bidirectional streaming (with Redis persistence for reconnect)
-5. Pause deletes the VM, but JuiceFS PVC keeps the data (workspace, mise tools, Docker)
-6. Resume mounts the same storage in a new VM, conversation continues
+### Session lifecycle
+
+```mermaid
+sequenceDiagram
+    participant App as iOS App<br/><sub>SwiftUI</sub>
+    participant TS as Tailscale
+    participant CP as Control Plane<br/><sub>Go</sub>
+    participant Pool as Warm Pool<br/><sub>Kata VMs</sub>
+    participant VM as Agent VM<br/><sub>Claude SDK</sub>
+    participant S3 as S3<br/><sub>JuiceFS</sub>
+
+    App->>TS: Connect via Tailnet
+    TS->>CP: Route to Control Plane
+    CP->>Pool: Claim pre-booted VM
+    Pool-->>CP: VM ready (instant)
+
+    rect rgb(50, 50, 80)
+        note right of App: Conversation Loop
+        App->>CP: Send prompt (Connect Protocol)
+        CP->>VM: Forward to Claude Agent SDK
+        VM-->>CP: Stream response chunks
+        CP-->>App: Bidirectional streaming
+        Note over CP: Redis persists events<br/>for reconnect
+    end
+
+    rect rgb(80, 50, 50)
+        note right of App: Pause Session
+        App->>CP: Pause
+        CP->>VM: Delete VM
+        Note over S3: PVC retained<br/>(cheap!)
+    end
+
+    rect rgb(50, 80, 50)
+        note right of App: Resume Session
+        App->>CP: Resume
+        CP->>Pool: New VM + mount existing PVC
+        Pool-->>CP: VM ready
+        Note over VM: Workspace, mise tools,<br/>Docker images restored
+    end
+```
+
+**The flow:**
+
+1. **Connect** - iOS app connects via Tailscale to the control plane (Connect protocol, gRPC-compatible)
+2. **Allocate** - Control plane grabs a pre-booted Kata VM from the warm pool (instant start)
+3. **Prompt** - Messages go to Claude Agent SDK running inside the isolated VM
+4. **Stream** - Responses stream back in real-time; Redis persists events for reconnect
+5. **Pause** - VM deleted, JuiceFS PVC retained in S3 (workspace, tools, Docker all preserved)
+6. **Resume** - New VM mounts same storage, conversation continues exactly where you left off
 
 ### Why JuiceFS
 
@@ -67,6 +115,12 @@ Dozens of paused sessions on a small VPS. Only running sessions consume compute.
 Each agent runs in a Kata Container, a lightweight VM using Cloud Hypervisor. Separate kernel, memory, filesystem per agent.
 
 Why Cloud Hypervisor over Firecracker? Firecracker doesn't support virtiofs, which means you'd need devmapper snapshotter and a more complex storage setup. Cloud Hypervisor + virtiofs is simpler and performs well enough.
+
+### Connect RPC
+
+All communication uses [Connect](https://connectrpc.com/), a gRPC-compatible protocol by Buf. Bidirectional streaming over a single persistent connection enables real-time prompt/response flow. Proto-first API with generated clients for Go, TypeScript, and Swift.
+
+See [proto/README.md](proto/README.md) for schema details and code generation.
 
 ### Sandbox CRDs
 
@@ -84,16 +138,18 @@ The [agent-sandbox-controller](https://github.com/angristan/agent-sandbox) recon
 
 ## Stack
 
-| Component | Technology |
-|-----------|------------|
-| Host OS | NixOS (fully declarative) |
-| Orchestration | k3s |
-| VM Runtime | Kata Containers (Cloud Hypervisor) |
-| Storage | JuiceFS CSI → S3, Redis |
-| Networking | Tailscale Operator |
-| Control Plane | Go + Redis |
-| Agent | Node.js + Claude Agent SDK |
-| iOS/Mac | SwiftUI (iOS 26 Liquid Glass) |
+| Layer             | Technology                         | Purpose                                   |
+| ----------------- | ---------------------------------- | ----------------------------------------- |
+| **Host**          | Linux VPS + Ansible                | Provisioned via Ansible playbooks         |
+| **Orchestration** | k3s                                | Lightweight Kubernetes                    |
+| **Isolation**     | Kata Containers + Cloud Hypervisor | MicroVM per agent, separate kernel        |
+| **Storage**       | JuiceFS → S3                       | POSIX filesystem backed by object storage |
+| **State**         | Redis                              | Session state, event persistence, pub/sub |
+| **Network**       | Tailscale Operator                 | Zero-config VPN, ingress, DNS             |
+| **API**           | Connect Protocol                   | gRPC-compatible, works over HTTP/1.1      |
+| **Control Plane** | Go                                 | Session orchestration, API server         |
+| **Agent**         | Node.js + Claude Agent SDK         | AI agent runtime inside sandbox           |
+| **Client**        | SwiftUI (iOS 26 Liquid Glass)      | Native iOS/macOS app                      |
 
 ## Client
 
@@ -109,7 +165,7 @@ netclode/
 │   ├── control-plane/    # Session orchestration (Go)
 │   └── agent/            # Claude Agent SDK runner (Node.js)
 ├── infra/
-│   ├── nixos/            # NixOS configuration
+│   ├── ansible/          # Server provisioning
 │   └── k8s/              # Kubernetes manifests
 └── docs/                 # Setup guides
 ```
@@ -121,7 +177,7 @@ See [docs/deployment.md](docs/deployment.md) for full setup.
 Quick version:
 
 1. Provision a VPS with nested virtualization support (DigitalOcean, Vultr)
-2. Install NixOS via nixos-anywhere
+2. Run Ansible playbooks to provision the server
 3. Configure secrets (Anthropic API key, S3 credentials, Tailscale OAuth)
 4. Deploy k8s manifests
 5. Connect via Tailscale

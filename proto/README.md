@@ -104,9 +104,24 @@ We use [Connect](https://connectrpc.com/) instead of raw gRPC because:
 
 Connect bidirectional streaming requires HTTP/2. The architecture handles this:
 
-```
-iOS ──HTTPS/H2──► Tailscale Ingress ──h2c──► Control Plane ◄──gRPC/h2c── Agent
-                  (custom proxy)              (port 3000)
+```mermaid
+flowchart LR
+    subgraph CLIENT["iOS / macOS"]
+        SWIFT["Swift<br/><sub>connect-swift</sub>"]
+    end
+
+    subgraph TAILSCALE["Tailscale Ingress"]
+        PROXY["HTTPS → h2c<br/><sub>TLS termination</sub>"]
+    end
+
+    subgraph CLUSTER["k3s Cluster"]
+        CP["Control Plane<br/><sub>connect-go</sub>"]
+        AGENT["Agent<br/><sub>connect-es</sub>"]
+    end
+
+    SWIFT -->|"HTTPS/H2"| PROXY
+    PROXY -->|"h2c"| CP
+    AGENT -->|"gRPC/h2c"| CP
 ```
 
 - **iOS → Control Plane**: HTTPS with HTTP/2 via Tailscale Ingress
