@@ -113,13 +113,15 @@ func (s *Server) ListenAndServe(ctx context.Context, httpAddr string, cfg *confi
 	agentPath, agentHandlerFunc := netclodev1connect.NewAgentServiceHandler(agentHandler)
 	connectMux.Handle(agentPath, agentHandlerFunc)
 
-	// Start Connect server - either with tsnet (HTTPS) or h2c (HTTP/2 cleartext)
+	// Start Connect servers
+	// Always start h2c server for internal cluster communication (agents)
+	s.startH2cConnectServer(cfg.ConnectPort, connectMux, errCh)
+
+	// Also start tsnet server for external clients (iOS app) if configured
 	if cfg.UseTailscale() {
 		if err := s.startTsnetConnectServer(ctx, cfg, connectMux, errCh); err != nil {
 			return err
 		}
-	} else {
-		s.startH2cConnectServer(cfg.ConnectPort, connectMux, errCh)
 	}
 
 	select {
