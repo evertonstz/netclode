@@ -123,6 +123,18 @@ func (m *mockRuntime) LabelSandbox(ctx context.Context, sandboxName string, sess
 	return nil
 }
 
+func (m *mockRuntime) GetSessionIDByPodName(ctx context.Context, podName string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Look up session ID from labeled sandboxes (reverse lookup)
+	for sandboxName, sessionID := range m.labeledSandboxes {
+		if sandboxName == podName {
+			return sessionID, nil
+		}
+	}
+	return "", nil
+}
+
 func (m *mockRuntime) DeleteSandboxClaim(ctx context.Context, sessionID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
