@@ -195,7 +195,6 @@ Quick version:
 ## Future
 
 - OpenCode server/SDK support
-- Code diff viewer
 - Notifications (iOS push, etc.)
 - Plan mode
 - Custom environment support
