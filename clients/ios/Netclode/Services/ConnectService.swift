@@ -10,6 +10,7 @@ enum ConnectError: Error, LocalizedError {
     case connectionTimeout
     case clientCreationFailed
     case streamCreationFailed
+    case connectionFailed(message: String)
     case sendFailed(underlying: Error)
     
     var errorDescription: String? {
@@ -20,6 +21,8 @@ enum ConnectError: Error, LocalizedError {
             return "Failed to create Connect client"
         case .streamCreationFailed:
             return "Failed to create bidirectional stream"
+        case .connectionFailed(let message):
+            return "Connection failed: \(message)"
         case .sendFailed(let error):
             return "Failed to send message: \(error.localizedDescription)"
         }
@@ -129,7 +132,7 @@ final class ConnectService {
                     throw ConnectError.connectionTimeout
                 }
                 
-                group.addTask { @MainActor in
+                group.addTask {
                     try await self.establishConnection(to: grpcHost)
                 }
                 
@@ -147,24 +150,49 @@ final class ConnectService {
             return
         }
         
-        guard stream != nil else {
+        guard let currentStream = stream else {
             print("[Connect] Failed to create stream")
             connectionState = .disconnected
             return
         }
         
-        print("[Connect] Connected successfully")
+        // Use a continuation to wait for validation result
+        let isValid: Bool = await withCheckedContinuation { continuation in
+            var hasResumed = false
+            
+            // Start receiving with validation callback
+            startReceiving(stream: currentStream, onValidation: { success in
+                guard !hasResumed else { return }
+                hasResumed = true
+                continuation.resume(returning: success)
+            })
+            
+            // Send sync to trigger the actual HTTP connection
+            send(.sync)
+            
+            // Set up timeout
+            Task {
+                try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
+                guard !hasResumed else { return }
+                hasResumed = true
+                continuation.resume(returning: false)
+            }
+        }
+        
+        guard isValid else {
+            print("[Connect] Connection validation failed or timed out")
+            connectionState = .disconnected
+            receiveTask?.cancel()
+            stream = nil
+            return
+        }
+        
+        print("[Connect] Connected and validated successfully")
         connectionState = .connected
         recordActivity()
 
-        // Start receiving messages
-        startReceiving(stream: stream!)
-
         // Keep-alive to detect dead connections
         startKeepAlive()
-        
-        // Send initial sync request
-        send(.sync)
     }
     
     /// Build the Connect protocol host URL from serverURL and optional port override.
@@ -174,12 +202,20 @@ final class ConnectService {
             return normalized
         }
 
+        // If explicit port override provided, use it
         let override = connectPortOverride.trimmingCharacters(in: .whitespacesAndNewlines)
         if !override.isEmpty, let overridePort = Int(override) {
             components.port = overridePort
             return components.string ?? "\(normalized):\(overridePort)"
         }
 
+        // For HTTPS (Tailscale Ingress), use default port 443
+        if components.scheme == "https" {
+            // Don't modify port for HTTPS - use default 443
+            return components.string ?? normalized
+        }
+        
+        // For HTTP (local dev), map 3000 → 3001 or default to 3001
         if components.port == 3000 {
             components.port = 3001
             return components.string ?? normalized.replacingOccurrences(of: ":3000", with: ":3001")
@@ -200,7 +236,12 @@ final class ConnectService {
         } else if urlString.hasPrefix("wss://") {
             urlString = "https://" + String(urlString.dropFirst("wss://".count))
         } else if !urlString.hasPrefix("http://") && !urlString.hasPrefix("https://") {
-            urlString = "http://\(urlString)"
+            // Default to HTTPS for Tailscale domains (.ts.net)
+            if urlString.contains(".ts.net") {
+                urlString = "https://\(urlString)"
+            } else {
+                urlString = "http://\(urlString)"
+            }
         }
 
         guard var components = URLComponents(string: urlString) else {
@@ -239,8 +280,14 @@ final class ConnectService {
         }
     }
     
-    private func startReceiving(stream: any BidirectionalAsyncStreamInterface<Netclode_V1_ClientMessage, Netclode_V1_ServerMessage>) {
+    private func startReceiving(
+        stream: any BidirectionalAsyncStreamInterface<Netclode_V1_ClientMessage, Netclode_V1_ServerMessage>,
+        onValidation: ((Bool) -> Void)? = nil
+    ) {
         receiveTask = Task { [weak self] in
+            var validationCallback = onValidation
+            var hasValidated = false
+            
             for await result in stream.results() {
                 guard let self, !Task.isCancelled else { break }
                 
@@ -248,9 +295,21 @@ final class ConnectService {
                 case .headers:
                     print("[Connect] Received headers")
                     self.recordActivity()
+                    // Connection validated on first headers
+                    if !hasValidated {
+                        hasValidated = true
+                        validationCallback?(true)
+                        validationCallback = nil
+                    }
                     
                 case .message(let protoMessage):
                     self.recordActivity()
+                    // Connection validated on first message (if headers weren't received first)
+                    if !hasValidated {
+                        hasValidated = true
+                        validationCallback?(true)
+                        validationCallback = nil
+                    }
                     // Convert proto message to ServerMessage
                     if let serverMessage = self.convertProtoMessage(protoMessage) {
                         self._messagesContinuation?.yield(serverMessage)
@@ -258,10 +317,20 @@ final class ConnectService {
                     
                 case .complete(let code, let error, _):
                     print("[Connect] Stream completed: code=\(code), error=\(String(describing: error))")
-                    // Always trigger reconnection on stream completion, even for .ok
-                    // The stream being closed means we need to re-establish the connection
+                    // If we haven't validated yet, this is a connection failure
+                    if !hasValidated {
+                        hasValidated = true
+                        validationCallback?(false)
+                        validationCallback = nil
+                    }
+                    // Trigger reconnection
                     await self.handleDisconnection()
                 }
+            }
+            
+            // If loop exits without validation (shouldn't happen), mark as failed
+            if !hasValidated {
+                validationCallback?(false)
             }
         }
     }

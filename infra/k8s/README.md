@@ -303,3 +303,57 @@ kubectl $CTX scale deployment coredns -n kube-system --replicas=2
 - Verify agent can reach control-plane: `curl http://control-plane.netclode.svc.cluster.local:3000/health`
 - Check session exists: `curl http://control-plane:3000/internal/session-config?session=<id>`
 - Check pod name extraction works for the naming pattern
+
+## Control Plane Exposure
+
+The control plane uses [tsnet](https://tailscale.com/kb/1522/tsnet-server) to join the tailnet directly and serve HTTPS with automatic TLS certificates.
+
+### Why tsnet?
+
+The iOS app uses URLSession which only supports HTTP/2 over HTTPS. HTTP/2 is required for
+bidirectional streaming (Connect protocol). Using tsnet allows the control-plane to:
+- Join the tailnet directly as a node
+- Serve HTTPS on port 443 with automatic Let's Encrypt certificates
+- Avoid issues with Tailscale Ingress L7 proxy (which doesn't support HTTP/2 to h2c backends)
+
+### Configuration
+
+The control-plane needs a Tailscale auth key. Add to your `.env`:
+
+```bash
+TAILSCALE_AUTHKEY=tskey-auth-xxx  # Get from Tailscale admin console
+```
+
+The key is deployed to the `netclode-secrets` Kubernetes secret by Ansible.
+
+Environment variables in `control-plane.yaml`:
+- `TS_AUTHKEY` - Tailscale auth key (from secret)
+- `TS_HOSTNAME` - Hostname on the tailnet (default: `netclode-control-plane`)
+- `TS_STATE_DIR` - Directory for tsnet state (default: `/var/lib/tailscale`)
+
+A PersistentVolumeClaim stores the tsnet state so authentication persists between restarts.
+
+### Accessing the Control Plane
+
+After deployment, the control plane will be available at:
+`https://netclode-control-plane.YOUR-TAILNET.ts.net`
+
+### Finding Your Tailnet Name
+
+```bash
+# From any machine with Tailscale installed
+tailscale status
+
+# Or check the Tailscale admin console
+# https://login.tailscale.com/admin/machines
+```
+
+### Verifying the Connection
+
+```bash
+# Test HTTPS endpoint
+curl -v https://netclode-control-plane.YOUR-TAILNET.ts.net/health
+
+# Check the control-plane logs for tsnet startup
+kubectl --context netclode -n netclode logs -l app=control-plane | grep -i tailscale
+```

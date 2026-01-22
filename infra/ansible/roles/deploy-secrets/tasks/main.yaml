@@ -108,6 +108,7 @@
             github-app-id: "{{ github_app_id }}"
             github-app-private-key: "{{ github_app_private_key_b64 | b64decode }}"
             github-installation-id: "{{ github_installation_id }}"
+            tailscale-authkey: "{{ tailscale_authkey }}"
       when: anthropic_api_key | length > 0
 
     - name: Check if juicefs-secret already exists

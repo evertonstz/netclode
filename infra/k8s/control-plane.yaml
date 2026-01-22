@@ -23,13 +23,13 @@ spec:
           ports:
             - containerPort: 3000
               name: http
-            - containerPort: 3001
-              name: connect
+            - containerPort: 443
+              name: connect-tls
           env:
             - name: PORT
               value: "3000"
             - name: CONNECT_PORT
-              value: "3001"
+              value: "3001"  # Only used if TS_AUTHKEY is not set (h2c mode)
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -64,6 +64,20 @@ spec:
               value: "true"
             - name: MAX_ACTIVE_SESSIONS
               value: "3"
+            # Tailscale tsnet integration for HTTPS Connect endpoint
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: tailscale-authkey
+                  optional: true
+            - name: TS_HOSTNAME
+              value: "netclode-control-plane"
+            - name: TS_STATE_DIR
+              value: "/var/lib/tailscale"
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
           readinessProbe:
             httpGet:
               path: /health
@@ -76,16 +90,30 @@ spec:
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 20
+      volumes:
+        - name: tailscale-state
+          persistentVolumeClaim:
+            claimName: control-plane-tailscale-state
 ---
-# Control Plane Service with Tailscale exposure
+# PVC for Tailscale tsnet state (persists auth between restarts)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: control-plane-tailscale-state
+  namespace: netclode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+# Control Plane Service (internal only - Connect endpoint uses tsnet directly)
 apiVersion: v1
 kind: Service
 metadata:
   name: control-plane
   namespace: netclode
-  annotations:
-    tailscale.com/expose: "true"
-    tailscale.com/hostname: "netclode-control-plane"
   labels:
     app: control-plane
 spec:
@@ -96,7 +124,6 @@ spec:
     - port: 80
       targetPort: 3000
       name: http
-    - port: 3001
-      targetPort: 3001
-      name: connect
-# Secret 'netclode-secrets' is created by scripts/deploy-secrets.sh
+# Note: The Connect endpoint (port 443) is exposed directly via Tailscale tsnet,
+# not through this Kubernetes service. iOS clients connect to:
+# https://netclode-control-plane.YOUR-TAILNET.ts.net

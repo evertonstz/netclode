@@ -99,7 +99,7 @@ func run() error {
 
 	// Start server (blocks until shutdown)
 	httpAddr := fmt.Sprintf(":%d", cfg.Port)
-	if err := server.ListenAndServe(ctx, httpAddr, cfg.ConnectPort); err != nil {
+	if err := server.ListenAndServe(ctx, httpAddr, cfg); err != nil {
 		return fmt.Errorf("server error: %w", err)
 	}
 

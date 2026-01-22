@@ -13,10 +13,12 @@ import (
 
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/gen/netclode/v1/netclodev1connect"
+	"github.com/angristan/netclode/services/control-plane/internal/config"
 	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/angristan/netclode/services/control-plane/internal/session"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"tailscale.com/tsnet"
 )
 
 const (
@@ -29,6 +31,7 @@ type Server struct {
 	manager       *session.Manager
 	httpServer    *http.Server
 	connectServer *http.Server
+	tsnetServer   *tsnet.Server // Tailscale tsnet server (optional)
 
 	// Connect connection tracking
 	connectConnections sync.Map // map[*ConnectConnection]struct{}
@@ -72,7 +75,7 @@ func (s *Server) BroadcastToAllConnect(msg *pb.ServerMessage, exclude *ConnectCo
 }
 
 // ListenAndServe starts the HTTP server with Connect protocol support.
-func (s *Server) ListenAndServe(ctx context.Context, httpAddr string, connectPort int) error {
+func (s *Server) ListenAndServe(ctx context.Context, httpAddr string, cfg *config.Config) error {
 	// Create the main mux for HTTP endpoints
 	mux := http.NewServeMux()
 
@@ -96,30 +99,20 @@ func (s *Server) ListenAndServe(ctx context.Context, httpAddr string, connectPor
 		}
 	}()
 
-	// Start Connect server (for iOS clients)
-	connectAddr := fmt.Sprintf(":%d", connectPort)
+	// Create Connect handler
 	connectMux := http.NewServeMux()
-
-	// Register the Connect handler
 	clientHandler := NewConnectClientServiceHandler(s.manager, s)
 	path, handler := netclodev1connect.NewClientServiceHandler(clientHandler)
 	connectMux.Handle(path, handler)
 
-	// Use h2c for HTTP/2 without TLS (required for bidirectional streaming)
-	h2cHandler := h2c.NewHandler(connectMux, &http2.Server{})
-
-	s.connectServer = &http.Server{
-		Addr:    connectAddr,
-		Handler: h2cHandler,
-	}
-
-	slog.Info("Starting Connect server", "addr", connectAddr)
-
-	go func() {
-		if err := s.connectServer.ListenAndServe(); err != http.ErrServerClosed {
-			errCh <- fmt.Errorf("connect server: %w", err)
+	// Start Connect server - either with tsnet (HTTPS) or h2c (HTTP/2 cleartext)
+	if cfg.UseTailscale() {
+		if err := s.startTsnetConnectServer(ctx, cfg, connectMux, errCh); err != nil {
+			return err
 		}
-	}()
+	} else {
+		s.startH2cConnectServer(cfg.ConnectPort, connectMux, errCh)
+	}
 
 	select {
 	case <-ctx.Done():
@@ -127,6 +120,69 @@ func (s *Server) ListenAndServe(ctx context.Context, httpAddr string, connectPor
 	case err := <-errCh:
 		return err
 	}
+}
+
+// startTsnetConnectServer starts the Connect server using Tailscale tsnet with automatic TLS.
+func (s *Server) startTsnetConnectServer(ctx context.Context, cfg *config.Config, handler http.Handler, errCh chan error) error {
+	s.tsnetServer = &tsnet.Server{
+		Hostname: cfg.TailscaleHostname,
+		Dir:      cfg.TailscaleStateDir,
+		AuthKey:  cfg.TailscaleAuthKey,
+	}
+
+	// Start tsnet (joins the tailnet)
+	status, err := s.tsnetServer.Up(ctx)
+	if err != nil {
+		return fmt.Errorf("tsnet up: %w", err)
+	}
+
+	slog.Info("Tailscale tsnet started",
+		"hostname", cfg.TailscaleHostname,
+		"tailscaleIP", status.TailscaleIPs[0].String(),
+	)
+
+	// Get TLS listener with automatic certificates
+	ln, err := s.tsnetServer.ListenTLS("tcp", ":443")
+	if err != nil {
+		return fmt.Errorf("tsnet listen tls: %w", err)
+	}
+
+	s.connectServer = &http.Server{
+		Handler: handler,
+	}
+
+	// Get the full hostname for logging
+	fullHostname := fmt.Sprintf("https://%s.%s", cfg.TailscaleHostname, status.CurrentTailnet.MagicDNSSuffix)
+	slog.Info("Starting Connect server with Tailscale TLS", "url", fullHostname)
+
+	go func() {
+		if err := s.connectServer.Serve(ln); err != http.ErrServerClosed {
+			errCh <- fmt.Errorf("connect server (tsnet): %w", err)
+		}
+	}()
+
+	return nil
+}
+
+// startH2cConnectServer starts the Connect server using h2c (HTTP/2 cleartext).
+func (s *Server) startH2cConnectServer(connectPort int, handler http.Handler, errCh chan error) {
+	connectAddr := fmt.Sprintf(":%d", connectPort)
+
+	// Use h2c for HTTP/2 without TLS (required for bidirectional streaming)
+	h2cHandler := h2c.NewHandler(handler, &http2.Server{})
+
+	s.connectServer = &http.Server{
+		Addr:    connectAddr,
+		Handler: h2cHandler,
+	}
+
+	slog.Info("Starting Connect server with h2c", "addr", connectAddr)
+
+	go func() {
+		if err := s.connectServer.ListenAndServe(); err != http.ErrServerClosed {
+			errCh <- fmt.Errorf("connect server (h2c): %w", err)
+		}
+	}()
 }
 
 // gracefulShutdown performs graceful shutdown with connection draining.
@@ -172,6 +228,14 @@ func (s *Server) gracefulShutdown() error {
 		slog.Info("Stopping Connect server")
 		if err := s.connectServer.Shutdown(ctx); err != nil {
 			slog.Warn("Error shutting down Connect server", "error", err)
+		}
+	}
+
+	// Shutdown tsnet server
+	if s.tsnetServer != nil {
+		slog.Info("Stopping Tailscale tsnet server")
+		if err := s.tsnetServer.Close(); err != nil {
+			slog.Warn("Error closing tsnet server", "error", err)
 		}
 	}
 
