@@ -149,7 +149,7 @@ func generateID() string {
 }
 
 // Create creates a new session.
-func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *string) (*protocol.Session, error) {
+func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *protocol.RepoAccess) (*protocol.Session, error) {
 	// Ensure we have a slot for a new active session
 	m.ensureActiveSlot(ctx, "")
 
@@ -187,7 +187,7 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAcc
 	return session, nil
 }
 
-func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *string) {
+func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *protocol.RepoAccess) {
 	if m.config.UseWarmPool {
 		m.createSandboxViaClaim(ctx, sessionID, repo, repoAccess)
 	} else {
@@ -196,7 +196,7 @@ func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *str
 }
 
 // createSandboxDirect creates a sandbox directly (legacy mode)
-func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *string) {
+func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *protocol.RepoAccess) {
 	env := map[string]string{
 		"SESSION_ID":        sessionID,
 		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
@@ -209,7 +209,7 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		// Generate scoped GitHub token if GitHub App is configured
 		if m.github != nil {
 			access := github.RepoAccessRead
-			if repoAccess != nil && *repoAccess == "write" {
+			if repoAccess != nil && *repoAccess == protocol.RepoAccessWrite {
 				access = github.RepoAccessWrite
 			}
 
@@ -283,7 +283,7 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 }
 
 // createSandboxViaClaim uses SandboxClaim for warm pool allocation
-func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string, repoAccess *string) {
+func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string, repoAccess *protocol.RepoAccess) {
 	// Create SandboxClaim to request from warm pool
 	if err := m.k8s.CreateSandboxClaim(ctx, sessionID); err != nil {
 		slog.Error("Failed to create sandbox claim", "sessionID", sessionID, "error", err)
@@ -772,13 +772,13 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit in
 }
 
 // GetAllWithMeta returns all sessions with metadata.
-func (m *Manager) GetAllWithMeta(ctx context.Context) ([]protocol.SessionWithMeta, error) {
+func (m *Manager) GetAllWithMeta(ctx context.Context) ([]protocol.SessionSummary, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	result := make([]protocol.SessionWithMeta, 0, len(m.sessions))
+	result := make([]protocol.SessionSummary, 0, len(m.sessions))
 	for id, state := range m.sessions {
-		meta := protocol.SessionWithMeta{Session: *state.Session}
+		meta := protocol.SessionSummary{Session: *state.Session}
 
 		count, err := m.storage.GetMessageCount(ctx, id)
 		if err == nil {

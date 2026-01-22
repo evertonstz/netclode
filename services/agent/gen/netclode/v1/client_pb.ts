@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
-import type { GitFileChange, GitHubRepo, PersistedEvent, PersistedMessage, Session, SessionWithMeta } from "./common_pb";
+import type { Error, GitFileChange, GitHubRepo, PersistedEvent, PersistedMessage, RepoAccess, Session, SessionSummary } from "./common_pb";
 import { file_netclode_v1_common } from "./common_pb";
 import type { AgentEvent } from "./events_pb";
 import { file_netclode_v1_events } from "./events_pb";
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file netclode/v1/client.proto.
  */
 export const file_netclode_v1_client: GenFile = /*@__PURE__*/
-  fileDesc("ChhuZXRjbG9kZS92MS9jbGllbnQucHJvdG8SC25ldGNsb2RlLnYxIsMHCg1DbGllbnRNZXNzYWdlEjsKDmNyZWF0ZV9zZXNzaW9uGAEgASgLMiEubmV0Y2xvZGUudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3RIABI5Cg1saXN0X3Nlc3Npb25zGAIgASgLMiAubmV0Y2xvZGUudjEuTGlzdFNlc3Npb25zUmVxdWVzdEgAEjcKDG9wZW5fc2Vzc2lvbhgDIAEoCzIfLm5ldGNsb2RlLnYxLk9wZW5TZXNzaW9uUmVxdWVzdEgAEjsKDnJlc3VtZV9zZXNzaW9uGAQgASgLMiEubmV0Y2xvZGUudjEuUmVzdW1lU2Vzc2lvblJlcXVlc3RIABI5Cg1wYXVzZV9zZXNzaW9uGAUgASgLMiAubmV0Y2xvZGUudjEuUGF1c2VTZXNzaW9uUmVxdWVzdEgAEjsKDmRlbGV0ZV9zZXNzaW9uGAYgASgLMiEubmV0Y2xvZGUudjEuRGVsZXRlU2Vzc2lvblJlcXVlc3RIABJEChNkZWxldGVfYWxsX3Nlc3Npb25zGAcgASgLMiUubmV0Y2xvZGUudjEuRGVsZXRlQWxsU2Vzc2lvbnNSZXF1ZXN0SAASNQoLc2VuZF9wcm9tcHQYCCABKAsyHi5uZXRjbG9kZS52MS5TZW5kUHJvbXB0UmVxdWVzdEgAEj8KEGludGVycnVwdF9wcm9tcHQYCSABKAsyIy5uZXRjbG9kZS52MS5JbnRlcnJ1cHRQcm9tcHRSZXF1ZXN0SAASOwoOdGVybWluYWxfaW5wdXQYCiABKAsyIS5uZXRjbG9kZS52MS5UZXJtaW5hbElucHV0UmVxdWVzdEgAEj0KD3Rlcm1pbmFsX3Jlc2l6ZRgLIAEoCzIiLm5ldGNsb2RlLnYxLlRlcm1pbmFsUmVzaXplUmVxdWVzdEgAEjUKC2V4cG9zZV9wb3J0GAwgASgLMh4ubmV0Y2xvZGUudjEuRXhwb3NlUG9ydFJlcXVlc3RIABIoCgRzeW5jGA0gASgLMhgubmV0Y2xvZGUudjEuU3luY1JlcXVlc3RIABJAChFsaXN0X2dpdGh1Yl9yZXBvcxgOIAEoCzIjLm5ldGNsb2RlLnYxLkxpc3RHaXRIdWJSZXBvc1JlcXVlc3RIABIzCgpnaXRfc3RhdHVzGA8gASgLMh0ubmV0Y2xvZGUudjEuR2l0U3RhdHVzUmVxdWVzdEgAEi8KCGdpdF9kaWZmGBAgASgLMhsubmV0Y2xvZGUudjEuR2l0RGlmZlJlcXVlc3RIAEIJCgdtZXNzYWdlItgJCg1TZXJ2ZXJNZXNzYWdlEj4KD3Nlc3Npb25fY3JlYXRlZBgBIAEoCzIjLm5ldGNsb2RlLnYxLlNlc3Npb25DcmVhdGVkUmVzcG9uc2VIABI+Cg9zZXNzaW9uX3VwZGF0ZWQYAiABKAsyIy5uZXRjbG9kZS52MS5TZXNzaW9uVXBkYXRlZFJlc3BvbnNlSAASPgoPc2Vzc2lvbl9kZWxldGVkGAMgASgLMiMubmV0Y2xvZGUudjEuU2Vzc2lvbkRlbGV0ZWRSZXNwb25zZUgAEkcKFHNlc3Npb25zX2RlbGV0ZWRfYWxsGAQgASgLMicubmV0Y2xvZGUudjEuU2Vzc2lvbnNEZWxldGVkQWxsUmVzcG9uc2VIABI4CgxzZXNzaW9uX2xpc3QYBSABKAsyIC5uZXRjbG9kZS52MS5TZXNzaW9uTGlzdFJlc3BvbnNlSAASOgoNc2Vzc2lvbl9zdGF0ZRgGIAEoCzIhLm5ldGNsb2RlLnYxLlNlc3Npb25TdGF0ZVJlc3BvbnNlSAASOgoNc2Vzc2lvbl9lcnJvchgHIAEoCzIhLm5ldGNsb2RlLnYxLlNlc3Npb25FcnJvclJlc3BvbnNlSAASMgoNc3luY19yZXNwb25zZRgIIAEoCzIZLm5ldGNsb2RlLnYxLlN5bmNSZXNwb25zZUgAEjYKC2FnZW50X2V2ZW50GAkgASgLMh8ubmV0Y2xvZGUudjEuQWdlbnRFdmVudFJlc3BvbnNlSAASOgoNYWdlbnRfbWVzc2FnZRgKIAEoCzIhLm5ldGNsb2RlLnYxLkFnZW50TWVzc2FnZVJlc3BvbnNlSAASNAoKYWdlbnRfZG9uZRgLIAEoCzIeLm5ldGNsb2RlLnYxLkFnZW50RG9uZVJlc3BvbnNlSAASNgoLYWdlbnRfZXJyb3IYDCABKAsyHy5uZXRjbG9kZS52MS5BZ2VudEVycm9yUmVzcG9uc2VIABI4Cgx1c2VyX21lc3NhZ2UYDSABKAsyIC5uZXRjbG9kZS52MS5Vc2VyTWVzc2FnZVJlc3BvbnNlSAASPgoPdGVybWluYWxfb3V0cHV0GA4gASgLMiMubmV0Y2xvZGUudjEuVGVybWluYWxPdXRwdXRSZXNwb25zZUgAEjgKDHBvcnRfZXhwb3NlZBgPIAEoCzIgLm5ldGNsb2RlLnYxLlBvcnRFeHBvc2VkUmVzcG9uc2VIABI0Cgpwb3J0X2Vycm9yGBAgASgLMh4ubmV0Y2xvZGUudjEuUG9ydEVycm9yUmVzcG9uc2VIABI4CgxnaXRodWJfcmVwb3MYESABKAsyIC5uZXRjbG9kZS52MS5HaXRIdWJSZXBvc1Jlc3BvbnNlSAASNAoKZ2l0X3N0YXR1cxgSIAEoCzIeLm5ldGNsb2RlLnYxLkdpdFN0YXR1c1Jlc3BvbnNlSAASMAoIZ2l0X2RpZmYYEyABKAsyHC5uZXRjbG9kZS52MS5HaXREaWZmUmVzcG9uc2VIABIyCglnaXRfZXJyb3IYFCABKAsyHS5uZXRjbG9kZS52MS5HaXRFcnJvclJlc3BvbnNlSAASKwoFZXJyb3IYFSABKAsyGi5uZXRjbG9kZS52MS5FcnJvclJlc3BvbnNlSABCCQoHbWVzc2FnZSKoAQoUQ3JlYXRlU2Vzc2lvblJlcXVlc3QSEQoEbmFtZRgBIAEoCUgAiAEBEhEKBHJlcG8YAiABKAlIAYgBARIYCgtyZXBvX2FjY2VzcxgDIAEoCUgCiAEBEhsKDmluaXRpYWxfcHJvbXB0GAQgASgJSAOIAQFCBwoFX25hbWVCBwoFX3JlcG9CDgoMX3JlcG9fYWNjZXNzQhEKD19pbml0aWFsX3Byb21wdCIVChNMaXN0U2Vzc2lvbnNSZXF1ZXN0IpYBChJPcGVuU2Vzc2lvblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIcCg9sYXN0X21lc3NhZ2VfaWQYAiABKAlIAIgBARIhChRsYXN0X25vdGlmaWNhdGlvbl9pZBgDIAEoCUgBiAEBQhIKEF9sYXN0X21lc3NhZ2VfaWRCFwoVX2xhc3Rfbm90aWZpY2F0aW9uX2lkIioKFFJlc3VtZVNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiKQoTUGF1c2VTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIioKFERlbGV0ZVNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiGgoYRGVsZXRlQWxsU2Vzc2lvbnNSZXF1ZXN0IjUKEVNlbmRQcm9tcHRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDAoEdGV4dBgCIAEoCSIsChZJbnRlcnJ1cHRQcm9tcHRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiOAoUVGVybWluYWxJbnB1dFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRkYXRhGAIgASgJIkcKFVRlcm1pbmFsUmVzaXplUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGNvbHMYAiABKAUSDAoEcm93cxgDIAEoBSI1ChFFeHBvc2VQb3J0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBHBvcnQYAiABKAUiDQoLU3luY1JlcXVlc3QiGAoWTGlzdEdpdEh1YlJlcG9zUmVxdWVzdCImChBHaXRTdGF0dXNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiQAoOR2l0RGlmZlJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIRCgRmaWxlGAIgASgJSACIAQFCBwoFX2ZpbGUiPwoWU2Vzc2lvbkNyZWF0ZWRSZXNwb25zZRIlCgdzZXNzaW9uGAEgASgLMhQubmV0Y2xvZGUudjEuU2Vzc2lvbiI/ChZTZXNzaW9uVXBkYXRlZFJlc3BvbnNlEiUKB3Nlc3Npb24YASABKAsyFC5uZXRjbG9kZS52MS5TZXNzaW9uIiwKFlNlc3Npb25EZWxldGVkUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCSIxChpTZXNzaW9uc0RlbGV0ZWRBbGxSZXNwb25zZRITCgtkZWxldGVkX2lkcxgBIAMoCSI9ChNTZXNzaW9uTGlzdFJlc3BvbnNlEiYKCHNlc3Npb25zGAEgAygLMhQubmV0Y2xvZGUudjEuU2Vzc2lvbiLpAQoUU2Vzc2lvblN0YXRlUmVzcG9uc2USJQoHc2Vzc2lvbhgBIAEoCzIULm5ldGNsb2RlLnYxLlNlc3Npb24SLwoIbWVzc2FnZXMYAiADKAsyHS5uZXRjbG9kZS52MS5QZXJzaXN0ZWRNZXNzYWdlEisKBmV2ZW50cxgDIAMoCzIbLm5ldGNsb2RlLnYxLlBlcnNpc3RlZEV2ZW50EhAKCGhhc19tb3JlGAQgASgIEiEKFGxhc3Rfbm90aWZpY2F0aW9uX2lkGAUgASgJSACIAQFCFwoVX2xhc3Rfbm90aWZpY2F0aW9uX2lkIjkKFFNlc3Npb25FcnJvclJlc3BvbnNlEhIKCnNlc3Npb25faWQYASABKAkSDQoFZXJyb3IYAiABKAkibwoMU3luY1Jlc3BvbnNlEi4KCHNlc3Npb25zGAEgAygLMhwubmV0Y2xvZGUudjEuU2Vzc2lvbldpdGhNZXRhEi8KC3NlcnZlcl90aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJQChJBZ2VudEV2ZW50UmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRImCgVldmVudBgCIAEoCzIXLm5ldGNsb2RlLnYxLkFnZW50RXZlbnQiYAoUQWdlbnRNZXNzYWdlUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIPCgdjb250ZW50GAIgASgJEg8KB3BhcnRpYWwYAyABKAgSEgoKbWVzc2FnZV9pZBgEIAEoCSInChFBZ2VudERvbmVSZXNwb25zZRISCgpzZXNzaW9uX2lkGAEgASgJIjcKEkFnZW50RXJyb3JSZXNwb25zZRISCgpzZXNzaW9uX2lkGAEgASgJEg0KBWVycm9yGAIgASgJIjoKE1VzZXJNZXNzYWdlUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIPCgdjb250ZW50GAIgASgJIjoKFlRlcm1pbmFsT3V0cHV0UmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRkYXRhGAIgASgJIkwKE1BvcnRFeHBvc2VkUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRwb3J0GAIgASgFEhMKC3ByZXZpZXdfdXJsGAMgASgJIkQKEVBvcnRFcnJvclJlc3BvbnNlEhIKCnNlc3Npb25faWQYASABKAkSDAoEcG9ydBgCIAEoBRINCgVlcnJvchgDIAEoCSI9ChNHaXRIdWJSZXBvc1Jlc3BvbnNlEiYKBXJlcG9zGAEgAygLMhcubmV0Y2xvZGUudjEuR2l0SHViUmVwbyJSChFHaXRTdGF0dXNSZXNwb25zZRISCgpzZXNzaW9uX2lkGAEgASgJEikKBWZpbGVzGAIgAygLMhoubmV0Y2xvZGUudjEuR2l0RmlsZUNoYW5nZSIzCg9HaXREaWZmUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRkaWZmGAIgASgJIjUKEEdpdEVycm9yUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRINCgVlcnJvchgCIAEoCSIgCg1FcnJvclJlc3BvbnNlEg8KB21lc3NhZ2UYASABKAkyVgoNQ2xpZW50U2VydmljZRJFCgdDb25uZWN0EhoubmV0Y2xvZGUudjEuQ2xpZW50TWVzc2FnZRoaLm5ldGNsb2RlLnYxLlNlcnZlck1lc3NhZ2UoATABQrwBCg9jb20ubmV0Y2xvZGUudjFCC0NsaWVudFByb3RvUAFaT2dpdGh1Yi5jb20vYW5ncmlzdGFuL25ldGNsb2RlL3NlcnZpY2VzL2NvbnRyb2wtcGxhbmUvZ2VuL25ldGNsb2RlL3YxO25ldGNsb2RldjGiAgNOWFiqAgtOZXRjbG9kZS5WMcoCC05ldGNsb2RlXFYx4gIXTmV0Y2xvZGVcVjFcR1BCTWV0YWRhdGHqAgxOZXRjbG9kZTo6VjFiBnByb3RvMw", [file_netclode_v1_common, file_netclode_v1_events, file_google_protobuf_timestamp]);
+  fileDesc("ChhuZXRjbG9kZS92MS9jbGllbnQucHJvdG8SC25ldGNsb2RlLnYxIsMHCg1DbGllbnRNZXNzYWdlEjsKDmNyZWF0ZV9zZXNzaW9uGAEgASgLMiEubmV0Y2xvZGUudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3RIABI5Cg1saXN0X3Nlc3Npb25zGAIgASgLMiAubmV0Y2xvZGUudjEuTGlzdFNlc3Npb25zUmVxdWVzdEgAEjcKDG9wZW5fc2Vzc2lvbhgDIAEoCzIfLm5ldGNsb2RlLnYxLk9wZW5TZXNzaW9uUmVxdWVzdEgAEjsKDnJlc3VtZV9zZXNzaW9uGAQgASgLMiEubmV0Y2xvZGUudjEuUmVzdW1lU2Vzc2lvblJlcXVlc3RIABI5Cg1wYXVzZV9zZXNzaW9uGAUgASgLMiAubmV0Y2xvZGUudjEuUGF1c2VTZXNzaW9uUmVxdWVzdEgAEjsKDmRlbGV0ZV9zZXNzaW9uGAYgASgLMiEubmV0Y2xvZGUudjEuRGVsZXRlU2Vzc2lvblJlcXVlc3RIABJEChNkZWxldGVfYWxsX3Nlc3Npb25zGAcgASgLMiUubmV0Y2xvZGUudjEuRGVsZXRlQWxsU2Vzc2lvbnNSZXF1ZXN0SAASNQoLc2VuZF9wcm9tcHQYCCABKAsyHi5uZXRjbG9kZS52MS5TZW5kUHJvbXB0UmVxdWVzdEgAEj8KEGludGVycnVwdF9wcm9tcHQYCSABKAsyIy5uZXRjbG9kZS52MS5JbnRlcnJ1cHRQcm9tcHRSZXF1ZXN0SAASOwoOdGVybWluYWxfaW5wdXQYCiABKAsyIS5uZXRjbG9kZS52MS5UZXJtaW5hbElucHV0UmVxdWVzdEgAEj0KD3Rlcm1pbmFsX3Jlc2l6ZRgLIAEoCzIiLm5ldGNsb2RlLnYxLlRlcm1pbmFsUmVzaXplUmVxdWVzdEgAEjUKC2V4cG9zZV9wb3J0GAwgASgLMh4ubmV0Y2xvZGUudjEuRXhwb3NlUG9ydFJlcXVlc3RIABIoCgRzeW5jGA0gASgLMhgubmV0Y2xvZGUudjEuU3luY1JlcXVlc3RIABJAChFsaXN0X2dpdGh1Yl9yZXBvcxgOIAEoCzIjLm5ldGNsb2RlLnYxLkxpc3RHaXRIdWJSZXBvc1JlcXVlc3RIABIzCgpnaXRfc3RhdHVzGA8gASgLMh0ubmV0Y2xvZGUudjEuR2l0U3RhdHVzUmVxdWVzdEgAEi8KCGdpdF9kaWZmGBAgASgLMhsubmV0Y2xvZGUudjEuR2l0RGlmZlJlcXVlc3RIAEIJCgdtZXNzYWdlIvoHCg1TZXJ2ZXJNZXNzYWdlEj4KD3Nlc3Npb25fY3JlYXRlZBgBIAEoCzIjLm5ldGNsb2RlLnYxLlNlc3Npb25DcmVhdGVkUmVzcG9uc2VIABI+Cg9zZXNzaW9uX3VwZGF0ZWQYAiABKAsyIy5uZXRjbG9kZS52MS5TZXNzaW9uVXBkYXRlZFJlc3BvbnNlSAASPgoPc2Vzc2lvbl9kZWxldGVkGAMgASgLMiMubmV0Y2xvZGUudjEuU2Vzc2lvbkRlbGV0ZWRSZXNwb25zZUgAEkcKFHNlc3Npb25zX2RlbGV0ZWRfYWxsGAQgASgLMicubmV0Y2xvZGUudjEuU2Vzc2lvbnNEZWxldGVkQWxsUmVzcG9uc2VIABI4CgxzZXNzaW9uX2xpc3QYBSABKAsyIC5uZXRjbG9kZS52MS5TZXNzaW9uTGlzdFJlc3BvbnNlSAASOgoNc2Vzc2lvbl9zdGF0ZRgGIAEoCzIhLm5ldGNsb2RlLnYxLlNlc3Npb25TdGF0ZVJlc3BvbnNlSAASMgoNc3luY19yZXNwb25zZRgHIAEoCzIZLm5ldGNsb2RlLnYxLlN5bmNSZXNwb25zZUgAEjYKC2FnZW50X2V2ZW50GAggASgLMh8ubmV0Y2xvZGUudjEuQWdlbnRFdmVudFJlc3BvbnNlSAASOgoNYWdlbnRfbWVzc2FnZRgJIAEoCzIhLm5ldGNsb2RlLnYxLkFnZW50TWVzc2FnZVJlc3BvbnNlSAASNAoKYWdlbnRfZG9uZRgKIAEoCzIeLm5ldGNsb2RlLnYxLkFnZW50RG9uZVJlc3BvbnNlSAASOAoMdXNlcl9tZXNzYWdlGAsgASgLMiAubmV0Y2xvZGUudjEuVXNlck1lc3NhZ2VSZXNwb25zZUgAEj4KD3Rlcm1pbmFsX291dHB1dBgMIAEoCzIjLm5ldGNsb2RlLnYxLlRlcm1pbmFsT3V0cHV0UmVzcG9uc2VIABI4Cgxwb3J0X2V4cG9zZWQYDSABKAsyIC5uZXRjbG9kZS52MS5Qb3J0RXhwb3NlZFJlc3BvbnNlSAASOAoMZ2l0aHViX3JlcG9zGA4gASgLMiAubmV0Y2xvZGUudjEuR2l0SHViUmVwb3NSZXNwb25zZUgAEjQKCmdpdF9zdGF0dXMYDyABKAsyHi5uZXRjbG9kZS52MS5HaXRTdGF0dXNSZXNwb25zZUgAEjAKCGdpdF9kaWZmGBAgASgLMhwubmV0Y2xvZGUudjEuR2l0RGlmZlJlc3BvbnNlSAASKwoFZXJyb3IYESABKAsyGi5uZXRjbG9kZS52MS5FcnJvclJlc3BvbnNlSABCCQoHbWVzc2FnZSLpAQoUQ3JlYXRlU2Vzc2lvblJlcXVlc3QSFwoKcmVxdWVzdF9pZBgBIAEoCUgAiAEBEhEKBG5hbWUYAiABKAlIAYgBARIRCgRyZXBvGAMgASgJSAKIAQESMQoLcmVwb19hY2Nlc3MYBCABKA4yFy5uZXRjbG9kZS52MS5SZXBvQWNjZXNzSAOIAQESGwoOaW5pdGlhbF9wcm9tcHQYBSABKAlIBIgBAUINCgtfcmVxdWVzdF9pZEIHCgVfbmFtZUIHCgVfcmVwb0IOCgxfcmVwb19hY2Nlc3NCEQoPX2luaXRpYWxfcHJvbXB0Ij0KE0xpc3RTZXNzaW9uc1JlcXVlc3QSFwoKcmVxdWVzdF9pZBgBIAEoCUgAiAEBQg0KC19yZXF1ZXN0X2lkIr4BChJPcGVuU2Vzc2lvblJlcXVlc3QSFwoKcmVxdWVzdF9pZBgBIAEoCUgAiAEBEhIKCnNlc3Npb25faWQYAiABKAkSHAoPbGFzdF9tZXNzYWdlX2lkGAMgASgJSAGIAQESIQoUbGFzdF9ub3RpZmljYXRpb25faWQYBCABKAlIAogBAUINCgtfcmVxdWVzdF9pZEISChBfbGFzdF9tZXNzYWdlX2lkQhcKFV9sYXN0X25vdGlmaWNhdGlvbl9pZCJSChRSZXN1bWVTZXNzaW9uUmVxdWVzdBIXCgpyZXF1ZXN0X2lkGAEgASgJSACIAQESEgoKc2Vzc2lvbl9pZBgCIAEoCUINCgtfcmVxdWVzdF9pZCJRChNQYXVzZVNlc3Npb25SZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBARISCgpzZXNzaW9uX2lkGAIgASgJQg0KC19yZXF1ZXN0X2lkIlIKFERlbGV0ZVNlc3Npb25SZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBARISCgpzZXNzaW9uX2lkGAIgASgJQg0KC19yZXF1ZXN0X2lkIkIKGERlbGV0ZUFsbFNlc3Npb25zUmVxdWVzdBIXCgpyZXF1ZXN0X2lkGAEgASgJSACIAQFCDQoLX3JlcXVlc3RfaWQiXQoRU2VuZFByb21wdFJlcXVlc3QSFwoKcmVxdWVzdF9pZBgBIAEoCUgAiAEBEhIKCnNlc3Npb25faWQYAiABKAkSDAoEdGV4dBgDIAEoCUINCgtfcmVxdWVzdF9pZCJUChZJbnRlcnJ1cHRQcm9tcHRSZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBARISCgpzZXNzaW9uX2lkGAIgASgJQg0KC19yZXF1ZXN0X2lkImAKFFRlcm1pbmFsSW5wdXRSZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBARISCgpzZXNzaW9uX2lkGAIgASgJEgwKBGRhdGEYAyABKAlCDQoLX3JlcXVlc3RfaWQibwoVVGVybWluYWxSZXNpemVSZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBARISCgpzZXNzaW9uX2lkGAIgASgJEgwKBGNvbHMYAyABKAUSDAoEcm93cxgEIAEoBUINCgtfcmVxdWVzdF9pZCJdChFFeHBvc2VQb3J0UmVxdWVzdBIXCgpyZXF1ZXN0X2lkGAEgASgJSACIAQESEgoKc2Vzc2lvbl9pZBgCIAEoCRIMCgRwb3J0GAMgASgFQg0KC19yZXF1ZXN0X2lkIjUKC1N5bmNSZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBAUINCgtfcmVxdWVzdF9pZCJAChZMaXN0R2l0SHViUmVwb3NSZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBAUINCgtfcmVxdWVzdF9pZCJOChBHaXRTdGF0dXNSZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBARISCgpzZXNzaW9uX2lkGAIgASgJQg0KC19yZXF1ZXN0X2lkImgKDkdpdERpZmZSZXF1ZXN0EhcKCnJlcXVlc3RfaWQYASABKAlIAIgBARISCgpzZXNzaW9uX2lkGAIgASgJEhEKBGZpbGUYAyABKAlIAYgBAUINCgtfcmVxdWVzdF9pZEIHCgVfZmlsZSJnChZTZXNzaW9uQ3JlYXRlZFJlc3BvbnNlEiUKB3Nlc3Npb24YASABKAsyFC5uZXRjbG9kZS52MS5TZXNzaW9uEhcKCnJlcXVlc3RfaWQYAiABKAlIAIgBAUINCgtfcmVxdWVzdF9pZCI/ChZTZXNzaW9uVXBkYXRlZFJlc3BvbnNlEiUKB3Nlc3Npb24YASABKAsyFC5uZXRjbG9kZS52MS5TZXNzaW9uIlQKFlNlc3Npb25EZWxldGVkUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIXCgpyZXF1ZXN0X2lkGAIgASgJSACIAQFCDQoLX3JlcXVlc3RfaWQiWQoaU2Vzc2lvbnNEZWxldGVkQWxsUmVzcG9uc2USEwoLZGVsZXRlZF9pZHMYASADKAkSFwoKcmVxdWVzdF9pZBgCIAEoCUgAiAEBQg0KC19yZXF1ZXN0X2lkImUKE1Nlc3Npb25MaXN0UmVzcG9uc2USJgoIc2Vzc2lvbnMYASADKAsyFC5uZXRjbG9kZS52MS5TZXNzaW9uEhcKCnJlcXVlc3RfaWQYAiABKAlIAIgBAUINCgtfcmVxdWVzdF9pZCKRAgoUU2Vzc2lvblN0YXRlUmVzcG9uc2USJQoHc2Vzc2lvbhgBIAEoCzIULm5ldGNsb2RlLnYxLlNlc3Npb24SLwoIbWVzc2FnZXMYAiADKAsyHS5uZXRjbG9kZS52MS5QZXJzaXN0ZWRNZXNzYWdlEisKBmV2ZW50cxgDIAMoCzIbLm5ldGNsb2RlLnYxLlBlcnNpc3RlZEV2ZW50EhAKCGhhc19tb3JlGAQgASgIEiEKFGxhc3Rfbm90aWZpY2F0aW9uX2lkGAUgASgJSACIAQESFwoKcmVxdWVzdF9pZBgGIAEoCUgBiAEBQhcKFV9sYXN0X25vdGlmaWNhdGlvbl9pZEINCgtfcmVxdWVzdF9pZCKWAQoMU3luY1Jlc3BvbnNlEi0KCHNlc3Npb25zGAEgAygLMhsubmV0Y2xvZGUudjEuU2Vzc2lvblN1bW1hcnkSLwoLc2VydmVyX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhcKCnJlcXVlc3RfaWQYAyABKAlIAIgBAUINCgtfcmVxdWVzdF9pZCJQChJBZ2VudEV2ZW50UmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRImCgVldmVudBgCIAEoCzIXLm5ldGNsb2RlLnYxLkFnZW50RXZlbnQiYAoUQWdlbnRNZXNzYWdlUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIPCgdjb250ZW50GAIgASgJEg8KB3BhcnRpYWwYAyABKAgSEgoKbWVzc2FnZV9pZBgEIAEoCSInChFBZ2VudERvbmVSZXNwb25zZRISCgpzZXNzaW9uX2lkGAEgASgJIjoKE1VzZXJNZXNzYWdlUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIPCgdjb250ZW50GAIgASgJIjoKFlRlcm1pbmFsT3V0cHV0UmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRkYXRhGAIgASgJInQKE1BvcnRFeHBvc2VkUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRwb3J0GAIgASgFEhMKC3ByZXZpZXdfdXJsGAMgASgJEhcKCnJlcXVlc3RfaWQYBCABKAlIAIgBAUINCgtfcmVxdWVzdF9pZCJlChNHaXRIdWJSZXBvc1Jlc3BvbnNlEiYKBXJlcG9zGAEgAygLMhcubmV0Y2xvZGUudjEuR2l0SHViUmVwbxIXCgpyZXF1ZXN0X2lkGAIgASgJSACIAQFCDQoLX3JlcXVlc3RfaWQiegoRR2l0U3RhdHVzUmVzcG9uc2USEgoKc2Vzc2lvbl9pZBgBIAEoCRIpCgVmaWxlcxgCIAMoCzIaLm5ldGNsb2RlLnYxLkdpdEZpbGVDaGFuZ2USFwoKcmVxdWVzdF9pZBgDIAEoCUgAiAEBQg0KC19yZXF1ZXN0X2lkIlsKD0dpdERpZmZSZXNwb25zZRISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGRpZmYYAiABKAkSFwoKcmVxdWVzdF9pZBgDIAEoCUgAiAEBQg0KC19yZXF1ZXN0X2lkIloKDUVycm9yUmVzcG9uc2USIQoFZXJyb3IYASABKAsyEi5uZXRjbG9kZS52MS5FcnJvchIXCgpyZXF1ZXN0X2lkGAIgASgJSACIAQFCDQoLX3JlcXVlc3RfaWQyVgoNQ2xpZW50U2VydmljZRJFCgdDb25uZWN0EhoubmV0Y2xvZGUudjEuQ2xpZW50TWVzc2FnZRoaLm5ldGNsb2RlLnYxLlNlcnZlck1lc3NhZ2UoATABQrwBCg9jb20ubmV0Y2xvZGUudjFCC0NsaWVudFByb3RvUAFaT2dpdGh1Yi5jb20vYW5ncmlzdGFuL25ldGNsb2RlL3NlcnZpY2VzL2NvbnRyb2wtcGxhbmUvZ2VuL25ldGNsb2RlL3YxO25ldGNsb2RldjGiAgNOWFiqAgtOZXRjbG9kZS5WMcoCC05ldGNsb2RlXFYx4gIXTmV0Y2xvZGVcVjFcR1BCTWV0YWRhdGHqAgxOZXRjbG9kZTo6VjFiBnByb3RvMw", [file_netclode_v1_common, file_netclode_v1_events, file_google_protobuf_timestamp]);
 
 /**
  * ClientMessage is the union of all client-to-server messages.
@@ -180,91 +180,67 @@ export type ServerMessage = Message<"netclode.v1.ServerMessage"> & {
     case: "sessionState";
   } | {
     /**
-     * @generated from field: netclode.v1.SessionErrorResponse session_error = 7;
-     */
-    value: SessionErrorResponse;
-    case: "sessionError";
-  } | {
-    /**
-     * @generated from field: netclode.v1.SyncResponse sync_response = 8;
+     * @generated from field: netclode.v1.SyncResponse sync_response = 7;
      */
     value: SyncResponse;
     case: "syncResponse";
   } | {
     /**
-     * @generated from field: netclode.v1.AgentEventResponse agent_event = 9;
+     * @generated from field: netclode.v1.AgentEventResponse agent_event = 8;
      */
     value: AgentEventResponse;
     case: "agentEvent";
   } | {
     /**
-     * @generated from field: netclode.v1.AgentMessageResponse agent_message = 10;
+     * @generated from field: netclode.v1.AgentMessageResponse agent_message = 9;
      */
     value: AgentMessageResponse;
     case: "agentMessage";
   } | {
     /**
-     * @generated from field: netclode.v1.AgentDoneResponse agent_done = 11;
+     * @generated from field: netclode.v1.AgentDoneResponse agent_done = 10;
      */
     value: AgentDoneResponse;
     case: "agentDone";
   } | {
     /**
-     * @generated from field: netclode.v1.AgentErrorResponse agent_error = 12;
-     */
-    value: AgentErrorResponse;
-    case: "agentError";
-  } | {
-    /**
-     * @generated from field: netclode.v1.UserMessageResponse user_message = 13;
+     * @generated from field: netclode.v1.UserMessageResponse user_message = 11;
      */
     value: UserMessageResponse;
     case: "userMessage";
   } | {
     /**
-     * @generated from field: netclode.v1.TerminalOutputResponse terminal_output = 14;
+     * @generated from field: netclode.v1.TerminalOutputResponse terminal_output = 12;
      */
     value: TerminalOutputResponse;
     case: "terminalOutput";
   } | {
     /**
-     * @generated from field: netclode.v1.PortExposedResponse port_exposed = 15;
+     * @generated from field: netclode.v1.PortExposedResponse port_exposed = 13;
      */
     value: PortExposedResponse;
     case: "portExposed";
   } | {
     /**
-     * @generated from field: netclode.v1.PortErrorResponse port_error = 16;
-     */
-    value: PortErrorResponse;
-    case: "portError";
-  } | {
-    /**
-     * @generated from field: netclode.v1.GitHubReposResponse github_repos = 17;
+     * @generated from field: netclode.v1.GitHubReposResponse github_repos = 14;
      */
     value: GitHubReposResponse;
     case: "githubRepos";
   } | {
     /**
-     * @generated from field: netclode.v1.GitStatusResponse git_status = 18;
+     * @generated from field: netclode.v1.GitStatusResponse git_status = 15;
      */
     value: GitStatusResponse;
     case: "gitStatus";
   } | {
     /**
-     * @generated from field: netclode.v1.GitDiffResponse git_diff = 19;
+     * @generated from field: netclode.v1.GitDiffResponse git_diff = 16;
      */
     value: GitDiffResponse;
     case: "gitDiff";
   } | {
     /**
-     * @generated from field: netclode.v1.GitErrorResponse git_error = 20;
-     */
-    value: GitErrorResponse;
-    case: "gitError";
-  } | {
-    /**
-     * @generated from field: netclode.v1.ErrorResponse error = 21;
+     * @generated from field: netclode.v1.ErrorResponse error = 17;
      */
     value: ErrorResponse;
     case: "error";
@@ -283,24 +259,37 @@ export const ServerMessageSchema: GenMessage<ServerMessage> = /*@__PURE__*/
  */
 export type CreateSessionRequest = Message<"netclode.v1.CreateSessionRequest"> & {
   /**
-   * @generated from field: optional string name = 1;
+   * Client-generated ID for request correlation
+   *
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * Initial session name
+   *
+   * @generated from field: optional string name = 2;
    */
   name?: string;
 
   /**
-   * @generated from field: optional string repo = 2;
+   * GitHub repository to clone (e.g., "owner/repo")
+   *
+   * @generated from field: optional string repo = 3;
    */
   repo?: string;
 
   /**
-   * "read" or "write"
+   * Permission level for repository
    *
-   * @generated from field: optional string repo_access = 3;
+   * @generated from field: optional netclode.v1.RepoAccess repo_access = 4;
    */
-  repoAccess?: string;
+  repoAccess?: RepoAccess;
 
   /**
-   * @generated from field: optional string initial_prompt = 4;
+   * Optional prompt to send immediately after creation
+   *
+   * @generated from field: optional string initial_prompt = 5;
    */
   initialPrompt?: string;
 };
@@ -316,6 +305,10 @@ export const CreateSessionRequestSchema: GenMessage<CreateSessionRequest> = /*@_
  * @generated from message netclode.v1.ListSessionsRequest
  */
 export type ListSessionsRequest = Message<"netclode.v1.ListSessionsRequest"> & {
+  /**
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
 };
 
 /**
@@ -330,21 +323,26 @@ export const ListSessionsRequestSchema: GenMessage<ListSessionsRequest> = /*@__P
  */
 export type OpenSessionRequest = Message<"netclode.v1.OpenSessionRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 
   /**
-   * For pagination
+   * Cursor for message pagination
    *
-   * @generated from field: optional string last_message_id = 2;
+   * @generated from field: optional string last_message_id = 3;
    */
   lastMessageId?: string;
 
   /**
-   * For cursor-based reconnection
+   * Cursor for real-time event stream reconnection
    *
-   * @generated from field: optional string last_notification_id = 3;
+   * @generated from field: optional string last_notification_id = 4;
    */
   lastNotificationId?: string;
 };
@@ -361,7 +359,12 @@ export const OpenSessionRequestSchema: GenMessage<OpenSessionRequest> = /*@__PUR
  */
 export type ResumeSessionRequest = Message<"netclode.v1.ResumeSessionRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 };
@@ -378,7 +381,12 @@ export const ResumeSessionRequestSchema: GenMessage<ResumeSessionRequest> = /*@_
  */
 export type PauseSessionRequest = Message<"netclode.v1.PauseSessionRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 };
@@ -395,7 +403,12 @@ export const PauseSessionRequestSchema: GenMessage<PauseSessionRequest> = /*@__P
  */
 export type DeleteSessionRequest = Message<"netclode.v1.DeleteSessionRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 };
@@ -411,6 +424,10 @@ export const DeleteSessionRequestSchema: GenMessage<DeleteSessionRequest> = /*@_
  * @generated from message netclode.v1.DeleteAllSessionsRequest
  */
 export type DeleteAllSessionsRequest = Message<"netclode.v1.DeleteAllSessionsRequest"> & {
+  /**
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
 };
 
 /**
@@ -425,12 +442,17 @@ export const DeleteAllSessionsRequestSchema: GenMessage<DeleteAllSessionsRequest
  */
 export type SendPromptRequest = Message<"netclode.v1.SendPromptRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 
   /**
-   * @generated from field: string text = 2;
+   * @generated from field: string text = 3;
    */
   text: string;
 };
@@ -447,7 +469,12 @@ export const SendPromptRequestSchema: GenMessage<SendPromptRequest> = /*@__PURE_
  */
 export type InterruptPromptRequest = Message<"netclode.v1.InterruptPromptRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 };
@@ -464,12 +491,17 @@ export const InterruptPromptRequestSchema: GenMessage<InterruptPromptRequest> = 
  */
 export type TerminalInputRequest = Message<"netclode.v1.TerminalInputRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 
   /**
-   * @generated from field: string data = 2;
+   * @generated from field: string data = 3;
    */
   data: string;
 };
@@ -486,17 +518,22 @@ export const TerminalInputRequestSchema: GenMessage<TerminalInputRequest> = /*@_
  */
 export type TerminalResizeRequest = Message<"netclode.v1.TerminalResizeRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 
   /**
-   * @generated from field: int32 cols = 2;
+   * @generated from field: int32 cols = 3;
    */
   cols: number;
 
   /**
-   * @generated from field: int32 rows = 3;
+   * @generated from field: int32 rows = 4;
    */
   rows: number;
 };
@@ -513,12 +550,17 @@ export const TerminalResizeRequestSchema: GenMessage<TerminalResizeRequest> = /*
  */
 export type ExposePortRequest = Message<"netclode.v1.ExposePortRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 
   /**
-   * @generated from field: int32 port = 2;
+   * @generated from field: int32 port = 3;
    */
   port: number;
 };
@@ -534,6 +576,10 @@ export const ExposePortRequestSchema: GenMessage<ExposePortRequest> = /*@__PURE_
  * @generated from message netclode.v1.SyncRequest
  */
 export type SyncRequest = Message<"netclode.v1.SyncRequest"> & {
+  /**
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
 };
 
 /**
@@ -547,6 +593,10 @@ export const SyncRequestSchema: GenMessage<SyncRequest> = /*@__PURE__*/
  * @generated from message netclode.v1.ListGitHubReposRequest
  */
 export type ListGitHubReposRequest = Message<"netclode.v1.ListGitHubReposRequest"> & {
+  /**
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
 };
 
 /**
@@ -561,7 +611,12 @@ export const ListGitHubReposRequestSchema: GenMessage<ListGitHubReposRequest> = 
  */
 export type GitStatusRequest = Message<"netclode.v1.GitStatusRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 };
@@ -578,14 +633,19 @@ export const GitStatusRequestSchema: GenMessage<GitStatusRequest> = /*@__PURE__*
  */
 export type GitDiffRequest = Message<"netclode.v1.GitDiffRequest"> & {
   /**
-   * @generated from field: string session_id = 1;
+   * @generated from field: optional string request_id = 1;
+   */
+  requestId?: string;
+
+  /**
+   * @generated from field: string session_id = 2;
    */
   sessionId: string;
 
   /**
-   * Specific file, or all if empty
+   * Specific file path, or all files if empty
    *
-   * @generated from field: optional string file = 2;
+   * @generated from field: optional string file = 3;
    */
   file?: string;
 };
@@ -605,6 +665,13 @@ export type SessionCreatedResponse = Message<"netclode.v1.SessionCreatedResponse
    * @generated from field: netclode.v1.Session session = 1;
    */
   session?: Session;
+
+  /**
+   * Echoed from request for correlation
+   *
+   * @generated from field: optional string request_id = 2;
+   */
+  requestId?: string;
 };
 
 /**
@@ -639,6 +706,11 @@ export type SessionDeletedResponse = Message<"netclode.v1.SessionDeletedResponse
    * @generated from field: string session_id = 1;
    */
   sessionId: string;
+
+  /**
+   * @generated from field: optional string request_id = 2;
+   */
+  requestId?: string;
 };
 
 /**
@@ -656,6 +728,11 @@ export type SessionsDeletedAllResponse = Message<"netclode.v1.SessionsDeletedAll
    * @generated from field: repeated string deleted_ids = 1;
    */
   deletedIds: string[];
+
+  /**
+   * @generated from field: optional string request_id = 2;
+   */
+  requestId?: string;
 };
 
 /**
@@ -673,6 +750,11 @@ export type SessionListResponse = Message<"netclode.v1.SessionListResponse"> & {
    * @generated from field: repeated netclode.v1.Session sessions = 1;
    */
   sessions: Session[];
+
+  /**
+   * @generated from field: optional string request_id = 2;
+   */
+  requestId?: string;
 };
 
 /**
@@ -702,14 +784,23 @@ export type SessionStateResponse = Message<"netclode.v1.SessionStateResponse"> &
   events: PersistedEvent[];
 
   /**
+   * true if more messages available for pagination
+   *
    * @generated from field: bool has_more = 4;
    */
   hasMore: boolean;
 
   /**
+   * Cursor for subscribing to real-time updates
+   *
    * @generated from field: optional string last_notification_id = 5;
    */
   lastNotificationId?: string;
+
+  /**
+   * @generated from field: optional string request_id = 6;
+   */
+  requestId?: string;
 };
 
 /**
@@ -720,40 +811,23 @@ export const SessionStateResponseSchema: GenMessage<SessionStateResponse> = /*@_
   messageDesc(file_netclode_v1_client, 23);
 
 /**
- * @generated from message netclode.v1.SessionErrorResponse
- */
-export type SessionErrorResponse = Message<"netclode.v1.SessionErrorResponse"> & {
-  /**
-   * @generated from field: string session_id = 1;
-   */
-  sessionId: string;
-
-  /**
-   * @generated from field: string error = 2;
-   */
-  error: string;
-};
-
-/**
- * Describes the message netclode.v1.SessionErrorResponse.
- * Use `create(SessionErrorResponseSchema)` to create a new message.
- */
-export const SessionErrorResponseSchema: GenMessage<SessionErrorResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 24);
-
-/**
  * @generated from message netclode.v1.SyncResponse
  */
 export type SyncResponse = Message<"netclode.v1.SyncResponse"> & {
   /**
-   * @generated from field: repeated netclode.v1.SessionWithMeta sessions = 1;
+   * @generated from field: repeated netclode.v1.SessionSummary sessions = 1;
    */
-  sessions: SessionWithMeta[];
+  sessions: SessionSummary[];
 
   /**
    * @generated from field: google.protobuf.Timestamp server_time = 2;
    */
   serverTime?: Timestamp;
+
+  /**
+   * @generated from field: optional string request_id = 3;
+   */
+  requestId?: string;
 };
 
 /**
@@ -761,7 +835,7 @@ export type SyncResponse = Message<"netclode.v1.SyncResponse"> & {
  * Use `create(SyncResponseSchema)` to create a new message.
  */
 export const SyncResponseSchema: GenMessage<SyncResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 25);
+  messageDesc(file_netclode_v1_client, 24);
 
 /**
  * @generated from message netclode.v1.AgentEventResponse
@@ -783,7 +857,7 @@ export type AgentEventResponse = Message<"netclode.v1.AgentEventResponse"> & {
  * Use `create(AgentEventResponseSchema)` to create a new message.
  */
 export const AgentEventResponseSchema: GenMessage<AgentEventResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 26);
+  messageDesc(file_netclode_v1_client, 25);
 
 /**
  * @generated from message netclode.v1.AgentMessageResponse
@@ -800,14 +874,14 @@ export type AgentMessageResponse = Message<"netclode.v1.AgentMessageResponse"> &
   content: string;
 
   /**
-   * true for streaming deltas
+   * true for streaming deltas, false for final message
    *
    * @generated from field: bool partial = 3;
    */
   partial: boolean;
 
   /**
-   * Correlates partial messages
+   * Correlates partial messages belonging to same response
    *
    * @generated from field: string message_id = 4;
    */
@@ -819,7 +893,7 @@ export type AgentMessageResponse = Message<"netclode.v1.AgentMessageResponse"> &
  * Use `create(AgentMessageResponseSchema)` to create a new message.
  */
 export const AgentMessageResponseSchema: GenMessage<AgentMessageResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 27);
+  messageDesc(file_netclode_v1_client, 26);
 
 /**
  * @generated from message netclode.v1.AgentDoneResponse
@@ -836,29 +910,7 @@ export type AgentDoneResponse = Message<"netclode.v1.AgentDoneResponse"> & {
  * Use `create(AgentDoneResponseSchema)` to create a new message.
  */
 export const AgentDoneResponseSchema: GenMessage<AgentDoneResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 28);
-
-/**
- * @generated from message netclode.v1.AgentErrorResponse
- */
-export type AgentErrorResponse = Message<"netclode.v1.AgentErrorResponse"> & {
-  /**
-   * @generated from field: string session_id = 1;
-   */
-  sessionId: string;
-
-  /**
-   * @generated from field: string error = 2;
-   */
-  error: string;
-};
-
-/**
- * Describes the message netclode.v1.AgentErrorResponse.
- * Use `create(AgentErrorResponseSchema)` to create a new message.
- */
-export const AgentErrorResponseSchema: GenMessage<AgentErrorResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 29);
+  messageDesc(file_netclode_v1_client, 27);
 
 /**
  * @generated from message netclode.v1.UserMessageResponse
@@ -880,7 +932,7 @@ export type UserMessageResponse = Message<"netclode.v1.UserMessageResponse"> & {
  * Use `create(UserMessageResponseSchema)` to create a new message.
  */
 export const UserMessageResponseSchema: GenMessage<UserMessageResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 30);
+  messageDesc(file_netclode_v1_client, 28);
 
 /**
  * @generated from message netclode.v1.TerminalOutputResponse
@@ -902,7 +954,7 @@ export type TerminalOutputResponse = Message<"netclode.v1.TerminalOutputResponse
  * Use `create(TerminalOutputResponseSchema)` to create a new message.
  */
 export const TerminalOutputResponseSchema: GenMessage<TerminalOutputResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 31);
+  messageDesc(file_netclode_v1_client, 29);
 
 /**
  * @generated from message netclode.v1.PortExposedResponse
@@ -922,6 +974,11 @@ export type PortExposedResponse = Message<"netclode.v1.PortExposedResponse"> & {
    * @generated from field: string preview_url = 3;
    */
   previewUrl: string;
+
+  /**
+   * @generated from field: optional string request_id = 4;
+   */
+  requestId?: string;
 };
 
 /**
@@ -929,34 +986,7 @@ export type PortExposedResponse = Message<"netclode.v1.PortExposedResponse"> & {
  * Use `create(PortExposedResponseSchema)` to create a new message.
  */
 export const PortExposedResponseSchema: GenMessage<PortExposedResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 32);
-
-/**
- * @generated from message netclode.v1.PortErrorResponse
- */
-export type PortErrorResponse = Message<"netclode.v1.PortErrorResponse"> & {
-  /**
-   * @generated from field: string session_id = 1;
-   */
-  sessionId: string;
-
-  /**
-   * @generated from field: int32 port = 2;
-   */
-  port: number;
-
-  /**
-   * @generated from field: string error = 3;
-   */
-  error: string;
-};
-
-/**
- * Describes the message netclode.v1.PortErrorResponse.
- * Use `create(PortErrorResponseSchema)` to create a new message.
- */
-export const PortErrorResponseSchema: GenMessage<PortErrorResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 33);
+  messageDesc(file_netclode_v1_client, 30);
 
 /**
  * @generated from message netclode.v1.GitHubReposResponse
@@ -966,6 +996,11 @@ export type GitHubReposResponse = Message<"netclode.v1.GitHubReposResponse"> & {
    * @generated from field: repeated netclode.v1.GitHubRepo repos = 1;
    */
   repos: GitHubRepo[];
+
+  /**
+   * @generated from field: optional string request_id = 2;
+   */
+  requestId?: string;
 };
 
 /**
@@ -973,7 +1008,7 @@ export type GitHubReposResponse = Message<"netclode.v1.GitHubReposResponse"> & {
  * Use `create(GitHubReposResponseSchema)` to create a new message.
  */
 export const GitHubReposResponseSchema: GenMessage<GitHubReposResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 34);
+  messageDesc(file_netclode_v1_client, 31);
 
 /**
  * @generated from message netclode.v1.GitStatusResponse
@@ -988,6 +1023,11 @@ export type GitStatusResponse = Message<"netclode.v1.GitStatusResponse"> & {
    * @generated from field: repeated netclode.v1.GitFileChange files = 2;
    */
   files: GitFileChange[];
+
+  /**
+   * @generated from field: optional string request_id = 3;
+   */
+  requestId?: string;
 };
 
 /**
@@ -995,7 +1035,7 @@ export type GitStatusResponse = Message<"netclode.v1.GitStatusResponse"> & {
  * Use `create(GitStatusResponseSchema)` to create a new message.
  */
 export const GitStatusResponseSchema: GenMessage<GitStatusResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 35);
+  messageDesc(file_netclode_v1_client, 32);
 
 /**
  * @generated from message netclode.v1.GitDiffResponse
@@ -1010,6 +1050,11 @@ export type GitDiffResponse = Message<"netclode.v1.GitDiffResponse"> & {
    * @generated from field: string diff = 2;
    */
   diff: string;
+
+  /**
+   * @generated from field: optional string request_id = 3;
+   */
+  requestId?: string;
 };
 
 /**
@@ -1017,38 +1062,28 @@ export type GitDiffResponse = Message<"netclode.v1.GitDiffResponse"> & {
  * Use `create(GitDiffResponseSchema)` to create a new message.
  */
 export const GitDiffResponseSchema: GenMessage<GitDiffResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 36);
+  messageDesc(file_netclode_v1_client, 33);
 
 /**
- * @generated from message netclode.v1.GitErrorResponse
- */
-export type GitErrorResponse = Message<"netclode.v1.GitErrorResponse"> & {
-  /**
-   * @generated from field: string session_id = 1;
-   */
-  sessionId: string;
-
-  /**
-   * @generated from field: string error = 2;
-   */
-  error: string;
-};
-
-/**
- * Describes the message netclode.v1.GitErrorResponse.
- * Use `create(GitErrorResponseSchema)` to create a new message.
- */
-export const GitErrorResponseSchema: GenMessage<GitErrorResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 37);
-
-/**
+ * ErrorResponse is the unified error type for all error conditions.
+ * Replaces SessionErrorResponse, AgentErrorResponse, PortErrorResponse, GitErrorResponse.
+ *
  * @generated from message netclode.v1.ErrorResponse
  */
 export type ErrorResponse = Message<"netclode.v1.ErrorResponse"> & {
   /**
-   * @generated from field: string message = 1;
+   * Structured error details
+   *
+   * @generated from field: netclode.v1.Error error = 1;
    */
-  message: string;
+  error?: Error;
+
+  /**
+   * Echoed from request for correlation
+   *
+   * @generated from field: optional string request_id = 2;
+   */
+  requestId?: string;
 };
 
 /**
@@ -1056,10 +1091,10 @@ export type ErrorResponse = Message<"netclode.v1.ErrorResponse"> & {
  * Use `create(ErrorResponseSchema)` to create a new message.
  */
 export const ErrorResponseSchema: GenMessage<ErrorResponse> = /*@__PURE__*/
-  messageDesc(file_netclode_v1_client, 38);
+  messageDesc(file_netclode_v1_client, 34);
 
 /**
- * ClientService handles communication between clients (iOS app) and the control plane.
+ * ClientService handles communication between clients and the control plane.
  * Uses a single bidirectional stream for all operations.
  *
  * @generated from service netclode.v1.ClientService

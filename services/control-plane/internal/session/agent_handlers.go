@@ -212,6 +212,7 @@ func (m *Manager) HandleGitDiffResponse(ctx context.Context, sessionID string, r
 }
 
 // convertProtoEventToProtocol converts a proto AgentEvent to protocol AgentEvent.
+// Handles the new oneof payload structure.
 func convertProtoEventToProtocol(event *v1.AgentEvent) *protocol.AgentEvent {
 	if event == nil {
 		return nil
@@ -229,86 +230,115 @@ func convertProtoEventToProtocol(event *v1.AgentEvent) *protocol.AgentEvent {
 		Timestamp: timestamp,
 	}
 
-	// Copy optional fields
-	if event.Tool != nil {
-		pe.Tool = *event.Tool
-	}
-	if event.ToolUseId != nil {
-		pe.ToolUseID = *event.ToolUseId
-	}
-	if event.ParentToolUseId != nil {
-		pe.ParentToolUseID = *event.ParentToolUseId
-	}
-	if event.InputDelta != nil {
-		pe.InputDelta = *event.InputDelta
-	}
-	if event.Result != nil {
-		pe.Result = event.Result
-	}
-	if event.Error != nil {
-		pe.Error = event.Error
-	}
-	if event.Path != nil {
-		pe.Path = *event.Path
-	}
-	if event.Action != nil {
-		pe.Action = *event.Action
-	}
-	if event.Command != nil {
-		pe.Command = *event.Command
-	}
-	if event.Cwd != nil {
-		pe.Cwd = event.Cwd
-	}
-	if event.ExitCode != nil {
-		ec := int(*event.ExitCode)
-		pe.ExitCode = &ec
-	}
-	if event.Output != nil {
-		pe.Output = event.Output
-	}
-	if event.Content != nil {
-		pe.Content = *event.Content
-	}
-	if event.ThinkingId != nil {
-		pe.ThinkingID = *event.ThinkingId
-	}
-	if event.Partial != nil {
-		pe.Partial = *event.Partial
-	}
-	if event.Port != nil {
-		pe.Port = int(*event.Port)
-	}
-	if event.Process != nil {
-		pe.Process = event.Process
-	}
-	if event.PreviewUrl != nil {
-		pe.PreviewURL = event.PreviewUrl
-	}
-	if event.LinesAdded != nil {
-		la := int(*event.LinesAdded)
-		pe.LinesAdded = &la
-	}
-	if event.LinesRemoved != nil {
-		lr := int(*event.LinesRemoved)
-		pe.LinesRemoved = &lr
-	}
-	if event.Repo != nil {
-		pe.Repo = *event.Repo
-	}
-	if event.Stage != nil {
-		pe.Stage = *event.Stage
-	}
-	if event.Message != nil {
-		pe.Message = *event.Message
-	}
+	// Extract payload based on type
+	switch payload := event.Payload.(type) {
+	case *v1.AgentEvent_Tool:
+		if payload.Tool != nil {
+			pe.Tool = payload.Tool.Tool
+			pe.ToolUseID = payload.Tool.ToolUseId
+			if payload.Tool.ParentToolUseId != nil {
+				pe.ParentToolUseID = *payload.Tool.ParentToolUseId
+			}
+			if payload.Tool.Input != nil {
+				pe.Input = payload.Tool.Input.AsMap()
+			}
+			if payload.Tool.InputDelta != nil {
+				pe.InputDelta = *payload.Tool.InputDelta
+			}
+			if payload.Tool.Result != nil {
+				pe.Result = payload.Tool.Result
+			}
+			if payload.Tool.Error != nil {
+				pe.Error = payload.Tool.Error
+			}
+		}
 
-	// Convert Input struct to map
-	if event.Input != nil {
-		pe.Input = event.Input.AsMap()
+	case *v1.AgentEvent_FileChange:
+		if payload.FileChange != nil {
+			pe.Path = payload.FileChange.Path
+			pe.Action = convertFileAction(payload.FileChange.Action)
+			if payload.FileChange.LinesAdded != nil {
+				la := int(*payload.FileChange.LinesAdded)
+				pe.LinesAdded = &la
+			}
+			if payload.FileChange.LinesRemoved != nil {
+				lr := int(*payload.FileChange.LinesRemoved)
+				pe.LinesRemoved = &lr
+			}
+		}
+
+	case *v1.AgentEvent_Command:
+		if payload.Command != nil {
+			pe.Command = payload.Command.Command
+			if payload.Command.Cwd != nil {
+				pe.Cwd = payload.Command.Cwd
+			}
+			if payload.Command.ExitCode != nil {
+				ec := int(*payload.Command.ExitCode)
+				pe.ExitCode = &ec
+			}
+			if payload.Command.Output != nil {
+				pe.Output = payload.Command.Output
+			}
+		}
+
+	case *v1.AgentEvent_Thinking:
+		if payload.Thinking != nil {
+			pe.ThinkingID = payload.Thinking.ThinkingId
+			pe.Content = payload.Thinking.Content
+			pe.Partial = payload.Thinking.Partial
+		}
+
+	case *v1.AgentEvent_PortExposed:
+		if payload.PortExposed != nil {
+			pe.Port = int(payload.PortExposed.Port)
+			if payload.PortExposed.Process != nil {
+				pe.Process = payload.PortExposed.Process
+			}
+			if payload.PortExposed.PreviewUrl != nil {
+				pe.PreviewURL = payload.PortExposed.PreviewUrl
+			}
+		}
+
+	case *v1.AgentEvent_RepoClone:
+		if payload.RepoClone != nil {
+			pe.Repo = payload.RepoClone.Repo
+			pe.Stage = convertRepoCloneStage(payload.RepoClone.Stage)
+			pe.Message = payload.RepoClone.Message
+		}
 	}
 
 	return pe
+}
+
+// convertFileAction converts proto FileAction to protocol FileAction.
+func convertFileAction(action v1.FileAction) protocol.FileAction {
+	switch action {
+	case v1.FileAction_FILE_ACTION_CREATE:
+		return protocol.FileActionCreate
+	case v1.FileAction_FILE_ACTION_EDIT:
+		return protocol.FileActionEdit
+	case v1.FileAction_FILE_ACTION_DELETE:
+		return protocol.FileActionDelete
+	default:
+		return protocol.FileActionUnspecified
+	}
+}
+
+// convertRepoCloneStage converts proto RepoCloneStage to protocol RepoCloneStage.
+func convertRepoCloneStage(stage v1.RepoCloneStage) protocol.RepoCloneStage {
+	switch stage {
+	case v1.RepoCloneStage_REPO_CLONE_STAGE_STARTING:
+		return protocol.RepoCloneStageStarting
+	case v1.RepoCloneStage_REPO_CLONE_STAGE_CLONING:
+		return protocol.RepoCloneStageCloning
+	case v1.RepoCloneStage_REPO_CLONE_STAGE_DONE:
+		return protocol.RepoCloneStageDone
+	case v1.RepoCloneStage_REPO_CLONE_STAGE_ERROR:
+		return protocol.RepoCloneStageError
+	default:
+		return protocol.RepoCloneStageUnspecified
+	}
 }
 
 // convertEventKind converts proto AgentEventKind to protocol AgentEventKind.

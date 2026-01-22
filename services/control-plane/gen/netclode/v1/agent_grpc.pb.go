@@ -27,7 +27,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // AgentService handles bidirectional communication between agents and control plane.
-// Agents connect to CP (not the other way around).
+// Agents connect to the control plane (not the other way around).
 type AgentServiceClient interface {
 	// Connect establishes a bidirectional stream for all agent-CP communication.
 	Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AgentMessage, ControlPlaneMessage], error)
@@ -59,7 +59,7 @@ type AgentService_ConnectClient = grpc.BidiStreamingClient[AgentMessage, Control
 // for forward compatibility.
 //
 // AgentService handles bidirectional communication between agents and control plane.
-// Agents connect to CP (not the other way around).
+// Agents connect to the control plane (not the other way around).
 type AgentServiceServer interface {
 	// Connect establishes a bidirectional stream for all agent-CP communication.
 	Connect(grpc.BidiStreamingServer[AgentMessage, ControlPlaneMessage]) error

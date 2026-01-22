@@ -9,7 +9,7 @@ import Connect
 import Foundation
 import SwiftProtobuf
 
-/// ClientService handles communication between clients (iOS app) and the control plane.
+/// ClientService handles communication between clients and the control plane.
 /// Uses a single bidirectional stream for all operations.
 public protocol Netclode_V1_ClientServiceClientInterface: Sendable {
 

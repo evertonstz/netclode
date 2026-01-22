@@ -237,14 +237,6 @@ public struct Netclode_V1_ServerMessage: Sendable {
     set {message = .sessionState(newValue)}
   }
 
-  public var sessionError: Netclode_V1_SessionErrorResponse {
-    get {
-      if case .sessionError(let v)? = message {return v}
-      return Netclode_V1_SessionErrorResponse()
-    }
-    set {message = .sessionError(newValue)}
-  }
-
   public var syncResponse: Netclode_V1_SyncResponse {
     get {
       if case .syncResponse(let v)? = message {return v}
@@ -277,14 +269,6 @@ public struct Netclode_V1_ServerMessage: Sendable {
     set {message = .agentDone(newValue)}
   }
 
-  public var agentError: Netclode_V1_AgentErrorResponse {
-    get {
-      if case .agentError(let v)? = message {return v}
-      return Netclode_V1_AgentErrorResponse()
-    }
-    set {message = .agentError(newValue)}
-  }
-
   public var userMessage: Netclode_V1_UserMessageResponse {
     get {
       if case .userMessage(let v)? = message {return v}
@@ -307,14 +291,6 @@ public struct Netclode_V1_ServerMessage: Sendable {
       return Netclode_V1_PortExposedResponse()
     }
     set {message = .portExposed(newValue)}
-  }
-
-  public var portError: Netclode_V1_PortErrorResponse {
-    get {
-      if case .portError(let v)? = message {return v}
-      return Netclode_V1_PortErrorResponse()
-    }
-    set {message = .portError(newValue)}
   }
 
   public var githubRepos: Netclode_V1_GitHubReposResponse {
@@ -341,14 +317,6 @@ public struct Netclode_V1_ServerMessage: Sendable {
     set {message = .gitDiff(newValue)}
   }
 
-  public var gitError: Netclode_V1_GitErrorResponse {
-    get {
-      if case .gitError(let v)? = message {return v}
-      return Netclode_V1_GitErrorResponse()
-    }
-    set {message = .gitError(newValue)}
-  }
-
   public var error: Netclode_V1_ErrorResponse {
     get {
       if case .error(let v)? = message {return v}
@@ -366,20 +334,16 @@ public struct Netclode_V1_ServerMessage: Sendable {
     case sessionsDeletedAll(Netclode_V1_SessionsDeletedAllResponse)
     case sessionList(Netclode_V1_SessionListResponse)
     case sessionState(Netclode_V1_SessionStateResponse)
-    case sessionError(Netclode_V1_SessionErrorResponse)
     case syncResponse(Netclode_V1_SyncResponse)
     case agentEvent(Netclode_V1_AgentEventResponse)
     case agentMessage(Netclode_V1_AgentMessageResponse)
     case agentDone(Netclode_V1_AgentDoneResponse)
-    case agentError(Netclode_V1_AgentErrorResponse)
     case userMessage(Netclode_V1_UserMessageResponse)
     case terminalOutput(Netclode_V1_TerminalOutputResponse)
     case portExposed(Netclode_V1_PortExposedResponse)
-    case portError(Netclode_V1_PortErrorResponse)
     case githubRepos(Netclode_V1_GitHubReposResponse)
     case gitStatus(Netclode_V1_GitStatusResponse)
     case gitDiff(Netclode_V1_GitDiffResponse)
-    case gitError(Netclode_V1_GitErrorResponse)
     case error(Netclode_V1_ErrorResponse)
 
   }
@@ -392,6 +356,17 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Client-generated ID for request correlation
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
+  /// Initial session name
   public var name: String {
     get {return _name ?? String()}
     set {_name = newValue}
@@ -401,6 +376,7 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
   /// Clears the value of `name`. Subsequent reads from it will return its default value.
   public mutating func clearName() {self._name = nil}
 
+  /// GitHub repository to clone (e.g., "owner/repo")
   public var repo: String {
     get {return _repo ?? String()}
     set {_repo = newValue}
@@ -410,9 +386,9 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
   /// Clears the value of `repo`. Subsequent reads from it will return its default value.
   public mutating func clearRepo() {self._repo = nil}
 
-  /// "read" or "write"
-  public var repoAccess: String {
-    get {return _repoAccess ?? String()}
+  /// Permission level for repository
+  public var repoAccess: Netclode_V1_RepoAccess {
+    get {return _repoAccess ?? .unspecified}
     set {_repoAccess = newValue}
   }
   /// Returns true if `repoAccess` has been explicitly set.
@@ -420,6 +396,7 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
   /// Clears the value of `repoAccess`. Subsequent reads from it will return its default value.
   public mutating func clearRepoAccess() {self._repoAccess = nil}
 
+  /// Optional prompt to send immediately after creation
   public var initialPrompt: String {
     get {return _initialPrompt ?? String()}
     set {_initialPrompt = newValue}
@@ -433,9 +410,10 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
 
   public init() {}
 
+  fileprivate var _requestID: String? = nil
   fileprivate var _name: String? = nil
   fileprivate var _repo: String? = nil
-  fileprivate var _repoAccess: String? = nil
+  fileprivate var _repoAccess: Netclode_V1_RepoAccess? = nil
   fileprivate var _initialPrompt: String? = nil
 }
 
@@ -444,9 +422,20 @@ public struct Netclode_V1_ListSessionsRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_OpenSessionRequest: Sendable {
@@ -454,9 +443,18 @@ public struct Netclode_V1_OpenSessionRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var sessionID: String = String()
 
-  /// For pagination
+  /// Cursor for message pagination
   public var lastMessageID: String {
     get {return _lastMessageID ?? String()}
     set {_lastMessageID = newValue}
@@ -466,7 +464,7 @@ public struct Netclode_V1_OpenSessionRequest: Sendable {
   /// Clears the value of `lastMessageID`. Subsequent reads from it will return its default value.
   public mutating func clearLastMessageID() {self._lastMessageID = nil}
 
-  /// For cursor-based reconnection
+  /// Cursor for real-time event stream reconnection
   public var lastNotificationID: String {
     get {return _lastNotificationID ?? String()}
     set {_lastNotificationID = newValue}
@@ -480,6 +478,7 @@ public struct Netclode_V1_OpenSessionRequest: Sendable {
 
   public init() {}
 
+  fileprivate var _requestID: String? = nil
   fileprivate var _lastMessageID: String? = nil
   fileprivate var _lastNotificationID: String? = nil
 }
@@ -489,11 +488,22 @@ public struct Netclode_V1_ResumeSessionRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var sessionID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_PauseSessionRequest: Sendable {
@@ -501,11 +511,22 @@ public struct Netclode_V1_PauseSessionRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var sessionID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_DeleteSessionRequest: Sendable {
@@ -513,11 +534,22 @@ public struct Netclode_V1_DeleteSessionRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var sessionID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_DeleteAllSessionsRequest: Sendable {
@@ -525,15 +557,35 @@ public struct Netclode_V1_DeleteAllSessionsRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_SendPromptRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
+
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
 
   public var sessionID: String = String()
 
@@ -542,6 +594,8 @@ public struct Netclode_V1_SendPromptRequest: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_InterruptPromptRequest: Sendable {
@@ -549,17 +603,37 @@ public struct Netclode_V1_InterruptPromptRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var sessionID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_TerminalInputRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
+
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
 
   public var sessionID: String = String()
 
@@ -568,12 +642,23 @@ public struct Netclode_V1_TerminalInputRequest: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_TerminalResizeRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
+
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
 
   public var sessionID: String = String()
 
@@ -584,12 +669,23 @@ public struct Netclode_V1_TerminalResizeRequest: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_ExposePortRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
+
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
 
   public var sessionID: String = String()
 
@@ -598,6 +694,8 @@ public struct Netclode_V1_ExposePortRequest: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_SyncRequest: Sendable {
@@ -605,9 +703,20 @@ public struct Netclode_V1_SyncRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_ListGitHubReposRequest: Sendable {
@@ -615,9 +724,20 @@ public struct Netclode_V1_ListGitHubReposRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_GitStatusRequest: Sendable {
@@ -625,11 +745,22 @@ public struct Netclode_V1_GitStatusRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var sessionID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_GitDiffRequest: Sendable {
@@ -637,9 +768,18 @@ public struct Netclode_V1_GitDiffRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var sessionID: String = String()
 
-  /// Specific file, or all if empty
+  /// Specific file path, or all files if empty
   public var file: String {
     get {return _file ?? String()}
     set {_file = newValue}
@@ -653,6 +793,7 @@ public struct Netclode_V1_GitDiffRequest: Sendable {
 
   public init() {}
 
+  fileprivate var _requestID: String? = nil
   fileprivate var _file: String? = nil
 }
 
@@ -670,11 +811,22 @@ public struct Netclode_V1_SessionCreatedResponse: Sendable {
   /// Clears the value of `session`. Subsequent reads from it will return its default value.
   public mutating func clearSession() {self._session = nil}
 
+  /// Echoed from request for correlation
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _session: Netclode_V1_Session? = nil
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_SessionUpdatedResponse: Sendable {
@@ -705,9 +857,20 @@ public struct Netclode_V1_SessionDeletedResponse: Sendable {
 
   public var sessionID: String = String()
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_SessionsDeletedAllResponse: Sendable {
@@ -717,9 +880,20 @@ public struct Netclode_V1_SessionsDeletedAllResponse: Sendable {
 
   public var deletedIds: [String] = []
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_SessionListResponse: Sendable {
@@ -729,9 +903,20 @@ public struct Netclode_V1_SessionListResponse: Sendable {
 
   public var sessions: [Netclode_V1_Session] = []
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_SessionStateResponse: Sendable {
@@ -752,8 +937,10 @@ public struct Netclode_V1_SessionStateResponse: Sendable {
 
   public var events: [Netclode_V1_PersistedEvent] = []
 
+  /// true if more messages available for pagination
   public var hasMore_p: Bool = false
 
+  /// Cursor for subscribing to real-time updates
   public var lastNotificationID: String {
     get {return _lastNotificationID ?? String()}
     set {_lastNotificationID = newValue}
@@ -763,26 +950,22 @@ public struct Netclode_V1_SessionStateResponse: Sendable {
   /// Clears the value of `lastNotificationID`. Subsequent reads from it will return its default value.
   public mutating func clearLastNotificationID() {self._lastNotificationID = nil}
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _session: Netclode_V1_Session? = nil
   fileprivate var _lastNotificationID: String? = nil
-}
-
-public struct Netclode_V1_SessionErrorResponse: Sendable {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  public var sessionID: String = String()
-
-  public var error: String = String()
-
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  public init() {}
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_SyncResponse: Sendable {
@@ -790,7 +973,7 @@ public struct Netclode_V1_SyncResponse: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var sessions: [Netclode_V1_SessionWithMeta] = []
+  public var sessions: [Netclode_V1_SessionSummary] = []
 
   public var serverTime: SwiftProtobuf.Google_Protobuf_Timestamp {
     get {return _serverTime ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
@@ -801,11 +984,21 @@ public struct Netclode_V1_SyncResponse: Sendable {
   /// Clears the value of `serverTime`. Subsequent reads from it will return its default value.
   public mutating func clearServerTime() {self._serverTime = nil}
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _serverTime: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_AgentEventResponse: Sendable {
@@ -840,10 +1033,10 @@ public struct Netclode_V1_AgentMessageResponse: Sendable {
 
   public var content: String = String()
 
-  /// true for streaming deltas
+  /// true for streaming deltas, false for final message
   public var partial: Bool = false
 
-  /// Correlates partial messages
+  /// Correlates partial messages belonging to same response
   public var messageID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -857,20 +1050,6 @@ public struct Netclode_V1_AgentDoneResponse: Sendable {
   // methods supported on all messages.
 
   public var sessionID: String = String()
-
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  public init() {}
-}
-
-public struct Netclode_V1_AgentErrorResponse: Sendable {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  public var sessionID: String = String()
-
-  public var error: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -916,25 +1095,20 @@ public struct Netclode_V1_PortExposedResponse: Sendable {
 
   public var previewURL: String = String()
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  public init() {}
-}
-
-public struct Netclode_V1_PortErrorResponse: Sendable {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  public var sessionID: String = String()
-
-  public var port: Int32 = 0
-
-  public var error: String = String()
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_GitHubReposResponse: Sendable {
@@ -944,9 +1118,20 @@ public struct Netclode_V1_GitHubReposResponse: Sendable {
 
   public var repos: [Netclode_V1_GitHubRepo] = []
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_GitStatusResponse: Sendable {
@@ -958,9 +1143,20 @@ public struct Netclode_V1_GitStatusResponse: Sendable {
 
   public var files: [Netclode_V1_GitFileChange] = []
 
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
 public struct Netclode_V1_GitDiffResponse: Sendable {
@@ -972,35 +1168,55 @@ public struct Netclode_V1_GitDiffResponse: Sendable {
 
   public var diff: String = String()
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  public init() {}
-}
-
-public struct Netclode_V1_GitErrorResponse: Sendable {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  public var sessionID: String = String()
-
-  public var error: String = String()
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _requestID: String? = nil
 }
 
+/// ErrorResponse is the unified error type for all error conditions.
+/// Replaces SessionErrorResponse, AgentErrorResponse, PortErrorResponse, GitErrorResponse.
 public struct Netclode_V1_ErrorResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var message: String = String()
+  /// Structured error details
+  public var error: Netclode_V1_Error {
+    get {return _error ?? Netclode_V1_Error()}
+    set {_error = newValue}
+  }
+  /// Returns true if `error` has been explicitly set.
+  public var hasError: Bool {return self._error != nil}
+  /// Clears the value of `error`. Subsequent reads from it will return its default value.
+  public mutating func clearError() {self._error = nil}
+
+  /// Echoed from request for correlation
+  public var requestID: String {
+    get {return _requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {return self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _error: Netclode_V1_Error? = nil
+  fileprivate var _requestID: String? = nil
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -1314,7 +1530,7 @@ extension Netclode_V1_ClientMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ServerMessage"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_created\0\u{3}session_updated\0\u{3}session_deleted\0\u{3}sessions_deleted_all\0\u{3}session_list\0\u{3}session_state\0\u{3}session_error\0\u{3}sync_response\0\u{3}agent_event\0\u{3}agent_message\0\u{3}agent_done\0\u{3}agent_error\0\u{3}user_message\0\u{3}terminal_output\0\u{3}port_exposed\0\u{3}port_error\0\u{3}github_repos\0\u{3}git_status\0\u{3}git_diff\0\u{3}git_error\0\u{1}error\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_created\0\u{3}session_updated\0\u{3}session_deleted\0\u{3}sessions_deleted_all\0\u{3}session_list\0\u{3}session_state\0\u{3}sync_response\0\u{3}agent_event\0\u{3}agent_message\0\u{3}agent_done\0\u{3}user_message\0\u{3}terminal_output\0\u{3}port_exposed\0\u{3}github_repos\0\u{3}git_status\0\u{3}git_diff\0\u{1}error\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1401,19 +1617,6 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
         }
       }()
       case 7: try {
-        var v: Netclode_V1_SessionErrorResponse?
-        var hadOneofValue = false
-        if let current = self.message {
-          hadOneofValue = true
-          if case .sessionError(let m) = current {v = m}
-        }
-        try decoder.decodeSingularMessageField(value: &v)
-        if let v = v {
-          if hadOneofValue {try decoder.handleConflictingOneOf()}
-          self.message = .sessionError(v)
-        }
-      }()
-      case 8: try {
         var v: Netclode_V1_SyncResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1426,7 +1629,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .syncResponse(v)
         }
       }()
-      case 9: try {
+      case 8: try {
         var v: Netclode_V1_AgentEventResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1439,7 +1642,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .agentEvent(v)
         }
       }()
-      case 10: try {
+      case 9: try {
         var v: Netclode_V1_AgentMessageResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1452,7 +1655,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .agentMessage(v)
         }
       }()
-      case 11: try {
+      case 10: try {
         var v: Netclode_V1_AgentDoneResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1465,20 +1668,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .agentDone(v)
         }
       }()
-      case 12: try {
-        var v: Netclode_V1_AgentErrorResponse?
-        var hadOneofValue = false
-        if let current = self.message {
-          hadOneofValue = true
-          if case .agentError(let m) = current {v = m}
-        }
-        try decoder.decodeSingularMessageField(value: &v)
-        if let v = v {
-          if hadOneofValue {try decoder.handleConflictingOneOf()}
-          self.message = .agentError(v)
-        }
-      }()
-      case 13: try {
+      case 11: try {
         var v: Netclode_V1_UserMessageResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1491,7 +1681,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .userMessage(v)
         }
       }()
-      case 14: try {
+      case 12: try {
         var v: Netclode_V1_TerminalOutputResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1504,7 +1694,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .terminalOutput(v)
         }
       }()
-      case 15: try {
+      case 13: try {
         var v: Netclode_V1_PortExposedResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1517,20 +1707,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .portExposed(v)
         }
       }()
-      case 16: try {
-        var v: Netclode_V1_PortErrorResponse?
-        var hadOneofValue = false
-        if let current = self.message {
-          hadOneofValue = true
-          if case .portError(let m) = current {v = m}
-        }
-        try decoder.decodeSingularMessageField(value: &v)
-        if let v = v {
-          if hadOneofValue {try decoder.handleConflictingOneOf()}
-          self.message = .portError(v)
-        }
-      }()
-      case 17: try {
+      case 14: try {
         var v: Netclode_V1_GitHubReposResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1543,7 +1720,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .githubRepos(v)
         }
       }()
-      case 18: try {
+      case 15: try {
         var v: Netclode_V1_GitStatusResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1556,7 +1733,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .gitStatus(v)
         }
       }()
-      case 19: try {
+      case 16: try {
         var v: Netclode_V1_GitDiffResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1569,20 +1746,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .gitDiff(v)
         }
       }()
-      case 20: try {
-        var v: Netclode_V1_GitErrorResponse?
-        var hadOneofValue = false
-        if let current = self.message {
-          hadOneofValue = true
-          if case .gitError(let m) = current {v = m}
-        }
-        try decoder.decodeSingularMessageField(value: &v)
-        if let v = v {
-          if hadOneofValue {try decoder.handleConflictingOneOf()}
-          self.message = .gitError(v)
-        }
-      }()
-      case 21: try {
+      case 17: try {
         var v: Netclode_V1_ErrorResponse?
         var hadOneofValue = false
         if let current = self.message {
@@ -1630,65 +1794,49 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
       guard case .sessionState(let v)? = self.message else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
     }()
-    case .sessionError?: try {
-      guard case .sessionError(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
-    }()
     case .syncResponse?: try {
       guard case .syncResponse(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
     }()
     case .agentEvent?: try {
       guard case .agentEvent(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
     }()
     case .agentMessage?: try {
       guard case .agentMessage(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
     }()
     case .agentDone?: try {
       guard case .agentDone(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
-    }()
-    case .agentError?: try {
-      guard case .agentError(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     }()
     case .userMessage?: try {
       guard case .userMessage(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
     }()
     case .terminalOutput?: try {
       guard case .terminalOutput(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 14)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
     }()
     case .portExposed?: try {
       guard case .portExposed(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 15)
-    }()
-    case .portError?: try {
-      guard case .portError(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 16)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
     }()
     case .githubRepos?: try {
       guard case .githubRepos(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 17)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 14)
     }()
     case .gitStatus?: try {
       guard case .gitStatus(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 15)
     }()
     case .gitDiff?: try {
       guard case .gitDiff(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 19)
-    }()
-    case .gitError?: try {
-      guard case .gitError(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 20)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 16)
     }()
     case .error?: try {
       guard case .error(let v)? = self.message else { preconditionFailure() }
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 21)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 17)
     }()
     case nil: break
     }
@@ -1704,7 +1852,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CreateSessionRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}name\0\u{1}repo\0\u{3}repo_access\0\u{3}initial_prompt\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{1}name\0\u{1}repo\0\u{3}repo_access\0\u{3}initial_prompt\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1712,10 +1860,11 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self._name) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self._repo) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self._repoAccess) }()
-      case 4: try { try decoder.decodeSingularStringField(value: &self._initialPrompt) }()
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._name) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._repo) }()
+      case 4: try { try decoder.decodeSingularEnumField(value: &self._repoAccess) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self._initialPrompt) }()
       default: break
       }
     }
@@ -1726,22 +1875,26 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    try { if let v = self._name {
+    try { if let v = self._requestID {
       try visitor.visitSingularStringField(value: v, fieldNumber: 1)
     } }()
-    try { if let v = self._repo {
+    try { if let v = self._name {
       try visitor.visitSingularStringField(value: v, fieldNumber: 2)
     } }()
-    try { if let v = self._repoAccess {
+    try { if let v = self._repo {
       try visitor.visitSingularStringField(value: v, fieldNumber: 3)
     } }()
+    try { if let v = self._repoAccess {
+      try visitor.visitSingularEnumField(value: v, fieldNumber: 4)
+    } }()
     try { if let v = self._initialPrompt {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
+      try visitor.visitSingularStringField(value: v, fieldNumber: 5)
     } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_CreateSessionRequest, rhs: Netclode_V1_CreateSessionRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
     if lhs._name != rhs._name {return false}
     if lhs._repo != rhs._repo {return false}
     if lhs._repoAccess != rhs._repoAccess {return false}
@@ -1753,26 +1906,7 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
 
 extension Netclode_V1_ListSessionsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ListSessionsRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    // Load everything into unknown fields
-    while try decoder.nextFieldNumber() != nil {}
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_ListSessionsRequest, rhs: Netclode_V1_ListSessionsRequest) -> Bool {
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_OpenSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".OpenSessionRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}last_message_id\0\u{3}last_notification_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1780,9 +1914,7 @@ extension Netclode_V1_OpenSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self._lastMessageID) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self._lastNotificationID) }()
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
@@ -1793,19 +1925,60 @@ extension Netclode_V1_OpenSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_ListSessionsRequest, rhs: Netclode_V1_ListSessionsRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_OpenSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".OpenSessionRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0\u{3}last_message_id\0\u{3}last_notification_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._lastMessageID) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self._lastNotificationID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
     if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
     }
     try { if let v = self._lastMessageID {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
     } }()
     try { if let v = self._lastNotificationID {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
     } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_OpenSessionRequest, rhs: Netclode_V1_OpenSessionRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.sessionID != rhs.sessionID {return false}
     if lhs._lastMessageID != rhs._lastMessageID {return false}
     if lhs._lastNotificationID != rhs._lastNotificationID {return false}
@@ -1816,7 +1989,7 @@ extension Netclode_V1_OpenSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Netclode_V1_ResumeSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ResumeSessionRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1824,360 +1997,8 @@ extension Netclode_V1_ResumeSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_ResumeSessionRequest, rhs: Netclode_V1_ResumeSessionRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_PauseSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".PauseSessionRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_PauseSessionRequest, rhs: Netclode_V1_PauseSessionRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_DeleteSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".DeleteSessionRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_DeleteSessionRequest, rhs: Netclode_V1_DeleteSessionRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_DeleteAllSessionsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".DeleteAllSessionsRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    // Load everything into unknown fields
-    while try decoder.nextFieldNumber() != nil {}
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_DeleteAllSessionsRequest, rhs: Netclode_V1_DeleteAllSessionsRequest) -> Bool {
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_SendPromptRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".SendPromptRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}text\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.text) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if !self.text.isEmpty {
-      try visitor.visitSingularStringField(value: self.text, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_SendPromptRequest, rhs: Netclode_V1_SendPromptRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.text != rhs.text {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_InterruptPromptRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".InterruptPromptRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_InterruptPromptRequest, rhs: Netclode_V1_InterruptPromptRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_TerminalInputRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".TerminalInputRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}data\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.data) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if !self.data.isEmpty {
-      try visitor.visitSingularStringField(value: self.data, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_TerminalInputRequest, rhs: Netclode_V1_TerminalInputRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.data != rhs.data {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_TerminalResizeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".TerminalResizeRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}cols\0\u{1}rows\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularInt32Field(value: &self.cols) }()
-      case 3: try { try decoder.decodeSingularInt32Field(value: &self.rows) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if self.cols != 0 {
-      try visitor.visitSingularInt32Field(value: self.cols, fieldNumber: 2)
-    }
-    if self.rows != 0 {
-      try visitor.visitSingularInt32Field(value: self.rows, fieldNumber: 3)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_TerminalResizeRequest, rhs: Netclode_V1_TerminalResizeRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.cols != rhs.cols {return false}
-    if lhs.rows != rhs.rows {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_ExposePortRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ExposePortRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}port\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularInt32Field(value: &self.port) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if self.port != 0 {
-      try visitor.visitSingularInt32Field(value: self.port, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_ExposePortRequest, rhs: Netclode_V1_ExposePortRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.port != rhs.port {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_SyncRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".SyncRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    // Load everything into unknown fields
-    while try decoder.nextFieldNumber() != nil {}
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_SyncRequest, rhs: Netclode_V1_SyncRequest) -> Bool {
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_ListGitHubReposRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".ListGitHubReposRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    // Load everything into unknown fields
-    while try decoder.nextFieldNumber() != nil {}
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_ListGitHubReposRequest, rhs: Netclode_V1_ListGitHubReposRequest) -> Bool {
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_GitStatusRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".GitStatusRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_GitStatusRequest, rhs: Netclode_V1_GitStatusRequest) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_GitDiffRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".GitDiffRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}file\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self._file) }()
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
       default: break
       }
     }
@@ -2188,16 +2009,499 @@ extension Netclode_V1_GitDiffRequest: SwiftProtobuf.Message, SwiftProtobuf._Mess
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
     if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_ResumeSessionRequest, rhs: Netclode_V1_ResumeSessionRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_PauseSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PauseSessionRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_PauseSessionRequest, rhs: Netclode_V1_PauseSessionRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_DeleteSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".DeleteSessionRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_DeleteSessionRequest, rhs: Netclode_V1_DeleteSessionRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_DeleteAllSessionsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".DeleteAllSessionsRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_DeleteAllSessionsRequest, rhs: Netclode_V1_DeleteAllSessionsRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_SendPromptRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SendPromptRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0\u{1}text\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.text) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_SendPromptRequest, rhs: Netclode_V1_SendPromptRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.text != rhs.text {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_InterruptPromptRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".InterruptPromptRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_InterruptPromptRequest, rhs: Netclode_V1_InterruptPromptRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_TerminalInputRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".TerminalInputRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0\u{1}data\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.data) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    if !self.data.isEmpty {
+      try visitor.visitSingularStringField(value: self.data, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_TerminalInputRequest, rhs: Netclode_V1_TerminalInputRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.data != rhs.data {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_TerminalResizeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".TerminalResizeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0\u{1}cols\0\u{1}rows\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self.cols) }()
+      case 4: try { try decoder.decodeSingularInt32Field(value: &self.rows) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    if self.cols != 0 {
+      try visitor.visitSingularInt32Field(value: self.cols, fieldNumber: 3)
+    }
+    if self.rows != 0 {
+      try visitor.visitSingularInt32Field(value: self.rows, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_TerminalResizeRequest, rhs: Netclode_V1_TerminalResizeRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.cols != rhs.cols {return false}
+    if lhs.rows != rhs.rows {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_ExposePortRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ExposePortRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0\u{1}port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self.port) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    if self.port != 0 {
+      try visitor.visitSingularInt32Field(value: self.port, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_ExposePortRequest, rhs: Netclode_V1_ExposePortRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.port != rhs.port {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_SyncRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SyncRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_SyncRequest, rhs: Netclode_V1_SyncRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_ListGitHubReposRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListGitHubReposRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_ListGitHubReposRequest, rhs: Netclode_V1_ListGitHubReposRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_GitStatusRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GitStatusRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_GitStatusRequest, rhs: Netclode_V1_GitStatusRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_GitDiffRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GitDiffRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0\u{1}file\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._file) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
     }
     try { if let v = self._file {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
     } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_GitDiffRequest, rhs: Netclode_V1_GitDiffRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.sessionID != rhs.sessionID {return false}
     if lhs._file != rhs._file {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -2207,7 +2511,7 @@ extension Netclode_V1_GitDiffRequest: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Netclode_V1_SessionCreatedResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionCreatedResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}session\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}session\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2216,6 +2520,7 @@ extension Netclode_V1_SessionCreatedResponse: SwiftProtobuf.Message, SwiftProtob
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._session) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
@@ -2229,11 +2534,15 @@ extension Netclode_V1_SessionCreatedResponse: SwiftProtobuf.Message, SwiftProtob
     try { if let v = self._session {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
     } }()
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_SessionCreatedResponse, rhs: Netclode_V1_SessionCreatedResponse) -> Bool {
     if lhs._session != rhs._session {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2275,7 +2584,7 @@ extension Netclode_V1_SessionUpdatedResponse: SwiftProtobuf.Message, SwiftProtob
 
 extension Netclode_V1_SessionDeletedResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionDeletedResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2284,20 +2593,29 @@ extension Netclode_V1_SessionDeletedResponse: SwiftProtobuf.Message, SwiftProtob
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.sessionID.isEmpty {
       try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
     }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_SessionDeletedResponse, rhs: Netclode_V1_SessionDeletedResponse) -> Bool {
     if lhs.sessionID != rhs.sessionID {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2305,7 +2623,7 @@ extension Netclode_V1_SessionDeletedResponse: SwiftProtobuf.Message, SwiftProtob
 
 extension Netclode_V1_SessionsDeletedAllResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionsDeletedAllResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}deleted_ids\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}deleted_ids\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2314,20 +2632,29 @@ extension Netclode_V1_SessionsDeletedAllResponse: SwiftProtobuf.Message, SwiftPr
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedStringField(value: &self.deletedIds) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.deletedIds.isEmpty {
       try visitor.visitRepeatedStringField(value: self.deletedIds, fieldNumber: 1)
     }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_SessionsDeletedAllResponse, rhs: Netclode_V1_SessionsDeletedAllResponse) -> Bool {
     if lhs.deletedIds != rhs.deletedIds {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2335,7 +2662,7 @@ extension Netclode_V1_SessionsDeletedAllResponse: SwiftProtobuf.Message, SwiftPr
 
 extension Netclode_V1_SessionListResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionListResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sessions\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sessions\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2344,20 +2671,29 @@ extension Netclode_V1_SessionListResponse: SwiftProtobuf.Message, SwiftProtobuf.
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedMessageField(value: &self.sessions) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.sessions.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.sessions, fieldNumber: 1)
     }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_SessionListResponse, rhs: Netclode_V1_SessionListResponse) -> Bool {
     if lhs.sessions != rhs.sessions {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2365,7 +2701,7 @@ extension Netclode_V1_SessionListResponse: SwiftProtobuf.Message, SwiftProtobuf.
 
 extension Netclode_V1_SessionStateResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionStateResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}session\0\u{1}messages\0\u{1}events\0\u{3}has_more\0\u{3}last_notification_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}session\0\u{1}messages\0\u{1}events\0\u{3}has_more\0\u{3}last_notification_id\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2378,6 +2714,7 @@ extension Netclode_V1_SessionStateResponse: SwiftProtobuf.Message, SwiftProtobuf
       case 3: try { try decoder.decodeRepeatedMessageField(value: &self.events) }()
       case 4: try { try decoder.decodeSingularBoolField(value: &self.hasMore_p) }()
       case 5: try { try decoder.decodeSingularStringField(value: &self._lastNotificationID) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
@@ -2403,6 +2740,9 @@ extension Netclode_V1_SessionStateResponse: SwiftProtobuf.Message, SwiftProtobuf
     try { if let v = self._lastNotificationID {
       try visitor.visitSingularStringField(value: v, fieldNumber: 5)
     } }()
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 6)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2412,41 +2752,7 @@ extension Netclode_V1_SessionStateResponse: SwiftProtobuf.Message, SwiftProtobuf
     if lhs.events != rhs.events {return false}
     if lhs.hasMore_p != rhs.hasMore_p {return false}
     if lhs._lastNotificationID != rhs._lastNotificationID {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_SessionErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".SessionErrorResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}error\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.error) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if !self.error.isEmpty {
-      try visitor.visitSingularStringField(value: self.error, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_SessionErrorResponse, rhs: Netclode_V1_SessionErrorResponse) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.error != rhs.error {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2454,7 +2760,7 @@ extension Netclode_V1_SessionErrorResponse: SwiftProtobuf.Message, SwiftProtobuf
 
 extension Netclode_V1_SyncResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SyncResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sessions\0\u{3}server_time\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}sessions\0\u{3}server_time\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2464,6 +2770,7 @@ extension Netclode_V1_SyncResponse: SwiftProtobuf.Message, SwiftProtobuf._Messag
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedMessageField(value: &self.sessions) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._serverTime) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
@@ -2480,12 +2787,16 @@ extension Netclode_V1_SyncResponse: SwiftProtobuf.Message, SwiftProtobuf._Messag
     try { if let v = self._serverTime {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_SyncResponse, rhs: Netclode_V1_SyncResponse) -> Bool {
     if lhs.sessions != rhs.sessions {return false}
     if lhs._serverTime != rhs._serverTime {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2605,41 +2916,6 @@ extension Netclode_V1_AgentDoneResponse: SwiftProtobuf.Message, SwiftProtobuf._M
   }
 }
 
-extension Netclode_V1_AgentErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".AgentErrorResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}error\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.error) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if !self.error.isEmpty {
-      try visitor.visitSingularStringField(value: self.error, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_AgentErrorResponse, rhs: Netclode_V1_AgentErrorResponse) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.error != rhs.error {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
 extension Netclode_V1_UserMessageResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserMessageResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}content\0")
@@ -2712,7 +2988,7 @@ extension Netclode_V1_TerminalOutputResponse: SwiftProtobuf.Message, SwiftProtob
 
 extension Netclode_V1_PortExposedResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".PortExposedResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}port\0\u{3}preview_url\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}port\0\u{3}preview_url\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2723,12 +2999,17 @@ extension Netclode_V1_PortExposedResponse: SwiftProtobuf.Message, SwiftProtobuf.
       case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
       case 2: try { try decoder.decodeSingularInt32Field(value: &self.port) }()
       case 3: try { try decoder.decodeSingularStringField(value: &self.previewURL) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.sessionID.isEmpty {
       try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
     }
@@ -2738,6 +3019,9 @@ extension Netclode_V1_PortExposedResponse: SwiftProtobuf.Message, SwiftProtobuf.
     if !self.previewURL.isEmpty {
       try visitor.visitSingularStringField(value: self.previewURL, fieldNumber: 3)
     }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2745,46 +3029,7 @@ extension Netclode_V1_PortExposedResponse: SwiftProtobuf.Message, SwiftProtobuf.
     if lhs.sessionID != rhs.sessionID {return false}
     if lhs.port != rhs.port {return false}
     if lhs.previewURL != rhs.previewURL {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_PortErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".PortErrorResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}port\0\u{1}error\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularInt32Field(value: &self.port) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self.error) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if self.port != 0 {
-      try visitor.visitSingularInt32Field(value: self.port, fieldNumber: 2)
-    }
-    if !self.error.isEmpty {
-      try visitor.visitSingularStringField(value: self.error, fieldNumber: 3)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_PortErrorResponse, rhs: Netclode_V1_PortErrorResponse) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.port != rhs.port {return false}
-    if lhs.error != rhs.error {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2792,7 +3037,7 @@ extension Netclode_V1_PortErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Netclode_V1_GitHubReposResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GitHubReposResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}repos\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}repos\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2801,20 +3046,29 @@ extension Netclode_V1_GitHubReposResponse: SwiftProtobuf.Message, SwiftProtobuf.
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedMessageField(value: &self.repos) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.repos.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.repos, fieldNumber: 1)
     }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_GitHubReposResponse, rhs: Netclode_V1_GitHubReposResponse) -> Bool {
     if lhs.repos != rhs.repos {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2822,7 +3076,7 @@ extension Netclode_V1_GitHubReposResponse: SwiftProtobuf.Message, SwiftProtobuf.
 
 extension Netclode_V1_GitStatusResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GitStatusResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}files\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}files\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2832,24 +3086,33 @@ extension Netclode_V1_GitStatusResponse: SwiftProtobuf.Message, SwiftProtobuf._M
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
       case 2: try { try decoder.decodeRepeatedMessageField(value: &self.files) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.sessionID.isEmpty {
       try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
     }
     if !self.files.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.files, fieldNumber: 2)
     }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_GitStatusResponse, rhs: Netclode_V1_GitStatusResponse) -> Bool {
     if lhs.sessionID != rhs.sessionID {return false}
     if lhs.files != rhs.files {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2857,7 +3120,7 @@ extension Netclode_V1_GitStatusResponse: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Netclode_V1_GitDiffResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GitDiffResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}diff\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}diff\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2867,59 +3130,33 @@ extension Netclode_V1_GitDiffResponse: SwiftProtobuf.Message, SwiftProtobuf._Mes
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.diff) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.sessionID.isEmpty {
       try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
     }
     if !self.diff.isEmpty {
       try visitor.visitSingularStringField(value: self.diff, fieldNumber: 2)
     }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_GitDiffResponse, rhs: Netclode_V1_GitDiffResponse) -> Bool {
     if lhs.sessionID != rhs.sessionID {return false}
     if lhs.diff != rhs.diff {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Netclode_V1_GitErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".GitErrorResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}error\0")
-
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.error) }()
-      default: break
-      }
-    }
-  }
-
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
-    }
-    if !self.error.isEmpty {
-      try visitor.visitSingularStringField(value: self.error, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  public static func ==(lhs: Netclode_V1_GitErrorResponse, rhs: Netclode_V1_GitErrorResponse) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.error != rhs.error {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2927,7 +3164,7 @@ extension Netclode_V1_GitErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._Me
 
 extension Netclode_V1_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ErrorResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}message\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}error\0\u{3}request_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2935,21 +3172,30 @@ extension Netclode_V1_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._Messa
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.message) }()
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._error) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.message.isEmpty {
-      try visitor.visitSingularStringField(value: self.message, fieldNumber: 1)
-    }
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._error {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_ErrorResponse, rhs: Netclode_V1_ErrorResponse) -> Bool {
-    if lhs.message != rhs.message {return false}
+    if lhs._error != rhs._error {return false}
+    if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

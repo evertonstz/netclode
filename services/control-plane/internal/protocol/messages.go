@@ -78,8 +78,8 @@ type ServerMessage struct {
 	Port       int                `json:"port,omitempty"`
 	PreviewURL string             `json:"previewUrl,omitempty"`
 
-	// For sync.response with SessionWithMeta
-	SessionsWithMeta []SessionWithMeta `json:"sessionsWithMeta,omitempty"`
+	// For sync.response with SessionSummary
+	SessionSummaries []SessionSummary `json:"sessionsWithMeta,omitempty"`
 
 	// For cursor-based subscription - Redis Stream ID for reconnection
 	LastNotificationID string `json:"lastNotificationId,omitempty"`
@@ -207,10 +207,10 @@ func NewTerminalOutput(sessionID, data string) ServerMessage {
 }
 
 // NewSyncResponse creates a sync.response message
-func NewSyncResponse(sessions []SessionWithMeta, serverTime string) ServerMessage {
+func NewSyncResponse(sessions []SessionSummary, serverTime string) ServerMessage {
 	return ServerMessage{
 		Type:             MsgTypeSyncResponse,
-		SessionsWithMeta: sessions,
+		SessionSummaries: sessions,
 		ServerTime:       serverTime,
 	}
 }
@@ -271,15 +271,15 @@ func NewGitError(sessionID, err string) ServerMessage {
 func (m ServerMessage) MarshalJSON() ([]byte, error) {
 	type Alias ServerMessage
 
-	// For sync.response, use "sessions" key with SessionWithMeta array
-	if m.Type == MsgTypeSyncResponse && len(m.SessionsWithMeta) > 0 {
+	// For sync.response, use "sessions" key with SessionSummary array
+	if m.Type == MsgTypeSyncResponse && len(m.SessionSummaries) > 0 {
 		return json.Marshal(struct {
-			Type       string            `json:"type"`
-			Sessions   []SessionWithMeta `json:"sessions"`
-			ServerTime string            `json:"serverTime"`
+			Type       string           `json:"type"`
+			Sessions   []SessionSummary `json:"sessions"`
+			ServerTime string           `json:"serverTime"`
 		}{
 			Type:       m.Type,
-			Sessions:   m.SessionsWithMeta,
+			Sessions:   m.SessionSummaries,
 			ServerTime: m.ServerTime,
 		})
 	}

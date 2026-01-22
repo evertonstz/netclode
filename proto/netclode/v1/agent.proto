@@ -6,7 +6,7 @@ import "netclode/v1/common.proto";
 import "netclode/v1/events.proto";
 
 // AgentService handles bidirectional communication between agents and control plane.
-// Agents connect to CP (not the other way around).
+// Agents connect to the control plane (not the other way around).
 service AgentService {
   // Connect establishes a bidirectional stream for all agent-CP communication.
   rpc Connect(stream AgentMessage) returns (stream ControlPlaneMessage);
@@ -65,100 +65,117 @@ message ControlPlaneMessage {
 // Agent -> Control Plane Messages
 // ============================================================================
 
+// AgentRegister is sent first by the agent to identify itself.
 message AgentRegister {
-  string session_id = 1;
-  string version = 2;
+  string session_id = 1;                     // Session this agent is servicing
+  string version = 2;                        // Agent version for compatibility checking
 }
 
+// AgentStreamResponse contains streaming output during prompt execution.
 message AgentStreamResponse {
   oneof response {
-    AgentTextDelta text_delta = 1;
-    AgentEvent event = 2;
-    AgentSystemMessage system_message = 3;
-    AgentResult result = 4;
-    AgentError error = 5;
+    AgentTextDelta text_delta = 1;           // Streaming text output
+    AgentEvent event = 2;                    // Tool/command/thinking events
+    AgentSystemMessage system_message = 3;   // System messages (init, etc.)
+    AgentResult result = 4;                  // Final result on completion
+    AgentError error = 5;                    // Error during execution
   }
 }
 
+// AgentTextDelta contains a chunk of streaming text output.
 message AgentTextDelta {
-  string content = 1;
-  bool partial = 2;
-  string message_id = 3;
+  string content = 1;                        // Text content (delta or full based on partial)
+  bool partial = 2;                          // true = streaming delta, false = final complete text
+  string message_id = 3;                     // Correlates deltas belonging to same message
 }
 
+// AgentSystemMessage contains system-level messages from the agent.
 message AgentSystemMessage {
-  string message = 1;
+  string message = 1;                        // System message content (e.g., "init", "ready")
 }
 
+// AgentResult contains the final result after prompt completion.
 message AgentResult {
-  int32 input_tokens = 1;
-  int32 output_tokens = 2;
-  int32 total_turns = 3;
+  int32 input_tokens = 1;                    // Total input tokens used
+  int32 output_tokens = 2;                   // Total output tokens generated
+  int32 total_turns = 3;                     // Number of conversation turns
 }
 
+// AgentError indicates an error during prompt execution.
 message AgentError {
-  string message = 1;
-  bool retryable = 2;
+  string message = 1;                        // Error message
+  bool retryable = 2;                        // Whether the operation can be retried
 }
 
+// AgentTerminalOutput contains terminal output from the agent.
 message AgentTerminalOutput {
-  string data = 1;
+  string data = 1;                           // Terminal output data (may contain ANSI codes)
 }
 
+// AgentTitleResponse contains the generated session title.
 message AgentTitleResponse {
-  string request_id = 1;
-  string title = 2;
+  string request_id = 1;                     // Echoed from GenerateTitleRequest
+  string title = 2;                          // Generated title (empty on failure)
 }
 
+// AgentGitStatusResponse contains git status results.
 message AgentGitStatusResponse {
-  string request_id = 1;
-  repeated GitFileChange files = 2;
+  string request_id = 1;                     // Echoed from GetGitStatusRequest
+  repeated GitFileChange files = 2;          // Changed files
 }
 
+// AgentGitDiffResponse contains git diff results.
 message AgentGitDiffResponse {
-  string request_id = 1;
-  string diff = 2;
+  string request_id = 1;                     // Echoed from GetGitDiffRequest
+  string diff = 2;                           // Unified diff output
 }
 
 // ============================================================================
 // Control Plane -> Agent Messages
 // ============================================================================
 
+// AgentRegistered is sent in response to AgentRegister.
 message AgentRegistered {
-  bool success = 1;
-  optional string error = 2;
-  // Session config passed to agent on registration
-  optional SessionConfig config = 3;
+  bool success = 1;                          // Whether registration succeeded
+  optional string error = 2;                 // Error message if registration failed
+  optional SessionConfig config = 3;         // Session configuration for the agent
 }
 
+// ExecutePromptRequest asks the agent to execute a prompt.
 message ExecutePromptRequest {
-  string text = 1;
+  string text = 1;                           // The prompt text to execute
 }
 
+// InterruptRequest asks the agent to interrupt the current operation.
 message InterruptRequest {}
 
+// GenerateTitleRequest asks the agent to generate a session title.
 message GenerateTitleRequest {
-  string request_id = 1;
-  string prompt = 2;
+  string request_id = 1;                     // ID for correlating response
+  string prompt = 2;                         // The initial prompt to generate title from
 }
 
+// GetGitStatusRequest asks the agent for git status.
 message GetGitStatusRequest {
-  string request_id = 1;
+  string request_id = 1;                     // ID for correlating response
 }
 
+// GetGitDiffRequest asks the agent for git diff.
 message GetGitDiffRequest {
-  string request_id = 1;
-  optional string file = 2;
+  string request_id = 1;                     // ID for correlating response
+  optional string file = 2;                  // Specific file, or all files if empty
 }
 
+// AgentTerminalInput contains terminal input for the agent.
 message AgentTerminalInput {
   oneof input {
-    string data = 1;
-    AgentTerminalResize resize = 2;
+    string data = 1;                         // Keyboard input data
+    AgentTerminalResize resize = 2;          // Terminal resize event
   }
 }
 
+// AgentTerminalResize contains terminal dimensions.
 message AgentTerminalResize {
-  int32 cols = 1;
-  int32 rows = 2;
+  int32 cols = 1;                            // Number of columns
+  int32 rows = 2;                            // Number of rows
 }

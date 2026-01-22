@@ -26,6 +26,10 @@ import {
 import {
   AgentEventKind,
   AgentEventSchema,
+  ToolEventPayloadSchema,
+  ThinkingPayloadSchema,
+  RepoClonePayloadSchema,
+  RepoCloneStage,
 } from "../gen/netclode/v1/events_pb.js";
 import {
   GitFileStatus,
@@ -40,6 +44,18 @@ import { generateTitle } from "./services/title.js";
 import { getGitStatus, getGitDiff, type GitFileChange } from "./git.js";
 
 const WORKSPACE_DIR = "/agent/workspace";
+
+/**
+ * Convert local repo clone stage to protobuf enum
+ */
+function convertRepoCloneStage(stage: "cloning" | "done" | "error"): RepoCloneStage {
+  switch (stage) {
+    case "cloning": return RepoCloneStage.CLONING;
+    case "done": return RepoCloneStage.DONE;
+    case "error": return RepoCloneStage.ERROR;
+    default: return RepoCloneStage.UNSPECIFIED;
+  }
+}
 
 /**
  * Convert local git status to protobuf enum
@@ -85,11 +101,16 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
         case: "event",
         value: create(AgentEventSchema, {
           kind: AgentEventKind.TOOL_START,
-          tool: event.tool,
-          toolUseId: event.toolUseId,
           timestamp,
-          ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
-          ...(event.input && { input: event.input }),
+          payload: {
+            case: "tool",
+            value: create(ToolEventPayloadSchema, {
+              tool: event.tool,
+              toolUseId: event.toolUseId,
+              ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
+              ...(event.input && { input: event.input }),
+            }),
+          },
         }),
       };
       break;
@@ -99,10 +120,16 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
         case: "event",
         value: create(AgentEventSchema, {
           kind: AgentEventKind.TOOL_INPUT,
-          toolUseId: event.toolUseId,
-          inputDelta: event.inputDelta,
           timestamp,
-          ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
+          payload: {
+            case: "tool",
+            value: create(ToolEventPayloadSchema, {
+              tool: "",
+              toolUseId: event.toolUseId,
+              inputDelta: event.inputDelta,
+              ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
+            }),
+          },
         }),
       };
       break;
@@ -112,10 +139,16 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
         case: "event",
         value: create(AgentEventSchema, {
           kind: AgentEventKind.TOOL_INPUT_COMPLETE,
-          toolUseId: event.toolUseId,
-          input: event.input,
           timestamp,
-          ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
+          payload: {
+            case: "tool",
+            value: create(ToolEventPayloadSchema, {
+              tool: "",
+              toolUseId: event.toolUseId,
+              input: event.input,
+              ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
+            }),
+          },
         }),
       };
       break;
@@ -125,12 +158,17 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
         case: "event",
         value: create(AgentEventSchema, {
           kind: AgentEventKind.TOOL_END,
-          tool: event.tool,
-          toolUseId: event.toolUseId,
-          result: event.result,
-          error: event.error,
           timestamp,
-          ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
+          payload: {
+            case: "tool",
+            value: create(ToolEventPayloadSchema, {
+              tool: event.tool,
+              toolUseId: event.toolUseId,
+              result: event.result,
+              error: event.error,
+              ...(event.parentToolUseId && { parentToolUseId: event.parentToolUseId }),
+            }),
+          },
         }),
       };
       break;
@@ -140,10 +178,15 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
         case: "event",
         value: create(AgentEventSchema, {
           kind: AgentEventKind.THINKING,
-          thinkingId: event.thinkingId,
-          content: event.content,
-          partial: event.partial,
           timestamp,
+          payload: {
+            case: "thinking",
+            value: create(ThinkingPayloadSchema, {
+              thinkingId: event.thinkingId,
+              content: event.content,
+              partial: event.partial,
+            }),
+          },
         }),
       };
       break;
@@ -153,10 +196,15 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
         case: "event",
         value: create(AgentEventSchema, {
           kind: AgentEventKind.REPO_CLONE,
-          stage: event.stage,
-          repo: event.repo,
-          message: event.message,
           timestamp,
+          payload: {
+            case: "repoClone",
+            value: create(RepoClonePayloadSchema, {
+              stage: convertRepoCloneStage(event.stage),
+              repo: event.repo,
+              message: event.message,
+            }),
+          },
         }),
       };
       break;

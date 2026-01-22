@@ -159,15 +159,21 @@ export const ControlPlaneMessageSchema: GenMessage<ControlPlaneMessage> = /*@__P
   messageDesc(file_netclode_v1_agent, 1);
 
 /**
+ * AgentRegister is sent first by the agent to identify itself.
+ *
  * @generated from message netclode.v1.AgentRegister
  */
 export type AgentRegister = Message<"netclode.v1.AgentRegister"> & {
   /**
+   * Session this agent is servicing
+   *
    * @generated from field: string session_id = 1;
    */
   sessionId: string;
 
   /**
+   * Agent version for compatibility checking
+   *
    * @generated from field: string version = 2;
    */
   version: string;
@@ -181,6 +187,8 @@ export const AgentRegisterSchema: GenMessage<AgentRegister> = /*@__PURE__*/
   messageDesc(file_netclode_v1_agent, 2);
 
 /**
+ * AgentStreamResponse contains streaming output during prompt execution.
+ *
  * @generated from message netclode.v1.AgentStreamResponse
  */
 export type AgentStreamResponse = Message<"netclode.v1.AgentStreamResponse"> & {
@@ -189,30 +197,40 @@ export type AgentStreamResponse = Message<"netclode.v1.AgentStreamResponse"> & {
    */
   response: {
     /**
+     * Streaming text output
+     *
      * @generated from field: netclode.v1.AgentTextDelta text_delta = 1;
      */
     value: AgentTextDelta;
     case: "textDelta";
   } | {
     /**
+     * Tool/command/thinking events
+     *
      * @generated from field: netclode.v1.AgentEvent event = 2;
      */
     value: AgentEvent;
     case: "event";
   } | {
     /**
+     * System messages (init, etc.)
+     *
      * @generated from field: netclode.v1.AgentSystemMessage system_message = 3;
      */
     value: AgentSystemMessage;
     case: "systemMessage";
   } | {
     /**
+     * Final result on completion
+     *
      * @generated from field: netclode.v1.AgentResult result = 4;
      */
     value: AgentResult;
     case: "result";
   } | {
     /**
+     * Error during execution
+     *
      * @generated from field: netclode.v1.AgentError error = 5;
      */
     value: AgentError;
@@ -228,20 +246,28 @@ export const AgentStreamResponseSchema: GenMessage<AgentStreamResponse> = /*@__P
   messageDesc(file_netclode_v1_agent, 3);
 
 /**
+ * AgentTextDelta contains a chunk of streaming text output.
+ *
  * @generated from message netclode.v1.AgentTextDelta
  */
 export type AgentTextDelta = Message<"netclode.v1.AgentTextDelta"> & {
   /**
+   * Text content (delta or full based on partial)
+   *
    * @generated from field: string content = 1;
    */
   content: string;
 
   /**
+   * true = streaming delta, false = final complete text
+   *
    * @generated from field: bool partial = 2;
    */
   partial: boolean;
 
   /**
+   * Correlates deltas belonging to same message
+   *
    * @generated from field: string message_id = 3;
    */
   messageId: string;
@@ -255,10 +281,14 @@ export const AgentTextDeltaSchema: GenMessage<AgentTextDelta> = /*@__PURE__*/
   messageDesc(file_netclode_v1_agent, 4);
 
 /**
+ * AgentSystemMessage contains system-level messages from the agent.
+ *
  * @generated from message netclode.v1.AgentSystemMessage
  */
 export type AgentSystemMessage = Message<"netclode.v1.AgentSystemMessage"> & {
   /**
+   * System message content (e.g., "init", "ready")
+   *
    * @generated from field: string message = 1;
    */
   message: string;
@@ -272,20 +302,28 @@ export const AgentSystemMessageSchema: GenMessage<AgentSystemMessage> = /*@__PUR
   messageDesc(file_netclode_v1_agent, 5);
 
 /**
+ * AgentResult contains the final result after prompt completion.
+ *
  * @generated from message netclode.v1.AgentResult
  */
 export type AgentResult = Message<"netclode.v1.AgentResult"> & {
   /**
+   * Total input tokens used
+   *
    * @generated from field: int32 input_tokens = 1;
    */
   inputTokens: number;
 
   /**
+   * Total output tokens generated
+   *
    * @generated from field: int32 output_tokens = 2;
    */
   outputTokens: number;
 
   /**
+   * Number of conversation turns
+   *
    * @generated from field: int32 total_turns = 3;
    */
   totalTurns: number;
@@ -299,15 +337,21 @@ export const AgentResultSchema: GenMessage<AgentResult> = /*@__PURE__*/
   messageDesc(file_netclode_v1_agent, 6);
 
 /**
+ * AgentError indicates an error during prompt execution.
+ *
  * @generated from message netclode.v1.AgentError
  */
 export type AgentError = Message<"netclode.v1.AgentError"> & {
   /**
+   * Error message
+   *
    * @generated from field: string message = 1;
    */
   message: string;
 
   /**
+   * Whether the operation can be retried
+   *
    * @generated from field: bool retryable = 2;
    */
   retryable: boolean;
@@ -321,10 +365,14 @@ export const AgentErrorSchema: GenMessage<AgentError> = /*@__PURE__*/
   messageDesc(file_netclode_v1_agent, 7);
 
 /**
+ * AgentTerminalOutput contains terminal output from the agent.
+ *
  * @generated from message netclode.v1.AgentTerminalOutput
  */
 export type AgentTerminalOutput = Message<"netclode.v1.AgentTerminalOutput"> & {
   /**
+   * Terminal output data (may contain ANSI codes)
+   *
    * @generated from field: string data = 1;
    */
   data: string;
@@ -338,15 +386,21 @@ export const AgentTerminalOutputSchema: GenMessage<AgentTerminalOutput> = /*@__P
   messageDesc(file_netclode_v1_agent, 8);
 
 /**
+ * AgentTitleResponse contains the generated session title.
+ *
  * @generated from message netclode.v1.AgentTitleResponse
  */
 export type AgentTitleResponse = Message<"netclode.v1.AgentTitleResponse"> & {
   /**
+   * Echoed from GenerateTitleRequest
+   *
    * @generated from field: string request_id = 1;
    */
   requestId: string;
 
   /**
+   * Generated title (empty on failure)
+   *
    * @generated from field: string title = 2;
    */
   title: string;
@@ -360,15 +414,21 @@ export const AgentTitleResponseSchema: GenMessage<AgentTitleResponse> = /*@__PUR
   messageDesc(file_netclode_v1_agent, 9);
 
 /**
+ * AgentGitStatusResponse contains git status results.
+ *
  * @generated from message netclode.v1.AgentGitStatusResponse
  */
 export type AgentGitStatusResponse = Message<"netclode.v1.AgentGitStatusResponse"> & {
   /**
+   * Echoed from GetGitStatusRequest
+   *
    * @generated from field: string request_id = 1;
    */
   requestId: string;
 
   /**
+   * Changed files
+   *
    * @generated from field: repeated netclode.v1.GitFileChange files = 2;
    */
   files: GitFileChange[];
@@ -382,15 +442,21 @@ export const AgentGitStatusResponseSchema: GenMessage<AgentGitStatusResponse> = 
   messageDesc(file_netclode_v1_agent, 10);
 
 /**
+ * AgentGitDiffResponse contains git diff results.
+ *
  * @generated from message netclode.v1.AgentGitDiffResponse
  */
 export type AgentGitDiffResponse = Message<"netclode.v1.AgentGitDiffResponse"> & {
   /**
+   * Echoed from GetGitDiffRequest
+   *
    * @generated from field: string request_id = 1;
    */
   requestId: string;
 
   /**
+   * Unified diff output
+   *
    * @generated from field: string diff = 2;
    */
   diff: string;
@@ -404,21 +470,27 @@ export const AgentGitDiffResponseSchema: GenMessage<AgentGitDiffResponse> = /*@_
   messageDesc(file_netclode_v1_agent, 11);
 
 /**
+ * AgentRegistered is sent in response to AgentRegister.
+ *
  * @generated from message netclode.v1.AgentRegistered
  */
 export type AgentRegistered = Message<"netclode.v1.AgentRegistered"> & {
   /**
+   * Whether registration succeeded
+   *
    * @generated from field: bool success = 1;
    */
   success: boolean;
 
   /**
+   * Error message if registration failed
+   *
    * @generated from field: optional string error = 2;
    */
   error?: string;
 
   /**
-   * Session config passed to agent on registration
+   * Session configuration for the agent
    *
    * @generated from field: optional netclode.v1.SessionConfig config = 3;
    */
@@ -433,10 +505,14 @@ export const AgentRegisteredSchema: GenMessage<AgentRegistered> = /*@__PURE__*/
   messageDesc(file_netclode_v1_agent, 12);
 
 /**
+ * ExecutePromptRequest asks the agent to execute a prompt.
+ *
  * @generated from message netclode.v1.ExecutePromptRequest
  */
 export type ExecutePromptRequest = Message<"netclode.v1.ExecutePromptRequest"> & {
   /**
+   * The prompt text to execute
+   *
    * @generated from field: string text = 1;
    */
   text: string;
@@ -450,6 +526,8 @@ export const ExecutePromptRequestSchema: GenMessage<ExecutePromptRequest> = /*@_
   messageDesc(file_netclode_v1_agent, 13);
 
 /**
+ * InterruptRequest asks the agent to interrupt the current operation.
+ *
  * @generated from message netclode.v1.InterruptRequest
  */
 export type InterruptRequest = Message<"netclode.v1.InterruptRequest"> & {
@@ -463,15 +541,21 @@ export const InterruptRequestSchema: GenMessage<InterruptRequest> = /*@__PURE__*
   messageDesc(file_netclode_v1_agent, 14);
 
 /**
+ * GenerateTitleRequest asks the agent to generate a session title.
+ *
  * @generated from message netclode.v1.GenerateTitleRequest
  */
 export type GenerateTitleRequest = Message<"netclode.v1.GenerateTitleRequest"> & {
   /**
+   * ID for correlating response
+   *
    * @generated from field: string request_id = 1;
    */
   requestId: string;
 
   /**
+   * The initial prompt to generate title from
+   *
    * @generated from field: string prompt = 2;
    */
   prompt: string;
@@ -485,10 +569,14 @@ export const GenerateTitleRequestSchema: GenMessage<GenerateTitleRequest> = /*@_
   messageDesc(file_netclode_v1_agent, 15);
 
 /**
+ * GetGitStatusRequest asks the agent for git status.
+ *
  * @generated from message netclode.v1.GetGitStatusRequest
  */
 export type GetGitStatusRequest = Message<"netclode.v1.GetGitStatusRequest"> & {
   /**
+   * ID for correlating response
+   *
    * @generated from field: string request_id = 1;
    */
   requestId: string;
@@ -502,15 +590,21 @@ export const GetGitStatusRequestSchema: GenMessage<GetGitStatusRequest> = /*@__P
   messageDesc(file_netclode_v1_agent, 16);
 
 /**
+ * GetGitDiffRequest asks the agent for git diff.
+ *
  * @generated from message netclode.v1.GetGitDiffRequest
  */
 export type GetGitDiffRequest = Message<"netclode.v1.GetGitDiffRequest"> & {
   /**
+   * ID for correlating response
+   *
    * @generated from field: string request_id = 1;
    */
   requestId: string;
 
   /**
+   * Specific file, or all files if empty
+   *
    * @generated from field: optional string file = 2;
    */
   file?: string;
@@ -524,6 +618,8 @@ export const GetGitDiffRequestSchema: GenMessage<GetGitDiffRequest> = /*@__PURE_
   messageDesc(file_netclode_v1_agent, 17);
 
 /**
+ * AgentTerminalInput contains terminal input for the agent.
+ *
  * @generated from message netclode.v1.AgentTerminalInput
  */
 export type AgentTerminalInput = Message<"netclode.v1.AgentTerminalInput"> & {
@@ -532,12 +628,16 @@ export type AgentTerminalInput = Message<"netclode.v1.AgentTerminalInput"> & {
    */
   input: {
     /**
+     * Keyboard input data
+     *
      * @generated from field: string data = 1;
      */
     value: string;
     case: "data";
   } | {
     /**
+     * Terminal resize event
+     *
      * @generated from field: netclode.v1.AgentTerminalResize resize = 2;
      */
     value: AgentTerminalResize;
@@ -553,15 +653,21 @@ export const AgentTerminalInputSchema: GenMessage<AgentTerminalInput> = /*@__PUR
   messageDesc(file_netclode_v1_agent, 18);
 
 /**
+ * AgentTerminalResize contains terminal dimensions.
+ *
  * @generated from message netclode.v1.AgentTerminalResize
  */
 export type AgentTerminalResize = Message<"netclode.v1.AgentTerminalResize"> & {
   /**
+   * Number of columns
+   *
    * @generated from field: int32 cols = 1;
    */
   cols: number;
 
   /**
+   * Number of rows
+   *
    * @generated from field: int32 rows = 2;
    */
   rows: number;
@@ -576,7 +682,7 @@ export const AgentTerminalResizeSchema: GenMessage<AgentTerminalResize> = /*@__P
 
 /**
  * AgentService handles bidirectional communication between agents and control plane.
- * Agents connect to CP (not the other way around).
+ * Agents connect to the control plane (not the other way around).
  *
  * @generated from service netclode.v1.AgentService
  */

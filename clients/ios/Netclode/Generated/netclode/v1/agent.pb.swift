@@ -197,13 +197,16 @@ public struct Netclode_V1_ControlPlaneMessage: Sendable {
   public init() {}
 }
 
+/// AgentRegister is sent first by the agent to identify itself.
 public struct Netclode_V1_AgentRegister: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Session this agent is servicing
   public var sessionID: String = String()
 
+  /// Agent version for compatibility checking
   public var version: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -211,6 +214,7 @@ public struct Netclode_V1_AgentRegister: Sendable {
   public init() {}
 }
 
+/// AgentStreamResponse contains streaming output during prompt execution.
 public struct Netclode_V1_AgentStreamResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -218,6 +222,7 @@ public struct Netclode_V1_AgentStreamResponse: Sendable {
 
   public var response: Netclode_V1_AgentStreamResponse.OneOf_Response? = nil
 
+  /// Streaming text output
   public var textDelta: Netclode_V1_AgentTextDelta {
     get {
       if case .textDelta(let v)? = response {return v}
@@ -226,6 +231,7 @@ public struct Netclode_V1_AgentStreamResponse: Sendable {
     set {response = .textDelta(newValue)}
   }
 
+  /// Tool/command/thinking events
   public var event: Netclode_V1_AgentEvent {
     get {
       if case .event(let v)? = response {return v}
@@ -234,6 +240,7 @@ public struct Netclode_V1_AgentStreamResponse: Sendable {
     set {response = .event(newValue)}
   }
 
+  /// System messages (init, etc.)
   public var systemMessage: Netclode_V1_AgentSystemMessage {
     get {
       if case .systemMessage(let v)? = response {return v}
@@ -242,6 +249,7 @@ public struct Netclode_V1_AgentStreamResponse: Sendable {
     set {response = .systemMessage(newValue)}
   }
 
+  /// Final result on completion
   public var result: Netclode_V1_AgentResult {
     get {
       if case .result(let v)? = response {return v}
@@ -250,6 +258,7 @@ public struct Netclode_V1_AgentStreamResponse: Sendable {
     set {response = .result(newValue)}
   }
 
+  /// Error during execution
   public var error: Netclode_V1_AgentError {
     get {
       if case .error(let v)? = response {return v}
@@ -261,10 +270,15 @@ public struct Netclode_V1_AgentStreamResponse: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Response: Equatable, Sendable {
+    /// Streaming text output
     case textDelta(Netclode_V1_AgentTextDelta)
+    /// Tool/command/thinking events
     case event(Netclode_V1_AgentEvent)
+    /// System messages (init, etc.)
     case systemMessage(Netclode_V1_AgentSystemMessage)
+    /// Final result on completion
     case result(Netclode_V1_AgentResult)
+    /// Error during execution
     case error(Netclode_V1_AgentError)
 
   }
@@ -272,15 +286,19 @@ public struct Netclode_V1_AgentStreamResponse: Sendable {
   public init() {}
 }
 
+/// AgentTextDelta contains a chunk of streaming text output.
 public struct Netclode_V1_AgentTextDelta: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Text content (delta or full based on partial)
   public var content: String = String()
 
+  /// true = streaming delta, false = final complete text
   public var partial: Bool = false
 
+  /// Correlates deltas belonging to same message
   public var messageID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -288,11 +306,13 @@ public struct Netclode_V1_AgentTextDelta: Sendable {
   public init() {}
 }
 
+/// AgentSystemMessage contains system-level messages from the agent.
 public struct Netclode_V1_AgentSystemMessage: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// System message content (e.g., "init", "ready")
   public var message: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -300,15 +320,19 @@ public struct Netclode_V1_AgentSystemMessage: Sendable {
   public init() {}
 }
 
+/// AgentResult contains the final result after prompt completion.
 public struct Netclode_V1_AgentResult: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Total input tokens used
   public var inputTokens: Int32 = 0
 
+  /// Total output tokens generated
   public var outputTokens: Int32 = 0
 
+  /// Number of conversation turns
   public var totalTurns: Int32 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -316,13 +340,16 @@ public struct Netclode_V1_AgentResult: Sendable {
   public init() {}
 }
 
+/// AgentError indicates an error during prompt execution.
 public struct Netclode_V1_AgentError: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Error message
   public var message: String = String()
 
+  /// Whether the operation can be retried
   public var retryable: Bool = false
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -330,11 +357,13 @@ public struct Netclode_V1_AgentError: Sendable {
   public init() {}
 }
 
+/// AgentTerminalOutput contains terminal output from the agent.
 public struct Netclode_V1_AgentTerminalOutput: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Terminal output data (may contain ANSI codes)
   public var data: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -342,13 +371,16 @@ public struct Netclode_V1_AgentTerminalOutput: Sendable {
   public init() {}
 }
 
+/// AgentTitleResponse contains the generated session title.
 public struct Netclode_V1_AgentTitleResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Echoed from GenerateTitleRequest
   public var requestID: String = String()
 
+  /// Generated title (empty on failure)
   public var title: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -356,13 +388,16 @@ public struct Netclode_V1_AgentTitleResponse: Sendable {
   public init() {}
 }
 
+/// AgentGitStatusResponse contains git status results.
 public struct Netclode_V1_AgentGitStatusResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Echoed from GetGitStatusRequest
   public var requestID: String = String()
 
+  /// Changed files
   public var files: [Netclode_V1_GitFileChange] = []
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -370,13 +405,16 @@ public struct Netclode_V1_AgentGitStatusResponse: Sendable {
   public init() {}
 }
 
+/// AgentGitDiffResponse contains git diff results.
 public struct Netclode_V1_AgentGitDiffResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Echoed from GetGitDiffRequest
   public var requestID: String = String()
 
+  /// Unified diff output
   public var diff: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -384,13 +422,16 @@ public struct Netclode_V1_AgentGitDiffResponse: Sendable {
   public init() {}
 }
 
+/// AgentRegistered is sent in response to AgentRegister.
 public struct Netclode_V1_AgentRegistered: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Whether registration succeeded
   public var success: Bool = false
 
+  /// Error message if registration failed
   public var error: String {
     get {return _error ?? String()}
     set {_error = newValue}
@@ -400,7 +441,7 @@ public struct Netclode_V1_AgentRegistered: Sendable {
   /// Clears the value of `error`. Subsequent reads from it will return its default value.
   public mutating func clearError() {self._error = nil}
 
-  /// Session config passed to agent on registration
+  /// Session configuration for the agent
   public var config: Netclode_V1_SessionConfig {
     get {return _config ?? Netclode_V1_SessionConfig()}
     set {_config = newValue}
@@ -418,11 +459,13 @@ public struct Netclode_V1_AgentRegistered: Sendable {
   fileprivate var _config: Netclode_V1_SessionConfig? = nil
 }
 
+/// ExecutePromptRequest asks the agent to execute a prompt.
 public struct Netclode_V1_ExecutePromptRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// The prompt text to execute
   public var text: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -430,6 +473,7 @@ public struct Netclode_V1_ExecutePromptRequest: Sendable {
   public init() {}
 }
 
+/// InterruptRequest asks the agent to interrupt the current operation.
 public struct Netclode_V1_InterruptRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -440,13 +484,16 @@ public struct Netclode_V1_InterruptRequest: Sendable {
   public init() {}
 }
 
+/// GenerateTitleRequest asks the agent to generate a session title.
 public struct Netclode_V1_GenerateTitleRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// ID for correlating response
   public var requestID: String = String()
 
+  /// The initial prompt to generate title from
   public var prompt: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -454,11 +501,13 @@ public struct Netclode_V1_GenerateTitleRequest: Sendable {
   public init() {}
 }
 
+/// GetGitStatusRequest asks the agent for git status.
 public struct Netclode_V1_GetGitStatusRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// ID for correlating response
   public var requestID: String = String()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -466,13 +515,16 @@ public struct Netclode_V1_GetGitStatusRequest: Sendable {
   public init() {}
 }
 
+/// GetGitDiffRequest asks the agent for git diff.
 public struct Netclode_V1_GetGitDiffRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// ID for correlating response
   public var requestID: String = String()
 
+  /// Specific file, or all files if empty
   public var file: String {
     get {return _file ?? String()}
     set {_file = newValue}
@@ -489,6 +541,7 @@ public struct Netclode_V1_GetGitDiffRequest: Sendable {
   fileprivate var _file: String? = nil
 }
 
+/// AgentTerminalInput contains terminal input for the agent.
 public struct Netclode_V1_AgentTerminalInput: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -496,6 +549,7 @@ public struct Netclode_V1_AgentTerminalInput: Sendable {
 
   public var input: Netclode_V1_AgentTerminalInput.OneOf_Input? = nil
 
+  /// Keyboard input data
   public var data: String {
     get {
       if case .data(let v)? = input {return v}
@@ -504,6 +558,7 @@ public struct Netclode_V1_AgentTerminalInput: Sendable {
     set {input = .data(newValue)}
   }
 
+  /// Terminal resize event
   public var resize: Netclode_V1_AgentTerminalResize {
     get {
       if case .resize(let v)? = input {return v}
@@ -515,7 +570,9 @@ public struct Netclode_V1_AgentTerminalInput: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Input: Equatable, Sendable {
+    /// Keyboard input data
     case data(String)
+    /// Terminal resize event
     case resize(Netclode_V1_AgentTerminalResize)
 
   }
@@ -523,13 +580,16 @@ public struct Netclode_V1_AgentTerminalInput: Sendable {
   public init() {}
 }
 
+/// AgentTerminalResize contains terminal dimensions.
 public struct Netclode_V1_AgentTerminalResize: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  /// Number of columns
   public var cols: Int32 = 0
 
+  /// Number of rows
   public var rows: Int32 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()

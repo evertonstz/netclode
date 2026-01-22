@@ -20,21 +20,143 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
+/// FileAction represents the type of change made to a file.
+public enum Netclode_V1_FileAction: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+
+  /// File was created
+  case create // = 1
+
+  /// File was modified
+  case edit // = 2
+
+  /// File was deleted
+  case delete // = 3
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .create
+    case 2: self = .edit
+    case 3: self = .delete
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .create: return 1
+    case .edit: return 2
+    case .delete: return 3
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Netclode_V1_FileAction] = [
+    .unspecified,
+    .create,
+    .edit,
+    .delete,
+  ]
+
+}
+
+/// RepoCloneStage represents the stage of repository cloning.
+public enum Netclode_V1_RepoCloneStage: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case unspecified // = 0
+
+  /// Clone operation is starting
+  case starting // = 1
+
+  /// Clone is in progress
+  case cloning // = 2
+
+  /// Clone completed successfully
+  case done // = 3
+
+  /// Clone failed with an error
+  case error // = 4
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .starting
+    case 2: self = .cloning
+    case 3: self = .done
+    case 4: self = .error
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .starting: return 1
+    case .cloning: return 2
+    case .done: return 3
+    case .error: return 4
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Netclode_V1_RepoCloneStage] = [
+    .unspecified,
+    .starting,
+    .cloning,
+    .done,
+    .error,
+  ]
+
+}
+
 /// AgentEventKind identifies the type of event.
 public enum Netclode_V1_AgentEventKind: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
   case unspecified // = 0
+
+  /// Agent started using a tool
   case toolStart // = 1
+
+  /// Streaming tool input delta
   case toolInput // = 2
+
+  /// Tool execution completed
   case toolEnd // = 3
+
+  /// File was created/edited/deleted
   case fileChange // = 4
+
+  /// Shell command started
   case commandStart // = 5
+
+  /// Shell command completed
   case commandEnd // = 6
+
+  /// Agent thinking/reasoning content
   case thinking // = 7
+
+  /// Port was exposed for preview
   case portExposed // = 8
+
+  /// Repository clone progress
   case repoClone // = 9
 
-  /// Emitted when tool input streaming finishes
+  /// Tool input streaming finished with full input
   case toolInputComplete // = 10
   case UNRECOGNIZED(Int)
 
@@ -94,264 +216,343 @@ public enum Netclode_V1_AgentEventKind: SwiftProtobuf.Enum, Swift.CaseIterable {
 }
 
 /// AgentEvent represents events emitted during agent execution.
-/// This is a polymorphic type - fields are populated based on kind.
-public struct Netclode_V1_AgentEvent: @unchecked Sendable {
+/// Uses oneof for type-safe, efficient event payloads.
+public struct Netclode_V1_AgentEvent: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var kind: Netclode_V1_AgentEventKind {
-    get {return _storage._kind}
-    set {_uniqueStorage()._kind = newValue}
-  }
+  public var kind: Netclode_V1_AgentEventKind = .unspecified
 
   public var timestamp: SwiftProtobuf.Google_Protobuf_Timestamp {
-    get {return _storage._timestamp ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
-    set {_uniqueStorage()._timestamp = newValue}
+    get {return _timestamp ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_timestamp = newValue}
   }
   /// Returns true if `timestamp` has been explicitly set.
-  public var hasTimestamp: Bool {return _storage._timestamp != nil}
+  public var hasTimestamp: Bool {return self._timestamp != nil}
   /// Clears the value of `timestamp`. Subsequent reads from it will return its default value.
-  public mutating func clearTimestamp() {_uniqueStorage()._timestamp = nil}
+  public mutating func clearTimestamp() {self._timestamp = nil}
 
-  /// Tool events (tool_start, tool_input, tool_end)
-  public var tool: String {
-    get {return _storage._tool ?? String()}
-    set {_uniqueStorage()._tool = newValue}
-  }
-  /// Returns true if `tool` has been explicitly set.
-  public var hasTool: Bool {return _storage._tool != nil}
-  /// Clears the value of `tool`. Subsequent reads from it will return its default value.
-  public mutating func clearTool() {_uniqueStorage()._tool = nil}
+  /// Event-specific payload
+  public var payload: Netclode_V1_AgentEvent.OneOf_Payload? = nil
 
-  public var toolUseID: String {
-    get {return _storage._toolUseID ?? String()}
-    set {_uniqueStorage()._toolUseID = newValue}
+  public var tool: Netclode_V1_ToolEventPayload {
+    get {
+      if case .tool(let v)? = payload {return v}
+      return Netclode_V1_ToolEventPayload()
+    }
+    set {payload = .tool(newValue)}
   }
-  /// Returns true if `toolUseID` has been explicitly set.
-  public var hasToolUseID: Bool {return _storage._toolUseID != nil}
-  /// Clears the value of `toolUseID`. Subsequent reads from it will return its default value.
-  public mutating func clearToolUseID() {_uniqueStorage()._toolUseID = nil}
+
+  public var fileChange: Netclode_V1_FileChangePayload {
+    get {
+      if case .fileChange(let v)? = payload {return v}
+      return Netclode_V1_FileChangePayload()
+    }
+    set {payload = .fileChange(newValue)}
+  }
+
+  public var command: Netclode_V1_CommandPayload {
+    get {
+      if case .command(let v)? = payload {return v}
+      return Netclode_V1_CommandPayload()
+    }
+    set {payload = .command(newValue)}
+  }
+
+  public var thinking: Netclode_V1_ThinkingPayload {
+    get {
+      if case .thinking(let v)? = payload {return v}
+      return Netclode_V1_ThinkingPayload()
+    }
+    set {payload = .thinking(newValue)}
+  }
+
+  public var portExposed: Netclode_V1_PortExposedPayload {
+    get {
+      if case .portExposed(let v)? = payload {return v}
+      return Netclode_V1_PortExposedPayload()
+    }
+    set {payload = .portExposed(newValue)}
+  }
+
+  public var repoClone: Netclode_V1_RepoClonePayload {
+    get {
+      if case .repoClone(let v)? = payload {return v}
+      return Netclode_V1_RepoClonePayload()
+    }
+    set {payload = .repoClone(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// Event-specific payload
+  public enum OneOf_Payload: Equatable, Sendable {
+    case tool(Netclode_V1_ToolEventPayload)
+    case fileChange(Netclode_V1_FileChangePayload)
+    case command(Netclode_V1_CommandPayload)
+    case thinking(Netclode_V1_ThinkingPayload)
+    case portExposed(Netclode_V1_PortExposedPayload)
+    case repoClone(Netclode_V1_RepoClonePayload)
+
+  }
+
+  public init() {}
+
+  fileprivate var _timestamp: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+}
+
+/// ToolEventPayload contains data for tool-related events.
+/// Used for: TOOL_START, TOOL_INPUT, TOOL_INPUT_COMPLETE, TOOL_END
+public struct Netclode_V1_ToolEventPayload: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Tool name (e.g., "Read", "Edit", "Bash")
+  public var tool: String = String()
+
+  /// Unique ID for this tool invocation
+  public var toolUseID: String = String()
 
   /// Set when tool runs inside a Task/subagent
   public var parentToolUseID: String {
-    get {return _storage._parentToolUseID ?? String()}
-    set {_uniqueStorage()._parentToolUseID = newValue}
+    get {return _parentToolUseID ?? String()}
+    set {_parentToolUseID = newValue}
   }
   /// Returns true if `parentToolUseID` has been explicitly set.
-  public var hasParentToolUseID: Bool {return _storage._parentToolUseID != nil}
+  public var hasParentToolUseID: Bool {return self._parentToolUseID != nil}
   /// Clears the value of `parentToolUseID`. Subsequent reads from it will return its default value.
-  public mutating func clearParentToolUseID() {_uniqueStorage()._parentToolUseID = nil}
+  public mutating func clearParentToolUseID() {self._parentToolUseID = nil}
 
+  /// Full tool input (for TOOL_START, TOOL_INPUT_COMPLETE)
   public var input: SwiftProtobuf.Google_Protobuf_Struct {
-    get {return _storage._input ?? SwiftProtobuf.Google_Protobuf_Struct()}
-    set {_uniqueStorage()._input = newValue}
+    get {return _input ?? SwiftProtobuf.Google_Protobuf_Struct()}
+    set {_input = newValue}
   }
   /// Returns true if `input` has been explicitly set.
-  public var hasInput: Bool {return _storage._input != nil}
+  public var hasInput: Bool {return self._input != nil}
   /// Clears the value of `input`. Subsequent reads from it will return its default value.
-  public mutating func clearInput() {_uniqueStorage()._input = nil}
+  public mutating func clearInput() {self._input = nil}
 
-  /// Streaming input for tool_input
+  /// Streaming input delta (for TOOL_INPUT)
   public var inputDelta: String {
-    get {return _storage._inputDelta ?? String()}
-    set {_uniqueStorage()._inputDelta = newValue}
+    get {return _inputDelta ?? String()}
+    set {_inputDelta = newValue}
   }
   /// Returns true if `inputDelta` has been explicitly set.
-  public var hasInputDelta: Bool {return _storage._inputDelta != nil}
+  public var hasInputDelta: Bool {return self._inputDelta != nil}
   /// Clears the value of `inputDelta`. Subsequent reads from it will return its default value.
-  public mutating func clearInputDelta() {_uniqueStorage()._inputDelta = nil}
+  public mutating func clearInputDelta() {self._inputDelta = nil}
 
+  /// Tool output (for TOOL_END, on success)
   public var result: String {
-    get {return _storage._result ?? String()}
-    set {_uniqueStorage()._result = newValue}
+    get {return _result ?? String()}
+    set {_result = newValue}
   }
   /// Returns true if `result` has been explicitly set.
-  public var hasResult: Bool {return _storage._result != nil}
+  public var hasResult: Bool {return self._result != nil}
   /// Clears the value of `result`. Subsequent reads from it will return its default value.
-  public mutating func clearResult() {_uniqueStorage()._result = nil}
+  public mutating func clearResult() {self._result = nil}
 
+  /// Error message (for TOOL_END, on failure)
   public var error: String {
-    get {return _storage._error ?? String()}
-    set {_uniqueStorage()._error = newValue}
+    get {return _error ?? String()}
+    set {_error = newValue}
   }
   /// Returns true if `error` has been explicitly set.
-  public var hasError: Bool {return _storage._error != nil}
+  public var hasError: Bool {return self._error != nil}
   /// Clears the value of `error`. Subsequent reads from it will return its default value.
-  public mutating func clearError() {_uniqueStorage()._error = nil}
-
-  /// File change events (file_change)
-  public var path: String {
-    get {return _storage._path ?? String()}
-    set {_uniqueStorage()._path = newValue}
-  }
-  /// Returns true if `path` has been explicitly set.
-  public var hasPath: Bool {return _storage._path != nil}
-  /// Clears the value of `path`. Subsequent reads from it will return its default value.
-  public mutating func clearPath() {_uniqueStorage()._path = nil}
-
-  /// "create", "edit", "delete"
-  public var action: String {
-    get {return _storage._action ?? String()}
-    set {_uniqueStorage()._action = newValue}
-  }
-  /// Returns true if `action` has been explicitly set.
-  public var hasAction: Bool {return _storage._action != nil}
-  /// Clears the value of `action`. Subsequent reads from it will return its default value.
-  public mutating func clearAction() {_uniqueStorage()._action = nil}
-
-  public var linesAdded: Int32 {
-    get {return _storage._linesAdded ?? 0}
-    set {_uniqueStorage()._linesAdded = newValue}
-  }
-  /// Returns true if `linesAdded` has been explicitly set.
-  public var hasLinesAdded: Bool {return _storage._linesAdded != nil}
-  /// Clears the value of `linesAdded`. Subsequent reads from it will return its default value.
-  public mutating func clearLinesAdded() {_uniqueStorage()._linesAdded = nil}
-
-  public var linesRemoved: Int32 {
-    get {return _storage._linesRemoved ?? 0}
-    set {_uniqueStorage()._linesRemoved = newValue}
-  }
-  /// Returns true if `linesRemoved` has been explicitly set.
-  public var hasLinesRemoved: Bool {return _storage._linesRemoved != nil}
-  /// Clears the value of `linesRemoved`. Subsequent reads from it will return its default value.
-  public mutating func clearLinesRemoved() {_uniqueStorage()._linesRemoved = nil}
-
-  /// Command events (command_start, command_end)
-  public var command: String {
-    get {return _storage._command ?? String()}
-    set {_uniqueStorage()._command = newValue}
-  }
-  /// Returns true if `command` has been explicitly set.
-  public var hasCommand: Bool {return _storage._command != nil}
-  /// Clears the value of `command`. Subsequent reads from it will return its default value.
-  public mutating func clearCommand() {_uniqueStorage()._command = nil}
-
-  public var cwd: String {
-    get {return _storage._cwd ?? String()}
-    set {_uniqueStorage()._cwd = newValue}
-  }
-  /// Returns true if `cwd` has been explicitly set.
-  public var hasCwd: Bool {return _storage._cwd != nil}
-  /// Clears the value of `cwd`. Subsequent reads from it will return its default value.
-  public mutating func clearCwd() {_uniqueStorage()._cwd = nil}
-
-  public var exitCode: Int32 {
-    get {return _storage._exitCode ?? 0}
-    set {_uniqueStorage()._exitCode = newValue}
-  }
-  /// Returns true if `exitCode` has been explicitly set.
-  public var hasExitCode: Bool {return _storage._exitCode != nil}
-  /// Clears the value of `exitCode`. Subsequent reads from it will return its default value.
-  public mutating func clearExitCode() {_uniqueStorage()._exitCode = nil}
-
-  public var output: String {
-    get {return _storage._output ?? String()}
-    set {_uniqueStorage()._output = newValue}
-  }
-  /// Returns true if `output` has been explicitly set.
-  public var hasOutput: Bool {return _storage._output != nil}
-  /// Clears the value of `output`. Subsequent reads from it will return its default value.
-  public mutating func clearOutput() {_uniqueStorage()._output = nil}
-
-  /// Thinking events (thinking)
-  public var thinkingID: String {
-    get {return _storage._thinkingID ?? String()}
-    set {_uniqueStorage()._thinkingID = newValue}
-  }
-  /// Returns true if `thinkingID` has been explicitly set.
-  public var hasThinkingID: Bool {return _storage._thinkingID != nil}
-  /// Clears the value of `thinkingID`. Subsequent reads from it will return its default value.
-  public mutating func clearThinkingID() {_uniqueStorage()._thinkingID = nil}
-
-  public var content: String {
-    get {return _storage._content ?? String()}
-    set {_uniqueStorage()._content = newValue}
-  }
-  /// Returns true if `content` has been explicitly set.
-  public var hasContent: Bool {return _storage._content != nil}
-  /// Clears the value of `content`. Subsequent reads from it will return its default value.
-  public mutating func clearContent() {_uniqueStorage()._content = nil}
-
-  /// true for streaming thinking deltas
-  public var partial: Bool {
-    get {return _storage._partial ?? false}
-    set {_uniqueStorage()._partial = newValue}
-  }
-  /// Returns true if `partial` has been explicitly set.
-  public var hasPartial: Bool {return _storage._partial != nil}
-  /// Clears the value of `partial`. Subsequent reads from it will return its default value.
-  public mutating func clearPartial() {_uniqueStorage()._partial = nil}
-
-  /// Port exposed events (port_exposed)
-  public var port: Int32 {
-    get {return _storage._port ?? 0}
-    set {_uniqueStorage()._port = newValue}
-  }
-  /// Returns true if `port` has been explicitly set.
-  public var hasPort: Bool {return _storage._port != nil}
-  /// Clears the value of `port`. Subsequent reads from it will return its default value.
-  public mutating func clearPort() {_uniqueStorage()._port = nil}
-
-  public var process: String {
-    get {return _storage._process ?? String()}
-    set {_uniqueStorage()._process = newValue}
-  }
-  /// Returns true if `process` has been explicitly set.
-  public var hasProcess: Bool {return _storage._process != nil}
-  /// Clears the value of `process`. Subsequent reads from it will return its default value.
-  public mutating func clearProcess() {_uniqueStorage()._process = nil}
-
-  public var previewURL: String {
-    get {return _storage._previewURL ?? String()}
-    set {_uniqueStorage()._previewURL = newValue}
-  }
-  /// Returns true if `previewURL` has been explicitly set.
-  public var hasPreviewURL: Bool {return _storage._previewURL != nil}
-  /// Clears the value of `previewURL`. Subsequent reads from it will return its default value.
-  public mutating func clearPreviewURL() {_uniqueStorage()._previewURL = nil}
-
-  /// Repo clone events (repo_clone)
-  public var repo: String {
-    get {return _storage._repo ?? String()}
-    set {_uniqueStorage()._repo = newValue}
-  }
-  /// Returns true if `repo` has been explicitly set.
-  public var hasRepo: Bool {return _storage._repo != nil}
-  /// Clears the value of `repo`. Subsequent reads from it will return its default value.
-  public mutating func clearRepo() {_uniqueStorage()._repo = nil}
-
-  /// "starting", "cloning", "done", "error"
-  public var stage: String {
-    get {return _storage._stage ?? String()}
-    set {_uniqueStorage()._stage = newValue}
-  }
-  /// Returns true if `stage` has been explicitly set.
-  public var hasStage: Bool {return _storage._stage != nil}
-  /// Clears the value of `stage`. Subsequent reads from it will return its default value.
-  public mutating func clearStage() {_uniqueStorage()._stage = nil}
-
-  /// Progress message
-  public var message: String {
-    get {return _storage._message ?? String()}
-    set {_uniqueStorage()._message = newValue}
-  }
-  /// Returns true if `message` has been explicitly set.
-  public var hasMessage: Bool {return _storage._message != nil}
-  /// Clears the value of `message`. Subsequent reads from it will return its default value.
-  public mutating func clearMessage() {_uniqueStorage()._message = nil}
+  public mutating func clearError() {self._error = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
-  fileprivate var _storage = _StorageClass.defaultInstance
+  fileprivate var _parentToolUseID: String? = nil
+  fileprivate var _input: SwiftProtobuf.Google_Protobuf_Struct? = nil
+  fileprivate var _inputDelta: String? = nil
+  fileprivate var _result: String? = nil
+  fileprivate var _error: String? = nil
+}
+
+/// FileChangePayload contains data for file modification events.
+public struct Netclode_V1_FileChangePayload: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// File path relative to workspace root
+  public var path: String = String()
+
+  /// Type of change (create, edit, delete)
+  public var action: Netclode_V1_FileAction = .unspecified
+
+  /// Number of lines added
+  public var linesAdded: Int32 {
+    get {return _linesAdded ?? 0}
+    set {_linesAdded = newValue}
+  }
+  /// Returns true if `linesAdded` has been explicitly set.
+  public var hasLinesAdded: Bool {return self._linesAdded != nil}
+  /// Clears the value of `linesAdded`. Subsequent reads from it will return its default value.
+  public mutating func clearLinesAdded() {self._linesAdded = nil}
+
+  /// Number of lines removed
+  public var linesRemoved: Int32 {
+    get {return _linesRemoved ?? 0}
+    set {_linesRemoved = newValue}
+  }
+  /// Returns true if `linesRemoved` has been explicitly set.
+  public var hasLinesRemoved: Bool {return self._linesRemoved != nil}
+  /// Clears the value of `linesRemoved`. Subsequent reads from it will return its default value.
+  public mutating func clearLinesRemoved() {self._linesRemoved = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _linesAdded: Int32? = nil
+  fileprivate var _linesRemoved: Int32? = nil
+}
+
+/// CommandPayload contains data for shell command events.
+/// Used for: COMMAND_START, COMMAND_END
+public struct Netclode_V1_CommandPayload: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The command being executed
+  public var command: String = String()
+
+  /// Working directory
+  public var cwd: String {
+    get {return _cwd ?? String()}
+    set {_cwd = newValue}
+  }
+  /// Returns true if `cwd` has been explicitly set.
+  public var hasCwd: Bool {return self._cwd != nil}
+  /// Clears the value of `cwd`. Subsequent reads from it will return its default value.
+  public mutating func clearCwd() {self._cwd = nil}
+
+  /// Exit code (for COMMAND_END)
+  public var exitCode: Int32 {
+    get {return _exitCode ?? 0}
+    set {_exitCode = newValue}
+  }
+  /// Returns true if `exitCode` has been explicitly set.
+  public var hasExitCode: Bool {return self._exitCode != nil}
+  /// Clears the value of `exitCode`. Subsequent reads from it will return its default value.
+  public mutating func clearExitCode() {self._exitCode = nil}
+
+  /// Command output (for COMMAND_END, truncated)
+  public var output: String {
+    get {return _output ?? String()}
+    set {_output = newValue}
+  }
+  /// Returns true if `output` has been explicitly set.
+  public var hasOutput: Bool {return self._output != nil}
+  /// Clears the value of `output`. Subsequent reads from it will return its default value.
+  public mutating func clearOutput() {self._output = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _cwd: String? = nil
+  fileprivate var _exitCode: Int32? = nil
+  fileprivate var _output: String? = nil
+}
+
+/// ThinkingPayload contains data for agent thinking/reasoning events.
+public struct Netclode_V1_ThinkingPayload: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Unique ID to correlate streaming thinking updates
+  public var thinkingID: String = String()
+
+  /// Thinking content (delta if partial, empty if final)
+  public var content: String = String()
+
+  /// true for streaming deltas, false for final (empty) marker
+  public var partial: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// PortExposedPayload contains data for port exposure events.
+public struct Netclode_V1_PortExposedPayload: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The port number exposed
+  public var port: Int32 = 0
+
+  /// Process name listening on the port
+  public var process: String {
+    get {return _process ?? String()}
+    set {_process = newValue}
+  }
+  /// Returns true if `process` has been explicitly set.
+  public var hasProcess: Bool {return self._process != nil}
+  /// Clears the value of `process`. Subsequent reads from it will return its default value.
+  public mutating func clearProcess() {self._process = nil}
+
+  /// URL to access the exposed port
+  public var previewURL: String {
+    get {return _previewURL ?? String()}
+    set {_previewURL = newValue}
+  }
+  /// Returns true if `previewURL` has been explicitly set.
+  public var hasPreviewURL: Bool {return self._previewURL != nil}
+  /// Clears the value of `previewURL`. Subsequent reads from it will return its default value.
+  public mutating func clearPreviewURL() {self._previewURL = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _process: String? = nil
+  fileprivate var _previewURL: String? = nil
+}
+
+/// RepoClonePayload contains data for repository clone progress events.
+public struct Netclode_V1_RepoClonePayload: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Repository URL being cloned
+  public var repo: String = String()
+
+  /// Current stage of the clone operation
+  public var stage: Netclode_V1_RepoCloneStage = .unspecified
+
+  /// Human-readable progress message
+  public var message: String = String()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "netclode.v1"
+
+extension Netclode_V1_FileAction: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FILE_ACTION_UNSPECIFIED\0\u{1}FILE_ACTION_CREATE\0\u{1}FILE_ACTION_EDIT\0\u{1}FILE_ACTION_DELETE\0")
+}
+
+extension Netclode_V1_RepoCloneStage: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0REPO_CLONE_STAGE_UNSPECIFIED\0\u{1}REPO_CLONE_STAGE_STARTING\0\u{1}REPO_CLONE_STAGE_CLONING\0\u{1}REPO_CLONE_STAGE_DONE\0\u{1}REPO_CLONE_STAGE_ERROR\0")
+}
 
 extension Netclode_V1_AgentEventKind: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0AGENT_EVENT_KIND_UNSPECIFIED\0\u{1}AGENT_EVENT_KIND_TOOL_START\0\u{1}AGENT_EVENT_KIND_TOOL_INPUT\0\u{1}AGENT_EVENT_KIND_TOOL_END\0\u{1}AGENT_EVENT_KIND_FILE_CHANGE\0\u{1}AGENT_EVENT_KIND_COMMAND_START\0\u{1}AGENT_EVENT_KIND_COMMAND_END\0\u{1}AGENT_EVENT_KIND_THINKING\0\u{1}AGENT_EVENT_KIND_PORT_EXPOSED\0\u{1}AGENT_EVENT_KIND_REPO_CLONE\0\u{1}AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE\0")
@@ -359,244 +560,430 @@ extension Netclode_V1_AgentEventKind: SwiftProtobuf._ProtoNameProviding {
 
 extension Netclode_V1_AgentEvent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AgentEvent"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}kind\0\u{1}timestamp\0\u{1}tool\0\u{3}tool_use_id\0\u{3}parent_tool_use_id\0\u{1}input\0\u{3}input_delta\0\u{1}result\0\u{1}error\0\u{1}path\0\u{1}action\0\u{3}lines_added\0\u{3}lines_removed\0\u{1}command\0\u{1}cwd\0\u{3}exit_code\0\u{1}output\0\u{3}thinking_id\0\u{1}content\0\u{1}partial\0\u{1}port\0\u{1}process\0\u{3}preview_url\0\u{1}repo\0\u{1}stage\0\u{1}message\0")
-
-  fileprivate class _StorageClass {
-    var _kind: Netclode_V1_AgentEventKind = .unspecified
-    var _timestamp: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
-    var _tool: String? = nil
-    var _toolUseID: String? = nil
-    var _parentToolUseID: String? = nil
-    var _input: SwiftProtobuf.Google_Protobuf_Struct? = nil
-    var _inputDelta: String? = nil
-    var _result: String? = nil
-    var _error: String? = nil
-    var _path: String? = nil
-    var _action: String? = nil
-    var _linesAdded: Int32? = nil
-    var _linesRemoved: Int32? = nil
-    var _command: String? = nil
-    var _cwd: String? = nil
-    var _exitCode: Int32? = nil
-    var _output: String? = nil
-    var _thinkingID: String? = nil
-    var _content: String? = nil
-    var _partial: Bool? = nil
-    var _port: Int32? = nil
-    var _process: String? = nil
-    var _previewURL: String? = nil
-    var _repo: String? = nil
-    var _stage: String? = nil
-    var _message: String? = nil
-
-      // This property is used as the initial default value for new instances of the type.
-      // The type itself is protecting the reference to its storage via CoW semantics.
-      // This will force a copy to be made of this reference when the first mutation occurs;
-      // hence, it is safe to mark this as `nonisolated(unsafe)`.
-      static nonisolated(unsafe) let defaultInstance = _StorageClass()
-
-    private init() {}
-
-    init(copying source: _StorageClass) {
-      _kind = source._kind
-      _timestamp = source._timestamp
-      _tool = source._tool
-      _toolUseID = source._toolUseID
-      _parentToolUseID = source._parentToolUseID
-      _input = source._input
-      _inputDelta = source._inputDelta
-      _result = source._result
-      _error = source._error
-      _path = source._path
-      _action = source._action
-      _linesAdded = source._linesAdded
-      _linesRemoved = source._linesRemoved
-      _command = source._command
-      _cwd = source._cwd
-      _exitCode = source._exitCode
-      _output = source._output
-      _thinkingID = source._thinkingID
-      _content = source._content
-      _partial = source._partial
-      _port = source._port
-      _process = source._process
-      _previewURL = source._previewURL
-      _repo = source._repo
-      _stage = source._stage
-      _message = source._message
-    }
-  }
-
-  fileprivate mutating func _uniqueStorage() -> _StorageClass {
-    if !isKnownUniquelyReferenced(&_storage) {
-      _storage = _StorageClass(copying: _storage)
-    }
-    return _storage
-  }
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}kind\0\u{1}timestamp\0\u{1}tool\0\u{3}file_change\0\u{1}command\0\u{1}thinking\0\u{3}port_exposed\0\u{3}repo_clone\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    _ = _uniqueStorage()
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      while let fieldNumber = try decoder.nextFieldNumber() {
-        // The use of inline closures is to circumvent an issue where the compiler
-        // allocates stack space for every case branch when no optimizations are
-        // enabled. https://github.com/apple/swift-protobuf/issues/1034
-        switch fieldNumber {
-        case 1: try { try decoder.decodeSingularEnumField(value: &_storage._kind) }()
-        case 2: try { try decoder.decodeSingularMessageField(value: &_storage._timestamp) }()
-        case 3: try { try decoder.decodeSingularStringField(value: &_storage._tool) }()
-        case 4: try { try decoder.decodeSingularStringField(value: &_storage._toolUseID) }()
-        case 5: try { try decoder.decodeSingularStringField(value: &_storage._parentToolUseID) }()
-        case 6: try { try decoder.decodeSingularMessageField(value: &_storage._input) }()
-        case 7: try { try decoder.decodeSingularStringField(value: &_storage._inputDelta) }()
-        case 8: try { try decoder.decodeSingularStringField(value: &_storage._result) }()
-        case 9: try { try decoder.decodeSingularStringField(value: &_storage._error) }()
-        case 10: try { try decoder.decodeSingularStringField(value: &_storage._path) }()
-        case 11: try { try decoder.decodeSingularStringField(value: &_storage._action) }()
-        case 12: try { try decoder.decodeSingularInt32Field(value: &_storage._linesAdded) }()
-        case 13: try { try decoder.decodeSingularInt32Field(value: &_storage._linesRemoved) }()
-        case 14: try { try decoder.decodeSingularStringField(value: &_storage._command) }()
-        case 15: try { try decoder.decodeSingularStringField(value: &_storage._cwd) }()
-        case 16: try { try decoder.decodeSingularInt32Field(value: &_storage._exitCode) }()
-        case 17: try { try decoder.decodeSingularStringField(value: &_storage._output) }()
-        case 18: try { try decoder.decodeSingularStringField(value: &_storage._thinkingID) }()
-        case 19: try { try decoder.decodeSingularStringField(value: &_storage._content) }()
-        case 20: try { try decoder.decodeSingularBoolField(value: &_storage._partial) }()
-        case 21: try { try decoder.decodeSingularInt32Field(value: &_storage._port) }()
-        case 22: try { try decoder.decodeSingularStringField(value: &_storage._process) }()
-        case 23: try { try decoder.decodeSingularStringField(value: &_storage._previewURL) }()
-        case 24: try { try decoder.decodeSingularStringField(value: &_storage._repo) }()
-        case 25: try { try decoder.decodeSingularStringField(value: &_storage._stage) }()
-        case 26: try { try decoder.decodeSingularStringField(value: &_storage._message) }()
-        default: break
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._timestamp) }()
+      case 3: try {
+        var v: Netclode_V1_ToolEventPayload?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .tool(let m) = current {v = m}
         }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .tool(v)
+        }
+      }()
+      case 4: try {
+        var v: Netclode_V1_FileChangePayload?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .fileChange(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .fileChange(v)
+        }
+      }()
+      case 5: try {
+        var v: Netclode_V1_CommandPayload?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .command(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .command(v)
+        }
+      }()
+      case 6: try {
+        var v: Netclode_V1_ThinkingPayload?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .thinking(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .thinking(v)
+        }
+      }()
+      case 7: try {
+        var v: Netclode_V1_PortExposedPayload?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .portExposed(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .portExposed(v)
+        }
+      }()
+      case 8: try {
+        var v: Netclode_V1_RepoClonePayload?
+        var hadOneofValue = false
+        if let current = self.payload {
+          hadOneofValue = true
+          if case .repoClone(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.payload = .repoClone(v)
+        }
+      }()
+      default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every if/case branch local when no optimizations
-      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-      // https://github.com/apple/swift-protobuf/issues/1182
-      if _storage._kind != .unspecified {
-        try visitor.visitSingularEnumField(value: _storage._kind, fieldNumber: 1)
-      }
-      try { if let v = _storage._timestamp {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-      } }()
-      try { if let v = _storage._tool {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 3)
-      } }()
-      try { if let v = _storage._toolUseID {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 4)
-      } }()
-      try { if let v = _storage._parentToolUseID {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 5)
-      } }()
-      try { if let v = _storage._input {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
-      } }()
-      try { if let v = _storage._inputDelta {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 7)
-      } }()
-      try { if let v = _storage._result {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 8)
-      } }()
-      try { if let v = _storage._error {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 9)
-      } }()
-      try { if let v = _storage._path {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 10)
-      } }()
-      try { if let v = _storage._action {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 11)
-      } }()
-      try { if let v = _storage._linesAdded {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 12)
-      } }()
-      try { if let v = _storage._linesRemoved {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 13)
-      } }()
-      try { if let v = _storage._command {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 14)
-      } }()
-      try { if let v = _storage._cwd {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 15)
-      } }()
-      try { if let v = _storage._exitCode {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 16)
-      } }()
-      try { if let v = _storage._output {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 17)
-      } }()
-      try { if let v = _storage._thinkingID {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 18)
-      } }()
-      try { if let v = _storage._content {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 19)
-      } }()
-      try { if let v = _storage._partial {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 20)
-      } }()
-      try { if let v = _storage._port {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 21)
-      } }()
-      try { if let v = _storage._process {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 22)
-      } }()
-      try { if let v = _storage._previewURL {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 23)
-      } }()
-      try { if let v = _storage._repo {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 24)
-      } }()
-      try { if let v = _storage._stage {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 25)
-      } }()
-      try { if let v = _storage._message {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 26)
-      } }()
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.kind != .unspecified {
+      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 1)
+    }
+    try { if let v = self._timestamp {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    switch self.payload {
+    case .tool?: try {
+      guard case .tool(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case .fileChange?: try {
+      guard case .fileChange(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
+    case .command?: try {
+      guard case .command(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    }()
+    case .thinking?: try {
+      guard case .thinking(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    }()
+    case .portExposed?: try {
+      guard case .portExposed(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    }()
+    case .repoClone?: try {
+      guard case .repoClone(let v)? = self.payload else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+    }()
+    case nil: break
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_AgentEvent, rhs: Netclode_V1_AgentEvent) -> Bool {
-    if lhs._storage !== rhs._storage {
-      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
-        let _storage = _args.0
-        let rhs_storage = _args.1
-        if _storage._kind != rhs_storage._kind {return false}
-        if _storage._timestamp != rhs_storage._timestamp {return false}
-        if _storage._tool != rhs_storage._tool {return false}
-        if _storage._toolUseID != rhs_storage._toolUseID {return false}
-        if _storage._parentToolUseID != rhs_storage._parentToolUseID {return false}
-        if _storage._input != rhs_storage._input {return false}
-        if _storage._inputDelta != rhs_storage._inputDelta {return false}
-        if _storage._result != rhs_storage._result {return false}
-        if _storage._error != rhs_storage._error {return false}
-        if _storage._path != rhs_storage._path {return false}
-        if _storage._action != rhs_storage._action {return false}
-        if _storage._linesAdded != rhs_storage._linesAdded {return false}
-        if _storage._linesRemoved != rhs_storage._linesRemoved {return false}
-        if _storage._command != rhs_storage._command {return false}
-        if _storage._cwd != rhs_storage._cwd {return false}
-        if _storage._exitCode != rhs_storage._exitCode {return false}
-        if _storage._output != rhs_storage._output {return false}
-        if _storage._thinkingID != rhs_storage._thinkingID {return false}
-        if _storage._content != rhs_storage._content {return false}
-        if _storage._partial != rhs_storage._partial {return false}
-        if _storage._port != rhs_storage._port {return false}
-        if _storage._process != rhs_storage._process {return false}
-        if _storage._previewURL != rhs_storage._previewURL {return false}
-        if _storage._repo != rhs_storage._repo {return false}
-        if _storage._stage != rhs_storage._stage {return false}
-        if _storage._message != rhs_storage._message {return false}
-        return true
+    if lhs.kind != rhs.kind {return false}
+    if lhs._timestamp != rhs._timestamp {return false}
+    if lhs.payload != rhs.payload {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_ToolEventPayload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ToolEventPayload"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}tool\0\u{3}tool_use_id\0\u{3}parent_tool_use_id\0\u{1}input\0\u{3}input_delta\0\u{1}result\0\u{1}error\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.tool) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.toolUseID) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._parentToolUseID) }()
+      case 4: try { try decoder.decodeSingularMessageField(value: &self._input) }()
+      case 5: try { try decoder.decodeSingularStringField(value: &self._inputDelta) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self._result) }()
+      case 7: try { try decoder.decodeSingularStringField(value: &self._error) }()
+      default: break
       }
-      if !storagesAreEqual {return false}
     }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.tool.isEmpty {
+      try visitor.visitSingularStringField(value: self.tool, fieldNumber: 1)
+    }
+    if !self.toolUseID.isEmpty {
+      try visitor.visitSingularStringField(value: self.toolUseID, fieldNumber: 2)
+    }
+    try { if let v = self._parentToolUseID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._input {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    } }()
+    try { if let v = self._inputDelta {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 5)
+    } }()
+    try { if let v = self._result {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 6)
+    } }()
+    try { if let v = self._error {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 7)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_ToolEventPayload, rhs: Netclode_V1_ToolEventPayload) -> Bool {
+    if lhs.tool != rhs.tool {return false}
+    if lhs.toolUseID != rhs.toolUseID {return false}
+    if lhs._parentToolUseID != rhs._parentToolUseID {return false}
+    if lhs._input != rhs._input {return false}
+    if lhs._inputDelta != rhs._inputDelta {return false}
+    if lhs._result != rhs._result {return false}
+    if lhs._error != rhs._error {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_FileChangePayload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".FileChangePayload"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}action\0\u{3}lines_added\0\u{3}lines_removed\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.path) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.action) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self._linesAdded) }()
+      case 4: try { try decoder.decodeSingularInt32Field(value: &self._linesRemoved) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.path.isEmpty {
+      try visitor.visitSingularStringField(value: self.path, fieldNumber: 1)
+    }
+    if self.action != .unspecified {
+      try visitor.visitSingularEnumField(value: self.action, fieldNumber: 2)
+    }
+    try { if let v = self._linesAdded {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._linesRemoved {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 4)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_FileChangePayload, rhs: Netclode_V1_FileChangePayload) -> Bool {
+    if lhs.path != rhs.path {return false}
+    if lhs.action != rhs.action {return false}
+    if lhs._linesAdded != rhs._linesAdded {return false}
+    if lhs._linesRemoved != rhs._linesRemoved {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_CommandPayload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CommandPayload"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}command\0\u{1}cwd\0\u{3}exit_code\0\u{1}output\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.command) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._cwd) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self._exitCode) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self._output) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.command.isEmpty {
+      try visitor.visitSingularStringField(value: self.command, fieldNumber: 1)
+    }
+    try { if let v = self._cwd {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._exitCode {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._output {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_CommandPayload, rhs: Netclode_V1_CommandPayload) -> Bool {
+    if lhs.command != rhs.command {return false}
+    if lhs._cwd != rhs._cwd {return false}
+    if lhs._exitCode != rhs._exitCode {return false}
+    if lhs._output != rhs._output {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_ThinkingPayload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ThinkingPayload"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}thinking_id\0\u{1}content\0\u{1}partial\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.thinkingID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.content) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.partial) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.thinkingID.isEmpty {
+      try visitor.visitSingularStringField(value: self.thinkingID, fieldNumber: 1)
+    }
+    if !self.content.isEmpty {
+      try visitor.visitSingularStringField(value: self.content, fieldNumber: 2)
+    }
+    if self.partial != false {
+      try visitor.visitSingularBoolField(value: self.partial, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_ThinkingPayload, rhs: Netclode_V1_ThinkingPayload) -> Bool {
+    if lhs.thinkingID != rhs.thinkingID {return false}
+    if lhs.content != rhs.content {return false}
+    if lhs.partial != rhs.partial {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_PortExposedPayload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PortExposedPayload"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}port\0\u{1}process\0\u{3}preview_url\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt32Field(value: &self.port) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._process) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._previewURL) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.port != 0 {
+      try visitor.visitSingularInt32Field(value: self.port, fieldNumber: 1)
+    }
+    try { if let v = self._process {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._previewURL {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_PortExposedPayload, rhs: Netclode_V1_PortExposedPayload) -> Bool {
+    if lhs.port != rhs.port {return false}
+    if lhs._process != rhs._process {return false}
+    if lhs._previewURL != rhs._previewURL {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_RepoClonePayload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RepoClonePayload"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}repo\0\u{1}stage\0\u{1}message\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.repo) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.stage) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.message) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.repo.isEmpty {
+      try visitor.visitSingularStringField(value: self.repo, fieldNumber: 1)
+    }
+    if self.stage != .unspecified {
+      try visitor.visitSingularEnumField(value: self.stage, fieldNumber: 2)
+    }
+    if !self.message.isEmpty {
+      try visitor.visitSingularStringField(value: self.message, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_RepoClonePayload, rhs: Netclode_V1_RepoClonePayload) -> Bool {
+    if lhs.repo != rhs.repo {return false}
+    if lhs.stage != rhs.stage {return false}
+    if lhs.message != rhs.message {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

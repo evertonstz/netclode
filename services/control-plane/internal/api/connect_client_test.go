@@ -41,7 +41,7 @@ func TestConvertSession(t *testing.T) {
 				Name:         "Repo Session",
 				Status:       protocol.StatusRunning,
 				Repo:         strPtr("owner/repo"),
-				RepoAccess:   strPtr("write"),
+				RepoAccess:   repoAccessPtr(protocol.RepoAccessWrite),
 				CreatedAt:    "2024-01-01T00:00:00Z",
 				LastActiveAt: "2024-01-01T01:00:00Z",
 			},
@@ -50,7 +50,7 @@ func TestConvertSession(t *testing.T) {
 				Name:       "Repo Session",
 				Status:     pb.SessionStatus_SESSION_STATUS_RUNNING,
 				Repo:       strPtr("owner/repo"),
-				RepoAccess: strPtr("write"),
+				RepoAccess: pb.RepoAccess_REPO_ACCESS_WRITE.Enum(),
 			},
 		},
 	}
@@ -256,16 +256,16 @@ func TestConvertServerMessage(t *testing.T) {
 				Error: "sandbox creation failed",
 			},
 			checkResult: func(t *testing.T, result *pb.ServerMessage) {
-				msg := result.GetSessionError()
+				msg := result.GetError()
 				if msg == nil {
-					t.Error("expected SessionError message")
+					t.Error("expected Error message")
 					return
 				}
-				if msg.SessionId != "sess-err" {
-					t.Errorf("SessionId = %v, want sess-err", msg.SessionId)
+				if msg.GetError().GetSessionId() != "sess-err" {
+					t.Errorf("SessionId = %v, want sess-err", msg.GetError().GetSessionId())
 				}
-				if msg.Error != "sandbox creation failed" {
-					t.Errorf("Error = %v, want sandbox creation failed", msg.Error)
+				if msg.GetError().GetMessage() != "sandbox creation failed" {
+					t.Errorf("Message = %v, want sandbox creation failed", msg.GetError().GetMessage())
 				}
 			},
 		},
@@ -320,13 +320,13 @@ func TestConvertServerMessage(t *testing.T) {
 				Error:     "something went wrong",
 			},
 			checkResult: func(t *testing.T, result *pb.ServerMessage) {
-				msg := result.GetAgentError()
+				msg := result.GetError()
 				if msg == nil {
-					t.Error("expected AgentError message")
+					t.Error("expected Error message")
 					return
 				}
-				if msg.Error != "something went wrong" {
-					t.Errorf("Error = %v, want something went wrong", msg.Error)
+				if msg.GetError().GetMessage() != "something went wrong" {
+					t.Errorf("Message = %v, want something went wrong", msg.GetError().GetMessage())
 				}
 			},
 		},
@@ -360,8 +360,8 @@ func TestConvertServerMessage(t *testing.T) {
 					t.Error("expected Error message")
 					return
 				}
-				if msg.Message != "internal error" {
-					t.Errorf("Message = %v, want internal error", msg.Message)
+				if msg.GetError().GetMessage() != "internal error" {
+					t.Errorf("Message = %v, want internal error", msg.GetError().GetMessage())
 				}
 			},
 		},
@@ -403,11 +403,11 @@ func TestConvertAgentEvent(t *testing.T) {
 		if result.Kind != pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_START {
 			t.Errorf("Kind = %v, want TOOL_START", result.Kind)
 		}
-		if result.GetTool() != "Read" {
-			t.Errorf("Tool = %v, want Read", result.GetTool())
+		if result.GetTool().GetTool() != "Read" {
+			t.Errorf("Tool = %v, want Read", result.GetTool().GetTool())
 		}
-		if result.GetToolUseId() != "tool-123" {
-			t.Errorf("ToolUseId = %v, want tool-123", result.GetToolUseId())
+		if result.GetTool().GetToolUseId() != "tool-123" {
+			t.Errorf("ToolUseId = %v, want tool-123", result.GetTool().GetToolUseId())
 		}
 	})
 
@@ -418,7 +418,7 @@ func TestConvertAgentEvent(t *testing.T) {
 			Kind:         protocol.EventKindFileChange,
 			Timestamp:    timestamp,
 			Path:         "/src/main.go",
-			Action:       "edit",
+			Action:       protocol.FileActionEdit,
 			LinesAdded:   &linesAdded,
 			LinesRemoved: &linesRemoved,
 		}
@@ -429,11 +429,11 @@ func TestConvertAgentEvent(t *testing.T) {
 		if result.Kind != pb.AgentEventKind_AGENT_EVENT_KIND_FILE_CHANGE {
 			t.Errorf("Kind = %v, want FILE_CHANGE", result.Kind)
 		}
-		if result.GetPath() != "/src/main.go" {
-			t.Errorf("Path = %v, want /src/main.go", result.GetPath())
+		if result.GetFileChange().GetPath() != "/src/main.go" {
+			t.Errorf("Path = %v, want /src/main.go", result.GetFileChange().GetPath())
 		}
-		if result.GetLinesAdded() != 10 {
-			t.Errorf("LinesAdded = %v, want 10", result.GetLinesAdded())
+		if result.GetFileChange().GetLinesAdded() != 10 {
+			t.Errorf("LinesAdded = %v, want 10", result.GetFileChange().GetLinesAdded())
 		}
 	})
 
@@ -454,15 +454,15 @@ func TestConvertAgentEvent(t *testing.T) {
 		if result.Kind != pb.AgentEventKind_AGENT_EVENT_KIND_COMMAND_END {
 			t.Errorf("Kind = %v, want COMMAND_END", result.Kind)
 		}
-		if result.GetExitCode() != 0 {
-			t.Errorf("ExitCode = %v, want 0", result.GetExitCode())
+		if result.GetCommand().GetExitCode() != 0 {
+			t.Errorf("ExitCode = %v, want 0", result.GetCommand().GetExitCode())
 		}
 	})
 }
 
-func TestConvertSessionWithMeta(t *testing.T) {
+func TestConvertSessionSummary(t *testing.T) {
 	t.Run("nil input", func(t *testing.T) {
-		result := convertSessionWithMeta(nil)
+		result := convertSessionSummary(nil)
 		if result != nil {
 			t.Error("expected nil result for nil input")
 		}
@@ -471,7 +471,7 @@ func TestConvertSessionWithMeta(t *testing.T) {
 	t.Run("with message count", func(t *testing.T) {
 		msgCount := 42
 		lastMsgID := "msg-last"
-		input := &protocol.SessionWithMeta{
+		input := &protocol.SessionSummary{
 			Session: protocol.Session{
 				ID:     "sess-123",
 				Name:   "Test",
@@ -480,7 +480,7 @@ func TestConvertSessionWithMeta(t *testing.T) {
 			MessageCount:  &msgCount,
 			LastMessageID: &lastMsgID,
 		}
-		result := convertSessionWithMeta(input)
+		result := convertSessionSummary(input)
 		if result == nil {
 			t.Fatal("expected non-nil result")
 		}
@@ -531,6 +531,10 @@ func TestConvertPersistedMessage(t *testing.T) {
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+func repoAccessPtr(ra protocol.RepoAccess) *protocol.RepoAccess {
+	return &ra
 }
 
 // =============================================================================

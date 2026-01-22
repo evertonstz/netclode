@@ -340,20 +340,16 @@ type ServerMessage struct {
 	//	*ServerMessage_SessionsDeletedAll
 	//	*ServerMessage_SessionList
 	//	*ServerMessage_SessionState
-	//	*ServerMessage_SessionError
 	//	*ServerMessage_SyncResponse
 	//	*ServerMessage_AgentEvent
 	//	*ServerMessage_AgentMessage
 	//	*ServerMessage_AgentDone
-	//	*ServerMessage_AgentError
 	//	*ServerMessage_UserMessage
 	//	*ServerMessage_TerminalOutput
 	//	*ServerMessage_PortExposed
-	//	*ServerMessage_PortError
 	//	*ServerMessage_GithubRepos
 	//	*ServerMessage_GitStatus
 	//	*ServerMessage_GitDiff
-	//	*ServerMessage_GitError
 	//	*ServerMessage_Error
 	Message       isServerMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
@@ -451,15 +447,6 @@ func (x *ServerMessage) GetSessionState() *SessionStateResponse {
 	return nil
 }
 
-func (x *ServerMessage) GetSessionError() *SessionErrorResponse {
-	if x != nil {
-		if x, ok := x.Message.(*ServerMessage_SessionError); ok {
-			return x.SessionError
-		}
-	}
-	return nil
-}
-
 func (x *ServerMessage) GetSyncResponse() *SyncResponse {
 	if x != nil {
 		if x, ok := x.Message.(*ServerMessage_SyncResponse); ok {
@@ -496,15 +483,6 @@ func (x *ServerMessage) GetAgentDone() *AgentDoneResponse {
 	return nil
 }
 
-func (x *ServerMessage) GetAgentError() *AgentErrorResponse {
-	if x != nil {
-		if x, ok := x.Message.(*ServerMessage_AgentError); ok {
-			return x.AgentError
-		}
-	}
-	return nil
-}
-
 func (x *ServerMessage) GetUserMessage() *UserMessageResponse {
 	if x != nil {
 		if x, ok := x.Message.(*ServerMessage_UserMessage); ok {
@@ -532,15 +510,6 @@ func (x *ServerMessage) GetPortExposed() *PortExposedResponse {
 	return nil
 }
 
-func (x *ServerMessage) GetPortError() *PortErrorResponse {
-	if x != nil {
-		if x, ok := x.Message.(*ServerMessage_PortError); ok {
-			return x.PortError
-		}
-	}
-	return nil
-}
-
 func (x *ServerMessage) GetGithubRepos() *GitHubReposResponse {
 	if x != nil {
 		if x, ok := x.Message.(*ServerMessage_GithubRepos); ok {
@@ -563,15 +532,6 @@ func (x *ServerMessage) GetGitDiff() *GitDiffResponse {
 	if x != nil {
 		if x, ok := x.Message.(*ServerMessage_GitDiff); ok {
 			return x.GitDiff
-		}
-	}
-	return nil
-}
-
-func (x *ServerMessage) GetGitError() *GitErrorResponse {
-	if x != nil {
-		if x, ok := x.Message.(*ServerMessage_GitError); ok {
-			return x.GitError
 		}
 	}
 	return nil
@@ -614,64 +574,48 @@ type ServerMessage_SessionState struct {
 	SessionState *SessionStateResponse `protobuf:"bytes,6,opt,name=session_state,json=sessionState,proto3,oneof"`
 }
 
-type ServerMessage_SessionError struct {
-	SessionError *SessionErrorResponse `protobuf:"bytes,7,opt,name=session_error,json=sessionError,proto3,oneof"`
-}
-
 type ServerMessage_SyncResponse struct {
-	SyncResponse *SyncResponse `protobuf:"bytes,8,opt,name=sync_response,json=syncResponse,proto3,oneof"`
+	SyncResponse *SyncResponse `protobuf:"bytes,7,opt,name=sync_response,json=syncResponse,proto3,oneof"`
 }
 
 type ServerMessage_AgentEvent struct {
-	AgentEvent *AgentEventResponse `protobuf:"bytes,9,opt,name=agent_event,json=agentEvent,proto3,oneof"`
+	AgentEvent *AgentEventResponse `protobuf:"bytes,8,opt,name=agent_event,json=agentEvent,proto3,oneof"`
 }
 
 type ServerMessage_AgentMessage struct {
-	AgentMessage *AgentMessageResponse `protobuf:"bytes,10,opt,name=agent_message,json=agentMessage,proto3,oneof"`
+	AgentMessage *AgentMessageResponse `protobuf:"bytes,9,opt,name=agent_message,json=agentMessage,proto3,oneof"`
 }
 
 type ServerMessage_AgentDone struct {
-	AgentDone *AgentDoneResponse `protobuf:"bytes,11,opt,name=agent_done,json=agentDone,proto3,oneof"`
-}
-
-type ServerMessage_AgentError struct {
-	AgentError *AgentErrorResponse `protobuf:"bytes,12,opt,name=agent_error,json=agentError,proto3,oneof"`
+	AgentDone *AgentDoneResponse `protobuf:"bytes,10,opt,name=agent_done,json=agentDone,proto3,oneof"`
 }
 
 type ServerMessage_UserMessage struct {
-	UserMessage *UserMessageResponse `protobuf:"bytes,13,opt,name=user_message,json=userMessage,proto3,oneof"`
+	UserMessage *UserMessageResponse `protobuf:"bytes,11,opt,name=user_message,json=userMessage,proto3,oneof"`
 }
 
 type ServerMessage_TerminalOutput struct {
-	TerminalOutput *TerminalOutputResponse `protobuf:"bytes,14,opt,name=terminal_output,json=terminalOutput,proto3,oneof"`
+	TerminalOutput *TerminalOutputResponse `protobuf:"bytes,12,opt,name=terminal_output,json=terminalOutput,proto3,oneof"`
 }
 
 type ServerMessage_PortExposed struct {
-	PortExposed *PortExposedResponse `protobuf:"bytes,15,opt,name=port_exposed,json=portExposed,proto3,oneof"`
-}
-
-type ServerMessage_PortError struct {
-	PortError *PortErrorResponse `protobuf:"bytes,16,opt,name=port_error,json=portError,proto3,oneof"`
+	PortExposed *PortExposedResponse `protobuf:"bytes,13,opt,name=port_exposed,json=portExposed,proto3,oneof"`
 }
 
 type ServerMessage_GithubRepos struct {
-	GithubRepos *GitHubReposResponse `protobuf:"bytes,17,opt,name=github_repos,json=githubRepos,proto3,oneof"`
+	GithubRepos *GitHubReposResponse `protobuf:"bytes,14,opt,name=github_repos,json=githubRepos,proto3,oneof"`
 }
 
 type ServerMessage_GitStatus struct {
-	GitStatus *GitStatusResponse `protobuf:"bytes,18,opt,name=git_status,json=gitStatus,proto3,oneof"`
+	GitStatus *GitStatusResponse `protobuf:"bytes,15,opt,name=git_status,json=gitStatus,proto3,oneof"`
 }
 
 type ServerMessage_GitDiff struct {
-	GitDiff *GitDiffResponse `protobuf:"bytes,19,opt,name=git_diff,json=gitDiff,proto3,oneof"`
-}
-
-type ServerMessage_GitError struct {
-	GitError *GitErrorResponse `protobuf:"bytes,20,opt,name=git_error,json=gitError,proto3,oneof"`
+	GitDiff *GitDiffResponse `protobuf:"bytes,16,opt,name=git_diff,json=gitDiff,proto3,oneof"`
 }
 
 type ServerMessage_Error struct {
-	Error *ErrorResponse `protobuf:"bytes,21,opt,name=error,proto3,oneof"`
+	Error *ErrorResponse `protobuf:"bytes,17,opt,name=error,proto3,oneof"`
 }
 
 func (*ServerMessage_SessionCreated) isServerMessage_Message() {}
@@ -686,8 +630,6 @@ func (*ServerMessage_SessionList) isServerMessage_Message() {}
 
 func (*ServerMessage_SessionState) isServerMessage_Message() {}
 
-func (*ServerMessage_SessionError) isServerMessage_Message() {}
-
 func (*ServerMessage_SyncResponse) isServerMessage_Message() {}
 
 func (*ServerMessage_AgentEvent) isServerMessage_Message() {}
@@ -696,15 +638,11 @@ func (*ServerMessage_AgentMessage) isServerMessage_Message() {}
 
 func (*ServerMessage_AgentDone) isServerMessage_Message() {}
 
-func (*ServerMessage_AgentError) isServerMessage_Message() {}
-
 func (*ServerMessage_UserMessage) isServerMessage_Message() {}
 
 func (*ServerMessage_TerminalOutput) isServerMessage_Message() {}
 
 func (*ServerMessage_PortExposed) isServerMessage_Message() {}
-
-func (*ServerMessage_PortError) isServerMessage_Message() {}
 
 func (*ServerMessage_GithubRepos) isServerMessage_Message() {}
 
@@ -712,16 +650,15 @@ func (*ServerMessage_GitStatus) isServerMessage_Message() {}
 
 func (*ServerMessage_GitDiff) isServerMessage_Message() {}
 
-func (*ServerMessage_GitError) isServerMessage_Message() {}
-
 func (*ServerMessage_Error) isServerMessage_Message() {}
 
 type CreateSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          *string                `protobuf:"bytes,1,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Repo          *string                `protobuf:"bytes,2,opt,name=repo,proto3,oneof" json:"repo,omitempty"`
-	RepoAccess    *string                `protobuf:"bytes,3,opt,name=repo_access,json=repoAccess,proto3,oneof" json:"repo_access,omitempty"` // "read" or "write"
-	InitialPrompt *string                `protobuf:"bytes,4,opt,name=initial_prompt,json=initialPrompt,proto3,oneof" json:"initial_prompt,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`                                 // Client-generated ID for request correlation
+	Name          *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`                                                            // Initial session name
+	Repo          *string                `protobuf:"bytes,3,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                            // GitHub repository to clone (e.g., "owner/repo")
+	RepoAccess    *RepoAccess            `protobuf:"varint,4,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"` // Permission level for repository
+	InitialPrompt *string                `protobuf:"bytes,5,opt,name=initial_prompt,json=initialPrompt,proto3,oneof" json:"initial_prompt,omitempty"`                     // Optional prompt to send immediately after creation
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -756,6 +693,13 @@ func (*CreateSessionRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{2}
 }
 
+func (x *CreateSessionRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *CreateSessionRequest) GetName() string {
 	if x != nil && x.Name != nil {
 		return *x.Name
@@ -770,11 +714,11 @@ func (x *CreateSessionRequest) GetRepo() string {
 	return ""
 }
 
-func (x *CreateSessionRequest) GetRepoAccess() string {
+func (x *CreateSessionRequest) GetRepoAccess() RepoAccess {
 	if x != nil && x.RepoAccess != nil {
 		return *x.RepoAccess
 	}
-	return ""
+	return RepoAccess_REPO_ACCESS_UNSPECIFIED
 }
 
 func (x *CreateSessionRequest) GetInitialPrompt() string {
@@ -786,6 +730,7 @@ func (x *CreateSessionRequest) GetInitialPrompt() string {
 
 type ListSessionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -820,11 +765,19 @@ func (*ListSessionsRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{3}
 }
 
+func (x *ListSessionsRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type OpenSessionRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	SessionId          string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	LastMessageId      *string                `protobuf:"bytes,2,opt,name=last_message_id,json=lastMessageId,proto3,oneof" json:"last_message_id,omitempty"`                // For pagination
-	LastNotificationId *string                `protobuf:"bytes,3,opt,name=last_notification_id,json=lastNotificationId,proto3,oneof" json:"last_notification_id,omitempty"` // For cursor-based reconnection
+	RequestId          *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId          string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	LastMessageId      *string                `protobuf:"bytes,3,opt,name=last_message_id,json=lastMessageId,proto3,oneof" json:"last_message_id,omitempty"`                // Cursor for message pagination
+	LastNotificationId *string                `protobuf:"bytes,4,opt,name=last_notification_id,json=lastNotificationId,proto3,oneof" json:"last_notification_id,omitempty"` // Cursor for real-time event stream reconnection
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -859,6 +812,13 @@ func (*OpenSessionRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{4}
 }
 
+func (x *OpenSessionRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *OpenSessionRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -882,7 +842,8 @@ func (x *OpenSessionRequest) GetLastNotificationId() string {
 
 type ResumeSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -917,6 +878,13 @@ func (*ResumeSessionRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{5}
 }
 
+func (x *ResumeSessionRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *ResumeSessionRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -926,7 +894,8 @@ func (x *ResumeSessionRequest) GetSessionId() string {
 
 type PauseSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -961,6 +930,13 @@ func (*PauseSessionRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{6}
 }
 
+func (x *PauseSessionRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *PauseSessionRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -970,7 +946,8 @@ func (x *PauseSessionRequest) GetSessionId() string {
 
 type DeleteSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1005,6 +982,13 @@ func (*DeleteSessionRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{7}
 }
 
+func (x *DeleteSessionRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *DeleteSessionRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1014,6 +998,7 @@ func (x *DeleteSessionRequest) GetSessionId() string {
 
 type DeleteAllSessionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1048,10 +1033,18 @@ func (*DeleteAllSessionsRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{8}
 }
 
+func (x *DeleteAllSessionsRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type SendPromptRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Text          string                 `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1086,6 +1079,13 @@ func (*SendPromptRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{9}
 }
 
+func (x *SendPromptRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *SendPromptRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1102,7 +1102,8 @@ func (x *SendPromptRequest) GetText() string {
 
 type InterruptPromptRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1137,6 +1138,13 @@ func (*InterruptPromptRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{10}
 }
 
+func (x *InterruptPromptRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *InterruptPromptRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1146,8 +1154,9 @@ func (x *InterruptPromptRequest) GetSessionId() string {
 
 type TerminalInputRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Data          string                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Data          string                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1182,6 +1191,13 @@ func (*TerminalInputRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{11}
 }
 
+func (x *TerminalInputRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *TerminalInputRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1198,9 +1214,10 @@ func (x *TerminalInputRequest) GetData() string {
 
 type TerminalResizeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Cols          int32                  `protobuf:"varint,2,opt,name=cols,proto3" json:"cols,omitempty"`
-	Rows          int32                  `protobuf:"varint,3,opt,name=rows,proto3" json:"rows,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Cols          int32                  `protobuf:"varint,3,opt,name=cols,proto3" json:"cols,omitempty"`
+	Rows          int32                  `protobuf:"varint,4,opt,name=rows,proto3" json:"rows,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1235,6 +1252,13 @@ func (*TerminalResizeRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{12}
 }
 
+func (x *TerminalResizeRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *TerminalResizeRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1258,8 +1282,9 @@ func (x *TerminalResizeRequest) GetRows() int32 {
 
 type ExposePortRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Port          int32                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Port          int32                  `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1294,6 +1319,13 @@ func (*ExposePortRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{13}
 }
 
+func (x *ExposePortRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *ExposePortRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1310,6 +1342,7 @@ func (x *ExposePortRequest) GetPort() int32 {
 
 type SyncRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1344,8 +1377,16 @@ func (*SyncRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{14}
 }
 
+func (x *SyncRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type ListGitHubReposRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1380,9 +1421,17 @@ func (*ListGitHubReposRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{15}
 }
 
+func (x *ListGitHubReposRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type GitStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1417,6 +1466,13 @@ func (*GitStatusRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{16}
 }
 
+func (x *GitStatusRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *GitStatusRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1426,8 +1482,9 @@ func (x *GitStatusRequest) GetSessionId() string {
 
 type GitDiffRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	File          *string                `protobuf:"bytes,2,opt,name=file,proto3,oneof" json:"file,omitempty"` // Specific file, or all if empty
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	File          *string                `protobuf:"bytes,3,opt,name=file,proto3,oneof" json:"file,omitempty"` // Specific file path, or all files if empty
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1462,6 +1519,13 @@ func (*GitDiffRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{17}
 }
 
+func (x *GitDiffRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 func (x *GitDiffRequest) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
@@ -1479,6 +1543,7 @@ func (x *GitDiffRequest) GetFile() string {
 type SessionCreatedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"` // Echoed from request for correlation
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1518,6 +1583,13 @@ func (x *SessionCreatedResponse) GetSession() *Session {
 		return x.Session
 	}
 	return nil
+}
+
+func (x *SessionCreatedResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
 }
 
 type SessionUpdatedResponse struct {
@@ -1567,6 +1639,7 @@ func (x *SessionUpdatedResponse) GetSession() *Session {
 type SessionDeletedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1608,9 +1681,17 @@ func (x *SessionDeletedResponse) GetSessionId() string {
 	return ""
 }
 
+func (x *SessionDeletedResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type SessionsDeletedAllResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DeletedIds    []string               `protobuf:"bytes,1,rep,name=deleted_ids,json=deletedIds,proto3" json:"deleted_ids,omitempty"`
+	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1652,9 +1733,17 @@ func (x *SessionsDeletedAllResponse) GetDeletedIds() []string {
 	return nil
 }
 
+func (x *SessionsDeletedAllResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type SessionListResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sessions      []*Session             `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1696,13 +1785,21 @@ func (x *SessionListResponse) GetSessions() []*Session {
 	return nil
 }
 
+func (x *SessionListResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type SessionStateResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Session            *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
 	Messages           []*PersistedMessage    `protobuf:"bytes,2,rep,name=messages,proto3" json:"messages,omitempty"`
 	Events             []*PersistedEvent      `protobuf:"bytes,3,rep,name=events,proto3" json:"events,omitempty"`
-	HasMore            bool                   `protobuf:"varint,4,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
-	LastNotificationId *string                `protobuf:"bytes,5,opt,name=last_notification_id,json=lastNotificationId,proto3,oneof" json:"last_notification_id,omitempty"`
+	HasMore            bool                   `protobuf:"varint,4,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`                                         // true if more messages available for pagination
+	LastNotificationId *string                `protobuf:"bytes,5,opt,name=last_notification_id,json=lastNotificationId,proto3,oneof" json:"last_notification_id,omitempty"` // Cursor for subscribing to real-time updates
+	RequestId          *string                `protobuf:"bytes,6,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1772,69 +1869,25 @@ func (x *SessionStateResponse) GetLastNotificationId() string {
 	return ""
 }
 
-type SessionErrorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SessionErrorResponse) Reset() {
-	*x = SessionErrorResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[24]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SessionErrorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SessionErrorResponse) ProtoMessage() {}
-
-func (x *SessionErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[24]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SessionErrorResponse.ProtoReflect.Descriptor instead.
-func (*SessionErrorResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{24}
-}
-
-func (x *SessionErrorResponse) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
-}
-
-func (x *SessionErrorResponse) GetError() string {
-	if x != nil {
-		return x.Error
+func (x *SessionStateResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
 	}
 	return ""
 }
 
 type SyncResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Sessions      []*SessionWithMeta     `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	Sessions      []*SessionSummary      `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
 	ServerTime    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=server_time,json=serverTime,proto3" json:"server_time,omitempty"`
+	RequestId     *string                `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SyncResponse) Reset() {
 	*x = SyncResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[25]
+	mi := &file_netclode_v1_client_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1846,7 +1899,7 @@ func (x *SyncResponse) String() string {
 func (*SyncResponse) ProtoMessage() {}
 
 func (x *SyncResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[25]
+	mi := &file_netclode_v1_client_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1859,10 +1912,10 @@ func (x *SyncResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncResponse.ProtoReflect.Descriptor instead.
 func (*SyncResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{25}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{24}
 }
 
-func (x *SyncResponse) GetSessions() []*SessionWithMeta {
+func (x *SyncResponse) GetSessions() []*SessionSummary {
 	if x != nil {
 		return x.Sessions
 	}
@@ -1876,6 +1929,13 @@ func (x *SyncResponse) GetServerTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *SyncResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type AgentEventResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -1886,7 +1946,7 @@ type AgentEventResponse struct {
 
 func (x *AgentEventResponse) Reset() {
 	*x = AgentEventResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[26]
+	mi := &file_netclode_v1_client_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1898,7 +1958,7 @@ func (x *AgentEventResponse) String() string {
 func (*AgentEventResponse) ProtoMessage() {}
 
 func (x *AgentEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[26]
+	mi := &file_netclode_v1_client_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1911,7 +1971,7 @@ func (x *AgentEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentEventResponse.ProtoReflect.Descriptor instead.
 func (*AgentEventResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{26}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *AgentEventResponse) GetSessionId() string {
@@ -1932,15 +1992,15 @@ type AgentMessageResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	Partial       bool                   `protobuf:"varint,3,opt,name=partial,proto3" json:"partial,omitempty"`                     // true for streaming deltas
-	MessageId     string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // Correlates partial messages
+	Partial       bool                   `protobuf:"varint,3,opt,name=partial,proto3" json:"partial,omitempty"`                     // true for streaming deltas, false for final message
+	MessageId     string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // Correlates partial messages belonging to same response
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AgentMessageResponse) Reset() {
 	*x = AgentMessageResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[27]
+	mi := &file_netclode_v1_client_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1952,7 +2012,7 @@ func (x *AgentMessageResponse) String() string {
 func (*AgentMessageResponse) ProtoMessage() {}
 
 func (x *AgentMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[27]
+	mi := &file_netclode_v1_client_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1965,7 +2025,7 @@ func (x *AgentMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentMessageResponse.ProtoReflect.Descriptor instead.
 func (*AgentMessageResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{27}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *AgentMessageResponse) GetSessionId() string {
@@ -2005,7 +2065,7 @@ type AgentDoneResponse struct {
 
 func (x *AgentDoneResponse) Reset() {
 	*x = AgentDoneResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[28]
+	mi := &file_netclode_v1_client_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2017,7 +2077,7 @@ func (x *AgentDoneResponse) String() string {
 func (*AgentDoneResponse) ProtoMessage() {}
 
 func (x *AgentDoneResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[28]
+	mi := &file_netclode_v1_client_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2030,64 +2090,12 @@ func (x *AgentDoneResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentDoneResponse.ProtoReflect.Descriptor instead.
 func (*AgentDoneResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{28}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AgentDoneResponse) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
-	}
-	return ""
-}
-
-type AgentErrorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AgentErrorResponse) Reset() {
-	*x = AgentErrorResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[29]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AgentErrorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AgentErrorResponse) ProtoMessage() {}
-
-func (x *AgentErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[29]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AgentErrorResponse.ProtoReflect.Descriptor instead.
-func (*AgentErrorResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{29}
-}
-
-func (x *AgentErrorResponse) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
-}
-
-func (x *AgentErrorResponse) GetError() string {
-	if x != nil {
-		return x.Error
 	}
 	return ""
 }
@@ -2102,7 +2110,7 @@ type UserMessageResponse struct {
 
 func (x *UserMessageResponse) Reset() {
 	*x = UserMessageResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[30]
+	mi := &file_netclode_v1_client_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2114,7 +2122,7 @@ func (x *UserMessageResponse) String() string {
 func (*UserMessageResponse) ProtoMessage() {}
 
 func (x *UserMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[30]
+	mi := &file_netclode_v1_client_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2127,7 +2135,7 @@ func (x *UserMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserMessageResponse.ProtoReflect.Descriptor instead.
 func (*UserMessageResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{30}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *UserMessageResponse) GetSessionId() string {
@@ -2154,7 +2162,7 @@ type TerminalOutputResponse struct {
 
 func (x *TerminalOutputResponse) Reset() {
 	*x = TerminalOutputResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[31]
+	mi := &file_netclode_v1_client_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2166,7 +2174,7 @@ func (x *TerminalOutputResponse) String() string {
 func (*TerminalOutputResponse) ProtoMessage() {}
 
 func (x *TerminalOutputResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[31]
+	mi := &file_netclode_v1_client_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2179,7 +2187,7 @@ func (x *TerminalOutputResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalOutputResponse.ProtoReflect.Descriptor instead.
 func (*TerminalOutputResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{31}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *TerminalOutputResponse) GetSessionId() string {
@@ -2201,13 +2209,14 @@ type PortExposedResponse struct {
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	Port          int32                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
 	PreviewUrl    string                 `protobuf:"bytes,3,opt,name=preview_url,json=previewUrl,proto3" json:"preview_url,omitempty"`
+	RequestId     *string                `protobuf:"bytes,4,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PortExposedResponse) Reset() {
 	*x = PortExposedResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[32]
+	mi := &file_netclode_v1_client_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2219,7 +2228,7 @@ func (x *PortExposedResponse) String() string {
 func (*PortExposedResponse) ProtoMessage() {}
 
 func (x *PortExposedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[32]
+	mi := &file_netclode_v1_client_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2232,7 +2241,7 @@ func (x *PortExposedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PortExposedResponse.ProtoReflect.Descriptor instead.
 func (*PortExposedResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{32}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *PortExposedResponse) GetSessionId() string {
@@ -2256,62 +2265,9 @@ func (x *PortExposedResponse) GetPreviewUrl() string {
 	return ""
 }
 
-type PortErrorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Port          int32                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PortErrorResponse) Reset() {
-	*x = PortErrorResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[33]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PortErrorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PortErrorResponse) ProtoMessage() {}
-
-func (x *PortErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[33]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PortErrorResponse.ProtoReflect.Descriptor instead.
-func (*PortErrorResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{33}
-}
-
-func (x *PortErrorResponse) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
-}
-
-func (x *PortErrorResponse) GetPort() int32 {
-	if x != nil {
-		return x.Port
-	}
-	return 0
-}
-
-func (x *PortErrorResponse) GetError() string {
-	if x != nil {
-		return x.Error
+func (x *PortExposedResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
 	}
 	return ""
 }
@@ -2319,13 +2275,14 @@ func (x *PortErrorResponse) GetError() string {
 type GitHubReposResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Repos         []*GitHubRepo          `protobuf:"bytes,1,rep,name=repos,proto3" json:"repos,omitempty"`
+	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GitHubReposResponse) Reset() {
 	*x = GitHubReposResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[34]
+	mi := &file_netclode_v1_client_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2337,7 +2294,7 @@ func (x *GitHubReposResponse) String() string {
 func (*GitHubReposResponse) ProtoMessage() {}
 
 func (x *GitHubReposResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[34]
+	mi := &file_netclode_v1_client_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2350,7 +2307,7 @@ func (x *GitHubReposResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitHubReposResponse.ProtoReflect.Descriptor instead.
 func (*GitHubReposResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{34}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *GitHubReposResponse) GetRepos() []*GitHubRepo {
@@ -2360,17 +2317,25 @@ func (x *GitHubReposResponse) GetRepos() []*GitHubRepo {
 	return nil
 }
 
+func (x *GitHubReposResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type GitStatusResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	Files         []*GitFileChange       `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
+	RequestId     *string                `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GitStatusResponse) Reset() {
 	*x = GitStatusResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[35]
+	mi := &file_netclode_v1_client_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2382,7 +2347,7 @@ func (x *GitStatusResponse) String() string {
 func (*GitStatusResponse) ProtoMessage() {}
 
 func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[35]
+	mi := &file_netclode_v1_client_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2395,7 +2360,7 @@ func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitStatusResponse.ProtoReflect.Descriptor instead.
 func (*GitStatusResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{35}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GitStatusResponse) GetSessionId() string {
@@ -2412,17 +2377,25 @@ func (x *GitStatusResponse) GetFiles() []*GitFileChange {
 	return nil
 }
 
+func (x *GitStatusResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type GitDiffResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	Diff          string                 `protobuf:"bytes,2,opt,name=diff,proto3" json:"diff,omitempty"`
+	RequestId     *string                `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GitDiffResponse) Reset() {
 	*x = GitDiffResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[36]
+	mi := &file_netclode_v1_client_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2434,7 +2407,7 @@ func (x *GitDiffResponse) String() string {
 func (*GitDiffResponse) ProtoMessage() {}
 
 func (x *GitDiffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[36]
+	mi := &file_netclode_v1_client_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2447,7 +2420,7 @@ func (x *GitDiffResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitDiffResponse.ProtoReflect.Descriptor instead.
 func (*GitDiffResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{36}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GitDiffResponse) GetSessionId() string {
@@ -2464,68 +2437,26 @@ func (x *GitDiffResponse) GetDiff() string {
 	return ""
 }
 
-type GitErrorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GitErrorResponse) Reset() {
-	*x = GitErrorResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[37]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GitErrorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GitErrorResponse) ProtoMessage() {}
-
-func (x *GitErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[37]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GitErrorResponse.ProtoReflect.Descriptor instead.
-func (*GitErrorResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{37}
-}
-
-func (x *GitErrorResponse) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
+func (x *GitDiffResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
 	}
 	return ""
 }
 
-func (x *GitErrorResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
-}
-
+// ErrorResponse is the unified error type for all error conditions.
+// Replaces SessionErrorResponse, AgentErrorResponse, PortErrorResponse, GitErrorResponse.
 type ErrorResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	Error         *Error                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`                                // Structured error details
+	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"` // Echoed from request for correlation
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ErrorResponse) Reset() {
 	*x = ErrorResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[38]
+	mi := &file_netclode_v1_client_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2537,7 +2468,7 @@ func (x *ErrorResponse) String() string {
 func (*ErrorResponse) ProtoMessage() {}
 
 func (x *ErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[38]
+	mi := &file_netclode_v1_client_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2550,12 +2481,19 @@ func (x *ErrorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ErrorResponse.ProtoReflect.Descriptor instead.
 func (*ErrorResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{38}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{34}
 }
 
-func (x *ErrorResponse) GetMessage() string {
+func (x *ErrorResponse) GetError() *Error {
 	if x != nil {
-		return x.Message
+		return x.Error
+	}
+	return nil
+}
+
+func (x *ErrorResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
 	}
 	return ""
 }
@@ -2586,121 +2524,177 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\n" +
 	"git_status\x18\x0f \x01(\v2\x1d.netclode.v1.GitStatusRequestH\x00R\tgitStatus\x128\n" +
 	"\bgit_diff\x18\x10 \x01(\v2\x1b.netclode.v1.GitDiffRequestH\x00R\agitDiffB\t\n" +
-	"\amessage\"\xeb\v\n" +
+	"\amessage\"\xde\t\n" +
 	"\rServerMessage\x12N\n" +
 	"\x0fsession_created\x18\x01 \x01(\v2#.netclode.v1.SessionCreatedResponseH\x00R\x0esessionCreated\x12N\n" +
 	"\x0fsession_updated\x18\x02 \x01(\v2#.netclode.v1.SessionUpdatedResponseH\x00R\x0esessionUpdated\x12N\n" +
 	"\x0fsession_deleted\x18\x03 \x01(\v2#.netclode.v1.SessionDeletedResponseH\x00R\x0esessionDeleted\x12[\n" +
 	"\x14sessions_deleted_all\x18\x04 \x01(\v2'.netclode.v1.SessionsDeletedAllResponseH\x00R\x12sessionsDeletedAll\x12E\n" +
 	"\fsession_list\x18\x05 \x01(\v2 .netclode.v1.SessionListResponseH\x00R\vsessionList\x12H\n" +
-	"\rsession_state\x18\x06 \x01(\v2!.netclode.v1.SessionStateResponseH\x00R\fsessionState\x12H\n" +
-	"\rsession_error\x18\a \x01(\v2!.netclode.v1.SessionErrorResponseH\x00R\fsessionError\x12@\n" +
-	"\rsync_response\x18\b \x01(\v2\x19.netclode.v1.SyncResponseH\x00R\fsyncResponse\x12B\n" +
-	"\vagent_event\x18\t \x01(\v2\x1f.netclode.v1.AgentEventResponseH\x00R\n" +
+	"\rsession_state\x18\x06 \x01(\v2!.netclode.v1.SessionStateResponseH\x00R\fsessionState\x12@\n" +
+	"\rsync_response\x18\a \x01(\v2\x19.netclode.v1.SyncResponseH\x00R\fsyncResponse\x12B\n" +
+	"\vagent_event\x18\b \x01(\v2\x1f.netclode.v1.AgentEventResponseH\x00R\n" +
 	"agentEvent\x12H\n" +
-	"\ragent_message\x18\n" +
-	" \x01(\v2!.netclode.v1.AgentMessageResponseH\x00R\fagentMessage\x12?\n" +
+	"\ragent_message\x18\t \x01(\v2!.netclode.v1.AgentMessageResponseH\x00R\fagentMessage\x12?\n" +
 	"\n" +
-	"agent_done\x18\v \x01(\v2\x1e.netclode.v1.AgentDoneResponseH\x00R\tagentDone\x12B\n" +
-	"\vagent_error\x18\f \x01(\v2\x1f.netclode.v1.AgentErrorResponseH\x00R\n" +
-	"agentError\x12E\n" +
-	"\fuser_message\x18\r \x01(\v2 .netclode.v1.UserMessageResponseH\x00R\vuserMessage\x12N\n" +
-	"\x0fterminal_output\x18\x0e \x01(\v2#.netclode.v1.TerminalOutputResponseH\x00R\x0eterminalOutput\x12E\n" +
-	"\fport_exposed\x18\x0f \x01(\v2 .netclode.v1.PortExposedResponseH\x00R\vportExposed\x12?\n" +
+	"agent_done\x18\n" +
+	" \x01(\v2\x1e.netclode.v1.AgentDoneResponseH\x00R\tagentDone\x12E\n" +
+	"\fuser_message\x18\v \x01(\v2 .netclode.v1.UserMessageResponseH\x00R\vuserMessage\x12N\n" +
+	"\x0fterminal_output\x18\f \x01(\v2#.netclode.v1.TerminalOutputResponseH\x00R\x0eterminalOutput\x12E\n" +
+	"\fport_exposed\x18\r \x01(\v2 .netclode.v1.PortExposedResponseH\x00R\vportExposed\x12E\n" +
+	"\fgithub_repos\x18\x0e \x01(\v2 .netclode.v1.GitHubReposResponseH\x00R\vgithubRepos\x12?\n" +
 	"\n" +
-	"port_error\x18\x10 \x01(\v2\x1e.netclode.v1.PortErrorResponseH\x00R\tportError\x12E\n" +
-	"\fgithub_repos\x18\x11 \x01(\v2 .netclode.v1.GitHubReposResponseH\x00R\vgithubRepos\x12?\n" +
+	"git_status\x18\x0f \x01(\v2\x1e.netclode.v1.GitStatusResponseH\x00R\tgitStatus\x129\n" +
+	"\bgit_diff\x18\x10 \x01(\v2\x1c.netclode.v1.GitDiffResponseH\x00R\agitDiff\x122\n" +
+	"\x05error\x18\x11 \x01(\v2\x1a.netclode.v1.ErrorResponseH\x00R\x05errorB\t\n" +
+	"\amessage\"\x9b\x02\n" +
+	"\x14CreateSessionRequest\x12\"\n" +
 	"\n" +
-	"git_status\x18\x12 \x01(\v2\x1e.netclode.v1.GitStatusResponseH\x00R\tgitStatus\x129\n" +
-	"\bgit_diff\x18\x13 \x01(\v2\x1c.netclode.v1.GitDiffResponseH\x00R\agitDiff\x12<\n" +
-	"\tgit_error\x18\x14 \x01(\v2\x1d.netclode.v1.GitErrorResponseH\x00R\bgitError\x122\n" +
-	"\x05error\x18\x15 \x01(\v2\x1a.netclode.v1.ErrorResponseH\x00R\x05errorB\t\n" +
-	"\amessage\"\xcf\x01\n" +
-	"\x14CreateSessionRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x17\n" +
-	"\x04repo\x18\x02 \x01(\tH\x01R\x04repo\x88\x01\x01\x12$\n" +
-	"\vrepo_access\x18\x03 \x01(\tH\x02R\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x17\n" +
+	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x17\n" +
+	"\x04repo\x18\x03 \x01(\tH\x02R\x04repo\x88\x01\x01\x12=\n" +
+	"\vrepo_access\x18\x04 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x03R\n" +
 	"repoAccess\x88\x01\x01\x12*\n" +
-	"\x0einitial_prompt\x18\x04 \x01(\tH\x03R\rinitialPrompt\x88\x01\x01B\a\n" +
+	"\x0einitial_prompt\x18\x05 \x01(\tH\x04R\rinitialPrompt\x88\x01\x01B\r\n" +
+	"\v_request_idB\a\n" +
 	"\x05_nameB\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\x11\n" +
-	"\x0f_initial_prompt\"\x15\n" +
-	"\x13ListSessionsRequest\"\xc4\x01\n" +
-	"\x12OpenSessionRequest\x12\x1d\n" +
+	"\x0f_initial_prompt\"H\n" +
+	"\x13ListSessionsRequest\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12+\n" +
-	"\x0flast_message_id\x18\x02 \x01(\tH\x00R\rlastMessageId\x88\x01\x01\x125\n" +
-	"\x14last_notification_id\x18\x03 \x01(\tH\x01R\x12lastNotificationId\x88\x01\x01B\x12\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"\xf7\x01\n" +
+	"\x12OpenSessionRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12+\n" +
+	"\x0flast_message_id\x18\x03 \x01(\tH\x01R\rlastMessageId\x88\x01\x01\x125\n" +
+	"\x14last_notification_id\x18\x04 \x01(\tH\x02R\x12lastNotificationId\x88\x01\x01B\r\n" +
+	"\v_request_idB\x12\n" +
 	"\x10_last_message_idB\x17\n" +
-	"\x15_last_notification_id\"5\n" +
-	"\x14ResumeSessionRequest\x12\x1d\n" +
+	"\x15_last_notification_id\"h\n" +
+	"\x14ResumeSessionRequest\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"4\n" +
-	"\x13PauseSessionRequest\x12\x1d\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"5\n" +
-	"\x14DeleteSessionRequest\x12\x1d\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionIdB\r\n" +
+	"\v_request_id\"g\n" +
+	"\x13PauseSessionRequest\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"\x1a\n" +
-	"\x18DeleteAllSessionsRequest\"F\n" +
-	"\x11SendPromptRequest\x12\x1d\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text\"7\n" +
-	"\x16InterruptPromptRequest\x12\x1d\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionIdB\r\n" +
+	"\v_request_id\"h\n" +
+	"\x14DeleteSessionRequest\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"I\n" +
-	"\x14TerminalInputRequest\x12\x1d\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\tR\x04data\"^\n" +
-	"\x15TerminalResizeRequest\x12\x1d\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionIdB\r\n" +
+	"\v_request_id\"M\n" +
+	"\x18DeleteAllSessionsRequest\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04cols\x18\x02 \x01(\x05R\x04cols\x12\x12\n" +
-	"\x04rows\x18\x03 \x01(\x05R\x04rows\"F\n" +
-	"\x11ExposePortRequest\x12\x1d\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"y\n" +
+	"\x11SendPromptRequest\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\"\r\n" +
-	"\vSyncRequest\"\x18\n" +
-	"\x16ListGitHubReposRequest\"1\n" +
-	"\x10GitStatusRequest\x12\x1d\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"Q\n" +
-	"\x0eGitDiffRequest\x12\x1d\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04text\x18\x03 \x01(\tR\x04textB\r\n" +
+	"\v_request_id\"j\n" +
+	"\x16InterruptPromptRequest\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x17\n" +
-	"\x04file\x18\x02 \x01(\tH\x00R\x04file\x88\x01\x01B\a\n" +
-	"\x05_file\"H\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionIdB\r\n" +
+	"\v_request_id\"|\n" +
+	"\x14TerminalInputRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04data\x18\x03 \x01(\tR\x04dataB\r\n" +
+	"\v_request_id\"\x91\x01\n" +
+	"\x15TerminalResizeRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04cols\x18\x03 \x01(\x05R\x04cols\x12\x12\n" +
+	"\x04rows\x18\x04 \x01(\x05R\x04rowsB\r\n" +
+	"\v_request_id\"y\n" +
+	"\x11ExposePortRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04port\x18\x03 \x01(\x05R\x04portB\r\n" +
+	"\v_request_id\"@\n" +
+	"\vSyncRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"K\n" +
+	"\x16ListGitHubReposRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"d\n" +
+	"\x10GitStatusRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionIdB\r\n" +
+	"\v_request_id\"\x84\x01\n" +
+	"\x0eGitDiffRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x17\n" +
+	"\x04file\x18\x03 \x01(\tH\x01R\x04file\x88\x01\x01B\r\n" +
+	"\v_request_idB\a\n" +
+	"\x05_file\"{\n" +
 	"\x16SessionCreatedResponse\x12.\n" +
-	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\"H\n" +
+	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\x12\"\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"H\n" +
 	"\x16SessionUpdatedResponse\x12.\n" +
-	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\"7\n" +
+	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\"j\n" +
 	"\x16SessionDeletedResponse\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"=\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\"\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"p\n" +
 	"\x1aSessionsDeletedAllResponse\x12\x1f\n" +
 	"\vdeleted_ids\x18\x01 \x03(\tR\n" +
-	"deletedIds\"G\n" +
+	"deletedIds\x12\"\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"z\n" +
 	"\x13SessionListResponse\x120\n" +
-	"\bsessions\x18\x01 \x03(\v2\x14.netclode.v1.SessionR\bsessions\"\xa1\x02\n" +
+	"\bsessions\x18\x01 \x03(\v2\x14.netclode.v1.SessionR\bsessions\x12\"\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"\xd4\x02\n" +
 	"\x14SessionStateResponse\x12.\n" +
 	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\x129\n" +
 	"\bmessages\x18\x02 \x03(\v2\x1d.netclode.v1.PersistedMessageR\bmessages\x123\n" +
 	"\x06events\x18\x03 \x03(\v2\x1b.netclode.v1.PersistedEventR\x06events\x12\x19\n" +
 	"\bhas_more\x18\x04 \x01(\bR\ahasMore\x125\n" +
-	"\x14last_notification_id\x18\x05 \x01(\tH\x00R\x12lastNotificationId\x88\x01\x01B\x17\n" +
-	"\x15_last_notification_id\"K\n" +
-	"\x14SessionErrorResponse\x12\x1d\n" +
+	"\x14last_notification_id\x18\x05 \x01(\tH\x00R\x12lastNotificationId\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"\x85\x01\n" +
-	"\fSyncResponse\x128\n" +
-	"\bsessions\x18\x01 \x03(\v2\x1c.netclode.v1.SessionWithMetaR\bsessions\x12;\n" +
+	"request_id\x18\x06 \x01(\tH\x01R\trequestId\x88\x01\x01B\x17\n" +
+	"\x15_last_notification_idB\r\n" +
+	"\v_request_id\"\xb7\x01\n" +
+	"\fSyncResponse\x127\n" +
+	"\bsessions\x18\x01 \x03(\v2\x1b.netclode.v1.SessionSummaryR\bsessions\x12;\n" +
 	"\vserver_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"serverTime\"b\n" +
+	"serverTime\x12\"\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"b\n" +
 	"\x12AgentEventResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12-\n" +
@@ -2714,11 +2708,7 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"message_id\x18\x04 \x01(\tR\tmessageId\"2\n" +
 	"\x11AgentDoneResponse\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"I\n" +
-	"\x12AgentErrorResponse\x12\x1d\n" +
-	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"N\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"N\n" +
 	"\x13UserMessageResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x18\n" +
@@ -2726,34 +2716,40 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\x16TerminalOutputResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\tR\x04data\"i\n" +
+	"\x04data\x18\x02 \x01(\tR\x04data\"\x9c\x01\n" +
 	"\x13PortExposedResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x1f\n" +
 	"\vpreview_url\x18\x03 \x01(\tR\n" +
-	"previewUrl\"\\\n" +
-	"\x11PortErrorResponse\x12\x1d\n" +
+	"previewUrl\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"D\n" +
+	"request_id\x18\x04 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"w\n" +
 	"\x13GitHubReposResponse\x12-\n" +
-	"\x05repos\x18\x01 \x03(\v2\x17.netclode.v1.GitHubRepoR\x05repos\"d\n" +
+	"\x05repos\x18\x01 \x03(\v2\x17.netclode.v1.GitHubRepoR\x05repos\x12\"\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"\x97\x01\n" +
 	"\x11GitStatusResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x120\n" +
-	"\x05files\x18\x02 \x03(\v2\x1a.netclode.v1.GitFileChangeR\x05files\"D\n" +
+	"\x05files\x18\x02 \x03(\v2\x1a.netclode.v1.GitFileChangeR\x05files\x12\"\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"w\n" +
 	"\x0fGitDiffResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
-	"\x04diff\x18\x02 \x01(\tR\x04diff\"G\n" +
-	"\x10GitErrorResponse\x12\x1d\n" +
+	"\x04diff\x18\x02 \x01(\tR\x04diff\x12\"\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\")\n" +
-	"\rErrorResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2V\n" +
+	"request_id\x18\x03 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"l\n" +
+	"\rErrorResponse\x12(\n" +
+	"\x05error\x18\x01 \x01(\v2\x12.netclode.v1.ErrorR\x05error\x12\"\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id2V\n" +
 	"\rClientService\x12E\n" +
 	"\aConnect\x12\x1a.netclode.v1.ClientMessage\x1a\x1a.netclode.v1.ServerMessage(\x010\x01B\xbc\x01\n" +
 	"\x0fcom.netclode.v1B\vClientProtoP\x01ZOgithub.com/angristan/netclode/services/control-plane/gen/netclode/v1;netclodev1\xa2\x02\x03NXX\xaa\x02\vNetclode.V1\xca\x02\vNetclode\\V1\xe2\x02\x17Netclode\\V1\\GPBMetadata\xea\x02\fNetclode::V1b\x06proto3"
@@ -2770,7 +2766,7 @@ func file_netclode_v1_client_proto_rawDescGZIP() []byte {
 	return file_netclode_v1_client_proto_rawDescData
 }
 
-var file_netclode_v1_client_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_netclode_v1_client_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_netclode_v1_client_proto_goTypes = []any{
 	(*ClientMessage)(nil),              // 0: netclode.v1.ClientMessage
 	(*ServerMessage)(nil),              // 1: netclode.v1.ServerMessage
@@ -2796,29 +2792,27 @@ var file_netclode_v1_client_proto_goTypes = []any{
 	(*SessionsDeletedAllResponse)(nil), // 21: netclode.v1.SessionsDeletedAllResponse
 	(*SessionListResponse)(nil),        // 22: netclode.v1.SessionListResponse
 	(*SessionStateResponse)(nil),       // 23: netclode.v1.SessionStateResponse
-	(*SessionErrorResponse)(nil),       // 24: netclode.v1.SessionErrorResponse
-	(*SyncResponse)(nil),               // 25: netclode.v1.SyncResponse
-	(*AgentEventResponse)(nil),         // 26: netclode.v1.AgentEventResponse
-	(*AgentMessageResponse)(nil),       // 27: netclode.v1.AgentMessageResponse
-	(*AgentDoneResponse)(nil),          // 28: netclode.v1.AgentDoneResponse
-	(*AgentErrorResponse)(nil),         // 29: netclode.v1.AgentErrorResponse
-	(*UserMessageResponse)(nil),        // 30: netclode.v1.UserMessageResponse
-	(*TerminalOutputResponse)(nil),     // 31: netclode.v1.TerminalOutputResponse
-	(*PortExposedResponse)(nil),        // 32: netclode.v1.PortExposedResponse
-	(*PortErrorResponse)(nil),          // 33: netclode.v1.PortErrorResponse
-	(*GitHubReposResponse)(nil),        // 34: netclode.v1.GitHubReposResponse
-	(*GitStatusResponse)(nil),          // 35: netclode.v1.GitStatusResponse
-	(*GitDiffResponse)(nil),            // 36: netclode.v1.GitDiffResponse
-	(*GitErrorResponse)(nil),           // 37: netclode.v1.GitErrorResponse
-	(*ErrorResponse)(nil),              // 38: netclode.v1.ErrorResponse
-	(*Session)(nil),                    // 39: netclode.v1.Session
-	(*PersistedMessage)(nil),           // 40: netclode.v1.PersistedMessage
-	(*PersistedEvent)(nil),             // 41: netclode.v1.PersistedEvent
-	(*SessionWithMeta)(nil),            // 42: netclode.v1.SessionWithMeta
-	(*timestamppb.Timestamp)(nil),      // 43: google.protobuf.Timestamp
-	(*AgentEvent)(nil),                 // 44: netclode.v1.AgentEvent
-	(*GitHubRepo)(nil),                 // 45: netclode.v1.GitHubRepo
-	(*GitFileChange)(nil),              // 46: netclode.v1.GitFileChange
+	(*SyncResponse)(nil),               // 24: netclode.v1.SyncResponse
+	(*AgentEventResponse)(nil),         // 25: netclode.v1.AgentEventResponse
+	(*AgentMessageResponse)(nil),       // 26: netclode.v1.AgentMessageResponse
+	(*AgentDoneResponse)(nil),          // 27: netclode.v1.AgentDoneResponse
+	(*UserMessageResponse)(nil),        // 28: netclode.v1.UserMessageResponse
+	(*TerminalOutputResponse)(nil),     // 29: netclode.v1.TerminalOutputResponse
+	(*PortExposedResponse)(nil),        // 30: netclode.v1.PortExposedResponse
+	(*GitHubReposResponse)(nil),        // 31: netclode.v1.GitHubReposResponse
+	(*GitStatusResponse)(nil),          // 32: netclode.v1.GitStatusResponse
+	(*GitDiffResponse)(nil),            // 33: netclode.v1.GitDiffResponse
+	(*ErrorResponse)(nil),              // 34: netclode.v1.ErrorResponse
+	(RepoAccess)(0),                    // 35: netclode.v1.RepoAccess
+	(*Session)(nil),                    // 36: netclode.v1.Session
+	(*PersistedMessage)(nil),           // 37: netclode.v1.PersistedMessage
+	(*PersistedEvent)(nil),             // 38: netclode.v1.PersistedEvent
+	(*SessionSummary)(nil),             // 39: netclode.v1.SessionSummary
+	(*timestamppb.Timestamp)(nil),      // 40: google.protobuf.Timestamp
+	(*AgentEvent)(nil),                 // 41: netclode.v1.AgentEvent
+	(*GitHubRepo)(nil),                 // 42: netclode.v1.GitHubRepo
+	(*GitFileChange)(nil),              // 43: netclode.v1.GitFileChange
+	(*Error)(nil),                      // 44: netclode.v1.Error
 }
 var file_netclode_v1_client_proto_depIdxs = []int32{
 	2,  // 0: netclode.v1.ClientMessage.create_session:type_name -> netclode.v1.CreateSessionRequest
@@ -2843,39 +2837,37 @@ var file_netclode_v1_client_proto_depIdxs = []int32{
 	21, // 19: netclode.v1.ServerMessage.sessions_deleted_all:type_name -> netclode.v1.SessionsDeletedAllResponse
 	22, // 20: netclode.v1.ServerMessage.session_list:type_name -> netclode.v1.SessionListResponse
 	23, // 21: netclode.v1.ServerMessage.session_state:type_name -> netclode.v1.SessionStateResponse
-	24, // 22: netclode.v1.ServerMessage.session_error:type_name -> netclode.v1.SessionErrorResponse
-	25, // 23: netclode.v1.ServerMessage.sync_response:type_name -> netclode.v1.SyncResponse
-	26, // 24: netclode.v1.ServerMessage.agent_event:type_name -> netclode.v1.AgentEventResponse
-	27, // 25: netclode.v1.ServerMessage.agent_message:type_name -> netclode.v1.AgentMessageResponse
-	28, // 26: netclode.v1.ServerMessage.agent_done:type_name -> netclode.v1.AgentDoneResponse
-	29, // 27: netclode.v1.ServerMessage.agent_error:type_name -> netclode.v1.AgentErrorResponse
-	30, // 28: netclode.v1.ServerMessage.user_message:type_name -> netclode.v1.UserMessageResponse
-	31, // 29: netclode.v1.ServerMessage.terminal_output:type_name -> netclode.v1.TerminalOutputResponse
-	32, // 30: netclode.v1.ServerMessage.port_exposed:type_name -> netclode.v1.PortExposedResponse
-	33, // 31: netclode.v1.ServerMessage.port_error:type_name -> netclode.v1.PortErrorResponse
-	34, // 32: netclode.v1.ServerMessage.github_repos:type_name -> netclode.v1.GitHubReposResponse
-	35, // 33: netclode.v1.ServerMessage.git_status:type_name -> netclode.v1.GitStatusResponse
-	36, // 34: netclode.v1.ServerMessage.git_diff:type_name -> netclode.v1.GitDiffResponse
-	37, // 35: netclode.v1.ServerMessage.git_error:type_name -> netclode.v1.GitErrorResponse
-	38, // 36: netclode.v1.ServerMessage.error:type_name -> netclode.v1.ErrorResponse
-	39, // 37: netclode.v1.SessionCreatedResponse.session:type_name -> netclode.v1.Session
-	39, // 38: netclode.v1.SessionUpdatedResponse.session:type_name -> netclode.v1.Session
-	39, // 39: netclode.v1.SessionListResponse.sessions:type_name -> netclode.v1.Session
-	39, // 40: netclode.v1.SessionStateResponse.session:type_name -> netclode.v1.Session
-	40, // 41: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.PersistedMessage
-	41, // 42: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.PersistedEvent
-	42, // 43: netclode.v1.SyncResponse.sessions:type_name -> netclode.v1.SessionWithMeta
-	43, // 44: netclode.v1.SyncResponse.server_time:type_name -> google.protobuf.Timestamp
-	44, // 45: netclode.v1.AgentEventResponse.event:type_name -> netclode.v1.AgentEvent
-	45, // 46: netclode.v1.GitHubReposResponse.repos:type_name -> netclode.v1.GitHubRepo
-	46, // 47: netclode.v1.GitStatusResponse.files:type_name -> netclode.v1.GitFileChange
-	0,  // 48: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
-	1,  // 49: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
-	49, // [49:50] is the sub-list for method output_type
-	48, // [48:49] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	24, // 22: netclode.v1.ServerMessage.sync_response:type_name -> netclode.v1.SyncResponse
+	25, // 23: netclode.v1.ServerMessage.agent_event:type_name -> netclode.v1.AgentEventResponse
+	26, // 24: netclode.v1.ServerMessage.agent_message:type_name -> netclode.v1.AgentMessageResponse
+	27, // 25: netclode.v1.ServerMessage.agent_done:type_name -> netclode.v1.AgentDoneResponse
+	28, // 26: netclode.v1.ServerMessage.user_message:type_name -> netclode.v1.UserMessageResponse
+	29, // 27: netclode.v1.ServerMessage.terminal_output:type_name -> netclode.v1.TerminalOutputResponse
+	30, // 28: netclode.v1.ServerMessage.port_exposed:type_name -> netclode.v1.PortExposedResponse
+	31, // 29: netclode.v1.ServerMessage.github_repos:type_name -> netclode.v1.GitHubReposResponse
+	32, // 30: netclode.v1.ServerMessage.git_status:type_name -> netclode.v1.GitStatusResponse
+	33, // 31: netclode.v1.ServerMessage.git_diff:type_name -> netclode.v1.GitDiffResponse
+	34, // 32: netclode.v1.ServerMessage.error:type_name -> netclode.v1.ErrorResponse
+	35, // 33: netclode.v1.CreateSessionRequest.repo_access:type_name -> netclode.v1.RepoAccess
+	36, // 34: netclode.v1.SessionCreatedResponse.session:type_name -> netclode.v1.Session
+	36, // 35: netclode.v1.SessionUpdatedResponse.session:type_name -> netclode.v1.Session
+	36, // 36: netclode.v1.SessionListResponse.sessions:type_name -> netclode.v1.Session
+	36, // 37: netclode.v1.SessionStateResponse.session:type_name -> netclode.v1.Session
+	37, // 38: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.PersistedMessage
+	38, // 39: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.PersistedEvent
+	39, // 40: netclode.v1.SyncResponse.sessions:type_name -> netclode.v1.SessionSummary
+	40, // 41: netclode.v1.SyncResponse.server_time:type_name -> google.protobuf.Timestamp
+	41, // 42: netclode.v1.AgentEventResponse.event:type_name -> netclode.v1.AgentEvent
+	42, // 43: netclode.v1.GitHubReposResponse.repos:type_name -> netclode.v1.GitHubRepo
+	43, // 44: netclode.v1.GitStatusResponse.files:type_name -> netclode.v1.GitFileChange
+	44, // 45: netclode.v1.ErrorResponse.error:type_name -> netclode.v1.Error
+	0,  // 46: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
+	1,  // 47: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
+	47, // [47:48] is the sub-list for method output_type
+	46, // [46:47] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_netclode_v1_client_proto_init() }
@@ -2910,33 +2902,52 @@ func file_netclode_v1_client_proto_init() {
 		(*ServerMessage_SessionsDeletedAll)(nil),
 		(*ServerMessage_SessionList)(nil),
 		(*ServerMessage_SessionState)(nil),
-		(*ServerMessage_SessionError)(nil),
 		(*ServerMessage_SyncResponse)(nil),
 		(*ServerMessage_AgentEvent)(nil),
 		(*ServerMessage_AgentMessage)(nil),
 		(*ServerMessage_AgentDone)(nil),
-		(*ServerMessage_AgentError)(nil),
 		(*ServerMessage_UserMessage)(nil),
 		(*ServerMessage_TerminalOutput)(nil),
 		(*ServerMessage_PortExposed)(nil),
-		(*ServerMessage_PortError)(nil),
 		(*ServerMessage_GithubRepos)(nil),
 		(*ServerMessage_GitStatus)(nil),
 		(*ServerMessage_GitDiff)(nil),
-		(*ServerMessage_GitError)(nil),
 		(*ServerMessage_Error)(nil),
 	}
 	file_netclode_v1_client_proto_msgTypes[2].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[3].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[4].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[5].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[6].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[7].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[8].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[9].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[10].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[11].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[12].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[13].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[14].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[15].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[16].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[17].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[18].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[20].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[21].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[22].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[23].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[24].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[30].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[31].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[32].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[33].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[34].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_netclode_v1_client_proto_rawDesc), len(file_netclode_v1_client_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   39,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

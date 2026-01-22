@@ -12,11 +12,11 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file netclode/v1/events.proto.
  */
 export const file_netclode_v1_events: GenFile = /*@__PURE__*/
-  fileDesc("ChhuZXRjbG9kZS92MS9ldmVudHMucHJvdG8SC25ldGNsb2RlLnYxIssHCgpBZ2VudEV2ZW50EikKBGtpbmQYASABKA4yGy5uZXRjbG9kZS52MS5BZ2VudEV2ZW50S2luZBItCgl0aW1lc3RhbXAYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKBHRvb2wYAyABKAlIAIgBARIYCgt0b29sX3VzZV9pZBgEIAEoCUgBiAEBEh8KEnBhcmVudF90b29sX3VzZV9pZBgFIAEoCUgCiAEBEisKBWlucHV0GAYgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdEgDiAEBEhgKC2lucHV0X2RlbHRhGAcgASgJSASIAQESEwoGcmVzdWx0GAggASgJSAWIAQESEgoFZXJyb3IYCSABKAlIBogBARIRCgRwYXRoGAogASgJSAeIAQESEwoGYWN0aW9uGAsgASgJSAiIAQESGAoLbGluZXNfYWRkZWQYDCABKAVICYgBARIaCg1saW5lc19yZW1vdmVkGA0gASgFSAqIAQESFAoHY29tbWFuZBgOIAEoCUgLiAEBEhAKA2N3ZBgPIAEoCUgMiAEBEhYKCWV4aXRfY29kZRgQIAEoBUgNiAEBEhMKBm91dHB1dBgRIAEoCUgOiAEBEhgKC3RoaW5raW5nX2lkGBIgASgJSA+IAQESFAoHY29udGVudBgTIAEoCUgQiAEBEhQKB3BhcnRpYWwYFCABKAhIEYgBARIRCgRwb3J0GBUgASgFSBKIAQESFAoHcHJvY2VzcxgWIAEoCUgTiAEBEhgKC3ByZXZpZXdfdXJsGBcgASgJSBSIAQESEQoEcmVwbxgYIAEoCUgViAEBEhIKBXN0YWdlGBkgASgJSBaIAQESFAoHbWVzc2FnZRgaIAEoCUgXiAEBQgcKBV90b29sQg4KDF90b29sX3VzZV9pZEIVChNfcGFyZW50X3Rvb2xfdXNlX2lkQggKBl9pbnB1dEIOCgxfaW5wdXRfZGVsdGFCCQoHX3Jlc3VsdEIICgZfZXJyb3JCBwoFX3BhdGhCCQoHX2FjdGlvbkIOCgxfbGluZXNfYWRkZWRCEAoOX2xpbmVzX3JlbW92ZWRCCgoIX2NvbW1hbmRCBgoEX2N3ZEIMCgpfZXhpdF9jb2RlQgkKB19vdXRwdXRCDgoMX3RoaW5raW5nX2lkQgoKCF9jb250ZW50QgoKCF9wYXJ0aWFsQgcKBV9wb3J0QgoKCF9wcm9jZXNzQg4KDF9wcmV2aWV3X3VybEIHCgVfcmVwb0IICgZfc3RhZ2VCCgoIX21lc3NhZ2UqiAMKDkFnZW50RXZlbnRLaW5kEiAKHEFHRU5UX0VWRU5UX0tJTkRfVU5TUEVDSUZJRUQQABIfChtBR0VOVF9FVkVOVF9LSU5EX1RPT0xfU1RBUlQQARIfChtBR0VOVF9FVkVOVF9LSU5EX1RPT0xfSU5QVVQQAhIdChlBR0VOVF9FVkVOVF9LSU5EX1RPT0xfRU5EEAMSIAocQUdFTlRfRVZFTlRfS0lORF9GSUxFX0NIQU5HRRAEEiIKHkFHRU5UX0VWRU5UX0tJTkRfQ09NTUFORF9TVEFSVBAFEiAKHEFHRU5UX0VWRU5UX0tJTkRfQ09NTUFORF9FTkQQBhIdChlBR0VOVF9FVkVOVF9LSU5EX1RISU5LSU5HEAcSIQodQUdFTlRfRVZFTlRfS0lORF9QT1JUX0VYUE9TRUQQCBIfChtBR0VOVF9FVkVOVF9LSU5EX1JFUE9fQ0xPTkUQCRIoCiRBR0VOVF9FVkVOVF9LSU5EX1RPT0xfSU5QVVRfQ09NUExFVEUQCkK8AQoPY29tLm5ldGNsb2RlLnYxQgtFdmVudHNQcm90b1ABWk9naXRodWIuY29tL2FuZ3Jpc3Rhbi9uZXRjbG9kZS9zZXJ2aWNlcy9jb250cm9sLXBsYW5lL2dlbi9uZXRjbG9kZS92MTtuZXRjbG9kZXYxogIDTlhYqgILTmV0Y2xvZGUuVjHKAgtOZXRjbG9kZVxWMeICF05ldGNsb2RlXFYxXEdQQk1ldGFkYXRh6gIMTmV0Y2xvZGU6OlYxYgZwcm90bzM", [file_google_protobuf_struct, file_google_protobuf_timestamp]);
+  fileDesc("ChhuZXRjbG9kZS92MS9ldmVudHMucHJvdG8SC25ldGNsb2RlLnYxIqcDCgpBZ2VudEV2ZW50EikKBGtpbmQYASABKA4yGy5uZXRjbG9kZS52MS5BZ2VudEV2ZW50S2luZBItCgl0aW1lc3RhbXAYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi0KBHRvb2wYAyABKAsyHS5uZXRjbG9kZS52MS5Ub29sRXZlbnRQYXlsb2FkSAASNQoLZmlsZV9jaGFuZ2UYBCABKAsyHi5uZXRjbG9kZS52MS5GaWxlQ2hhbmdlUGF5bG9hZEgAEi4KB2NvbW1hbmQYBSABKAsyGy5uZXRjbG9kZS52MS5Db21tYW5kUGF5bG9hZEgAEjAKCHRoaW5raW5nGAYgASgLMhwubmV0Y2xvZGUudjEuVGhpbmtpbmdQYXlsb2FkSAASNwoMcG9ydF9leHBvc2VkGAcgASgLMh8ubmV0Y2xvZGUudjEuUG9ydEV4cG9zZWRQYXlsb2FkSAASMwoKcmVwb19jbG9uZRgIIAEoCzIdLm5ldGNsb2RlLnYxLlJlcG9DbG9uZVBheWxvYWRIAEIJCgdwYXlsb2FkIowCChBUb29sRXZlbnRQYXlsb2FkEgwKBHRvb2wYASABKAkSEwoLdG9vbF91c2VfaWQYAiABKAkSHwoScGFyZW50X3Rvb2xfdXNlX2lkGAMgASgJSACIAQESKwoFaW5wdXQYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0SAGIAQESGAoLaW5wdXRfZGVsdGEYBSABKAlIAogBARITCgZyZXN1bHQYBiABKAlIA4gBARISCgVlcnJvchgHIAEoCUgEiAEBQhUKE19wYXJlbnRfdG9vbF91c2VfaWRCCAoGX2lucHV0Qg4KDF9pbnB1dF9kZWx0YUIJCgdfcmVzdWx0QggKBl9lcnJvciKiAQoRRmlsZUNoYW5nZVBheWxvYWQSDAoEcGF0aBgBIAEoCRInCgZhY3Rpb24YAiABKA4yFy5uZXRjbG9kZS52MS5GaWxlQWN0aW9uEhgKC2xpbmVzX2FkZGVkGAMgASgFSACIAQESGgoNbGluZXNfcmVtb3ZlZBgEIAEoBUgBiAEBQg4KDF9saW5lc19hZGRlZEIQCg5fbGluZXNfcmVtb3ZlZCKBAQoOQ29tbWFuZFBheWxvYWQSDwoHY29tbWFuZBgBIAEoCRIQCgNjd2QYAiABKAlIAIgBARIWCglleGl0X2NvZGUYAyABKAVIAYgBARITCgZvdXRwdXQYBCABKAlIAogBAUIGCgRfY3dkQgwKCl9leGl0X2NvZGVCCQoHX291dHB1dCJICg9UaGlua2luZ1BheWxvYWQSEwoLdGhpbmtpbmdfaWQYASABKAkSDwoHY29udGVudBgCIAEoCRIPCgdwYXJ0aWFsGAMgASgIIm4KElBvcnRFeHBvc2VkUGF5bG9hZBIMCgRwb3J0GAEgASgFEhQKB3Byb2Nlc3MYAiABKAlIAIgBARIYCgtwcmV2aWV3X3VybBgDIAEoCUgBiAEBQgoKCF9wcm9jZXNzQg4KDF9wcmV2aWV3X3VybCJdChBSZXBvQ2xvbmVQYXlsb2FkEgwKBHJlcG8YASABKAkSKgoFc3RhZ2UYAiABKA4yGy5uZXRjbG9kZS52MS5SZXBvQ2xvbmVTdGFnZRIPCgdtZXNzYWdlGAMgASgJKm8KCkZpbGVBY3Rpb24SGwoXRklMRV9BQ1RJT05fVU5TUEVDSUZJRUQQABIWChJGSUxFX0FDVElPTl9DUkVBVEUQARIUChBGSUxFX0FDVElPTl9FRElUEAISFgoSRklMRV9BQ1RJT05fREVMRVRFEAMqpgEKDlJlcG9DbG9uZVN0YWdlEiAKHFJFUE9fQ0xPTkVfU1RBR0VfVU5TUEVDSUZJRUQQABIdChlSRVBPX0NMT05FX1NUQUdFX1NUQVJUSU5HEAESHAoYUkVQT19DTE9ORV9TVEFHRV9DTE9OSU5HEAISGQoVUkVQT19DTE9ORV9TVEFHRV9ET05FEAMSGgoWUkVQT19DTE9ORV9TVEFHRV9FUlJPUhAEKogDCg5BZ2VudEV2ZW50S2luZBIgChxBR0VOVF9FVkVOVF9LSU5EX1VOU1BFQ0lGSUVEEAASHwobQUdFTlRfRVZFTlRfS0lORF9UT09MX1NUQVJUEAESHwobQUdFTlRfRVZFTlRfS0lORF9UT09MX0lOUFVUEAISHQoZQUdFTlRfRVZFTlRfS0lORF9UT09MX0VORBADEiAKHEFHRU5UX0VWRU5UX0tJTkRfRklMRV9DSEFOR0UQBBIiCh5BR0VOVF9FVkVOVF9LSU5EX0NPTU1BTkRfU1RBUlQQBRIgChxBR0VOVF9FVkVOVF9LSU5EX0NPTU1BTkRfRU5EEAYSHQoZQUdFTlRfRVZFTlRfS0lORF9USElOS0lORxAHEiEKHUFHRU5UX0VWRU5UX0tJTkRfUE9SVF9FWFBPU0VEEAgSHwobQUdFTlRfRVZFTlRfS0lORF9SRVBPX0NMT05FEAkSKAokQUdFTlRfRVZFTlRfS0lORF9UT09MX0lOUFVUX0NPTVBMRVRFEApCvAEKD2NvbS5uZXRjbG9kZS52MUILRXZlbnRzUHJvdG9QAVpPZ2l0aHViLmNvbS9hbmdyaXN0YW4vbmV0Y2xvZGUvc2VydmljZXMvY29udHJvbC1wbGFuZS9nZW4vbmV0Y2xvZGUvdjE7bmV0Y2xvZGV2MaICA05YWKoCC05ldGNsb2RlLlYxygILTmV0Y2xvZGVcVjHiAhdOZXRjbG9kZVxWMVxHUEJNZXRhZGF0YeoCDE5ldGNsb2RlOjpWMWIGcHJvdG8z", [file_google_protobuf_struct, file_google_protobuf_timestamp]);
 
 /**
  * AgentEvent represents events emitted during agent execution.
- * This is a polymorphic type - fields are populated based on kind.
+ * Uses oneof for type-safe, efficient event payloads.
  *
  * @generated from message netclode.v1.AgentEvent
  */
@@ -32,148 +32,47 @@ export type AgentEvent = Message<"netclode.v1.AgentEvent"> & {
   timestamp?: Timestamp;
 
   /**
-   * Tool events (tool_start, tool_input, tool_end)
+   * Event-specific payload
    *
-   * @generated from field: optional string tool = 3;
+   * @generated from oneof netclode.v1.AgentEvent.payload
    */
-  tool?: string;
-
-  /**
-   * @generated from field: optional string tool_use_id = 4;
-   */
-  toolUseId?: string;
-
-  /**
-   * Set when tool runs inside a Task/subagent
-   *
-   * @generated from field: optional string parent_tool_use_id = 5;
-   */
-  parentToolUseId?: string;
-
-  /**
-   * @generated from field: optional google.protobuf.Struct input = 6;
-   */
-  input?: JsonObject;
-
-  /**
-   * Streaming input for tool_input
-   *
-   * @generated from field: optional string input_delta = 7;
-   */
-  inputDelta?: string;
-
-  /**
-   * @generated from field: optional string result = 8;
-   */
-  result?: string;
-
-  /**
-   * @generated from field: optional string error = 9;
-   */
-  error?: string;
-
-  /**
-   * File change events (file_change)
-   *
-   * @generated from field: optional string path = 10;
-   */
-  path?: string;
-
-  /**
-   * "create", "edit", "delete"
-   *
-   * @generated from field: optional string action = 11;
-   */
-  action?: string;
-
-  /**
-   * @generated from field: optional int32 lines_added = 12;
-   */
-  linesAdded?: number;
-
-  /**
-   * @generated from field: optional int32 lines_removed = 13;
-   */
-  linesRemoved?: number;
-
-  /**
-   * Command events (command_start, command_end)
-   *
-   * @generated from field: optional string command = 14;
-   */
-  command?: string;
-
-  /**
-   * @generated from field: optional string cwd = 15;
-   */
-  cwd?: string;
-
-  /**
-   * @generated from field: optional int32 exit_code = 16;
-   */
-  exitCode?: number;
-
-  /**
-   * @generated from field: optional string output = 17;
-   */
-  output?: string;
-
-  /**
-   * Thinking events (thinking)
-   *
-   * @generated from field: optional string thinking_id = 18;
-   */
-  thinkingId?: string;
-
-  /**
-   * @generated from field: optional string content = 19;
-   */
-  content?: string;
-
-  /**
-   * true for streaming thinking deltas
-   *
-   * @generated from field: optional bool partial = 20;
-   */
-  partial?: boolean;
-
-  /**
-   * Port exposed events (port_exposed)
-   *
-   * @generated from field: optional int32 port = 21;
-   */
-  port?: number;
-
-  /**
-   * @generated from field: optional string process = 22;
-   */
-  process?: string;
-
-  /**
-   * @generated from field: optional string preview_url = 23;
-   */
-  previewUrl?: string;
-
-  /**
-   * Repo clone events (repo_clone)
-   *
-   * @generated from field: optional string repo = 24;
-   */
-  repo?: string;
-
-  /**
-   * "starting", "cloning", "done", "error"
-   *
-   * @generated from field: optional string stage = 25;
-   */
-  stage?: string;
-
-  /**
-   * Progress message
-   *
-   * @generated from field: optional string message = 26;
-   */
-  message?: string;
+  payload: {
+    /**
+     * @generated from field: netclode.v1.ToolEventPayload tool = 3;
+     */
+    value: ToolEventPayload;
+    case: "tool";
+  } | {
+    /**
+     * @generated from field: netclode.v1.FileChangePayload file_change = 4;
+     */
+    value: FileChangePayload;
+    case: "fileChange";
+  } | {
+    /**
+     * @generated from field: netclode.v1.CommandPayload command = 5;
+     */
+    value: CommandPayload;
+    case: "command";
+  } | {
+    /**
+     * @generated from field: netclode.v1.ThinkingPayload thinking = 6;
+     */
+    value: ThinkingPayload;
+    case: "thinking";
+  } | {
+    /**
+     * @generated from field: netclode.v1.PortExposedPayload port_exposed = 7;
+     */
+    value: PortExposedPayload;
+    case: "portExposed";
+  } | {
+    /**
+     * @generated from field: netclode.v1.RepoClonePayload repo_clone = 8;
+     */
+    value: RepoClonePayload;
+    case: "repoClone";
+  } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -182,6 +81,345 @@ export type AgentEvent = Message<"netclode.v1.AgentEvent"> & {
  */
 export const AgentEventSchema: GenMessage<AgentEvent> = /*@__PURE__*/
   messageDesc(file_netclode_v1_events, 0);
+
+/**
+ * ToolEventPayload contains data for tool-related events.
+ * Used for: TOOL_START, TOOL_INPUT, TOOL_INPUT_COMPLETE, TOOL_END
+ *
+ * @generated from message netclode.v1.ToolEventPayload
+ */
+export type ToolEventPayload = Message<"netclode.v1.ToolEventPayload"> & {
+  /**
+   * Tool name (e.g., "Read", "Edit", "Bash")
+   *
+   * @generated from field: string tool = 1;
+   */
+  tool: string;
+
+  /**
+   * Unique ID for this tool invocation
+   *
+   * @generated from field: string tool_use_id = 2;
+   */
+  toolUseId: string;
+
+  /**
+   * Set when tool runs inside a Task/subagent
+   *
+   * @generated from field: optional string parent_tool_use_id = 3;
+   */
+  parentToolUseId?: string;
+
+  /**
+   * Full tool input (for TOOL_START, TOOL_INPUT_COMPLETE)
+   *
+   * @generated from field: optional google.protobuf.Struct input = 4;
+   */
+  input?: JsonObject;
+
+  /**
+   * Streaming input delta (for TOOL_INPUT)
+   *
+   * @generated from field: optional string input_delta = 5;
+   */
+  inputDelta?: string;
+
+  /**
+   * Tool output (for TOOL_END, on success)
+   *
+   * @generated from field: optional string result = 6;
+   */
+  result?: string;
+
+  /**
+   * Error message (for TOOL_END, on failure)
+   *
+   * @generated from field: optional string error = 7;
+   */
+  error?: string;
+};
+
+/**
+ * Describes the message netclode.v1.ToolEventPayload.
+ * Use `create(ToolEventPayloadSchema)` to create a new message.
+ */
+export const ToolEventPayloadSchema: GenMessage<ToolEventPayload> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_events, 1);
+
+/**
+ * FileChangePayload contains data for file modification events.
+ *
+ * @generated from message netclode.v1.FileChangePayload
+ */
+export type FileChangePayload = Message<"netclode.v1.FileChangePayload"> & {
+  /**
+   * File path relative to workspace root
+   *
+   * @generated from field: string path = 1;
+   */
+  path: string;
+
+  /**
+   * Type of change (create, edit, delete)
+   *
+   * @generated from field: netclode.v1.FileAction action = 2;
+   */
+  action: FileAction;
+
+  /**
+   * Number of lines added
+   *
+   * @generated from field: optional int32 lines_added = 3;
+   */
+  linesAdded?: number;
+
+  /**
+   * Number of lines removed
+   *
+   * @generated from field: optional int32 lines_removed = 4;
+   */
+  linesRemoved?: number;
+};
+
+/**
+ * Describes the message netclode.v1.FileChangePayload.
+ * Use `create(FileChangePayloadSchema)` to create a new message.
+ */
+export const FileChangePayloadSchema: GenMessage<FileChangePayload> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_events, 2);
+
+/**
+ * CommandPayload contains data for shell command events.
+ * Used for: COMMAND_START, COMMAND_END
+ *
+ * @generated from message netclode.v1.CommandPayload
+ */
+export type CommandPayload = Message<"netclode.v1.CommandPayload"> & {
+  /**
+   * The command being executed
+   *
+   * @generated from field: string command = 1;
+   */
+  command: string;
+
+  /**
+   * Working directory
+   *
+   * @generated from field: optional string cwd = 2;
+   */
+  cwd?: string;
+
+  /**
+   * Exit code (for COMMAND_END)
+   *
+   * @generated from field: optional int32 exit_code = 3;
+   */
+  exitCode?: number;
+
+  /**
+   * Command output (for COMMAND_END, truncated)
+   *
+   * @generated from field: optional string output = 4;
+   */
+  output?: string;
+};
+
+/**
+ * Describes the message netclode.v1.CommandPayload.
+ * Use `create(CommandPayloadSchema)` to create a new message.
+ */
+export const CommandPayloadSchema: GenMessage<CommandPayload> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_events, 3);
+
+/**
+ * ThinkingPayload contains data for agent thinking/reasoning events.
+ *
+ * @generated from message netclode.v1.ThinkingPayload
+ */
+export type ThinkingPayload = Message<"netclode.v1.ThinkingPayload"> & {
+  /**
+   * Unique ID to correlate streaming thinking updates
+   *
+   * @generated from field: string thinking_id = 1;
+   */
+  thinkingId: string;
+
+  /**
+   * Thinking content (delta if partial, empty if final)
+   *
+   * @generated from field: string content = 2;
+   */
+  content: string;
+
+  /**
+   * true for streaming deltas, false for final (empty) marker
+   *
+   * @generated from field: bool partial = 3;
+   */
+  partial: boolean;
+};
+
+/**
+ * Describes the message netclode.v1.ThinkingPayload.
+ * Use `create(ThinkingPayloadSchema)` to create a new message.
+ */
+export const ThinkingPayloadSchema: GenMessage<ThinkingPayload> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_events, 4);
+
+/**
+ * PortExposedPayload contains data for port exposure events.
+ *
+ * @generated from message netclode.v1.PortExposedPayload
+ */
+export type PortExposedPayload = Message<"netclode.v1.PortExposedPayload"> & {
+  /**
+   * The port number exposed
+   *
+   * @generated from field: int32 port = 1;
+   */
+  port: number;
+
+  /**
+   * Process name listening on the port
+   *
+   * @generated from field: optional string process = 2;
+   */
+  process?: string;
+
+  /**
+   * URL to access the exposed port
+   *
+   * @generated from field: optional string preview_url = 3;
+   */
+  previewUrl?: string;
+};
+
+/**
+ * Describes the message netclode.v1.PortExposedPayload.
+ * Use `create(PortExposedPayloadSchema)` to create a new message.
+ */
+export const PortExposedPayloadSchema: GenMessage<PortExposedPayload> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_events, 5);
+
+/**
+ * RepoClonePayload contains data for repository clone progress events.
+ *
+ * @generated from message netclode.v1.RepoClonePayload
+ */
+export type RepoClonePayload = Message<"netclode.v1.RepoClonePayload"> & {
+  /**
+   * Repository URL being cloned
+   *
+   * @generated from field: string repo = 1;
+   */
+  repo: string;
+
+  /**
+   * Current stage of the clone operation
+   *
+   * @generated from field: netclode.v1.RepoCloneStage stage = 2;
+   */
+  stage: RepoCloneStage;
+
+  /**
+   * Human-readable progress message
+   *
+   * @generated from field: string message = 3;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message netclode.v1.RepoClonePayload.
+ * Use `create(RepoClonePayloadSchema)` to create a new message.
+ */
+export const RepoClonePayloadSchema: GenMessage<RepoClonePayload> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_events, 6);
+
+/**
+ * FileAction represents the type of change made to a file.
+ *
+ * @generated from enum netclode.v1.FileAction
+ */
+export enum FileAction {
+  /**
+   * @generated from enum value: FILE_ACTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * File was created
+   *
+   * @generated from enum value: FILE_ACTION_CREATE = 1;
+   */
+  CREATE = 1,
+
+  /**
+   * File was modified
+   *
+   * @generated from enum value: FILE_ACTION_EDIT = 2;
+   */
+  EDIT = 2,
+
+  /**
+   * File was deleted
+   *
+   * @generated from enum value: FILE_ACTION_DELETE = 3;
+   */
+  DELETE = 3,
+}
+
+/**
+ * Describes the enum netclode.v1.FileAction.
+ */
+export const FileActionSchema: GenEnum<FileAction> = /*@__PURE__*/
+  enumDesc(file_netclode_v1_events, 0);
+
+/**
+ * RepoCloneStage represents the stage of repository cloning.
+ *
+ * @generated from enum netclode.v1.RepoCloneStage
+ */
+export enum RepoCloneStage {
+  /**
+   * @generated from enum value: REPO_CLONE_STAGE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Clone operation is starting
+   *
+   * @generated from enum value: REPO_CLONE_STAGE_STARTING = 1;
+   */
+  STARTING = 1,
+
+  /**
+   * Clone is in progress
+   *
+   * @generated from enum value: REPO_CLONE_STAGE_CLONING = 2;
+   */
+  CLONING = 2,
+
+  /**
+   * Clone completed successfully
+   *
+   * @generated from enum value: REPO_CLONE_STAGE_DONE = 3;
+   */
+  DONE = 3,
+
+  /**
+   * Clone failed with an error
+   *
+   * @generated from enum value: REPO_CLONE_STAGE_ERROR = 4;
+   */
+  ERROR = 4,
+}
+
+/**
+ * Describes the enum netclode.v1.RepoCloneStage.
+ */
+export const RepoCloneStageSchema: GenEnum<RepoCloneStage> = /*@__PURE__*/
+  enumDesc(file_netclode_v1_events, 1);
 
 /**
  * AgentEventKind identifies the type of event.
@@ -195,52 +433,70 @@ export enum AgentEventKind {
   UNSPECIFIED = 0,
 
   /**
+   * Agent started using a tool
+   *
    * @generated from enum value: AGENT_EVENT_KIND_TOOL_START = 1;
    */
   TOOL_START = 1,
 
   /**
+   * Streaming tool input delta
+   *
    * @generated from enum value: AGENT_EVENT_KIND_TOOL_INPUT = 2;
    */
   TOOL_INPUT = 2,
 
   /**
+   * Tool execution completed
+   *
    * @generated from enum value: AGENT_EVENT_KIND_TOOL_END = 3;
    */
   TOOL_END = 3,
 
   /**
+   * File was created/edited/deleted
+   *
    * @generated from enum value: AGENT_EVENT_KIND_FILE_CHANGE = 4;
    */
   FILE_CHANGE = 4,
 
   /**
+   * Shell command started
+   *
    * @generated from enum value: AGENT_EVENT_KIND_COMMAND_START = 5;
    */
   COMMAND_START = 5,
 
   /**
+   * Shell command completed
+   *
    * @generated from enum value: AGENT_EVENT_KIND_COMMAND_END = 6;
    */
   COMMAND_END = 6,
 
   /**
+   * Agent thinking/reasoning content
+   *
    * @generated from enum value: AGENT_EVENT_KIND_THINKING = 7;
    */
   THINKING = 7,
 
   /**
+   * Port was exposed for preview
+   *
    * @generated from enum value: AGENT_EVENT_KIND_PORT_EXPOSED = 8;
    */
   PORT_EXPOSED = 8,
 
   /**
+   * Repository clone progress
+   *
    * @generated from enum value: AGENT_EVENT_KIND_REPO_CLONE = 9;
    */
   REPO_CLONE = 9,
 
   /**
-   * Emitted when tool input streaming finishes
+   * Tool input streaming finished with full input
    *
    * @generated from enum value: AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE = 10;
    */
@@ -251,5 +507,5 @@ export enum AgentEventKind {
  * Describes the enum netclode.v1.AgentEventKind.
  */
 export const AgentEventKindSchema: GenEnum<AgentEventKind> = /*@__PURE__*/
-  enumDesc(file_netclode_v1_events, 0);
+  enumDesc(file_netclode_v1_events, 2);
 

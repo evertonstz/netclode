@@ -18,6 +18,27 @@ const (
 	EventKindRepoClone         AgentEventKind = "repo_clone"          // Repository clone progress
 )
 
+// FileAction represents the type of change made to a file.
+type FileAction string
+
+const (
+	FileActionUnspecified FileAction = ""
+	FileActionCreate      FileAction = "create"
+	FileActionEdit        FileAction = "edit"
+	FileActionDelete      FileAction = "delete"
+)
+
+// RepoCloneStage represents the stage of repository cloning.
+type RepoCloneStage string
+
+const (
+	RepoCloneStageUnspecified RepoCloneStage = ""
+	RepoCloneStageStarting    RepoCloneStage = "starting"
+	RepoCloneStageCloning     RepoCloneStage = "cloning"
+	RepoCloneStageDone        RepoCloneStage = "done"
+	RepoCloneStageError       RepoCloneStage = "error"
+)
+
 // AgentEvent is a polymorphic event type. Fields are optional based on Kind.
 type AgentEvent struct {
 	Kind            AgentEventKind         `json:"kind"`
@@ -30,7 +51,7 @@ type AgentEvent struct {
 	Result          *string                `json:"result,omitempty"`
 	Error           *string                `json:"error,omitempty"`
 	Path            string                 `json:"path,omitempty"`
-	Action          string                 `json:"action,omitempty"`
+	Action          FileAction             `json:"action,omitempty"`
 	Command         string                 `json:"command,omitempty"`
 	Cwd             *string                `json:"cwd,omitempty"`
 	ExitCode        *int                   `json:"exitCode,omitempty"`
@@ -45,7 +66,7 @@ type AgentEvent struct {
 	LinesRemoved    *int                   `json:"linesRemoved,omitempty"`
 
 	// Repo clone event fields
-	Repo    string `json:"repo,omitempty"`    // Repository URL being cloned
-	Stage   string `json:"stage,omitempty"`   // Clone stage: "starting", "cloning", "done", "error"
-	Message string `json:"message,omitempty"` // Progress message
+	Repo    string         `json:"repo,omitempty"`    // Repository URL being cloned
+	Stage   RepoCloneStage `json:"stage,omitempty"`   // Clone stage
+	Message string         `json:"message,omitempty"` // Progress message
 }

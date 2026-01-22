@@ -20,14 +20,14 @@ import (
 // mockManager implements the subset of session.Manager methods used by handlers.
 type mockManager struct {
 	// Stored state
-	sessions      map[string]*protocol.Session
-	messages      map[string][]protocol.PersistedMessage
-	events        map[string][]protocol.PersistedEvent
-	subscribers   map[string]*session.StreamSubscriber
-	gitStatus     map[string][]protocol.GitFileChange
-	gitDiffs      map[string]string
-	githubRepos   []github.Repository
-	sessionsWithMeta []protocol.SessionWithMeta
+	sessions         map[string]*protocol.Session
+	messages         map[string][]protocol.PersistedMessage
+	events           map[string][]protocol.PersistedEvent
+	subscribers      map[string]*session.StreamSubscriber
+	gitStatus        map[string][]protocol.GitFileChange
+	gitDiffs         map[string]string
+	githubRepos      []github.Repository
+	sessionSummaries []protocol.SessionSummary
 
 	// Capture method calls
 	createdSessions   []createSessionCall
@@ -65,7 +65,7 @@ type mockManager struct {
 type createSessionCall struct {
 	name       string
 	repo       *string
-	repoAccess *string
+	repoAccess *protocol.RepoAccess
 }
 
 type sendPromptCall struct {
@@ -105,7 +105,7 @@ func newMockManager() *mockManager {
 	}
 }
 
-func (m *mockManager) Create(ctx context.Context, name string, repo *string, repoAccess *string) (*protocol.Session, error) {
+func (m *mockManager) Create(ctx context.Context, name string, repo *string, repoAccess *protocol.RepoAccess) (*protocol.Session, error) {
 	m.createdSessions = append(m.createdSessions, createSessionCall{name, repo, repoAccess})
 	if m.createErr != nil {
 		return nil, m.createErr
@@ -213,11 +213,11 @@ func (m *mockManager) ResizeTerminal(ctx context.Context, sessionID string, cols
 	return m.terminalResizeErr
 }
 
-func (m *mockManager) GetAllWithMeta(ctx context.Context) ([]protocol.SessionWithMeta, error) {
+func (m *mockManager) GetAllWithMeta(ctx context.Context) ([]protocol.SessionSummary, error) {
 	if m.getAllWithMetaErr != nil {
 		return nil, m.getAllWithMetaErr
 	}
-	return m.sessionsWithMeta, nil
+	return m.sessionSummaries, nil
 }
 
 func (m *mockManager) ExposePort(ctx context.Context, sessionID string, port int) (string, error) {
@@ -265,10 +265,10 @@ func (m *mockManager) Subscribe(ctx context.Context, id string, lastNotification
 
 // mockConnectConnection wraps ConnectConnection with a mock manager for testing.
 type testConnection struct {
-	conn     *ConnectConnection
-	mock     *mockManager
-	sent     []*pb.ServerMessage
-	sendErr  error
+	conn    *ConnectConnection
+	mock    *mockManager
+	sent    []*pb.ServerMessage
+	sendErr error
 }
 
 func newTestConnection(mock *mockManager) *testConnection {
@@ -342,12 +342,14 @@ func (tc *testConnection) lastSent() *pb.ServerMessage {
 // =============================================================================
 
 func (tc *testConnection) handleSessionCreate(ctx context.Context, req *pb.CreateSessionRequest) error {
-	var repoPtr, repoAccessPtr *string
+	var repoPtr *string
+	var repoAccessPtr *protocol.RepoAccess
 	if req.Repo != nil {
 		repoPtr = req.Repo
 	}
 	if req.RepoAccess != nil {
-		repoAccessPtr = req.RepoAccess
+		ra := convertProtoRepoAccessToProtocol(*req.RepoAccess)
+		repoAccessPtr = &ra
 	}
 
 	name := ""
@@ -366,6 +368,18 @@ func (tc *testConnection) handleSessionCreate(ctx context.Context, req *pb.Creat
 			SessionCreated: &pb.SessionCreatedResponse{Session: pbSession},
 		},
 	})
+}
+
+// convertProtoRepoAccessToProtocol converts proto RepoAccess enum to protocol type
+func convertProtoRepoAccessToProtocol(ra pb.RepoAccess) protocol.RepoAccess {
+	switch ra {
+	case pb.RepoAccess_REPO_ACCESS_READ:
+		return protocol.RepoAccessRead
+	case pb.RepoAccess_REPO_ACCESS_WRITE:
+		return protocol.RepoAccessWrite
+	default:
+		return protocol.RepoAccessUnspecified
+	}
 }
 
 func (tc *testConnection) handleSessionList(ctx context.Context) error {
@@ -509,9 +523,9 @@ func (tc *testConnection) handleSync(ctx context.Context) error {
 		return err
 	}
 
-	pbSessions := make([]*pb.SessionWithMeta, len(sessions))
+	pbSessions := make([]*pb.SessionSummary, len(sessions))
 	for i, s := range sessions {
-		pbSessions[i] = convertSessionWithMeta(&s)
+		pbSessions[i] = convertSessionSummary(&s)
 	}
 
 	return tc.send(&pb.ServerMessage{
@@ -533,7 +547,7 @@ func TestHandleSessionCreate(t *testing.T) {
 		tc := newTestConnection(mock)
 
 		repo := "owner/repo"
-		access := "write"
+		access := pb.RepoAccess_REPO_ACCESS_WRITE
 		name := "Test Session"
 		msg := &pb.ClientMessage{
 			Message: &pb.ClientMessage_CreateSession{
@@ -991,7 +1005,7 @@ func TestHandleSync(t *testing.T) {
 	t.Run("returns sessions with metadata", func(t *testing.T) {
 		mock := newMockManager()
 		msgCount := 10
-		mock.sessionsWithMeta = []protocol.SessionWithMeta{
+		mock.sessionSummaries = []protocol.SessionSummary{
 			{
 				Session:      protocol.Session{ID: "sess-1", Name: "Session 1", Status: protocol.StatusReady},
 				MessageCount: &msgCount,

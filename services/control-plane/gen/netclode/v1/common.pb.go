@@ -22,17 +22,67 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// RepoAccess defines the permission level for repository operations.
+type RepoAccess int32
+
+const (
+	RepoAccess_REPO_ACCESS_UNSPECIFIED RepoAccess = 0
+	RepoAccess_REPO_ACCESS_READ        RepoAccess = 1 // Read-only access to the repository
+	RepoAccess_REPO_ACCESS_WRITE       RepoAccess = 2 // Read and write access to the repository
+)
+
+// Enum value maps for RepoAccess.
+var (
+	RepoAccess_name = map[int32]string{
+		0: "REPO_ACCESS_UNSPECIFIED",
+		1: "REPO_ACCESS_READ",
+		2: "REPO_ACCESS_WRITE",
+	}
+	RepoAccess_value = map[string]int32{
+		"REPO_ACCESS_UNSPECIFIED": 0,
+		"REPO_ACCESS_READ":        1,
+		"REPO_ACCESS_WRITE":       2,
+	}
+)
+
+func (x RepoAccess) Enum() *RepoAccess {
+	p := new(RepoAccess)
+	*p = x
+	return p
+}
+
+func (x RepoAccess) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RepoAccess) Descriptor() protoreflect.EnumDescriptor {
+	return file_netclode_v1_common_proto_enumTypes[0].Descriptor()
+}
+
+func (RepoAccess) Type() protoreflect.EnumType {
+	return &file_netclode_v1_common_proto_enumTypes[0]
+}
+
+func (x RepoAccess) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RepoAccess.Descriptor instead.
+func (RepoAccess) EnumDescriptor() ([]byte, []int) {
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{0}
+}
+
 // SessionStatus represents the lifecycle state of a session.
 type SessionStatus int32
 
 const (
 	SessionStatus_SESSION_STATUS_UNSPECIFIED SessionStatus = 0
-	SessionStatus_SESSION_STATUS_CREATING    SessionStatus = 1
-	SessionStatus_SESSION_STATUS_RESUMING    SessionStatus = 2
-	SessionStatus_SESSION_STATUS_READY       SessionStatus = 3
-	SessionStatus_SESSION_STATUS_RUNNING     SessionStatus = 4
-	SessionStatus_SESSION_STATUS_PAUSED      SessionStatus = 5
-	SessionStatus_SESSION_STATUS_ERROR       SessionStatus = 6
+	SessionStatus_SESSION_STATUS_CREATING    SessionStatus = 1 // Session is being provisioned
+	SessionStatus_SESSION_STATUS_RESUMING    SessionStatus = 2 // Session is being resumed from paused state
+	SessionStatus_SESSION_STATUS_READY       SessionStatus = 3 // Session is ready to accept prompts
+	SessionStatus_SESSION_STATUS_RUNNING     SessionStatus = 4 // Agent is actively processing a prompt
+	SessionStatus_SESSION_STATUS_PAUSED      SessionStatus = 5 // Session is paused (agent container stopped)
+	SessionStatus_SESSION_STATUS_ERROR       SessionStatus = 6 // Session encountered an error
 )
 
 // Enum value maps for SessionStatus.
@@ -68,11 +118,11 @@ func (x SessionStatus) String() string {
 }
 
 func (SessionStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_netclode_v1_common_proto_enumTypes[0].Descriptor()
+	return file_netclode_v1_common_proto_enumTypes[1].Descriptor()
 }
 
 func (SessionStatus) Type() protoreflect.EnumType {
-	return &file_netclode_v1_common_proto_enumTypes[0]
+	return &file_netclode_v1_common_proto_enumTypes[1]
 }
 
 func (x SessionStatus) Number() protoreflect.EnumNumber {
@@ -81,7 +131,7 @@ func (x SessionStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SessionStatus.Descriptor instead.
 func (SessionStatus) EnumDescriptor() ([]byte, []int) {
-	return file_netclode_v1_common_proto_rawDescGZIP(), []int{0}
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{1}
 }
 
 // GitFileStatus represents the type of change to a file.
@@ -136,11 +186,11 @@ func (x GitFileStatus) String() string {
 }
 
 func (GitFileStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_netclode_v1_common_proto_enumTypes[1].Descriptor()
+	return file_netclode_v1_common_proto_enumTypes[2].Descriptor()
 }
 
 func (GitFileStatus) Type() protoreflect.EnumType {
-	return &file_netclode_v1_common_proto_enumTypes[1]
+	return &file_netclode_v1_common_proto_enumTypes[2]
 }
 
 func (x GitFileStatus) Number() protoreflect.EnumNumber {
@@ -149,7 +199,7 @@ func (x GitFileStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GitFileStatus.Descriptor instead.
 func (GitFileStatus) EnumDescriptor() ([]byte, []int) {
-	return file_netclode_v1_common_proto_rawDescGZIP(), []int{1}
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
 // MessageRole identifies the sender of a message.
@@ -186,11 +236,11 @@ func (x MessageRole) String() string {
 }
 
 func (MessageRole) Descriptor() protoreflect.EnumDescriptor {
-	return file_netclode_v1_common_proto_enumTypes[2].Descriptor()
+	return file_netclode_v1_common_proto_enumTypes[3].Descriptor()
 }
 
 func (MessageRole) Type() protoreflect.EnumType {
-	return &file_netclode_v1_common_proto_enumTypes[2]
+	return &file_netclode_v1_common_proto_enumTypes[3]
 }
 
 func (x MessageRole) Number() protoreflect.EnumNumber {
@@ -199,7 +249,7 @@ func (x MessageRole) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MessageRole.Descriptor instead.
 func (MessageRole) EnumDescriptor() ([]byte, []int) {
-	return file_netclode_v1_common_proto_rawDescGZIP(), []int{2}
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
 // Session represents a coding session with an AI agent.
@@ -208,8 +258,8 @@ type Session struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Status        SessionStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=netclode.v1.SessionStatus" json:"status,omitempty"`
-	Repo          *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`
-	RepoAccess    *string                `protobuf:"bytes,5,opt,name=repo_access,json=repoAccess,proto3,oneof" json:"repo_access,omitempty"` // "read" or "write"
+	Repo          *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                            // GitHub repository URL (e.g., "owner/repo")
+	RepoAccess    *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"` // Permission level for repository operations
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	LastActiveAt  *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -274,11 +324,11 @@ func (x *Session) GetRepo() string {
 	return ""
 }
 
-func (x *Session) GetRepoAccess() string {
+func (x *Session) GetRepoAccess() RepoAccess {
 	if x != nil && x.RepoAccess != nil {
 		return *x.RepoAccess
 	}
-	return ""
+	return RepoAccess_REPO_ACCESS_UNSPECIFIED
 }
 
 func (x *Session) GetCreatedAt() *timestamppb.Timestamp {
@@ -295,30 +345,30 @@ func (x *Session) GetLastActiveAt() *timestamppb.Timestamp {
 	return nil
 }
 
-// SessionWithMeta includes session data plus metadata for list views.
-type SessionWithMeta struct {
+// SessionSummary includes session data plus metadata for list views.
+type SessionSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
-	MessageCount  *int32                 `protobuf:"varint,2,opt,name=message_count,json=messageCount,proto3,oneof" json:"message_count,omitempty"`
-	LastMessageId *string                `protobuf:"bytes,3,opt,name=last_message_id,json=lastMessageId,proto3,oneof" json:"last_message_id,omitempty"`
+	MessageCount  *int32                 `protobuf:"varint,2,opt,name=message_count,json=messageCount,proto3,oneof" json:"message_count,omitempty"`     // Total number of messages in session
+	LastMessageId *string                `protobuf:"bytes,3,opt,name=last_message_id,json=lastMessageId,proto3,oneof" json:"last_message_id,omitempty"` // ID of most recent message for pagination
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SessionWithMeta) Reset() {
-	*x = SessionWithMeta{}
+func (x *SessionSummary) Reset() {
+	*x = SessionSummary{}
 	mi := &file_netclode_v1_common_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SessionWithMeta) String() string {
+func (x *SessionSummary) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SessionWithMeta) ProtoMessage() {}
+func (*SessionSummary) ProtoMessage() {}
 
-func (x *SessionWithMeta) ProtoReflect() protoreflect.Message {
+func (x *SessionSummary) ProtoReflect() protoreflect.Message {
 	mi := &file_netclode_v1_common_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -330,41 +380,41 @@ func (x *SessionWithMeta) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SessionWithMeta.ProtoReflect.Descriptor instead.
-func (*SessionWithMeta) Descriptor() ([]byte, []int) {
+// Deprecated: Use SessionSummary.ProtoReflect.Descriptor instead.
+func (*SessionSummary) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_common_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SessionWithMeta) GetSession() *Session {
+func (x *SessionSummary) GetSession() *Session {
 	if x != nil {
 		return x.Session
 	}
 	return nil
 }
 
-func (x *SessionWithMeta) GetMessageCount() int32 {
+func (x *SessionSummary) GetMessageCount() int32 {
 	if x != nil && x.MessageCount != nil {
 		return *x.MessageCount
 	}
 	return 0
 }
 
-func (x *SessionWithMeta) GetLastMessageId() string {
+func (x *SessionSummary) GetLastMessageId() string {
 	if x != nil && x.LastMessageId != nil {
 		return *x.LastMessageId
 	}
 	return ""
 }
 
-// SessionConfig contains configuration passed to the agent.
+// SessionConfig contains configuration passed to the agent on registration.
 type SessionConfig struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	SessionId       string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	WorkspaceDir    string                 `protobuf:"bytes,2,opt,name=workspace_dir,json=workspaceDir,proto3" json:"workspace_dir,omitempty"`
-	GithubToken     *string                `protobuf:"bytes,3,opt,name=github_token,json=githubToken,proto3,oneof" json:"github_token,omitempty"`
-	Repo            *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`
-	RepoAccess      *string                `protobuf:"bytes,5,opt,name=repo_access,json=repoAccess,proto3,oneof" json:"repo_access,omitempty"`
-	ControlPlaneUrl string                 `protobuf:"bytes,6,opt,name=control_plane_url,json=controlPlaneUrl,proto3" json:"control_plane_url,omitempty"`
+	WorkspaceDir    string                 `protobuf:"bytes,2,opt,name=workspace_dir,json=workspaceDir,proto3" json:"workspace_dir,omitempty"`                              // Absolute path to workspace directory
+	GithubToken     *string                `protobuf:"bytes,3,opt,name=github_token,json=githubToken,proto3,oneof" json:"github_token,omitempty"`                           // GitHub token for repository access
+	Repo            *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                            // Repository to clone (e.g., "owner/repo")
+	RepoAccess      *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"` // Permission level for repository operations
+	ControlPlaneUrl string                 `protobuf:"bytes,6,opt,name=control_plane_url,json=controlPlaneUrl,proto3" json:"control_plane_url,omitempty"`                   // URL of control plane for callbacks
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -427,11 +477,11 @@ func (x *SessionConfig) GetRepo() string {
 	return ""
 }
 
-func (x *SessionConfig) GetRepoAccess() string {
+func (x *SessionConfig) GetRepoAccess() RepoAccess {
 	if x != nil && x.RepoAccess != nil {
 		return *x.RepoAccess
 	}
-	return ""
+	return RepoAccess_REPO_ACCESS_UNSPECIFIED
 }
 
 func (x *SessionConfig) GetControlPlaneUrl() string {
@@ -441,13 +491,13 @@ func (x *SessionConfig) GetControlPlaneUrl() string {
 	return ""
 }
 
-// GitHubRepo represents a GitHub repository.
+// GitHubRepo represents a GitHub repository from the user's account.
 type GitHubRepo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	FullName      string                 `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
-	Private       bool                   `protobuf:"varint,3,opt,name=private,proto3" json:"private,omitempty"`
-	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                         // Repository name (e.g., "my-repo")
+	FullName      string                 `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"` // Full repository name (e.g., "owner/my-repo")
+	Private       bool                   `protobuf:"varint,3,opt,name=private,proto3" json:"private,omitempty"`                  // Whether the repository is private
+	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`     // Repository description
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -513,9 +563,9 @@ func (x *GitHubRepo) GetDescription() string {
 // GitFileChange represents a changed file from git status.
 type GitFileChange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	Status        GitFileStatus          `protobuf:"varint,2,opt,name=status,proto3,enum=netclode.v1.GitFileStatus" json:"status,omitempty"`
-	Staged        bool                   `protobuf:"varint,3,opt,name=staged,proto3" json:"staged,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`                                     // File path relative to repository root
+	Status        GitFileStatus          `protobuf:"varint,2,opt,name=status,proto3,enum=netclode.v1.GitFileStatus" json:"status,omitempty"` // Type of change
+	Staged        bool                   `protobuf:"varint,3,opt,name=staged,proto3" json:"staged,omitempty"`                                // Whether the change is staged for commit
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -641,12 +691,13 @@ func (x *PersistedMessage) GetTimestamp() *timestamppb.Timestamp {
 }
 
 // PersistedEvent represents an agent event stored in history.
+// Events are stored with their full structure for replay during session open.
 type PersistedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	MessageId     string                 `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // Parent message ID
-	EventData     []byte                 `protobuf:"bytes,3,opt,name=event_data,json=eventData,proto3" json:"event_data,omitempty"` // Serialized AgentEvent
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	MessageId     string                 `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // Parent message ID (for future correlation)
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Event         *AgentEvent            `protobuf:"bytes,4,opt,name=event,proto3" json:"event,omitempty"` // The full event payload
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -695,16 +746,86 @@ func (x *PersistedEvent) GetMessageId() string {
 	return ""
 }
 
-func (x *PersistedEvent) GetEventData() []byte {
+func (x *PersistedEvent) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
-		return x.EventData
+		return x.Timestamp
 	}
 	return nil
 }
 
-func (x *PersistedEvent) GetTimestamp() *timestamppb.Timestamp {
+func (x *PersistedEvent) GetEvent() *AgentEvent {
 	if x != nil {
-		return x.Timestamp
+		return x.Event
+	}
+	return nil
+}
+
+// Error represents a structured error response.
+// Used across all error response types for consistency.
+type Error struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`                                                                                 // Machine-readable error code (e.g., "SESSION_NOT_FOUND")
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`                                                                           // Human-readable error message
+	SessionId     *string                `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3,oneof" json:"session_id,omitempty"`                                                // Associated session ID, if applicable
+	Details       map[string]string      `protobuf:"bytes,4,rep,name=details,proto3" json:"details,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Additional error context
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Error) Reset() {
+	*x = Error{}
+	mi := &file_netclode_v1_common_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Error) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Error) ProtoMessage() {}
+
+func (x *Error) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_common_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Error.ProtoReflect.Descriptor instead.
+func (*Error) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Error) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *Error) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *Error) GetSessionId() string {
+	if x != nil && x.SessionId != nil {
+		return *x.SessionId
+	}
+	return ""
+}
+
+func (x *Error) GetDetails() map[string]string {
+	if x != nil {
+		return x.Details
 	}
 	return nil
 }
@@ -713,32 +834,32 @@ var File_netclode_v1_common_proto protoreflect.FileDescriptor
 
 const file_netclode_v1_common_proto_rawDesc = "" +
 	"\n" +
-	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb6\x02\n" +
+	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18netclode/v1/events.proto\"\xcf\x02\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x122\n" +
 	"\x06status\x18\x03 \x01(\x0e2\x1a.netclode.v1.SessionStatusR\x06status\x12\x17\n" +
-	"\x04repo\x18\x04 \x01(\tH\x00R\x04repo\x88\x01\x01\x12$\n" +
-	"\vrepo_access\x18\x05 \x01(\tH\x01R\n" +
+	"\x04repo\x18\x04 \x01(\tH\x00R\x04repo\x88\x01\x01\x12=\n" +
+	"\vrepo_access\x18\x05 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x01R\n" +
 	"repoAccess\x88\x01\x01\x129\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12@\n" +
 	"\x0elast_active_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveAtB\a\n" +
 	"\x05_repoB\x0e\n" +
-	"\f_repo_access\"\xbe\x01\n" +
-	"\x0fSessionWithMeta\x12.\n" +
+	"\f_repo_access\"\xbd\x01\n" +
+	"\x0eSessionSummary\x12.\n" +
 	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\x12(\n" +
 	"\rmessage_count\x18\x02 \x01(\x05H\x00R\fmessageCount\x88\x01\x01\x12+\n" +
 	"\x0flast_message_id\x18\x03 \x01(\tH\x01R\rlastMessageId\x88\x01\x01B\x10\n" +
 	"\x0e_message_countB\x12\n" +
-	"\x10_last_message_id\"\x90\x02\n" +
+	"\x10_last_message_id\"\xa9\x02\n" +
 	"\rSessionConfig\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
 	"\rworkspace_dir\x18\x02 \x01(\tR\fworkspaceDir\x12&\n" +
 	"\fgithub_token\x18\x03 \x01(\tH\x00R\vgithubToken\x88\x01\x01\x12\x17\n" +
-	"\x04repo\x18\x04 \x01(\tH\x01R\x04repo\x88\x01\x01\x12$\n" +
-	"\vrepo_access\x18\x05 \x01(\tH\x02R\n" +
+	"\x04repo\x18\x04 \x01(\tH\x01R\x04repo\x88\x01\x01\x12=\n" +
+	"\vrepo_access\x18\x05 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x02R\n" +
 	"repoAccess\x88\x01\x01\x12*\n" +
 	"\x11control_plane_url\x18\x06 \x01(\tR\x0fcontrolPlaneUrlB\x0f\n" +
 	"\r_github_tokenB\a\n" +
@@ -759,14 +880,28 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12,\n" +
 	"\x04role\x18\x02 \x01(\x0e2\x18.netclode.v1.MessageRoleR\x04role\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x128\n" +
-	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\x98\x01\n" +
+	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\xa8\x01\n" +
 	"\x0ePersistedEvent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
-	"message_id\x18\x02 \x01(\tR\tmessageId\x12\x1d\n" +
+	"message_id\x18\x02 \x01(\tR\tmessageId\x128\n" +
+	"\ttimestamp\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12-\n" +
+	"\x05event\x18\x04 \x01(\v2\x17.netclode.v1.AgentEventR\x05event\"\xdf\x01\n" +
+	"\x05Error\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\"\n" +
 	"\n" +
-	"event_data\x18\x03 \x01(\fR\teventData\x128\n" +
-	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp*\xd4\x01\n" +
+	"session_id\x18\x03 \x01(\tH\x00R\tsessionId\x88\x01\x01\x129\n" +
+	"\adetails\x18\x04 \x03(\v2\x1f.netclode.v1.Error.DetailsEntryR\adetails\x1a:\n" +
+	"\fDetailsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\v_session_id*V\n" +
+	"\n" +
+	"RepoAccess\x12\x1b\n" +
+	"\x17REPO_ACCESS_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10REPO_ACCESS_READ\x10\x01\x12\x15\n" +
+	"\x11REPO_ACCESS_WRITE\x10\x02*\xd4\x01\n" +
 	"\rSessionStatus\x12\x1e\n" +
 	"\x1aSESSION_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17SESSION_STATUS_CREATING\x10\x01\x12\x1b\n" +
@@ -803,35 +938,43 @@ func file_netclode_v1_common_proto_rawDescGZIP() []byte {
 	return file_netclode_v1_common_proto_rawDescData
 }
 
-var file_netclode_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_netclode_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_netclode_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_netclode_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_netclode_v1_common_proto_goTypes = []any{
-	(SessionStatus)(0),            // 0: netclode.v1.SessionStatus
-	(GitFileStatus)(0),            // 1: netclode.v1.GitFileStatus
-	(MessageRole)(0),              // 2: netclode.v1.MessageRole
-	(*Session)(nil),               // 3: netclode.v1.Session
-	(*SessionWithMeta)(nil),       // 4: netclode.v1.SessionWithMeta
-	(*SessionConfig)(nil),         // 5: netclode.v1.SessionConfig
-	(*GitHubRepo)(nil),            // 6: netclode.v1.GitHubRepo
-	(*GitFileChange)(nil),         // 7: netclode.v1.GitFileChange
-	(*PersistedMessage)(nil),      // 8: netclode.v1.PersistedMessage
-	(*PersistedEvent)(nil),        // 9: netclode.v1.PersistedEvent
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
+	(RepoAccess)(0),               // 0: netclode.v1.RepoAccess
+	(SessionStatus)(0),            // 1: netclode.v1.SessionStatus
+	(GitFileStatus)(0),            // 2: netclode.v1.GitFileStatus
+	(MessageRole)(0),              // 3: netclode.v1.MessageRole
+	(*Session)(nil),               // 4: netclode.v1.Session
+	(*SessionSummary)(nil),        // 5: netclode.v1.SessionSummary
+	(*SessionConfig)(nil),         // 6: netclode.v1.SessionConfig
+	(*GitHubRepo)(nil),            // 7: netclode.v1.GitHubRepo
+	(*GitFileChange)(nil),         // 8: netclode.v1.GitFileChange
+	(*PersistedMessage)(nil),      // 9: netclode.v1.PersistedMessage
+	(*PersistedEvent)(nil),        // 10: netclode.v1.PersistedEvent
+	(*Error)(nil),                 // 11: netclode.v1.Error
+	nil,                           // 12: netclode.v1.Error.DetailsEntry
+	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+	(*AgentEvent)(nil),            // 14: netclode.v1.AgentEvent
 }
 var file_netclode_v1_common_proto_depIdxs = []int32{
-	0,  // 0: netclode.v1.Session.status:type_name -> netclode.v1.SessionStatus
-	10, // 1: netclode.v1.Session.created_at:type_name -> google.protobuf.Timestamp
-	10, // 2: netclode.v1.Session.last_active_at:type_name -> google.protobuf.Timestamp
-	3,  // 3: netclode.v1.SessionWithMeta.session:type_name -> netclode.v1.Session
-	1,  // 4: netclode.v1.GitFileChange.status:type_name -> netclode.v1.GitFileStatus
-	2,  // 5: netclode.v1.PersistedMessage.role:type_name -> netclode.v1.MessageRole
-	10, // 6: netclode.v1.PersistedMessage.timestamp:type_name -> google.protobuf.Timestamp
-	10, // 7: netclode.v1.PersistedEvent.timestamp:type_name -> google.protobuf.Timestamp
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	1,  // 0: netclode.v1.Session.status:type_name -> netclode.v1.SessionStatus
+	0,  // 1: netclode.v1.Session.repo_access:type_name -> netclode.v1.RepoAccess
+	13, // 2: netclode.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	13, // 3: netclode.v1.Session.last_active_at:type_name -> google.protobuf.Timestamp
+	4,  // 4: netclode.v1.SessionSummary.session:type_name -> netclode.v1.Session
+	0,  // 5: netclode.v1.SessionConfig.repo_access:type_name -> netclode.v1.RepoAccess
+	2,  // 6: netclode.v1.GitFileChange.status:type_name -> netclode.v1.GitFileStatus
+	3,  // 7: netclode.v1.PersistedMessage.role:type_name -> netclode.v1.MessageRole
+	13, // 8: netclode.v1.PersistedMessage.timestamp:type_name -> google.protobuf.Timestamp
+	13, // 9: netclode.v1.PersistedEvent.timestamp:type_name -> google.protobuf.Timestamp
+	14, // 10: netclode.v1.PersistedEvent.event:type_name -> netclode.v1.AgentEvent
+	12, // 11: netclode.v1.Error.details:type_name -> netclode.v1.Error.DetailsEntry
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_netclode_v1_common_proto_init() }
@@ -839,17 +982,19 @@ func file_netclode_v1_common_proto_init() {
 	if File_netclode_v1_common_proto != nil {
 		return
 	}
+	file_netclode_v1_events_proto_init()
 	file_netclode_v1_common_proto_msgTypes[0].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[1].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[2].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[3].OneofWrappers = []any{}
+	file_netclode_v1_common_proto_msgTypes[7].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_netclode_v1_common_proto_rawDesc), len(file_netclode_v1_common_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   7,
+			NumEnums:      4,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

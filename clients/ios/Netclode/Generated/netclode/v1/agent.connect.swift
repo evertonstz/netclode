@@ -10,7 +10,7 @@ import Foundation
 import SwiftProtobuf
 
 /// AgentService handles bidirectional communication between agents and control plane.
-/// Agents connect to CP (not the other way around).
+/// Agents connect to the control plane (not the other way around).
 public protocol Netclode_V1_AgentServiceClientInterface: Sendable {
 
     /// Connect establishes a bidirectional stream for all agent-CP communication.

@@ -344,10 +344,11 @@ func (*ControlPlaneMessage_GetGitDiff) isControlPlaneMessage_Message() {}
 
 func (*ControlPlaneMessage_TerminalInput) isControlPlaneMessage_Message() {}
 
+// AgentRegister is sent first by the agent to identify itself.
 type AgentRegister struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // Session this agent is servicing
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`                      // Agent version for compatibility checking
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -396,6 +397,7 @@ func (x *AgentRegister) GetVersion() string {
 	return ""
 }
 
+// AgentStreamResponse contains streaming output during prompt execution.
 type AgentStreamResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Response:
@@ -497,23 +499,23 @@ type isAgentStreamResponse_Response interface {
 }
 
 type AgentStreamResponse_TextDelta struct {
-	TextDelta *AgentTextDelta `protobuf:"bytes,1,opt,name=text_delta,json=textDelta,proto3,oneof"`
+	TextDelta *AgentTextDelta `protobuf:"bytes,1,opt,name=text_delta,json=textDelta,proto3,oneof"` // Streaming text output
 }
 
 type AgentStreamResponse_Event struct {
-	Event *AgentEvent `protobuf:"bytes,2,opt,name=event,proto3,oneof"`
+	Event *AgentEvent `protobuf:"bytes,2,opt,name=event,proto3,oneof"` // Tool/command/thinking events
 }
 
 type AgentStreamResponse_SystemMessage struct {
-	SystemMessage *AgentSystemMessage `protobuf:"bytes,3,opt,name=system_message,json=systemMessage,proto3,oneof"`
+	SystemMessage *AgentSystemMessage `protobuf:"bytes,3,opt,name=system_message,json=systemMessage,proto3,oneof"` // System messages (init, etc.)
 }
 
 type AgentStreamResponse_Result struct {
-	Result *AgentResult `protobuf:"bytes,4,opt,name=result,proto3,oneof"`
+	Result *AgentResult `protobuf:"bytes,4,opt,name=result,proto3,oneof"` // Final result on completion
 }
 
 type AgentStreamResponse_Error struct {
-	Error *AgentError `protobuf:"bytes,5,opt,name=error,proto3,oneof"`
+	Error *AgentError `protobuf:"bytes,5,opt,name=error,proto3,oneof"` // Error during execution
 }
 
 func (*AgentStreamResponse_TextDelta) isAgentStreamResponse_Response() {}
@@ -526,11 +528,12 @@ func (*AgentStreamResponse_Result) isAgentStreamResponse_Response() {}
 
 func (*AgentStreamResponse_Error) isAgentStreamResponse_Response() {}
 
+// AgentTextDelta contains a chunk of streaming text output.
 type AgentTextDelta struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	Partial       bool                   `protobuf:"varint,2,opt,name=partial,proto3" json:"partial,omitempty"`
-	MessageId     string                 `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`                      // Text content (delta or full based on partial)
+	Partial       bool                   `protobuf:"varint,2,opt,name=partial,proto3" json:"partial,omitempty"`                     // true = streaming delta, false = final complete text
+	MessageId     string                 `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // Correlates deltas belonging to same message
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -586,9 +589,10 @@ func (x *AgentTextDelta) GetMessageId() string {
 	return ""
 }
 
+// AgentSystemMessage contains system-level messages from the agent.
 type AgentSystemMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"` // System message content (e.g., "init", "ready")
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -630,11 +634,12 @@ func (x *AgentSystemMessage) GetMessage() string {
 	return ""
 }
 
+// AgentResult contains the final result after prompt completion.
 type AgentResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	InputTokens   int32                  `protobuf:"varint,1,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
-	OutputTokens  int32                  `protobuf:"varint,2,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
-	TotalTurns    int32                  `protobuf:"varint,3,opt,name=total_turns,json=totalTurns,proto3" json:"total_turns,omitempty"`
+	InputTokens   int32                  `protobuf:"varint,1,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`    // Total input tokens used
+	OutputTokens  int32                  `protobuf:"varint,2,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"` // Total output tokens generated
+	TotalTurns    int32                  `protobuf:"varint,3,opt,name=total_turns,json=totalTurns,proto3" json:"total_turns,omitempty"`       // Number of conversation turns
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -690,10 +695,11 @@ func (x *AgentResult) GetTotalTurns() int32 {
 	return 0
 }
 
+// AgentError indicates an error during prompt execution.
 type AgentError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
-	Retryable     bool                   `protobuf:"varint,2,opt,name=retryable,proto3" json:"retryable,omitempty"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`      // Error message
+	Retryable     bool                   `protobuf:"varint,2,opt,name=retryable,proto3" json:"retryable,omitempty"` // Whether the operation can be retried
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -742,9 +748,10 @@ func (x *AgentError) GetRetryable() bool {
 	return false
 }
 
+// AgentTerminalOutput contains terminal output from the agent.
 type AgentTerminalOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          string                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Data          string                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"` // Terminal output data (may contain ANSI codes)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -786,10 +793,11 @@ func (x *AgentTerminalOutput) GetData() string {
 	return ""
 }
 
+// AgentTitleResponse contains the generated session title.
 type AgentTitleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // Echoed from GenerateTitleRequest
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`                          // Generated title (empty on failure)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -838,10 +846,11 @@ func (x *AgentTitleResponse) GetTitle() string {
 	return ""
 }
 
+// AgentGitStatusResponse contains git status results.
 type AgentGitStatusResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	Files         []*GitFileChange       `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // Echoed from GetGitStatusRequest
+	Files         []*GitFileChange       `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`                          // Changed files
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -890,10 +899,11 @@ func (x *AgentGitStatusResponse) GetFiles() []*GitFileChange {
 	return nil
 }
 
+// AgentGitDiffResponse contains git diff results.
 type AgentGitDiffResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	Diff          string                 `protobuf:"bytes,2,opt,name=diff,proto3" json:"diff,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // Echoed from GetGitDiffRequest
+	Diff          string                 `protobuf:"bytes,2,opt,name=diff,proto3" json:"diff,omitempty"`                            // Unified diff output
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -942,12 +952,12 @@ func (x *AgentGitDiffResponse) GetDiff() string {
 	return ""
 }
 
+// AgentRegistered is sent in response to AgentRegister.
 type AgentRegistered struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Success bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Error   *string                `protobuf:"bytes,2,opt,name=error,proto3,oneof" json:"error,omitempty"`
-	// Session config passed to agent on registration
-	Config        *SessionConfig `protobuf:"bytes,3,opt,name=config,proto3,oneof" json:"config,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`    // Whether registration succeeded
+	Error         *string                `protobuf:"bytes,2,opt,name=error,proto3,oneof" json:"error,omitempty"`   // Error message if registration failed
+	Config        *SessionConfig         `protobuf:"bytes,3,opt,name=config,proto3,oneof" json:"config,omitempty"` // Session configuration for the agent
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1003,9 +1013,10 @@ func (x *AgentRegistered) GetConfig() *SessionConfig {
 	return nil
 }
 
+// ExecutePromptRequest asks the agent to execute a prompt.
 type ExecutePromptRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"` // The prompt text to execute
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1047,6 +1058,7 @@ func (x *ExecutePromptRequest) GetText() string {
 	return ""
 }
 
+// InterruptRequest asks the agent to interrupt the current operation.
 type InterruptRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1083,10 +1095,11 @@ func (*InterruptRequest) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
+// GenerateTitleRequest asks the agent to generate a session title.
 type GenerateTitleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	Prompt        string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // ID for correlating response
+	Prompt        string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`                        // The initial prompt to generate title from
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1135,9 +1148,10 @@ func (x *GenerateTitleRequest) GetPrompt() string {
 	return ""
 }
 
+// GetGitStatusRequest asks the agent for git status.
 type GetGitStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // ID for correlating response
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1179,10 +1193,11 @@ func (x *GetGitStatusRequest) GetRequestId() string {
 	return ""
 }
 
+// GetGitDiffRequest asks the agent for git diff.
 type GetGitDiffRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	File          *string                `protobuf:"bytes,2,opt,name=file,proto3,oneof" json:"file,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // ID for correlating response
+	File          *string                `protobuf:"bytes,2,opt,name=file,proto3,oneof" json:"file,omitempty"`                      // Specific file, or all files if empty
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1231,6 +1246,7 @@ func (x *GetGitDiffRequest) GetFile() string {
 	return ""
 }
 
+// AgentTerminalInput contains terminal input for the agent.
 type AgentTerminalInput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Input:
@@ -1302,21 +1318,22 @@ type isAgentTerminalInput_Input interface {
 }
 
 type AgentTerminalInput_Data struct {
-	Data string `protobuf:"bytes,1,opt,name=data,proto3,oneof"`
+	Data string `protobuf:"bytes,1,opt,name=data,proto3,oneof"` // Keyboard input data
 }
 
 type AgentTerminalInput_Resize struct {
-	Resize *AgentTerminalResize `protobuf:"bytes,2,opt,name=resize,proto3,oneof"`
+	Resize *AgentTerminalResize `protobuf:"bytes,2,opt,name=resize,proto3,oneof"` // Terminal resize event
 }
 
 func (*AgentTerminalInput_Data) isAgentTerminalInput_Input() {}
 
 func (*AgentTerminalInput_Resize) isAgentTerminalInput_Input() {}
 
+// AgentTerminalResize contains terminal dimensions.
 type AgentTerminalResize struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cols          int32                  `protobuf:"varint,1,opt,name=cols,proto3" json:"cols,omitempty"`
-	Rows          int32                  `protobuf:"varint,2,opt,name=rows,proto3" json:"rows,omitempty"`
+	Cols          int32                  `protobuf:"varint,1,opt,name=cols,proto3" json:"cols,omitempty"` // Number of columns
+	Rows          int32                  `protobuf:"varint,2,opt,name=rows,proto3" json:"rows,omitempty"` // Number of rows
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

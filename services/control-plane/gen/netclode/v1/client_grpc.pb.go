@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// ClientService handles communication between clients (iOS app) and the control plane.
+// ClientService handles communication between clients and the control plane.
 // Uses a single bidirectional stream for all operations.
 type ClientServiceClient interface {
 	// Connect establishes a bidirectional stream for all client-server communication.
@@ -58,7 +58,7 @@ type ClientService_ConnectClient = grpc.BidiStreamingClient[ClientMessage, Serve
 // All implementations must embed UnimplementedClientServiceServer
 // for forward compatibility.
 //
-// ClientService handles communication between clients (iOS app) and the control plane.
+// ClientService handles communication between clients and the control plane.
 // Uses a single bidirectional stream for all operations.
 type ClientServiceServer interface {
 	// Connect establishes a bidirectional stream for all client-server communication.

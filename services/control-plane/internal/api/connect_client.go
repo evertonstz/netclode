@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -24,6 +23,25 @@ var (
 	errTextRequired      = errors.New("text is required")
 	errUnknownMessage    = errors.New("unknown message type")
 )
+
+// makeErrorResponse creates a unified error response.
+func makeErrorResponse(sessionID, code, message string) *pb.ServerMessage {
+	var sessID *string
+	if sessionID != "" {
+		sessID = &sessionID
+	}
+	return &pb.ServerMessage{
+		Message: &pb.ServerMessage_Error{
+			Error: &pb.ErrorResponse{
+				Error: &pb.Error{
+					Code:      code,
+					Message:   message,
+					SessionId: sessID,
+				},
+			},
+		},
+	}
+}
 
 // Ensure ConnectClientServiceHandler implements the interface
 var _ netclodev1connect.ClientServiceHandler = (*ConnectClientServiceHandler)(nil)
@@ -137,11 +155,7 @@ func (c *ConnectConnection) run(ctx context.Context) error {
 
 		if err := c.handleMessage(ctx, msg); err != nil {
 			slog.Warn("Connect handler error", "error", err)
-			c.send(&pb.ServerMessage{
-				Message: &pb.ServerMessage_Error{
-					Error: &pb.ErrorResponse{Message: err.Error()},
-				},
-			})
+			c.send(makeErrorResponse("", "HANDLER_ERROR", err.Error()))
 		}
 	}
 }
@@ -289,12 +303,14 @@ func (c *ConnectConnection) unsubscribe(sessionID string) {
 // Handler implementations
 
 func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.CreateSessionRequest) error {
-	var repoPtr, repoAccessPtr *string
+	var repoPtr *string
+	var repoAccessPtr *protocol.RepoAccess
 	if req.Repo != nil {
 		repoPtr = req.Repo
 	}
 	if req.RepoAccess != nil {
-		repoAccessPtr = req.RepoAccess
+		access := convertProtoRepoAccess(*req.RepoAccess)
+		repoAccessPtr = &access
 	}
 
 	name := ""
@@ -533,9 +549,9 @@ func (c *ConnectConnection) handleSync(ctx context.Context) error {
 		return err
 	}
 
-	pbSessions := make([]*pb.SessionWithMeta, len(sessions))
+	pbSessions := make([]*pb.SessionSummary, len(sessions))
 	for i, s := range sessions {
-		pbSessions[i] = convertSessionWithMeta(&s)
+		pbSessions[i] = convertSessionSummary(&s)
 	}
 
 	return c.send(&pb.ServerMessage{
@@ -550,39 +566,15 @@ func (c *ConnectConnection) handleSync(ctx context.Context) error {
 
 func (c *ConnectConnection) handlePortExpose(ctx context.Context, sessionID string, port int) error {
 	if sessionID == "" {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_PortError{
-				PortError: &pb.PortErrorResponse{
-					SessionId: sessionID,
-					Port:      int32(port),
-					Error:     "sessionId is required",
-				},
-			},
-		})
+		return c.send(makeErrorResponse(sessionID, "PORT_ERROR", "sessionId is required"))
 	}
 	if port < 1 || port > 65535 {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_PortError{
-				PortError: &pb.PortErrorResponse{
-					SessionId: sessionID,
-					Port:      int32(port),
-					Error:     "port must be between 1 and 65535",
-				},
-			},
-		})
+		return c.send(makeErrorResponse(sessionID, "PORT_ERROR", "port must be between 1 and 65535"))
 	}
 
 	previewURL, err := c.manager.ExposePort(ctx, sessionID, port)
 	if err != nil {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_PortError{
-				PortError: &pb.PortErrorResponse{
-					SessionId: sessionID,
-					Port:      int32(port),
-					Error:     err.Error(),
-				},
-			},
-		})
+		return c.send(makeErrorResponse(sessionID, "PORT_ERROR", err.Error()))
 	}
 
 	return c.send(&pb.ServerMessage{
@@ -599,11 +591,7 @@ func (c *ConnectConnection) handlePortExpose(ctx context.Context, sessionID stri
 func (c *ConnectConnection) handleGitHubReposList(ctx context.Context) error {
 	repos, err := c.manager.ListGitHubRepos(ctx)
 	if err != nil {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_Error{
-				Error: &pb.ErrorResponse{Message: "Failed to list GitHub repositories: " + err.Error()},
-			},
-		})
+		return c.send(makeErrorResponse("", "GITHUB_ERROR", "Failed to list GitHub repositories: "+err.Error()))
 	}
 
 	pbRepos := make([]*pb.GitHubRepo, len(repos))
@@ -627,20 +615,12 @@ func (c *ConnectConnection) handleGitHubReposList(ctx context.Context) error {
 
 func (c *ConnectConnection) handleGitStatus(ctx context.Context, sessionID string) error {
 	if sessionID == "" {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_GitError{
-				GitError: &pb.GitErrorResponse{SessionId: sessionID, Error: "sessionId is required"},
-			},
-		})
+		return c.send(makeErrorResponse(sessionID, "GIT_ERROR", "sessionId is required"))
 	}
 
 	files, err := c.manager.GetGitStatus(ctx, sessionID)
 	if err != nil {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_GitError{
-				GitError: &pb.GitErrorResponse{SessionId: sessionID, Error: err.Error()},
-			},
-		})
+		return c.send(makeErrorResponse(sessionID, "GIT_ERROR", err.Error()))
 	}
 
 	pbFiles := make([]*pb.GitFileChange, len(files))
@@ -661,11 +641,7 @@ func (c *ConnectConnection) handleGitStatus(ctx context.Context, sessionID strin
 
 func (c *ConnectConnection) handleGitDiff(ctx context.Context, req *pb.GitDiffRequest) error {
 	if req.SessionId == "" {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_GitError{
-				GitError: &pb.GitErrorResponse{SessionId: req.SessionId, Error: "sessionId is required"},
-			},
-		})
+		return c.send(makeErrorResponse(req.SessionId, "GIT_ERROR", "sessionId is required"))
 	}
 
 	file := ""
@@ -675,11 +651,7 @@ func (c *ConnectConnection) handleGitDiff(ctx context.Context, req *pb.GitDiffRe
 
 	diff, err := c.manager.GetGitDiff(ctx, req.SessionId, file)
 	if err != nil {
-		return c.send(&pb.ServerMessage{
-			Message: &pb.ServerMessage_GitError{
-				GitError: &pb.GitErrorResponse{SessionId: req.SessionId, Error: err.Error()},
-			},
-		})
+		return c.send(makeErrorResponse(req.SessionId, "GIT_ERROR", err.Error()))
 	}
 
 	return c.send(&pb.ServerMessage{
@@ -706,7 +678,8 @@ func convertSession(s *protocol.Session) *pb.Session {
 		pbSess.Repo = s.Repo
 	}
 	if s.RepoAccess != nil {
-		pbSess.RepoAccess = s.RepoAccess
+		access := convertRepoAccessToProto(*s.RepoAccess)
+		pbSess.RepoAccess = &access
 	}
 
 	if t, err := time.Parse(time.RFC3339, s.CreatedAt); err == nil {
@@ -723,6 +696,30 @@ func convertSession(s *protocol.Session) *pb.Session {
 	}
 
 	return pbSess
+}
+
+// convertRepoAccessToProto converts protocol RepoAccess to proto RepoAccess.
+func convertRepoAccessToProto(access protocol.RepoAccess) pb.RepoAccess {
+	switch access {
+	case protocol.RepoAccessRead:
+		return pb.RepoAccess_REPO_ACCESS_READ
+	case protocol.RepoAccessWrite:
+		return pb.RepoAccess_REPO_ACCESS_WRITE
+	default:
+		return pb.RepoAccess_REPO_ACCESS_UNSPECIFIED
+	}
+}
+
+// convertProtoRepoAccess converts proto RepoAccess to protocol RepoAccess.
+func convertProtoRepoAccess(access pb.RepoAccess) protocol.RepoAccess {
+	switch access {
+	case pb.RepoAccess_REPO_ACCESS_READ:
+		return protocol.RepoAccessRead
+	case pb.RepoAccess_REPO_ACCESS_WRITE:
+		return protocol.RepoAccessWrite
+	default:
+		return protocol.RepoAccessUnspecified
+	}
 }
 
 func convertSessionStatus(s protocol.SessionStatus) pb.SessionStatus {
@@ -744,24 +741,24 @@ func convertSessionStatus(s protocol.SessionStatus) pb.SessionStatus {
 	}
 }
 
-func convertSessionWithMeta(s *protocol.SessionWithMeta) *pb.SessionWithMeta {
+func convertSessionSummary(s *protocol.SessionSummary) *pb.SessionSummary {
 	if s == nil {
 		return nil
 	}
 
-	meta := &pb.SessionWithMeta{
+	summary := &pb.SessionSummary{
 		Session: convertSession(&s.Session),
 	}
 
 	if s.MessageCount != nil {
 		count := int32(*s.MessageCount)
-		meta.MessageCount = &count
+		summary.MessageCount = &count
 	}
 	if s.LastMessageID != nil {
-		meta.LastMessageId = s.LastMessageID
+		summary.LastMessageId = s.LastMessageID
 	}
 
-	return meta
+	return summary
 }
 
 func convertPersistedMessage(m *protocol.PersistedMessage) *pb.PersistedMessage {
@@ -806,12 +803,8 @@ func convertPersistedEvent(e *protocol.PersistedEvent) *pb.PersistedEvent {
 		// MessageId intentionally left empty - message-level correlation not yet implemented
 	}
 
-	// Serialize the event to JSON for EventData
-	if eventData, err := json.Marshal(e.Event); err == nil {
-		evt.EventData = eventData
-	} else {
-		slog.Warn("Failed to marshal event data", "eventID", e.ID, "error", err)
-	}
+	// Convert the embedded event
+	evt.Event = convertAgentEvent(&e.Event)
 
 	if t, err := time.Parse(time.RFC3339, e.Timestamp); err == nil {
 		evt.Timestamp = timestamppb.New(t)
@@ -868,11 +861,7 @@ func convertServerMessage(msg protocol.ServerMessage) *pb.ServerMessage {
 			},
 		}
 	case protocol.MsgTypeSessionError:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_SessionError{
-				SessionError: &pb.SessionErrorResponse{SessionId: msg.ID, Error: msg.Error},
-			},
-		}
+		return makeErrorResponse(msg.ID, "SESSION_ERROR", msg.Error)
 	case protocol.MsgTypeAgentMessage:
 		partial := false
 		if msg.Partial != nil {
@@ -904,11 +893,7 @@ func convertServerMessage(msg protocol.ServerMessage) *pb.ServerMessage {
 			},
 		}
 	case protocol.MsgTypeAgentError:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_AgentError{
-				AgentError: &pb.AgentErrorResponse{SessionId: msg.SessionID, Error: msg.Error},
-			},
-		}
+		return makeErrorResponse(msg.SessionID, "AGENT_ERROR", msg.Error)
 	case protocol.MsgTypeUserMessage:
 		return &pb.ServerMessage{
 			Message: &pb.ServerMessage_UserMessage{
@@ -922,17 +907,9 @@ func convertServerMessage(msg protocol.ServerMessage) *pb.ServerMessage {
 			},
 		}
 	case protocol.MsgTypeError:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_Error{
-				Error: &pb.ErrorResponse{Message: msg.Message},
-			},
-		}
+		return makeErrorResponse("", "ERROR", msg.Message)
 	default:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_Error{
-				Error: &pb.ErrorResponse{Message: "Unknown message type: " + msg.Type},
-			},
-		}
+		return makeErrorResponse("", "UNKNOWN_MESSAGE_TYPE", "Unknown message type: "+msg.Type)
 	}
 }
 
@@ -952,86 +929,125 @@ func convertAgentEvent(e *protocol.AgentEvent) *pb.AgentEvent {
 			"kind", e.Kind, "timestamp", e.Timestamp, "error", err)
 	}
 
-	if e.Tool != "" {
-		evt.Tool = &e.Tool
-	}
-	if e.ToolUseID != "" {
-		evt.ToolUseId = &e.ToolUseID
-	}
-	if e.ParentToolUseID != "" {
-		evt.ParentToolUseId = &e.ParentToolUseID
-	}
-	if len(e.Input) > 0 {
-		if inputStruct, err := structpb.NewStruct(e.Input); err == nil {
-			evt.Input = inputStruct
+	// Set payload based on event kind
+	switch e.Kind {
+	case protocol.EventKindToolStart, protocol.EventKindToolInput, protocol.EventKindToolInputComplete, protocol.EventKindToolEnd:
+		payload := &pb.ToolEventPayload{
+			Tool:      e.Tool,
+			ToolUseId: e.ToolUseID,
 		}
-	}
-	if e.InputDelta != "" {
-		evt.InputDelta = &e.InputDelta
-	}
-	if e.Result != nil {
-		evt.Result = e.Result
-	}
-	if e.Error != nil {
-		evt.Error = e.Error
-	}
-	if e.Path != "" {
-		evt.Path = &e.Path
-	}
-	if e.Action != "" {
-		evt.Action = &e.Action
-	}
-	if e.Command != "" {
-		evt.Command = &e.Command
-	}
-	if e.Cwd != nil {
-		evt.Cwd = e.Cwd
-	}
-	if e.ExitCode != nil {
-		code := int32(*e.ExitCode)
-		evt.ExitCode = &code
-	}
-	if e.Output != nil {
-		evt.Output = e.Output
-	}
-	if e.Content != "" {
-		evt.Content = &e.Content
-	}
-	if e.ThinkingID != "" {
-		evt.ThinkingId = &e.ThinkingID
-	}
-	if e.Partial {
-		evt.Partial = &e.Partial
-	}
-	if e.Port != 0 {
-		port := int32(e.Port)
-		evt.Port = &port
-	}
-	if e.Process != nil {
-		evt.Process = e.Process
-	}
-	if e.PreviewURL != nil {
-		evt.PreviewUrl = e.PreviewURL
-	}
-	if e.LinesAdded != nil {
-		added := int32(*e.LinesAdded)
-		evt.LinesAdded = &added
-	}
-	if e.LinesRemoved != nil {
-		removed := int32(*e.LinesRemoved)
-		evt.LinesRemoved = &removed
-	}
-	if e.Repo != "" {
-		evt.Repo = &e.Repo
-	}
-	if e.Stage != "" {
-		evt.Stage = &e.Stage
-	}
-	if e.Message != "" {
-		evt.Message = &e.Message
+		if e.ParentToolUseID != "" {
+			payload.ParentToolUseId = &e.ParentToolUseID
+		}
+		if len(e.Input) > 0 {
+			if inputStruct, err := structpb.NewStruct(e.Input); err == nil {
+				payload.Input = inputStruct
+			}
+		}
+		if e.InputDelta != "" {
+			payload.InputDelta = &e.InputDelta
+		}
+		if e.Result != nil {
+			payload.Result = e.Result
+		}
+		if e.Error != nil {
+			payload.Error = e.Error
+		}
+		evt.Payload = &pb.AgentEvent_Tool{Tool: payload}
+
+	case protocol.EventKindFileChange:
+		payload := &pb.FileChangePayload{
+			Path:   e.Path,
+			Action: convertFileActionToProto(e.Action),
+		}
+		if e.LinesAdded != nil {
+			added := int32(*e.LinesAdded)
+			payload.LinesAdded = &added
+		}
+		if e.LinesRemoved != nil {
+			removed := int32(*e.LinesRemoved)
+			payload.LinesRemoved = &removed
+		}
+		evt.Payload = &pb.AgentEvent_FileChange{FileChange: payload}
+
+	case protocol.EventKindCommandStart, protocol.EventKindCommandEnd:
+		payload := &pb.CommandPayload{
+			Command: e.Command,
+		}
+		if e.Cwd != nil {
+			payload.Cwd = e.Cwd
+		}
+		if e.ExitCode != nil {
+			code := int32(*e.ExitCode)
+			payload.ExitCode = &code
+		}
+		if e.Output != nil {
+			payload.Output = e.Output
+		}
+		evt.Payload = &pb.AgentEvent_Command{Command: payload}
+
+	case protocol.EventKindThinking:
+		evt.Payload = &pb.AgentEvent_Thinking{
+			Thinking: &pb.ThinkingPayload{
+				ThinkingId: e.ThinkingID,
+				Content:    e.Content,
+				Partial:    e.Partial,
+			},
+		}
+
+	case protocol.EventKindPortExposed:
+		payload := &pb.PortExposedPayload{
+			Port: int32(e.Port),
+		}
+		if e.Process != nil {
+			payload.Process = e.Process
+		}
+		if e.PreviewURL != nil {
+			payload.PreviewUrl = e.PreviewURL
+		}
+		evt.Payload = &pb.AgentEvent_PortExposed{PortExposed: payload}
+
+	case protocol.EventKindRepoClone:
+		evt.Payload = &pb.AgentEvent_RepoClone{
+			RepoClone: &pb.RepoClonePayload{
+				Repo:    e.Repo,
+				Stage:   convertRepoCloneStageToProto(e.Stage),
+				Message: e.Message,
+			},
+		}
 	}
 
 	return evt
+}
+
+// convertFileActionToProto converts protocol FileAction to proto FileAction.
+func convertFileActionToProto(action protocol.FileAction) pb.FileAction {
+	switch action {
+	case protocol.FileActionCreate:
+		return pb.FileAction_FILE_ACTION_CREATE
+	case protocol.FileActionEdit:
+		return pb.FileAction_FILE_ACTION_EDIT
+	case protocol.FileActionDelete:
+		return pb.FileAction_FILE_ACTION_DELETE
+	default:
+		return pb.FileAction_FILE_ACTION_UNSPECIFIED
+	}
+}
+
+// convertRepoCloneStageToProto converts protocol RepoCloneStage to proto RepoCloneStage.
+func convertRepoCloneStageToProto(stage protocol.RepoCloneStage) pb.RepoCloneStage {
+	switch stage {
+	case protocol.RepoCloneStageStarting:
+		return pb.RepoCloneStage_REPO_CLONE_STAGE_STARTING
+	case protocol.RepoCloneStageCloning:
+		return pb.RepoCloneStage_REPO_CLONE_STAGE_CLONING
+	case protocol.RepoCloneStageDone:
+		return pb.RepoCloneStage_REPO_CLONE_STAGE_DONE
+	case protocol.RepoCloneStageError:
+		return pb.RepoCloneStage_REPO_CLONE_STAGE_ERROR
+	default:
+		return pb.RepoCloneStage_REPO_CLONE_STAGE_UNSPECIFIED
+	}
 }
 
 func convertEventKind(k protocol.AgentEventKind) pb.AgentEventKind {
