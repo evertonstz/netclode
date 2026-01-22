@@ -28,13 +28,13 @@ flowchart LR
     subgraph VPS["VPS · k3s"]
         TS["Tailscale Ingress<br/><sub>TLS · HTTP/2</sub>"]
         CP["Control Plane<br/><sub>Go</sub>"]
-        REDIS[("Redis<br/><sub>Sessions · Events</sub>")]
-        POOL["Warm Pool<br/><sub>Pre-booted VMs</sub>"]
-        JFS["JuiceFS CSI<br/><sub>POSIX on S3. Offloaded persistant storage</sub>"]
+        REDIS[("Redis<br/><sub>Sessions</sub>")]
+        POOL["Warm Pool"]
+        JFS[("JuiceFS")]
 
-        subgraph SANDBOX["Sandbox · Kata VM · Cloud Hypervisor<br/><sub>mise for any runtime</sub>"]
-            AGENT["Agent<br/><sub>Claude Code SDK · Node.js</sub>"]
-            DOCKER["Docker daemon"]
+        subgraph SANDBOX["Sandbox · Kata VM<br/><sub>Cloud Hypervisor</sub>"]
+            AGENT["Agent<br/><sub>Claude Code SDK</sub>"]
+            DOCKER["Docker"]
         end
     end
 
@@ -43,11 +43,11 @@ flowchart LR
 
     APP <-->|"Connect RPC<br/>HTTPS/H2"| TS
     TS <-->|"Connect RPC<br/>h2c"| CP
-    CP <-->|"Redis streams"| REDIS
+    CP <-->|"Redis Streams"| REDIS
     CP <-->|"Connect RPC<br/>gRPC/h2c"| AGENT
     POOL -.->|"allocate"| SANDBOX
-    JFS --> SANDBOX
-    JFS --> S3
+    JFS <--> SANDBOX
+    JFS <-->|"POSIX on S3"| S3
     AGENT --> ANTHROPIC
 ```
 
@@ -69,7 +69,7 @@ sequenceDiagram
 
     rect rgba(128, 128, 160, 0.3)
         note right of App: Conversation Loop
-        App->>CP: Send prompt (Connect Protocol)
+        App->>CP: Send prompt
         CP->>VM: Forward to Claude Agent SDK
         VM-->>CP: Stream response chunks
         CP-->>App: Bidirectional streaming
