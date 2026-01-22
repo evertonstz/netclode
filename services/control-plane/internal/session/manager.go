@@ -1111,9 +1111,26 @@ func (m *Manager) ResizeTerminal(ctx context.Context, sessionID string, cols, ro
 // RegisterAgentConnection registers an agent connection for a session.
 func (m *Manager) RegisterAgentConnection(sessionID string, conn AgentConnection) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.agents[sessionID] = conn
+
+	// Check for pending prompt
+	var pendingPrompt string
+	if state, ok := m.sessions[sessionID]; ok && state.PendingPrompt != "" {
+		pendingPrompt = state.PendingPrompt
+		state.PendingPrompt = "" // Clear it
+	}
+	m.mu.Unlock()
+
 	slog.Info("Agent connection registered", "sessionID", sessionID)
+
+	// Send pending prompt if any
+	if pendingPrompt != "" {
+		slog.Info("Sending pending prompt to agent", "sessionID", sessionID)
+		ctx := context.Background()
+		if err := m.SendPrompt(ctx, sessionID, pendingPrompt); err != nil {
+			slog.Error("Failed to send pending prompt", "sessionID", sessionID, "error", err)
+		}
+	}
 }
 
 // UnregisterAgentConnection unregisters an agent connection.
