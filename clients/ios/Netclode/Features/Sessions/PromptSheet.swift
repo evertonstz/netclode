@@ -73,6 +73,7 @@ struct PromptSheet: View {
                         Image(systemName: "xmark")
                     }
                     .tint(.red)
+                    .accessibilityLabel("Cancel")
                 }
 
                 ToolbarItem(placement: .principal) {
@@ -100,6 +101,7 @@ struct PromptSheet: View {
                     .tint(Theme.Colors.brand)
                     .disabled(!canSubmit)
                     .keyboardShortcut(.return, modifiers: .command)
+                    .accessibilityLabel("Send")
                 }
             }
             .onAppear {

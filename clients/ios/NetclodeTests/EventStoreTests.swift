@@ -144,6 +144,246 @@ final class EventStoreTests: XCTestCase {
         }
     }
 
+    // MARK: - Streaming Tool Input Tests (Partial JSON Extraction)
+
+    @MainActor
+    func testAppendToolInputDeltaExtractsCommandFromPartialJson() {
+        let store = EventStore()
+        
+        // Given: A tool_start event with empty input
+        store.appendEvent(
+            sessionId: "test",
+            event: .toolStart(ToolStartEvent(
+                id: UUID(),
+                timestamp: Date(),
+                tool: "Bash",
+                toolUseId: "tool1",
+                parentToolUseId: nil,
+                input: [:]
+            ))
+        )
+        
+        // When: Streaming partial JSON that contains a command
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: "{\"command\":\"apt-get install htop")
+        
+        // Then: The tool_start event should have the partial command extracted
+        let events = store.events(for: "test")
+        XCTAssertEqual(events.count, 1)
+        
+        if case .toolStart(let toolStart) = events.first {
+            if case .string(let cmd) = toolStart.input["command"] {
+                XCTAssertEqual(cmd, "apt-get install htop")
+            } else {
+                XCTFail("Expected command to be extracted from partial JSON")
+            }
+        } else {
+            XCTFail("Expected toolStart event")
+        }
+    }
+
+    @MainActor
+    func testAppendToolInputDeltaUpdatesAsMoreDataStreams() {
+        let store = EventStore()
+        
+        // Given: A tool_start event
+        store.appendEvent(
+            sessionId: "test",
+            event: .toolStart(ToolStartEvent(
+                id: UUID(),
+                timestamp: Date(),
+                tool: "Bash",
+                toolUseId: "tool1",
+                parentToolUseId: nil,
+                input: [:]
+            ))
+        )
+        
+        // When: Streaming JSON in chunks
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: "{\"command\":\"apt")
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: "-get install")
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: " htop\"}")
+        
+        // Then: The final value should be complete
+        let events = store.events(for: "test")
+        if case .toolStart(let toolStart) = events.first {
+            if case .string(let cmd) = toolStart.input["command"] {
+                XCTAssertEqual(cmd, "apt-get install htop")
+            } else {
+                XCTFail("Expected command to be extracted")
+            }
+        } else {
+            XCTFail("Expected toolStart event")
+        }
+    }
+
+    @MainActor
+    func testAppendToolInputDeltaExtractsFilePath() {
+        let store = EventStore()
+        
+        // Given: A tool_start event for Read tool
+        store.appendEvent(
+            sessionId: "test",
+            event: .toolStart(ToolStartEvent(
+                id: UUID(),
+                timestamp: Date(),
+                tool: "Read",
+                toolUseId: "tool1",
+                parentToolUseId: nil,
+                input: [:]
+            ))
+        )
+        
+        // When: Streaming partial JSON with file_path
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: "{\"file_path\":\"/src/main.swift")
+        
+        // Then: The file_path should be extracted
+        let events = store.events(for: "test")
+        if case .toolStart(let toolStart) = events.first {
+            if case .string(let path) = toolStart.input["file_path"] {
+                XCTAssertEqual(path, "/src/main.swift")
+            } else {
+                XCTFail("Expected file_path to be extracted")
+            }
+        } else {
+            XCTFail("Expected toolStart event")
+        }
+    }
+
+    @MainActor
+    func testAppendToolInputDeltaHandlesEscapedQuotes() {
+        let store = EventStore()
+        
+        // Given: A tool_start event
+        store.appendEvent(
+            sessionId: "test",
+            event: .toolStart(ToolStartEvent(
+                id: UUID(),
+                timestamp: Date(),
+                tool: "Bash",
+                toolUseId: "tool1",
+                parentToolUseId: nil,
+                input: [:]
+            ))
+        )
+        
+        // When: Streaming JSON with escaped quotes in the value
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: "{\"command\":\"echo \\\"hello world\\\"\"}")
+        
+        // Then: The escaped quotes should be handled
+        let events = store.events(for: "test")
+        if case .toolStart(let toolStart) = events.first {
+            if case .string(let cmd) = toolStart.input["command"] {
+                XCTAssertEqual(cmd, "echo \"hello world\"")
+            } else {
+                XCTFail("Expected command with escaped quotes to be extracted")
+            }
+        } else {
+            XCTFail("Expected toolStart event")
+        }
+    }
+
+    @MainActor
+    func testAppendToolInputDeltaDoesNotOverwriteWithShorterValue() {
+        let store = EventStore()
+        
+        // Given: A tool_start event with existing input
+        store.appendEvent(
+            sessionId: "test",
+            event: .toolStart(ToolStartEvent(
+                id: UUID(),
+                timestamp: Date(),
+                tool: "Bash",
+                toolUseId: "tool1",
+                parentToolUseId: nil,
+                input: ["command": .string("apt-get install htop")]
+            ))
+        )
+        
+        // When: Receiving a delta that would result in shorter value (shouldn't happen, but defensive)
+        // This simulates if somehow we got out-of-order updates
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: "{\"command\":\"apt")
+        
+        // Then: The longer value should be preserved
+        let events = store.events(for: "test")
+        if case .toolStart(let toolStart) = events.first {
+            if case .string(let cmd) = toolStart.input["command"] {
+                XCTAssertEqual(cmd, "apt-get install htop", "Should not overwrite with shorter value")
+            } else {
+                XCTFail("Expected command to be preserved")
+            }
+        } else {
+            XCTFail("Expected toolStart event")
+        }
+    }
+
+    @MainActor
+    func testAppendToolInputDeltaIgnoresUnknownKeys() {
+        let store = EventStore()
+        
+        // Given: A tool_start event
+        store.appendEvent(
+            sessionId: "test",
+            event: .toolStart(ToolStartEvent(
+                id: UUID(),
+                timestamp: Date(),
+                tool: "CustomTool",
+                toolUseId: "tool1",
+                parentToolUseId: nil,
+                input: [:]
+            ))
+        )
+        
+        // When: Streaming JSON with unknown keys only
+        store.appendToolInputDelta(sessionId: "test", toolUseId: "tool1", inputDelta: "{\"unknownKey\":\"some value")
+        
+        // Then: Input should remain empty (unknown keys not extracted)
+        let events = store.events(for: "test")
+        if case .toolStart(let toolStart) = events.first {
+            XCTAssertTrue(toolStart.input.isEmpty, "Unknown keys should not be extracted")
+        } else {
+            XCTFail("Expected toolStart event")
+        }
+    }
+
+    @MainActor
+    func testUpdateToolInputOverridesPartialWithComplete() {
+        let store = EventStore()
+        
+        // Given: A tool_start event with partial input from streaming
+        store.appendEvent(
+            sessionId: "test",
+            event: .toolStart(ToolStartEvent(
+                id: UUID(),
+                timestamp: Date(),
+                tool: "Bash",
+                toolUseId: "tool1",
+                parentToolUseId: nil,
+                input: ["command": .string("apt-get")] // Partial from streaming
+            ))
+        )
+        
+        // When: Receiving complete input via updateToolInput
+        store.updateToolInput(
+            sessionId: "test",
+            toolUseId: "tool1",
+            input: ["command": .string("apt-get install htop"), "description": .string("Install htop")]
+        )
+        
+        // Then: Complete input should replace partial
+        let events = store.events(for: "test")
+        if case .toolStart(let toolStart) = events.first {
+            XCTAssertEqual(toolStart.input.count, 2)
+            if case .string(let cmd) = toolStart.input["command"] {
+                XCTAssertEqual(cmd, "apt-get install htop")
+            }
+            if case .string(let desc) = toolStart.input["description"] {
+                XCTAssertEqual(desc, "Install htop")
+            }
+        } else {
+            XCTFail("Expected toolStart event")
+        }
+    }
+
     // MARK: - Helpers
 
     private func makePersistedThinkingEvent(

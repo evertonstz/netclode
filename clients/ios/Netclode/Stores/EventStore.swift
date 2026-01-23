@@ -89,10 +89,113 @@ final class EventStore {
         let accumulated = (streamingToolInput[toolUseId] ?? "") + inputDelta
         streamingToolInput[toolUseId] = accumulated
         
-        // Try to parse as JSON and update the tool_start event
+        // Try to parse as complete JSON first
         if let data = accumulated.data(using: .utf8),
            let parsed = try? JSONDecoder().decode([String: AnyCodableValue].self, from: data) {
             updateToolInput(sessionId: sessionId, toolUseId: toolUseId, input: parsed)
+            return
+        }
+        
+        // JSON not complete yet - try to extract partial values for display
+        // This lets us show the command while it's still streaming
+        let partialInput = extractPartialJsonValues(from: accumulated)
+        if !partialInput.isEmpty {
+            updateToolInputPartial(sessionId: sessionId, toolUseId: toolUseId, input: partialInput)
+        }
+    }
+    
+    /// Extract the first string value from incomplete JSON for early display
+    /// Looks for common tool input keys like "command", "file_path", "pattern", etc.
+    /// Returns partial value even if JSON is incomplete
+    private func extractPartialJsonValues(from json: String) -> [String: AnyCodableValue] {
+        // Keys we care about showing early, in priority order
+        let keys = ["command", "file_path", "filePath", "pattern", "query", "url", "description"]
+        
+        for key in keys {
+            if let value = extractStringValue(for: key, from: json) {
+                return [key: .string(value)]
+            }
+        }
+        
+        return [:]
+    }
+    
+    /// Extract a string value for a specific key from potentially incomplete JSON
+    /// e.g. {"command":"apt-get install -> returns "apt-get install"
+    /// e.g. {"command": "apt-get install -> also returns "apt-get install" (with space)
+    private func extractStringValue(for key: String, from json: String) -> String? {
+        // Look for "key":" or "key": " (with optional space after colon)
+        let patterns = ["\"\(key)\":\"", "\"\(key)\": \""]
+        var keyRange: Range<String.Index>?
+        for pattern in patterns {
+            if let range = json.range(of: pattern) {
+                keyRange = range
+                break
+            }
+        }
+        guard let keyRange else {
+            return nil
+        }
+        
+        // Extract everything after the opening quote until closing quote or end
+        let valueStart = keyRange.upperBound
+        let remaining = json[valueStart...]
+        
+        // Find the closing quote (not escaped)
+        var value = ""
+        var escaped = false
+        for char in remaining {
+            if escaped {
+                value.append(char)
+                escaped = false
+            } else if char == "\\" {
+                escaped = true
+            } else if char == "\"" {
+                break // Found closing quote
+            } else {
+                value.append(char)
+            }
+        }
+        
+        return value.isEmpty ? nil : value
+    }
+    
+    /// Update a tool_start event with partial input (for streaming display)
+    private func updateToolInputPartial(sessionId: String, toolUseId: String, input: [String: AnyCodableValue]) {
+        guard var events = eventsBySession[sessionId] else { return }
+
+        if let index = events.lastIndex(where: { event in
+            if case .toolStart(let e) = event, e.toolUseId == toolUseId {
+                return true
+            }
+            return false
+        }) {
+            if case .toolStart(let existing) = events[index] {
+                // Only update if we have more/better data than before
+                // Merge new partial input with existing input
+                var mergedInput = existing.input
+                for (key, value) in input {
+                    // Only update if the new value is longer (more complete)
+                    if let existingValue = mergedInput[key],
+                       case .string(let existingStr) = existingValue,
+                       case .string(let newStr) = value,
+                       newStr.count <= existingStr.count {
+                        continue
+                    }
+                    mergedInput[key] = value
+                }
+                
+                let updated = ToolStartEvent(
+                    id: existing.id,
+                    timestamp: existing.timestamp,
+                    tool: existing.tool,
+                    toolUseId: existing.toolUseId,
+                    parentToolUseId: existing.parentToolUseId,
+                    input: mergedInput
+                )
+                events[index] = .toolStart(updated)
+                eventsBySession[sessionId] = events
+            }
         }
     }
     
