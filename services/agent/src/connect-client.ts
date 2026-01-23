@@ -45,6 +45,9 @@ import { getGitStatus, getGitDiff, type GitFileChange } from "./git.js";
 
 const WORKSPACE_DIR = "/agent/workspace";
 
+// Track if a prompt is currently running (to prevent concurrent prompts)
+let isPromptRunning = false;
+
 /**
  * Convert local repo clone stage to protobuf enum
  */
@@ -359,7 +362,19 @@ async function handleControlPlaneMessage(
       break;
 
     case "executePrompt":
-      await handleExecutePrompt(sessionId, msg.message.value.text, send);
+      if (isPromptRunning) {
+        console.warn("[agent] Prompt already running, ignoring new prompt");
+        break;
+      }
+      // Don't await - run concurrently so interrupt/terminal messages can be processed
+      isPromptRunning = true;
+      handleExecutePrompt(sessionId, msg.message.value.text, send)
+        .catch((err) => {
+          console.error("[agent] Prompt execution error (async):", err);
+        })
+        .finally(() => {
+          isPromptRunning = false;
+        });
       break;
 
     case "interrupt":

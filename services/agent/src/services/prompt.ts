@@ -135,6 +135,9 @@ export async function* executePrompt(
   const sdkSessionId = sessionId ? getSdkSessionId(sessionId) : undefined;
   console.log(`[prompt] SDK session lookup: ${sessionId} -> ${sdkSessionId || "(new session)"}`);
 
+  // Clear any previous interrupt signal at start
+  clearInterruptSignal();
+
   try {
     const q = query({
       prompt: text,
@@ -152,6 +155,12 @@ export async function* executePrompt(
     });
 
     for await (const message of q) {
+      // Check for interrupt signal at each iteration
+      if (isInterrupted()) {
+        console.log("[prompt] Interrupted by user");
+        yield { type: "system", message: "interrupted" };
+        return;
+      }
       const msgWithParent = message as { parent_tool_use_id?: string };
       if (msgWithParent.parent_tool_use_id !== undefined) {
         currentParentToolUseId = msgWithParent.parent_tool_use_id || null;
