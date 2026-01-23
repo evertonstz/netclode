@@ -78,6 +78,8 @@ struct ToolEventCard: View {
                 }
                 .padding(.horizontal, Theme.Spacing.sm)
                 .padding(.vertical, Theme.Spacing.xs)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
@@ -558,7 +560,8 @@ private struct ChildToolEventRow: View {
                     .foregroundStyle(Theme.Colors.error)
             }
         }
-        .padding(.vertical, 2)
+        .frame(minHeight: 36)
+        .contentShape(Rectangle())
     }
 }
 
@@ -591,8 +594,12 @@ private struct ExpandableSection<Content: View>: View {
                     Text(title)
                         .font(.system(size: TypeScale.micro, weight: .semibold))
                         .tracking(0.5)
+                    
+                    Spacer()
                 }
                 .foregroundStyle(.tertiary)
+                .frame(minHeight: 32)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
@@ -683,6 +690,8 @@ struct CommandEventCard: View {
                 }
                 .padding(.horizontal, Theme.Spacing.sm)
                 .padding(.vertical, Theme.Spacing.xs)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
@@ -783,7 +792,6 @@ struct FileChangeCard: View {
 
 struct ThinkingCard: View {
     let event: ThinkingEvent
-    @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
@@ -808,19 +816,6 @@ struct ThinkingCard: View {
                 }
 
                 Spacer()
-
-                if !event.partial && event.content.count > 100 {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded.toggle()
-                        }
-                    } label: {
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: TypeScale.micro))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
             }
 
             // Content
@@ -828,7 +823,6 @@ struct ThinkingCard: View {
                 .font(.netclodeSmall)
                 .foregroundStyle(.secondary)
                 .italic()
-                .lineLimit(isExpanded || event.partial ? nil : 3)
                 .animation(.easeInOut(duration: 0.2), value: event.content)
         }
         .padding(.horizontal, Theme.Spacing.sm)
