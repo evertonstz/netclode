@@ -32,6 +32,7 @@
 		A10000000000000000000014 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* SettingsStore.swift */; };
 		A10000000000000000000015 /* SessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* SessionsView.swift */; };
 		A10000000000000000000016 /* SessionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000016 /* SessionRow.swift */; };
+		A10000000000000000000070 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000070 /* SidebarView.swift */; };
 		A10000000000000000000037 /* PromptSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000037 /* PromptSheet.swift */; };
 		A10000000000000000000018 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* WorkspaceView.swift */; };
 		A10000000000000000000019 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* ChatView.swift */; };
@@ -92,6 +93,7 @@
 		B10000000000000000000014 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		B10000000000000000000015 /* SessionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionsView.swift; sourceTree = "<group>"; };
 		B10000000000000000000016 /* SessionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRow.swift; sourceTree = "<group>"; };
+		B10000000000000000000070 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		B10000000000000000000037 /* PromptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptSheet.swift; sourceTree = "<group>"; };
 		B10000000000000000000018 /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		B10000000000000000000039 /* PreviewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewsView.swift; sourceTree = "<group>"; };
@@ -266,6 +268,7 @@
 			children = (
 				B10000000000000000000015 /* SessionsView.swift */,
 				B10000000000000000000016 /* SessionRow.swift */,
+				B10000000000000000000070 /* SidebarView.swift */,
 				B10000000000000000000037 /* PromptSheet.swift */,
 				B10000000000000000000045 /* RepoAutocomplete.swift */,
 			);
@@ -525,6 +528,7 @@
 				A10000000000000000000014 /* SettingsStore.swift in Sources */,
 				A10000000000000000000015 /* SessionsView.swift in Sources */,
 				A10000000000000000000016 /* SessionRow.swift in Sources */,
+				A10000000000000000000070 /* SidebarView.swift in Sources */,
 				A10000000000000000000037 /* PromptSheet.swift in Sources */,
 				A10000000000000000000018 /* WorkspaceView.swift in Sources */,
 				A10000000000000000000039 /* PreviewsView.swift in Sources */,

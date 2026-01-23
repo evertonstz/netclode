@@ -9,6 +9,7 @@ Native iOS 26 app for Netclode. Built with SwiftUI and the Liquid Glass API.
 - Terminal emulator via [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm)
 - Git changes view with inline unified diffs
 - Connects over Tailscale
+- Platform-adaptive navigation (sidebar on iPad/Mac, stack on iPhone)
 
 ## Requirements
 
@@ -66,7 +67,7 @@ Netclode/
 ├── Services/               # ConnectService, MessageRouter
 ├── Stores/                 # @Observable state (Session, Chat, Event, Terminal, Settings)
 ├── Features/
-│   ├── Sessions/           # Session list, creation
+│   ├── Sessions/           # Session list, sidebar, creation
 │   ├── Workspace/          # Chat + Terminal tabs
 │   ├── Chat/               # Chat UI
 │   ├── Terminal/           # SwiftTerm wrapper
@@ -118,6 +119,31 @@ class SessionStore {
 }
 
 @Environment(SessionStore.self) private var sessionStore
+```
+
+## Platform-Adaptive Navigation
+
+The app uses `NavigationSplitView` which adapts to different screen sizes:
+
+| Platform | Navigation Style |
+|----------|-----------------|
+| iPhone | Stack navigation (push/pop) |
+| iPad | Sidebar + detail split view |
+| Mac (Catalyst) | Persistent sidebar + detail |
+
+On iPhone, tapping a session pushes the workspace view onto the stack. On iPad and Mac, the sidebar remains visible while the detail area shows the selected session's workspace.
+
+```swift
+// ContentView.swift
+if horizontalSizeClass == .compact {
+    NavigationStack { SessionsView() }
+} else {
+    NavigationSplitView {
+        SidebarView(selectedSessionId: $selectedSessionId)
+    } detail: {
+        WorkspaceView(sessionId: selectedSessionId)
+    }
+}
 ```
 
 ## Liquid Glass
