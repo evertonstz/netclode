@@ -60,6 +60,7 @@ enum Theme {
         case running
         case paused
         case error
+        case interrupted
 
         var color: Color {
             switch self {
@@ -69,6 +70,7 @@ enum Theme {
             case .running: Color.blue
             case .paused: Color.gray
             case .error: Color.red
+            case .interrupted: Color.orange
             }
         }
 

@@ -17,6 +17,8 @@ enum AgentEventKind: String, Codable, Sendable {
     case thinking
     case portExposed = "port_exposed"
     case repoClone = "repo_clone"
+    case agentDisconnected = "agent_disconnected"
+    case agentReconnected = "agent_reconnected"
 
     var displayName: String {
         switch self {
@@ -30,6 +32,8 @@ enum AgentEventKind: String, Codable, Sendable {
         case .thinking: "Thinking"
         case .portExposed: "Port Exposed"
         case .repoClone: "Repository"
+        case .agentDisconnected: "Connection Lost"
+        case .agentReconnected: "Reconnected"
         }
     }
 
@@ -41,6 +45,8 @@ enum AgentEventKind: String, Codable, Sendable {
         case .thinking: "brain.head.profile"
         case .portExposed: "network"
         case .repoClone: "arrow.down.circle.fill"
+        case .agentDisconnected: "wifi.slash"
+        case .agentReconnected: "wifi"
         }
     }
 }
@@ -74,6 +80,8 @@ enum AgentEvent: Identifiable, Sendable {
     case thinking(ThinkingEvent)
     case portExposed(PortExposedEvent)
     case repoClone(RepoCloneEvent)
+    case agentDisconnected(AgentDisconnectedEvent)
+    case agentReconnected(AgentReconnectedEvent)
 
     var id: UUID {
         switch self {
@@ -87,6 +95,8 @@ enum AgentEvent: Identifiable, Sendable {
         case .thinking(let e): e.id
         case .portExposed(let e): e.id
         case .repoClone(let e): e.id
+        case .agentDisconnected(let e): e.id
+        case .agentReconnected(let e): e.id
         }
     }
 
@@ -102,6 +112,8 @@ enum AgentEvent: Identifiable, Sendable {
         case .thinking: .thinking
         case .portExposed: .portExposed
         case .repoClone: .repoClone
+        case .agentDisconnected: .agentDisconnected
+        case .agentReconnected: .agentReconnected
         }
     }
 
@@ -117,6 +129,8 @@ enum AgentEvent: Identifiable, Sendable {
         case .thinking(let e): e.timestamp
         case .portExposed(let e): e.timestamp
         case .repoClone(let e): e.timestamp
+        case .agentDisconnected(let e): e.timestamp
+        case .agentReconnected(let e): e.timestamp
         }
     }
 }
@@ -247,6 +261,22 @@ struct RepoCloneEvent: AgentEventProtocol {
     var isError: Bool {
         stage == .error
     }
+}
+
+/// Agent connection lost event - shown when agent disconnects during execution.
+struct AgentDisconnectedEvent: AgentEventProtocol {
+    let id: UUID
+    var kind: AgentEventKind { .agentDisconnected }
+    let timestamp: Date
+    let message: String
+}
+
+/// Agent reconnected event - shown when agent reconnects after disconnect.
+struct AgentReconnectedEvent: AgentEventProtocol {
+    let id: UUID
+    var kind: AgentEventKind { .agentReconnected }
+    let timestamp: Date
+    let message: String
 }
 
 // MARK: - AnyCodableValue for dynamic JSON

@@ -477,6 +477,7 @@ final class ConnectService {
         case .running: return .running
         case .paused: return .paused
         case .error: return .error
+        case .interrupted: return .interrupted
         case .unspecified, .UNRECOGNIZED: return .paused
         }
     }
@@ -600,6 +601,20 @@ final class ConnectService {
                 repo: rc.repo,
                 stage: stage,
                 message: rc.message
+            ))
+            
+        case .agentDisconnected:
+            return .agentDisconnected(AgentDisconnectedEvent(
+                id: id,
+                timestamp: timestamp,
+                message: "Agent connection lost. Send a message to continue when reconnected."
+            ))
+            
+        case .agentReconnected:
+            return .agentReconnected(AgentReconnectedEvent(
+                id: id,
+                timestamp: timestamp,
+                message: "Agent reconnected. Send a message to continue."
             ))
             
         case .UNRECOGNIZED, .unspecified:
@@ -784,6 +799,12 @@ final class ConnectService {
             case .done, .unspecified, .UNRECOGNIZED: stage = "done"
             }
             message = rc.message
+        case .agentDisconnected:
+            kind = "agent_disconnected"
+            message = "Agent connection lost. Send a message to continue when reconnected."
+        case .agentReconnected:
+            kind = "agent_reconnected"
+            message = "Agent reconnected. Send a message to continue."
         case .unspecified, .UNRECOGNIZED:
             kind = "unknown"
         }

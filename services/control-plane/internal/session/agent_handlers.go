@@ -112,8 +112,9 @@ func (m *Manager) handleAgentResult(ctx context.Context, sessionID string, state
 	// Emit agent done
 	m.emit(ctx, sessionID, protocol.NewAgentDone(sessionID))
 
-	// Update status back to ready
+	// Update status back to ready and update last active time
 	m.updateSessionStatus(ctx, sessionID, protocol.StatusReady)
+	m.updateLastActiveAt(ctx, sessionID)
 
 	// Generate title if first prompt and not already generated
 	if !titleGenerated && originalPrompt != "" {

@@ -147,6 +147,8 @@ const (
 	AgentEventKind_AGENT_EVENT_KIND_PORT_EXPOSED        AgentEventKind = 8  // Port was exposed for preview
 	AgentEventKind_AGENT_EVENT_KIND_REPO_CLONE          AgentEventKind = 9  // Repository clone progress
 	AgentEventKind_AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE AgentEventKind = 10 // Tool input streaming finished with full input
+	AgentEventKind_AGENT_EVENT_KIND_AGENT_DISCONNECTED  AgentEventKind = 11 // Agent disconnected unexpectedly
+	AgentEventKind_AGENT_EVENT_KIND_AGENT_RECONNECTED   AgentEventKind = 12 // Agent reconnected after disconnect
 )
 
 // Enum value maps for AgentEventKind.
@@ -163,6 +165,8 @@ var (
 		8:  "AGENT_EVENT_KIND_PORT_EXPOSED",
 		9:  "AGENT_EVENT_KIND_REPO_CLONE",
 		10: "AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE",
+		11: "AGENT_EVENT_KIND_AGENT_DISCONNECTED",
+		12: "AGENT_EVENT_KIND_AGENT_RECONNECTED",
 	}
 	AgentEventKind_value = map[string]int32{
 		"AGENT_EVENT_KIND_UNSPECIFIED":         0,
@@ -176,6 +180,8 @@ var (
 		"AGENT_EVENT_KIND_PORT_EXPOSED":        8,
 		"AGENT_EVENT_KIND_REPO_CLONE":          9,
 		"AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE": 10,
+		"AGENT_EVENT_KIND_AGENT_DISCONNECTED":  11,
+		"AGENT_EVENT_KIND_AGENT_RECONNECTED":   12,
 	}
 )
 
@@ -865,7 +871,7 @@ const file_netclode_v1_events_proto_rawDesc = "" +
 	"\x19REPO_CLONE_STAGE_STARTING\x10\x01\x12\x1c\n" +
 	"\x18REPO_CLONE_STAGE_CLONING\x10\x02\x12\x19\n" +
 	"\x15REPO_CLONE_STAGE_DONE\x10\x03\x12\x1a\n" +
-	"\x16REPO_CLONE_STAGE_ERROR\x10\x04*\x88\x03\n" +
+	"\x16REPO_CLONE_STAGE_ERROR\x10\x04*\xd9\x03\n" +
 	"\x0eAgentEventKind\x12 \n" +
 	"\x1cAGENT_EVENT_KIND_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bAGENT_EVENT_KIND_TOOL_START\x10\x01\x12\x1f\n" +
@@ -878,7 +884,9 @@ const file_netclode_v1_events_proto_rawDesc = "" +
 	"\x1dAGENT_EVENT_KIND_PORT_EXPOSED\x10\b\x12\x1f\n" +
 	"\x1bAGENT_EVENT_KIND_REPO_CLONE\x10\t\x12(\n" +
 	"$AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE\x10\n" +
-	"B\xbc\x01\n" +
+	"\x12'\n" +
+	"#AGENT_EVENT_KIND_AGENT_DISCONNECTED\x10\v\x12&\n" +
+	"\"AGENT_EVENT_KIND_AGENT_RECONNECTED\x10\fB\xbc\x01\n" +
 	"\x0fcom.netclode.v1B\vEventsProtoP\x01ZOgithub.com/angristan/netclode/services/control-plane/gen/netclode/v1;netclodev1\xa2\x02\x03NXX\xaa\x02\vNetclode.V1\xca\x02\vNetclode\\V1\xe2\x02\x17Netclode\\V1\\GPBMetadata\xea\x02\fNetclode::V1b\x06proto3"
 
 var (

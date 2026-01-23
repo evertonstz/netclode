@@ -51,8 +51,9 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 	// Broadcast user message to all subscribers (for cross-client sync)
 	m.emit(ctx, sessionID, protocol.NewUserMessage(sessionID, text))
 
-	// Update session status to running
+	// Update session status to running and last active time
 	m.updateSessionStatus(ctx, sessionID, protocol.StatusRunning)
+	m.updateLastActiveAt(ctx, sessionID)
 
 	// Initialize streaming state
 	m.mu.Lock()

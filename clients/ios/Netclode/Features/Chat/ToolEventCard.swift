@@ -985,7 +985,90 @@ struct RepoCloneCard: View {
     }
 }
 
+// MARK: - System Event Card (Agent Disconnect/Reconnect)
+
+struct SystemEventCard: View {
+    let event: AgentEvent
+    
+    private var isDisconnect: Bool {
+        if case .agentDisconnected = event { return true }
+        return false
+    }
+    
+    private var message: String {
+        switch event {
+        case .agentDisconnected(let e): return e.message
+        case .agentReconnected(let e): return e.message
+        default: return ""
+        }
+    }
+    
+    private var icon: String {
+        isDisconnect ? "wifi.slash" : "wifi"
+    }
+    
+    private var statusColor: Color {
+        isDisconnect ? .orange : Theme.Colors.success
+    }
+    
+    private var title: String {
+        isDisconnect ? "Connection Lost" : "Reconnected"
+    }
+    
+    var body: some View {
+        HStack(spacing: Theme.Spacing.sm) {
+            // Icon
+            Image(systemName: icon)
+                .font(.system(size: TypeScale.body, weight: .medium))
+                .foregroundStyle(statusColor)
+                .frame(width: 28, height: 28)
+                .background(statusColor.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            
+            // Message
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: TypeScale.small, weight: .semibold))
+                    .foregroundStyle(statusColor)
+                
+                Text(message)
+                    .font(.system(size: TypeScale.caption))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, Theme.Spacing.sm)
+        .padding(.vertical, Theme.Spacing.sm)
+        .background(statusColor.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.sm)
+                .stroke(statusColor.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
 // MARK: - Previews
+
+#Preview("System Event Card") {
+    VStack(spacing: Theme.Spacing.md) {
+        SystemEventCard(event: .agentDisconnected(AgentDisconnectedEvent(
+            id: UUID(),
+            timestamp: Date(),
+            message: "Agent connection lost. Send a message to continue when reconnected."
+        )))
+        
+        SystemEventCard(event: .agentReconnected(AgentReconnectedEvent(
+            id: UUID(),
+            timestamp: Date(),
+            message: "Agent reconnected. Send a message to continue."
+        )))
+    }
+    .padding()
+    .background(Theme.Colors.background)
+}
 
 #Preview("Tool Event - Running") {
     VStack(spacing: Theme.Spacing.md) {

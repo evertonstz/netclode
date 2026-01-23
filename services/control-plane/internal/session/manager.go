@@ -448,6 +448,19 @@ func (m *Manager) updateSessionName(ctx context.Context, sessionID, name string)
 	}
 }
 
+// updateLastActiveAt updates the last active timestamp for a session.
+func (m *Manager) updateLastActiveAt(ctx context.Context, sessionID string) {
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	m.mu.Lock()
+	if state, ok := m.sessions[sessionID]; ok {
+		state.Session.LastActiveAt = now
+	}
+	m.mu.Unlock()
+
+	_ = m.storage.UpdateSessionField(ctx, sessionID, "lastActiveAt", now)
+}
+
 // waitForSandbox waits for an existing sandbox to become ready (used when sandbox already exists).
 func (m *Manager) waitForSandbox(ctx context.Context, sessionID string) {
 	fqdn, err := m.k8s.WaitForReady(ctx, sessionID, sandboxReadyTimeout)
@@ -1113,20 +1126,33 @@ func (m *Manager) RegisterAgentConnection(sessionID string, conn AgentConnection
 	m.mu.Lock()
 	m.agents[sessionID] = conn
 
-	// Check for pending prompt
+	// Check for pending prompt and session status
 	var pendingPrompt string
-	if state, ok := m.sessions[sessionID]; ok && state.PendingPrompt != "" {
-		pendingPrompt = state.PendingPrompt
-		state.PendingPrompt = "" // Clear it
+	var wasInterrupted bool
+	if state, ok := m.sessions[sessionID]; ok {
+		if state.PendingPrompt != "" {
+			pendingPrompt = state.PendingPrompt
+			state.PendingPrompt = "" // Clear it
+		}
+		wasInterrupted = (state.Session.Status == protocol.StatusInterrupted)
 	}
 	m.mu.Unlock()
 
-	slog.Info("Agent connection registered", "sessionID", sessionID)
+	slog.Info("Agent connection registered", "sessionID", sessionID, "wasInterrupted", wasInterrupted)
 
-	// Send pending prompt if any
+	ctx := context.Background()
+
+	// If session was interrupted, emit reconnect event (status stays interrupted until user sends prompt)
+	if wasInterrupted {
+		timestamp := time.Now().UTC().Format(time.RFC3339)
+		event := protocol.NewAgentReconnectedEvent(timestamp)
+		m.emit(ctx, sessionID, protocol.NewAgentEvent(sessionID, event))
+		slog.Info("Emitted agent_reconnected event", "sessionID", sessionID)
+	}
+
+	// Send pending prompt if any (for prompts queued before agent connected during session creation)
 	if pendingPrompt != "" {
 		slog.Info("Sending pending prompt to agent", "sessionID", sessionID)
-		ctx := context.Background()
 		if err := m.SendPrompt(ctx, sessionID, pendingPrompt); err != nil {
 			slog.Error("Failed to send pending prompt", "sessionID", sessionID, "error", err)
 		}
@@ -1134,11 +1160,29 @@ func (m *Manager) RegisterAgentConnection(sessionID string, conn AgentConnection
 }
 
 // UnregisterAgentConnection unregisters an agent connection.
+// If the session was running, it will be marked as interrupted.
 func (m *Manager) UnregisterAgentConnection(sessionID string) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	wasRunning := false
+	if state, ok := m.sessions[sessionID]; ok {
+		wasRunning = (state.Session.Status == protocol.StatusRunning)
+	}
 	delete(m.agents, sessionID)
-	slog.Info("Agent connection unregistered", "sessionID", sessionID)
+	m.mu.Unlock()
+
+	slog.Info("Agent connection unregistered", "sessionID", sessionID, "wasRunning", wasRunning)
+
+	// If session was running, mark as interrupted and emit event
+	if wasRunning {
+		ctx := context.Background()
+		m.updateSessionStatus(ctx, sessionID, protocol.StatusInterrupted)
+
+		timestamp := time.Now().UTC().Format(time.RFC3339)
+		event := protocol.NewAgentDisconnectedEvent(timestamp)
+		m.emit(ctx, sessionID, protocol.NewAgentEvent(sessionID, event))
+
+		slog.Info("Session marked as interrupted due to agent disconnect", "sessionID", sessionID)
+	}
 }
 
 // GetAgentConnection returns the agent connection for a session (or nil if not connected).

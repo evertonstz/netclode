@@ -7,9 +7,13 @@ enum SessionStatus: String, Codable, CaseIterable, Sendable {
     case running
     case paused
     case error
+    case interrupted
 
     var displayName: String {
-        rawValue.capitalized
+        switch self {
+        case .interrupted: "Interrupted"
+        default: rawValue.capitalized
+        }
     }
 
     var systemImage: String {
@@ -20,6 +24,7 @@ enum SessionStatus: String, Codable, CaseIterable, Sendable {
         case .running: "play.circle.fill"
         case .paused: "pause.circle.fill"
         case .error: "exclamationmark.triangle.fill"
+        case .interrupted: "wifi.exclamationmark"
         }
     }
 
@@ -31,6 +36,7 @@ enum SessionStatus: String, Codable, CaseIterable, Sendable {
         case .running: .running
         case .paused: .paused
         case .error: .error
+        case .interrupted: .interrupted
         }
     }
 }

@@ -32,6 +32,7 @@ enum SessionStatus {
   SESSION_STATUS_RUNNING = 4;    // Agent is actively processing a prompt
   SESSION_STATUS_PAUSED = 5;     // Session is paused (agent container stopped)
   SESSION_STATUS_ERROR = 6;      // Session encountered an error
+  SESSION_STATUS_INTERRUPTED = 7; // Agent disconnected while running, awaiting user action
 }
 
 // SessionSummary includes session data plus metadata for list views.

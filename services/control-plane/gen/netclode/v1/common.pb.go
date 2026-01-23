@@ -83,6 +83,7 @@ const (
 	SessionStatus_SESSION_STATUS_RUNNING     SessionStatus = 4 // Agent is actively processing a prompt
 	SessionStatus_SESSION_STATUS_PAUSED      SessionStatus = 5 // Session is paused (agent container stopped)
 	SessionStatus_SESSION_STATUS_ERROR       SessionStatus = 6 // Session encountered an error
+	SessionStatus_SESSION_STATUS_INTERRUPTED SessionStatus = 7 // Agent disconnected while running, awaiting user action
 )
 
 // Enum value maps for SessionStatus.
@@ -95,6 +96,7 @@ var (
 		4: "SESSION_STATUS_RUNNING",
 		5: "SESSION_STATUS_PAUSED",
 		6: "SESSION_STATUS_ERROR",
+		7: "SESSION_STATUS_INTERRUPTED",
 	}
 	SessionStatus_value = map[string]int32{
 		"SESSION_STATUS_UNSPECIFIED": 0,
@@ -104,6 +106,7 @@ var (
 		"SESSION_STATUS_RUNNING":     4,
 		"SESSION_STATUS_PAUSED":      5,
 		"SESSION_STATUS_ERROR":       6,
+		"SESSION_STATUS_INTERRUPTED": 7,
 	}
 )
 
@@ -901,7 +904,7 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"RepoAccess\x12\x1b\n" +
 	"\x17REPO_ACCESS_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10REPO_ACCESS_READ\x10\x01\x12\x15\n" +
-	"\x11REPO_ACCESS_WRITE\x10\x02*\xd4\x01\n" +
+	"\x11REPO_ACCESS_WRITE\x10\x02*\xf4\x01\n" +
 	"\rSessionStatus\x12\x1e\n" +
 	"\x1aSESSION_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17SESSION_STATUS_CREATING\x10\x01\x12\x1b\n" +
@@ -909,7 +912,8 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x14SESSION_STATUS_READY\x10\x03\x12\x1a\n" +
 	"\x16SESSION_STATUS_RUNNING\x10\x04\x12\x19\n" +
 	"\x15SESSION_STATUS_PAUSED\x10\x05\x12\x18\n" +
-	"\x14SESSION_STATUS_ERROR\x10\x06*\x99\x02\n" +
+	"\x14SESSION_STATUS_ERROR\x10\x06\x12\x1e\n" +
+	"\x1aSESSION_STATUS_INTERRUPTED\x10\a*\x99\x02\n" +
 	"\rGitFileStatus\x12\x1f\n" +
 	"\x1bGIT_FILE_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18GIT_FILE_STATUS_MODIFIED\x10\x01\x12\x19\n" +

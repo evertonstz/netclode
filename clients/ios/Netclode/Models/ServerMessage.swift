@@ -318,6 +318,20 @@ private struct RawAgentEvent: Decodable {
                 message: message ?? ""
             ))
 
+        case "agent_disconnected":
+            return .agentDisconnected(AgentDisconnectedEvent(
+                id: id,
+                timestamp: timestamp,
+                message: message ?? "Agent connection lost. Send a message to continue when reconnected."
+            ))
+
+        case "agent_reconnected":
+            return .agentReconnected(AgentReconnectedEvent(
+                id: id,
+                timestamp: timestamp,
+                message: message ?? "Agent reconnected. Send a message to continue."
+            ))
+
         default:
             return .thinking(ThinkingEvent(
                 id: id,

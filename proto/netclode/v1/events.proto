@@ -102,4 +102,6 @@ enum AgentEventKind {
   AGENT_EVENT_KIND_PORT_EXPOSED = 8;            // Port was exposed for preview
   AGENT_EVENT_KIND_REPO_CLONE = 9;              // Repository clone progress
   AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE = 10;    // Tool input streaming finished with full input
+  AGENT_EVENT_KIND_AGENT_DISCONNECTED = 11;     // Agent disconnected unexpectedly
+  AGENT_EVENT_KIND_AGENT_RECONNECTED = 12;      // Agent reconnected after disconnect
 }

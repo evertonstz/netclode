@@ -4,12 +4,13 @@ package protocol
 type SessionStatus string
 
 const (
-	StatusCreating SessionStatus = "creating"
-	StatusResuming SessionStatus = "resuming"
-	StatusReady    SessionStatus = "ready"
-	StatusRunning  SessionStatus = "running"
-	StatusPaused   SessionStatus = "paused"
-	StatusError    SessionStatus = "error"
+	StatusCreating    SessionStatus = "creating"
+	StatusResuming    SessionStatus = "resuming"
+	StatusReady       SessionStatus = "ready"
+	StatusRunning     SessionStatus = "running"
+	StatusPaused      SessionStatus = "paused"
+	StatusError       SessionStatus = "error"
+	StatusInterrupted SessionStatus = "interrupted" // Agent disconnected during execution
 )
 
 // RepoAccess defines the permission level for repository operations.

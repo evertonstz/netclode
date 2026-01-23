@@ -16,6 +16,8 @@ const (
 	EventKindThinking          AgentEventKind = "thinking"            // Agent thinking/reasoning
 	EventKindPortExposed       AgentEventKind = "port_exposed"        // Port exposed for preview access
 	EventKindRepoClone         AgentEventKind = "repo_clone"          // Repository clone progress
+	EventKindAgentDisconnected AgentEventKind = "agent_disconnected"  // Agent connection lost during execution
+	EventKindAgentReconnected  AgentEventKind = "agent_reconnected"   // Agent reconnected after disconnect
 )
 
 // FileAction represents the type of change made to a file.
@@ -69,4 +71,22 @@ type AgentEvent struct {
 	Repo    string         `json:"repo,omitempty"`    // Repository URL being cloned
 	Stage   RepoCloneStage `json:"stage,omitempty"`   // Clone stage
 	Message string         `json:"message,omitempty"` // Progress message
+}
+
+// NewAgentDisconnectedEvent creates an event for when the agent connection is lost.
+func NewAgentDisconnectedEvent(timestamp string) *AgentEvent {
+	return &AgentEvent{
+		Kind:      EventKindAgentDisconnected,
+		Timestamp: timestamp,
+		Message:   "Agent connection lost. Send a message to continue when reconnected.",
+	}
+}
+
+// NewAgentReconnectedEvent creates an event for when the agent reconnects.
+func NewAgentReconnectedEvent(timestamp string) *AgentEvent {
+	return &AgentEvent{
+		Kind:      EventKindAgentReconnected,
+		Timestamp: timestamp,
+		Message:   "Agent reconnected. Send a message to continue.",
+	}
 }

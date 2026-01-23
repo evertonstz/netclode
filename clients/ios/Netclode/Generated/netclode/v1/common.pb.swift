@@ -85,6 +85,9 @@ public enum Netclode_V1_SessionStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
 
   /// Session encountered an error
   case error // = 6
+
+  /// Agent disconnected while running, awaiting user action
+  case interrupted // = 7
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -100,6 +103,7 @@ public enum Netclode_V1_SessionStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
     case 4: self = .running
     case 5: self = .paused
     case 6: self = .error
+    case 7: self = .interrupted
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -113,6 +117,7 @@ public enum Netclode_V1_SessionStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
     case .running: return 4
     case .paused: return 5
     case .error: return 6
+    case .interrupted: return 7
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -126,6 +131,7 @@ public enum Netclode_V1_SessionStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
     .running,
     .paused,
     .error,
+    .interrupted,
   ]
 
 }
@@ -550,7 +556,7 @@ extension Netclode_V1_RepoAccess: SwiftProtobuf._ProtoNameProviding {
 }
 
 extension Netclode_V1_SessionStatus: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SESSION_STATUS_UNSPECIFIED\0\u{1}SESSION_STATUS_CREATING\0\u{1}SESSION_STATUS_RESUMING\0\u{1}SESSION_STATUS_READY\0\u{1}SESSION_STATUS_RUNNING\0\u{1}SESSION_STATUS_PAUSED\0\u{1}SESSION_STATUS_ERROR\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SESSION_STATUS_UNSPECIFIED\0\u{1}SESSION_STATUS_CREATING\0\u{1}SESSION_STATUS_RESUMING\0\u{1}SESSION_STATUS_READY\0\u{1}SESSION_STATUS_RUNNING\0\u{1}SESSION_STATUS_PAUSED\0\u{1}SESSION_STATUS_ERROR\0\u{1}SESSION_STATUS_INTERRUPTED\0")
 }
 
 extension Netclode_V1_GitFileStatus: SwiftProtobuf._ProtoNameProviding {

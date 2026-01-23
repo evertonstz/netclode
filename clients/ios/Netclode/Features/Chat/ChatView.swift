@@ -369,6 +369,9 @@ struct ChatView: View {
         case .repoClone(let e):
             RepoCloneCard(event: e)
 
+        case .agentDisconnected, .agentReconnected:
+            SystemEventCard(event: grouped.event)
+
         default:
             EmptyView()
         }
@@ -432,6 +435,12 @@ struct ChatView: View {
                 } else {
                     result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
                 }
+
+            case .agentDisconnected(let e):
+                result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
+
+            case .agentReconnected(let e):
+                result.append(GroupedEvent(id: e.id, event: event, timestamp: e.timestamp))
             }
         }
         

@@ -158,6 +158,12 @@ public enum Netclode_V1_AgentEventKind: SwiftProtobuf.Enum, Swift.CaseIterable {
 
   /// Tool input streaming finished with full input
   case toolInputComplete // = 10
+
+  /// Agent disconnected unexpectedly
+  case agentDisconnected // = 11
+
+  /// Agent reconnected after disconnect
+  case agentReconnected // = 12
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -177,6 +183,8 @@ public enum Netclode_V1_AgentEventKind: SwiftProtobuf.Enum, Swift.CaseIterable {
     case 8: self = .portExposed
     case 9: self = .repoClone
     case 10: self = .toolInputComplete
+    case 11: self = .agentDisconnected
+    case 12: self = .agentReconnected
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -194,6 +202,8 @@ public enum Netclode_V1_AgentEventKind: SwiftProtobuf.Enum, Swift.CaseIterable {
     case .portExposed: return 8
     case .repoClone: return 9
     case .toolInputComplete: return 10
+    case .agentDisconnected: return 11
+    case .agentReconnected: return 12
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -211,6 +221,8 @@ public enum Netclode_V1_AgentEventKind: SwiftProtobuf.Enum, Swift.CaseIterable {
     .portExposed,
     .repoClone,
     .toolInputComplete,
+    .agentDisconnected,
+    .agentReconnected,
   ]
 
 }
@@ -555,7 +567,7 @@ extension Netclode_V1_RepoCloneStage: SwiftProtobuf._ProtoNameProviding {
 }
 
 extension Netclode_V1_AgentEventKind: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0AGENT_EVENT_KIND_UNSPECIFIED\0\u{1}AGENT_EVENT_KIND_TOOL_START\0\u{1}AGENT_EVENT_KIND_TOOL_INPUT\0\u{1}AGENT_EVENT_KIND_TOOL_END\0\u{1}AGENT_EVENT_KIND_FILE_CHANGE\0\u{1}AGENT_EVENT_KIND_COMMAND_START\0\u{1}AGENT_EVENT_KIND_COMMAND_END\0\u{1}AGENT_EVENT_KIND_THINKING\0\u{1}AGENT_EVENT_KIND_PORT_EXPOSED\0\u{1}AGENT_EVENT_KIND_REPO_CLONE\0\u{1}AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0AGENT_EVENT_KIND_UNSPECIFIED\0\u{1}AGENT_EVENT_KIND_TOOL_START\0\u{1}AGENT_EVENT_KIND_TOOL_INPUT\0\u{1}AGENT_EVENT_KIND_TOOL_END\0\u{1}AGENT_EVENT_KIND_FILE_CHANGE\0\u{1}AGENT_EVENT_KIND_COMMAND_START\0\u{1}AGENT_EVENT_KIND_COMMAND_END\0\u{1}AGENT_EVENT_KIND_THINKING\0\u{1}AGENT_EVENT_KIND_PORT_EXPOSED\0\u{1}AGENT_EVENT_KIND_REPO_CLONE\0\u{1}AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE\0\u{1}AGENT_EVENT_KIND_AGENT_DISCONNECTED\0\u{1}AGENT_EVENT_KIND_AGENT_RECONNECTED\0")
 }
 
 extension Netclode_V1_AgentEvent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
