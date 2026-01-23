@@ -159,12 +159,15 @@ docker run -v /agent/workspace:/app node:20 npm install
 
 ### Network isolation
 
-Agents have internet access but are blocked from reaching cluster internals via NetworkPolicy:
+Agents have internet access but are blocked from reaching internal networks via NetworkPolicy:
 
 - Can reach: internet (any external IP)
-- Blocked: pod network (10.42.0.0/16), service network (10.43.0.0/16), node IPs
+- Blocked:
+  - Pod network (10.42.0.0/16), service network (10.43.0.0/16), node IPs
+  - Private ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+  - Tailscale CGNAT range (100.64.0.0/10) - sandboxes cannot access other devices on your tailnet
 
-This prevents a compromised agent from attacking other pods, the k8s API, or Redis. The only allowed internal traffic is to the control plane (for session config and health checks).
+This prevents a compromised agent from attacking other pods, the k8s API, Redis, or pivoting to other resources on your tailnet. The only allowed internal traffic is to the control plane (for session config and health checks).
 
 ### Port exposure (previews)
 
