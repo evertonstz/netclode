@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     docker.io \
     docker-cli \
     iptables \
+    sudo \
     && update-alternatives --set iptables /usr/sbin/iptables-legacy \
     && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy \
     && rm -rf /var/lib/apt/lists/* \
@@ -62,9 +63,12 @@ RUN --mount=type=cache,target=/root/.npm \
 # =============================================================================
 FROM base AS runtime
 
-# Create non-root user with docker access
+# Create non-root user with docker access and passwordless sudo
 # Note: /agent is the persistent home dir, mounted from JuiceFS
+# Sudo is safe because we run inside an isolated Kata VM
 RUN useradd -m -u 1000 -G docker -d /agent agent && \
+    echo 'agent ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/agent && \
+    chmod 0440 /etc/sudoers.d/agent && \
     mkdir -p /agent /opt/agent && \
     chown -R agent:agent /agent /opt/agent
 

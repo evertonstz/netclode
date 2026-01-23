@@ -5,7 +5,7 @@ Claude Code agent that runs inside Kata Container VMs. Uses the Claude Agent SDK
 ## What it does
 
 - Executes prompts via the SDK's `query()` async iterator
-- Full access to Docker, root, any tools - VM handles isolation
+- Full access to Docker, sudo, any tools - VM handles isolation
 - Persistent workspace survives pause/resume
 - Terminal access via bidirectional Connect streaming
 
@@ -76,7 +76,7 @@ service AgentService {
 
 ### Terminal
 
-The PTY is managed by [node-pty](https://github.com/microsoft/node-pty). It's spawned lazily on first input to avoid idle shell processes. The shell runs as root in `/agent/workspace`.
+The PTY is managed by [node-pty](https://github.com/microsoft/node-pty). It's spawned lazily on first input to avoid idle shell processes. The shell runs as the `agent` user (with passwordless sudo) in `/agent/workspace`.
 
 ```
 iOS ──► Control Plane ──► Agent ──► node-pty ──► bash
@@ -188,7 +188,7 @@ npm run build
 docker build -t ghcr.io/angristan/netclode-agent:latest -f services/agent/Dockerfile .
 ```
 
-Includes Debian bookworm-slim, Node.js via mise, Docker, Git, curl, build-essential, Claude CLI.
+Includes Debian trixie-slim, Node.js via mise, Docker, Git, curl, build-essential, sudo, Claude CLI.
 
 ## Agent Events
 
