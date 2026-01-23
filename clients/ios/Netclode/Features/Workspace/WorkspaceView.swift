@@ -55,7 +55,7 @@ struct WorkspaceView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 180)
+                .frame(width: 220)
             }
 
             ToolbarItem(placement: .topBarTrailing) {
