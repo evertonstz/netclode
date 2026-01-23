@@ -447,8 +447,8 @@ public struct Netclode_V1_GitFileChange: Sendable {
   public init() {}
 }
 
-/// PersistedMessage represents a chat message stored in history.
-public struct Netclode_V1_PersistedMessage: Sendable {
+/// Message represents a chat message in a session.
+public struct Netclode_V1_Message: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -475,9 +475,8 @@ public struct Netclode_V1_PersistedMessage: Sendable {
   fileprivate var _timestamp: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
 }
 
-/// PersistedEvent represents an agent event stored in history.
-/// Events are stored with their full structure for replay during session open.
-public struct Netclode_V1_PersistedEvent: Sendable {
+/// Event represents an agent event in a session.
+public struct Netclode_V1_Event: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -823,8 +822,8 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
   }
 }
 
-extension Netclode_V1_PersistedMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".PersistedMessage"
+extension Netclode_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Message"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}role\0\u{1}content\0\u{1}timestamp\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -862,7 +861,7 @@ extension Netclode_V1_PersistedMessage: SwiftProtobuf.Message, SwiftProtobuf._Me
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Netclode_V1_PersistedMessage, rhs: Netclode_V1_PersistedMessage) -> Bool {
+  public static func ==(lhs: Netclode_V1_Message, rhs: Netclode_V1_Message) -> Bool {
     if lhs.id != rhs.id {return false}
     if lhs.role != rhs.role {return false}
     if lhs.content != rhs.content {return false}
@@ -872,8 +871,8 @@ extension Netclode_V1_PersistedMessage: SwiftProtobuf.Message, SwiftProtobuf._Me
   }
 }
 
-extension Netclode_V1_PersistedEvent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".PersistedEvent"
+extension Netclode_V1_Event: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Event"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{3}message_id\0\u{1}timestamp\0\u{1}event\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -911,7 +910,7 @@ extension Netclode_V1_PersistedEvent: SwiftProtobuf.Message, SwiftProtobuf._Mess
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Netclode_V1_PersistedEvent, rhs: Netclode_V1_PersistedEvent) -> Bool {
+  public static func ==(lhs: Netclode_V1_Event, rhs: Netclode_V1_Event) -> Bool {
     if lhs.id != rhs.id {return false}
     if lhs.messageID != rhs.messageID {return false}
     if lhs._timestamp != rhs._timestamp {return false}

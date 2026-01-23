@@ -6,14 +6,11 @@ import (
 	"io"
 	"log/slog"
 	"sync"
-	"time"
 
 	"connectrpc.com/connect"
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/gen/netclode/v1/netclodev1connect"
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/angristan/netclode/services/control-plane/internal/session"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -278,8 +275,8 @@ func (c *ConnectConnection) forwardMessages(sessionID string, sub *session.Strea
 			if !ok {
 				return
 			}
-			pbMsg := convertServerMessage(msg)
-			if err := c.send(pbMsg); err != nil {
+			// Messages are already *pb.ServerMessage from subscriber
+			if err := c.send(msg); err != nil {
 				slog.Debug("Failed to forward message", "sessionID", sessionID, "error", err)
 				return
 			}
@@ -304,13 +301,12 @@ func (c *ConnectConnection) unsubscribe(sessionID string) {
 
 func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.CreateSessionRequest) error {
 	var repoPtr *string
-	var repoAccessPtr *protocol.RepoAccess
+	var repoAccessPtr *pb.RepoAccess
 	if req.Repo != nil {
 		repoPtr = req.Repo
 	}
 	if req.RepoAccess != nil {
-		access := convertProtoRepoAccess(*req.RepoAccess)
-		repoAccessPtr = &access
+		repoAccessPtr = req.RepoAccess
 	}
 
 	name := ""
@@ -323,14 +319,13 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 		return err
 	}
 
-	if err := c.subscribe(ctx, sess.ID, "$"); err != nil {
-		slog.Warn("Failed to subscribe to new session", "sessionID", sess.ID, "error", err)
+	if err := c.subscribe(ctx, sess.Id, "$"); err != nil {
+		slog.Warn("Failed to subscribe to new session", "sessionID", sess.Id, "error", err)
 	}
 
-	pbSession := convertSession(sess)
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_SessionCreated{
-			SessionCreated: &pb.SessionCreatedResponse{Session: pbSession},
+			SessionCreated: &pb.SessionCreatedResponse{Session: sess},
 		},
 	}
 
@@ -343,9 +338,9 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 
 	// Send initial prompt if provided
 	if req.InitialPrompt != nil && *req.InitialPrompt != "" {
-		slog.Info("Sending initial prompt", "sessionID", sess.ID)
-		if err := c.manager.SendPrompt(ctx, sess.ID, *req.InitialPrompt); err != nil {
-			slog.Warn("Failed to send initial prompt", "sessionID", sess.ID, "error", err)
+		slog.Info("Sending initial prompt", "sessionID", sess.Id)
+		if err := c.manager.SendPrompt(ctx, sess.Id, *req.InitialPrompt); err != nil {
+			slog.Warn("Failed to send initial prompt", "sessionID", sess.Id, "error", err)
 		}
 	}
 
@@ -358,9 +353,10 @@ func (c *ConnectConnection) handleSessionList(ctx context.Context) error {
 		return err
 	}
 
+	// Sessions are already pb.Session, just need to convert to pointers
 	pbSessions := make([]*pb.Session, len(sessions))
-	for i, s := range sessions {
-		pbSessions[i] = convertSession(&s)
+	for i := range sessions {
+		pbSessions[i] = &sessions[i]
 	}
 
 	return c.send(&pb.ServerMessage{
@@ -394,18 +390,19 @@ func (c *ConnectConnection) handleSessionOpen(ctx context.Context, req *pb.OpenS
 		slog.Warn("Failed to subscribe to opened session", "sessionID", req.SessionId, "error", err)
 	}
 
-	pbMessages := make([]*pb.PersistedMessage, len(messages))
-	for i, m := range messages {
-		pbMessages[i] = convertPersistedMessage(&m)
+	// Messages and Events are already pb.Message and pb.Event, convert to pointers
+	pbMessages := make([]*pb.Message, len(messages))
+	for i := range messages {
+		pbMessages[i] = &messages[i]
 	}
 
-	pbEvents := make([]*pb.PersistedEvent, len(events))
-	for i, e := range events {
-		pbEvents[i] = convertPersistedEvent(&e)
+	pbEvents := make([]*pb.Event, len(events))
+	for i := range events {
+		pbEvents[i] = &events[i]
 	}
 
 	resp := &pb.SessionStateResponse{
-		Session:            convertSession(sess),
+		Session:            sess,
 		Messages:           pbMessages,
 		Events:             pbEvents,
 		HasMore:            hasMore,
@@ -429,7 +426,7 @@ func (c *ConnectConnection) handleSessionResume(ctx context.Context, id string) 
 
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_SessionUpdated{
-			SessionUpdated: &pb.SessionUpdatedResponse{Session: convertSession(sess)},
+			SessionUpdated: &pb.SessionUpdatedResponse{Session: sess},
 		},
 	}
 
@@ -451,7 +448,7 @@ func (c *ConnectConnection) handleSessionPause(ctx context.Context, id string) e
 
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_SessionUpdated{
-			SessionUpdated: &pb.SessionUpdatedResponse{Session: convertSession(sess)},
+			SessionUpdated: &pb.SessionUpdatedResponse{Session: sess},
 		},
 	}
 
@@ -549,9 +546,10 @@ func (c *ConnectConnection) handleSync(ctx context.Context) error {
 		return err
 	}
 
+	// Sessions are already pb.SessionSummary, just need to convert to pointers
 	pbSessions := make([]*pb.SessionSummary, len(sessions))
-	for i, s := range sessions {
-		pbSessions[i] = convertSessionSummary(&s)
+	for i := range sessions {
+		pbSessions[i] = &sessions[i]
 	}
 
 	return c.send(&pb.ServerMessage{
@@ -623,13 +621,10 @@ func (c *ConnectConnection) handleGitStatus(ctx context.Context, sessionID strin
 		return c.send(makeErrorResponse(sessionID, "GIT_ERROR", err.Error()))
 	}
 
+	// Files are already pb.GitFileChange, convert to pointers
 	pbFiles := make([]*pb.GitFileChange, len(files))
-	for i, f := range files {
-		pbFiles[i] = &pb.GitFileChange{
-			Path:   f.Path,
-			Status: convertGitStatus(f.Status),
-			Staged: f.Staged,
-		}
+	for i := range files {
+		pbFiles[i] = &files[i]
 	}
 
 	return c.send(&pb.ServerMessage{
@@ -661,418 +656,6 @@ func (c *ConnectConnection) handleGitDiff(ctx context.Context, req *pb.GitDiffRe
 	})
 }
 
-// Conversion helpers for protocol types to protobuf types
-
-func convertSession(s *protocol.Session) *pb.Session {
-	if s == nil {
-		return nil
-	}
-
-	pbSess := &pb.Session{
-		Id:     s.ID,
-		Name:   s.Name,
-		Status: convertSessionStatus(s.Status),
-	}
-
-	if s.Repo != nil {
-		pbSess.Repo = s.Repo
-	}
-	if s.RepoAccess != nil {
-		access := convertRepoAccessToProto(*s.RepoAccess)
-		pbSess.RepoAccess = &access
-	}
-
-	if t, err := time.Parse(time.RFC3339, s.CreatedAt); err == nil {
-		pbSess.CreatedAt = timestamppb.New(t)
-	} else if s.CreatedAt != "" {
-		slog.Warn("Failed to parse session CreatedAt timestamp",
-			"sessionID", s.ID, "timestamp", s.CreatedAt, "error", err)
-	}
-	if t, err := time.Parse(time.RFC3339, s.LastActiveAt); err == nil {
-		pbSess.LastActiveAt = timestamppb.New(t)
-	} else if s.LastActiveAt != "" {
-		slog.Warn("Failed to parse session LastActiveAt timestamp",
-			"sessionID", s.ID, "timestamp", s.LastActiveAt, "error", err)
-	}
-
-	return pbSess
-}
-
-// convertRepoAccessToProto converts protocol RepoAccess to proto RepoAccess.
-func convertRepoAccessToProto(access protocol.RepoAccess) pb.RepoAccess {
-	switch access {
-	case protocol.RepoAccessRead:
-		return pb.RepoAccess_REPO_ACCESS_READ
-	case protocol.RepoAccessWrite:
-		return pb.RepoAccess_REPO_ACCESS_WRITE
-	default:
-		return pb.RepoAccess_REPO_ACCESS_UNSPECIFIED
-	}
-}
-
-// convertProtoRepoAccess converts proto RepoAccess to protocol RepoAccess.
-func convertProtoRepoAccess(access pb.RepoAccess) protocol.RepoAccess {
-	switch access {
-	case pb.RepoAccess_REPO_ACCESS_READ:
-		return protocol.RepoAccessRead
-	case pb.RepoAccess_REPO_ACCESS_WRITE:
-		return protocol.RepoAccessWrite
-	default:
-		return protocol.RepoAccessUnspecified
-	}
-}
-
-func convertSessionStatus(s protocol.SessionStatus) pb.SessionStatus {
-	switch s {
-	case protocol.StatusCreating:
-		return pb.SessionStatus_SESSION_STATUS_CREATING
-	case protocol.StatusResuming:
-		return pb.SessionStatus_SESSION_STATUS_RESUMING
-	case protocol.StatusReady:
-		return pb.SessionStatus_SESSION_STATUS_READY
-	case protocol.StatusRunning:
-		return pb.SessionStatus_SESSION_STATUS_RUNNING
-	case protocol.StatusPaused:
-		return pb.SessionStatus_SESSION_STATUS_PAUSED
-	case protocol.StatusError:
-		return pb.SessionStatus_SESSION_STATUS_ERROR
-	default:
-		return pb.SessionStatus_SESSION_STATUS_UNSPECIFIED
-	}
-}
-
-func convertSessionSummary(s *protocol.SessionSummary) *pb.SessionSummary {
-	if s == nil {
-		return nil
-	}
-
-	summary := &pb.SessionSummary{
-		Session: convertSession(&s.Session),
-	}
-
-	if s.MessageCount != nil {
-		count := int32(*s.MessageCount)
-		summary.MessageCount = &count
-	}
-	if s.LastMessageID != nil {
-		summary.LastMessageId = s.LastMessageID
-	}
-
-	return summary
-}
-
-func convertPersistedMessage(m *protocol.PersistedMessage) *pb.PersistedMessage {
-	if m == nil {
-		return nil
-	}
-
-	msg := &pb.PersistedMessage{
-		Id:      m.ID,
-		Role:    convertMessageRole(m.Role),
-		Content: m.Content,
-	}
-
-	if t, err := time.Parse(time.RFC3339, m.Timestamp); err == nil {
-		msg.Timestamp = timestamppb.New(t)
-	} else if m.Timestamp != "" {
-		slog.Warn("Failed to parse message timestamp",
-			"messageID", m.ID, "timestamp", m.Timestamp, "error", err)
-	}
-
-	return msg
-}
-
-func convertMessageRole(r protocol.MessageRole) pb.MessageRole {
-	switch r {
-	case protocol.RoleUser:
-		return pb.MessageRole_MESSAGE_ROLE_USER
-	case protocol.RoleAssistant:
-		return pb.MessageRole_MESSAGE_ROLE_ASSISTANT
-	default:
-		return pb.MessageRole_MESSAGE_ROLE_UNSPECIFIED
-	}
-}
-
-func convertPersistedEvent(e *protocol.PersistedEvent) *pb.PersistedEvent {
-	if e == nil {
-		return nil
-	}
-
-	evt := &pb.PersistedEvent{
-		Id: e.ID,
-		// MessageId intentionally left empty - message-level correlation not yet implemented
-	}
-
-	// Convert the embedded event
-	evt.Event = convertAgentEvent(&e.Event)
-
-	if t, err := time.Parse(time.RFC3339, e.Timestamp); err == nil {
-		evt.Timestamp = timestamppb.New(t)
-	} else if e.Timestamp != "" {
-		slog.Warn("Failed to parse event timestamp",
-			"eventID", e.ID, "timestamp", e.Timestamp, "error", err)
-	}
-
-	return evt
-}
-
-func convertGitStatus(s string) pb.GitFileStatus {
-	switch s {
-	case "modified":
-		return pb.GitFileStatus_GIT_FILE_STATUS_MODIFIED
-	case "added":
-		return pb.GitFileStatus_GIT_FILE_STATUS_ADDED
-	case "deleted":
-		return pb.GitFileStatus_GIT_FILE_STATUS_DELETED
-	case "renamed":
-		return pb.GitFileStatus_GIT_FILE_STATUS_RENAMED
-	case "untracked":
-		return pb.GitFileStatus_GIT_FILE_STATUS_UNTRACKED
-	case "copied":
-		return pb.GitFileStatus_GIT_FILE_STATUS_COPIED
-	case "ignored":
-		return pb.GitFileStatus_GIT_FILE_STATUS_IGNORED
-	case "unmerged":
-		return pb.GitFileStatus_GIT_FILE_STATUS_UNMERGED
-	default:
-		return pb.GitFileStatus_GIT_FILE_STATUS_UNSPECIFIED
-	}
-}
-
-// convertServerMessage converts a protocol.ServerMessage to pb.ServerMessage.
-func convertServerMessage(msg protocol.ServerMessage) *pb.ServerMessage {
-	switch msg.Type {
-	case protocol.MsgTypeSessionCreated:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_SessionCreated{
-				SessionCreated: &pb.SessionCreatedResponse{Session: convertSession(msg.Session)},
-			},
-		}
-	case protocol.MsgTypeSessionUpdated:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_SessionUpdated{
-				SessionUpdated: &pb.SessionUpdatedResponse{Session: convertSession(msg.Session)},
-			},
-		}
-	case protocol.MsgTypeSessionDeleted:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_SessionDeleted{
-				SessionDeleted: &pb.SessionDeletedResponse{SessionId: msg.ID},
-			},
-		}
-	case protocol.MsgTypeSessionError:
-		return makeErrorResponse(msg.ID, "SESSION_ERROR", msg.Error)
-	case protocol.MsgTypeAgentMessage:
-		partial := false
-		if msg.Partial != nil {
-			partial = *msg.Partial
-		}
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_AgentMessage{
-				AgentMessage: &pb.AgentMessageResponse{
-					SessionId: msg.SessionID,
-					Content:   msg.Content,
-					Partial:   partial,
-					MessageId: msg.MessageID,
-				},
-			},
-		}
-	case protocol.MsgTypeAgentEvent:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_AgentEvent{
-				AgentEvent: &pb.AgentEventResponse{
-					SessionId: msg.SessionID,
-					Event:     convertAgentEvent(msg.Event),
-				},
-			},
-		}
-	case protocol.MsgTypeAgentDone:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_AgentDone{
-				AgentDone: &pb.AgentDoneResponse{SessionId: msg.SessionID},
-			},
-		}
-	case protocol.MsgTypeAgentError:
-		return makeErrorResponse(msg.SessionID, "AGENT_ERROR", msg.Error)
-	case protocol.MsgTypeUserMessage:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_UserMessage{
-				UserMessage: &pb.UserMessageResponse{SessionId: msg.SessionID, Content: msg.Content},
-			},
-		}
-	case protocol.MsgTypeTerminalOutput:
-		return &pb.ServerMessage{
-			Message: &pb.ServerMessage_TerminalOutput{
-				TerminalOutput: &pb.TerminalOutputResponse{SessionId: msg.SessionID, Data: msg.Data},
-			},
-		}
-	case protocol.MsgTypeError:
-		return makeErrorResponse("", "ERROR", msg.Message)
-	default:
-		return makeErrorResponse("", "UNKNOWN_MESSAGE_TYPE", "Unknown message type: "+msg.Type)
-	}
-}
-
-func convertAgentEvent(e *protocol.AgentEvent) *pb.AgentEvent {
-	if e == nil {
-		return nil
-	}
-
-	evt := &pb.AgentEvent{
-		Kind: convertEventKind(e.Kind),
-	}
-
-	if t, err := time.Parse(time.RFC3339, e.Timestamp); err == nil {
-		evt.Timestamp = timestamppb.New(t)
-	} else if e.Timestamp != "" {
-		slog.Warn("Failed to parse agent event timestamp",
-			"kind", e.Kind, "timestamp", e.Timestamp, "error", err)
-	}
-
-	// Set payload based on event kind
-	switch e.Kind {
-	case protocol.EventKindToolStart, protocol.EventKindToolInput, protocol.EventKindToolInputComplete, protocol.EventKindToolEnd:
-		payload := &pb.ToolEventPayload{
-			Tool:      e.Tool,
-			ToolUseId: e.ToolUseID,
-		}
-		if e.ParentToolUseID != "" {
-			payload.ParentToolUseId = &e.ParentToolUseID
-		}
-		if len(e.Input) > 0 {
-			if inputStruct, err := structpb.NewStruct(e.Input); err == nil {
-				payload.Input = inputStruct
-			}
-		}
-		if e.InputDelta != "" {
-			payload.InputDelta = &e.InputDelta
-		}
-		if e.Result != nil {
-			payload.Result = e.Result
-		}
-		if e.Error != nil {
-			payload.Error = e.Error
-		}
-		evt.Payload = &pb.AgentEvent_Tool{Tool: payload}
-
-	case protocol.EventKindFileChange:
-		payload := &pb.FileChangePayload{
-			Path:   e.Path,
-			Action: convertFileActionToProto(e.Action),
-		}
-		if e.LinesAdded != nil {
-			added := int32(*e.LinesAdded)
-			payload.LinesAdded = &added
-		}
-		if e.LinesRemoved != nil {
-			removed := int32(*e.LinesRemoved)
-			payload.LinesRemoved = &removed
-		}
-		evt.Payload = &pb.AgentEvent_FileChange{FileChange: payload}
-
-	case protocol.EventKindCommandStart, protocol.EventKindCommandEnd:
-		payload := &pb.CommandPayload{
-			Command: e.Command,
-		}
-		if e.Cwd != nil {
-			payload.Cwd = e.Cwd
-		}
-		if e.ExitCode != nil {
-			code := int32(*e.ExitCode)
-			payload.ExitCode = &code
-		}
-		if e.Output != nil {
-			payload.Output = e.Output
-		}
-		evt.Payload = &pb.AgentEvent_Command{Command: payload}
-
-	case protocol.EventKindThinking:
-		evt.Payload = &pb.AgentEvent_Thinking{
-			Thinking: &pb.ThinkingPayload{
-				ThinkingId: e.ThinkingID,
-				Content:    e.Content,
-				Partial:    e.Partial,
-			},
-		}
-
-	case protocol.EventKindPortExposed:
-		payload := &pb.PortExposedPayload{
-			Port: int32(e.Port),
-		}
-		if e.Process != nil {
-			payload.Process = e.Process
-		}
-		if e.PreviewURL != nil {
-			payload.PreviewUrl = e.PreviewURL
-		}
-		evt.Payload = &pb.AgentEvent_PortExposed{PortExposed: payload}
-
-	case protocol.EventKindRepoClone:
-		evt.Payload = &pb.AgentEvent_RepoClone{
-			RepoClone: &pb.RepoClonePayload{
-				Repo:    e.Repo,
-				Stage:   convertRepoCloneStageToProto(e.Stage),
-				Message: e.Message,
-			},
-		}
-	}
-
-	return evt
-}
-
-// convertFileActionToProto converts protocol FileAction to proto FileAction.
-func convertFileActionToProto(action protocol.FileAction) pb.FileAction {
-	switch action {
-	case protocol.FileActionCreate:
-		return pb.FileAction_FILE_ACTION_CREATE
-	case protocol.FileActionEdit:
-		return pb.FileAction_FILE_ACTION_EDIT
-	case protocol.FileActionDelete:
-		return pb.FileAction_FILE_ACTION_DELETE
-	default:
-		return pb.FileAction_FILE_ACTION_UNSPECIFIED
-	}
-}
-
-// convertRepoCloneStageToProto converts protocol RepoCloneStage to proto RepoCloneStage.
-func convertRepoCloneStageToProto(stage protocol.RepoCloneStage) pb.RepoCloneStage {
-	switch stage {
-	case protocol.RepoCloneStageStarting:
-		return pb.RepoCloneStage_REPO_CLONE_STAGE_STARTING
-	case protocol.RepoCloneStageCloning:
-		return pb.RepoCloneStage_REPO_CLONE_STAGE_CLONING
-	case protocol.RepoCloneStageDone:
-		return pb.RepoCloneStage_REPO_CLONE_STAGE_DONE
-	case protocol.RepoCloneStageError:
-		return pb.RepoCloneStage_REPO_CLONE_STAGE_ERROR
-	default:
-		return pb.RepoCloneStage_REPO_CLONE_STAGE_UNSPECIFIED
-	}
-}
-
-func convertEventKind(k protocol.AgentEventKind) pb.AgentEventKind {
-	switch k {
-	case protocol.EventKindToolStart:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_START
-	case protocol.EventKindToolInput:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_INPUT
-	case protocol.EventKindToolInputComplete:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE
-	case protocol.EventKindToolEnd:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_END
-	case protocol.EventKindFileChange:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_FILE_CHANGE
-	case protocol.EventKindCommandStart:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_COMMAND_START
-	case protocol.EventKindCommandEnd:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_COMMAND_END
-	case protocol.EventKindThinking:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_THINKING
-	case protocol.EventKindPortExposed:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_PORT_EXPOSED
-	case protocol.EventKindRepoClone:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_REPO_CLONE
-	default:
-		return pb.AgentEventKind_AGENT_EVENT_KIND_UNSPECIFIED
-	}
-}
+// All conversion helpers have been removed since we now use proto types (pb.*) directly.
+// The Manager now returns *pb.Session, pb.Message, pb.Event, etc.
+// The StreamSubscriber now returns *pb.ServerMessage directly.

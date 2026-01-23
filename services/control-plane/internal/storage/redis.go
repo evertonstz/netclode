@@ -8,9 +8,11 @@ import (
 	"strings"
 	"time"
 
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/internal/config"
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -77,18 +79,18 @@ func (r *RedisStorage) Close() error {
 }
 
 // SaveSession saves a session to Redis.
-func (r *RedisStorage) SaveSession(ctx context.Context, s *protocol.Session) error {
+func (r *RedisStorage) SaveSession(ctx context.Context, s *pb.Session) error {
 	pipe := r.client.TxPipeline()
 
-	pipe.SAdd(ctx, keySessionsAll, s.ID)
-	pipe.HSet(ctx, sessionKey(s.ID),
+	pipe.SAdd(ctx, keySessionsAll, s.Id)
+	pipe.HSet(ctx, sessionKey(s.Id),
 		"name", s.Name,
-		"status", string(s.Status),
-		"createdAt", s.CreatedAt,
-		"lastActiveAt", s.LastActiveAt,
+		"status", s.Status.String(),
+		"createdAt", s.CreatedAt.AsTime().Format(time.RFC3339),
+		"lastActiveAt", s.LastActiveAt.AsTime().Format(time.RFC3339),
 	)
 	if s.Repo != nil {
-		pipe.HSet(ctx, sessionKey(s.ID), "repo", *s.Repo)
+		pipe.HSet(ctx, sessionKey(s.Id), "repo", *s.Repo)
 	}
 
 	_, err := pipe.Exec(ctx)
@@ -96,7 +98,7 @@ func (r *RedisStorage) SaveSession(ctx context.Context, s *protocol.Session) err
 }
 
 // GetSession retrieves a session from Redis.
-func (r *RedisStorage) GetSession(ctx context.Context, id string) (*protocol.Session, error) {
+func (r *RedisStorage) GetSession(ctx context.Context, id string) (*pb.Session, error) {
 	data, err := r.client.HGetAll(ctx, sessionKey(id)).Result()
 	if err != nil {
 		return nil, err
@@ -105,12 +107,16 @@ func (r *RedisStorage) GetSession(ctx context.Context, id string) (*protocol.Ses
 		return nil, nil
 	}
 
-	session := &protocol.Session{
-		ID:           id,
-		Name:         data["name"],
-		Status:       protocol.SessionStatus(data["status"]),
-		CreatedAt:    data["createdAt"],
-		LastActiveAt: data["lastActiveAt"],
+	session := &pb.Session{
+		Id:     id,
+		Name:   data["name"],
+		Status: parseSessionStatus(data["status"]),
+	}
+	if t, err := time.Parse(time.RFC3339, data["createdAt"]); err == nil {
+		session.CreatedAt = timestamppb.New(t)
+	}
+	if t, err := time.Parse(time.RFC3339, data["lastActiveAt"]); err == nil {
+		session.LastActiveAt = timestamppb.New(t)
 	}
 	if repo, ok := data["repo"]; ok && repo != "" {
 		session.Repo = &repo
@@ -119,15 +125,37 @@ func (r *RedisStorage) GetSession(ctx context.Context, id string) (*protocol.Ses
 	return session, nil
 }
 
+// parseSessionStatus converts a string status to pb.SessionStatus enum.
+func parseSessionStatus(s string) pb.SessionStatus {
+	switch s {
+	case "SESSION_STATUS_CREATING", "creating":
+		return pb.SessionStatus_SESSION_STATUS_CREATING
+	case "SESSION_STATUS_RESUMING", "resuming":
+		return pb.SessionStatus_SESSION_STATUS_RESUMING
+	case "SESSION_STATUS_READY", "ready":
+		return pb.SessionStatus_SESSION_STATUS_READY
+	case "SESSION_STATUS_RUNNING", "running":
+		return pb.SessionStatus_SESSION_STATUS_RUNNING
+	case "SESSION_STATUS_PAUSED", "paused":
+		return pb.SessionStatus_SESSION_STATUS_PAUSED
+	case "SESSION_STATUS_ERROR", "error":
+		return pb.SessionStatus_SESSION_STATUS_ERROR
+	case "SESSION_STATUS_INTERRUPTED", "interrupted":
+		return pb.SessionStatus_SESSION_STATUS_INTERRUPTED
+	default:
+		return pb.SessionStatus_SESSION_STATUS_UNSPECIFIED
+	}
+}
+
 // GetAllSessions retrieves all sessions from Redis.
-func (r *RedisStorage) GetAllSessions(ctx context.Context) ([]*protocol.Session, error) {
+func (r *RedisStorage) GetAllSessions(ctx context.Context) ([]*pb.Session, error) {
 	ids, err := r.client.SMembers(ctx, keySessionsAll).Result()
 	if err != nil {
 		return nil, err
 	}
 
 	if len(ids) == 0 {
-		return []*protocol.Session{}, nil
+		return []*pb.Session{}, nil
 	}
 
 	// Pipeline to get all session data
@@ -141,19 +169,23 @@ func (r *RedisStorage) GetAllSessions(ctx context.Context) ([]*protocol.Session,
 		return nil, err
 	}
 
-	sessions := make([]*protocol.Session, 0, len(ids))
+	sessions := make([]*pb.Session, 0, len(ids))
 	for i, id := range ids {
 		data, err := cmds[i].Result()
 		if err != nil || len(data) == 0 {
 			continue
 		}
 
-		session := &protocol.Session{
-			ID:           id,
-			Name:         data["name"],
-			Status:       protocol.SessionStatus(data["status"]),
-			CreatedAt:    data["createdAt"],
-			LastActiveAt: data["lastActiveAt"],
+		session := &pb.Session{
+			Id:     id,
+			Name:   data["name"],
+			Status: parseSessionStatus(data["status"]),
+		}
+		if t, err := time.Parse(time.RFC3339, data["createdAt"]); err == nil {
+			session.CreatedAt = timestamppb.New(t)
+		}
+		if t, err := time.Parse(time.RFC3339, data["lastActiveAt"]); err == nil {
+			session.LastActiveAt = timestamppb.New(t)
 		}
 		if repo, ok := data["repo"]; ok && repo != "" {
 			session.Repo = &repo
@@ -165,8 +197,8 @@ func (r *RedisStorage) GetAllSessions(ctx context.Context) ([]*protocol.Session,
 }
 
 // UpdateSessionStatus updates the status of a session.
-func (r *RedisStorage) UpdateSessionStatus(ctx context.Context, id string, status protocol.SessionStatus) error {
-	return r.client.HSet(ctx, sessionKey(id), "status", string(status)).Err()
+func (r *RedisStorage) UpdateSessionStatus(ctx context.Context, id string, status pb.SessionStatus) error {
+	return r.client.HSet(ctx, sessionKey(id), "status", status.String()).Err()
 }
 
 // UpdateSessionField updates a single field of a session.
@@ -186,55 +218,60 @@ func (r *RedisStorage) DeleteSession(ctx context.Context, id string) error {
 	return err
 }
 
+// protoJsonOpts configures protojson to emit readable enum names instead of numbers.
+var protoJsonOpts = protojson.MarshalOptions{
+	UseEnumNumbers: false,
+}
+
 // AppendMessage appends a message to a session's message list.
-func (r *RedisStorage) AppendMessage(ctx context.Context, msg *protocol.PersistedMessage) error {
-	data, err := json.Marshal(msg)
+func (r *RedisStorage) AppendMessage(ctx context.Context, sessionID string, msg *pb.Message) error {
+	data, err := protoJsonOpts.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
 	pipe := r.client.TxPipeline()
-	pipe.RPush(ctx, messagesKey(msg.SessionID), string(data))
+	pipe.RPush(ctx, messagesKey(sessionID), string(data))
 
 	// Trim to keep only the last N messages
 	maxMessages := int64(r.config.MaxMessagesPerSession)
-	pipe.LTrim(ctx, messagesKey(msg.SessionID), -maxMessages, -1)
+	pipe.LTrim(ctx, messagesKey(sessionID), -maxMessages, -1)
 
 	_, err = pipe.Exec(ctx)
 	return err
 }
 
 // GetMessages retrieves messages for a session, optionally after a specific message ID.
-func (r *RedisStorage) GetMessages(ctx context.Context, sessionID string, afterID *string) ([]*protocol.PersistedMessage, error) {
+func (r *RedisStorage) GetMessages(ctx context.Context, sessionID string, afterID *string) ([]*pb.Message, error) {
 	data, err := r.client.LRange(ctx, messagesKey(sessionID), 0, -1).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	messages := make([]*protocol.PersistedMessage, 0, len(data))
+	messages := make([]*pb.Message, 0, len(data))
 	foundAfter := afterID == nil
 
 	for _, d := range data {
-		var msg protocol.PersistedMessage
-		if err := json.Unmarshal([]byte(d), &msg); err != nil {
+		msg := &pb.Message{}
+		if err := protojson.Unmarshal([]byte(d), msg); err != nil {
 			continue
 		}
 
 		if !foundAfter {
-			if msg.ID == *afterID {
+			if msg.Id == *afterID {
 				foundAfter = true
 			}
 			continue
 		}
 
-		messages = append(messages, &msg)
+		messages = append(messages, msg)
 	}
 
 	return messages, nil
 }
 
 // GetLastMessage retrieves the last message for a session.
-func (r *RedisStorage) GetLastMessage(ctx context.Context, sessionID string) (*protocol.PersistedMessage, error) {
+func (r *RedisStorage) GetLastMessage(ctx context.Context, sessionID string) (*pb.Message, error) {
 	data, err := r.client.LRange(ctx, messagesKey(sessionID), -1, -1).Result()
 	if err != nil {
 		return nil, err
@@ -243,12 +280,12 @@ func (r *RedisStorage) GetLastMessage(ctx context.Context, sessionID string) (*p
 		return nil, nil
 	}
 
-	var msg protocol.PersistedMessage
-	if err := json.Unmarshal([]byte(data[0]), &msg); err != nil {
+	msg := &pb.Message{}
+	if err := protojson.Unmarshal([]byte(data[0]), msg); err != nil {
 		return nil, err
 	}
 
-	return &msg, nil
+	return msg, nil
 }
 
 // GetMessageCount returns the number of messages for a session.
@@ -261,13 +298,13 @@ func (r *RedisStorage) GetMessageCount(ctx context.Context, sessionID string) (i
 }
 
 // AppendEvent appends an event to a session's event stream using Redis Streams.
-func (r *RedisStorage) AppendEvent(ctx context.Context, evt *protocol.PersistedEvent) error {
-	data, err := json.Marshal(evt)
+func (r *RedisStorage) AppendEvent(ctx context.Context, sessionID string, evt *pb.Event) error {
+	data, err := protoJsonOpts.Marshal(evt)
 	if err != nil {
 		return err
 	}
 
-	streamKey := eventsStreamKey(evt.SessionID)
+	streamKey := eventsStreamKey(sessionID)
 
 	// Add to stream with auto-generated ID (no limit - events cleaned up on session delete)
 	_, err = r.client.XAdd(ctx, &redis.XAddArgs{
@@ -281,7 +318,7 @@ func (r *RedisStorage) AppendEvent(ctx context.Context, evt *protocol.PersistedE
 }
 
 // GetEvents retrieves the last N events for a session using Redis Streams.
-func (r *RedisStorage) GetEvents(ctx context.Context, sessionID string, limit int) ([]*protocol.PersistedEvent, error) {
+func (r *RedisStorage) GetEvents(ctx context.Context, sessionID string, limit int) ([]*pb.Event, error) {
 	streamKey := eventsStreamKey(sessionID)
 
 	// Use XREVRANGE to get latest events (newest first), then reverse
@@ -296,7 +333,7 @@ func (r *RedisStorage) GetEvents(ctx context.Context, sessionID string, limit in
 	}
 
 	// Reverse to get chronological order (oldest first)
-	events := make([]*protocol.PersistedEvent, 0, len(messages))
+	events := make([]*pb.Event, 0, len(messages))
 	for i := len(messages) - 1; i >= 0; i-- {
 		msg := messages[i]
 		dataStr, ok := msg.Values["data"].(string)
@@ -304,18 +341,18 @@ func (r *RedisStorage) GetEvents(ctx context.Context, sessionID string, limit in
 			continue
 		}
 
-		var evt protocol.PersistedEvent
-		if err := json.Unmarshal([]byte(dataStr), &evt); err != nil {
+		evt := &pb.Event{}
+		if err := protojson.Unmarshal([]byte(dataStr), evt); err != nil {
 			continue
 		}
-		events = append(events, &evt)
+		events = append(events, evt)
 	}
 
 	return events, nil
 }
 
 // GetEventsAfter retrieves events after a specific stream ID (for replay).
-func (r *RedisStorage) GetEventsAfter(ctx context.Context, sessionID, afterID string, limit int) ([]*protocol.PersistedEvent, error) {
+func (r *RedisStorage) GetEventsAfter(ctx context.Context, sessionID, afterID string, limit int) ([]*pb.Event, error) {
 	streamKey := eventsStreamKey(sessionID)
 
 	// Use XRANGE starting after the given ID
@@ -337,18 +374,18 @@ func (r *RedisStorage) GetEventsAfter(ctx context.Context, sessionID, afterID st
 		messages = messages[:limit]
 	}
 
-	events := make([]*protocol.PersistedEvent, 0, len(messages))
+	events := make([]*pb.Event, 0, len(messages))
 	for _, msg := range messages {
 		dataStr, ok := msg.Values["data"].(string)
 		if !ok {
 			continue
 		}
 
-		var evt protocol.PersistedEvent
-		if err := json.Unmarshal([]byte(dataStr), &evt); err != nil {
+		evt := &pb.Event{}
+		if err := protojson.Unmarshal([]byte(dataStr), evt); err != nil {
 			continue
 		}
-		events = append(events, &evt)
+		events = append(events, evt)
 	}
 
 	return events, nil

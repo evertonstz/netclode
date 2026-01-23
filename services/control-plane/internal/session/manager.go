@@ -8,12 +8,13 @@ import (
 	"sync"
 	"time"
 
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/internal/config"
 	"github.com/angristan/netclode/services/control-plane/internal/github"
 	"github.com/angristan/netclode/services/control-plane/internal/k8s"
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/angristan/netclode/services/control-plane/internal/storage"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 
 // SessionUpdateCallback is called when a session is updated (e.g., auto-paused).
 // This allows the API layer to broadcast updates to connected clients.
-type SessionUpdateCallback func(session *protocol.Session)
+type SessionUpdateCallback func(session *pb.Session)
 
 // AgentConnection represents a connected agent that can receive commands.
 type AgentConnection interface {
@@ -82,7 +83,7 @@ func (m *Manager) Initialize(ctx context.Context) error {
 
 	// Load into memory with channel-based state
 	for _, s := range sessions {
-		m.sessions[s.ID] = NewSessionState(s)
+		m.sessions[s.Id] = NewSessionState(s)
 	}
 
 	// Reconcile with K8s
@@ -102,25 +103,25 @@ func (m *Manager) Initialize(ctx context.Context) error {
 		sb, exists := sandboxMap[id]
 		if !exists {
 			// No sandbox exists
-			if state.Session.Status == protocol.StatusRunning || state.Session.Status == protocol.StatusCreating {
+			if state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING || state.Session.Status == pb.SessionStatus_SESSION_STATUS_CREATING {
 				slog.Info("Session has no sandbox, marking as paused", "sessionID", id)
-				state.Session.Status = protocol.StatusPaused
-				_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusPaused)
+				state.Session.Status = pb.SessionStatus_SESSION_STATUS_PAUSED
+				_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_PAUSED)
 			}
 		} else if sb.Ready {
 			state.ServiceFQDN = sb.ServiceFQDN
 			// Reset to ready if was creating or running (we lost the agent connection on restart)
-			if state.Session.Status == protocol.StatusCreating || state.Session.Status == protocol.StatusRunning {
-				state.Session.Status = protocol.StatusReady
-				_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusReady)
+			if state.Session.Status == pb.SessionStatus_SESSION_STATUS_CREATING || state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING {
+				state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
+				_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_READY)
 			}
 		} else {
 			// Sandbox exists but is not ready - mark as paused since we can't communicate with it
-			if state.Session.Status == protocol.StatusRunning || state.Session.Status == protocol.StatusReady {
+			if state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING || state.Session.Status == pb.SessionStatus_SESSION_STATUS_READY {
 				slog.Info("Session sandbox exists but is not ready, marking as paused", "sessionID", id)
-				state.Session.Status = protocol.StatusPaused
+				state.Session.Status = pb.SessionStatus_SESSION_STATUS_PAUSED
 				state.ServiceFQDN = "" // Clear any stale FQDN
-				_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusPaused)
+				_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_PAUSED)
 			}
 		}
 	}
@@ -149,21 +150,21 @@ func generateID() string {
 }
 
 // Create creates a new session.
-func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *protocol.RepoAccess) (*protocol.Session, error) {
+func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess) (*pb.Session, error) {
 	// Ensure we have a slot for a new active session
 	m.ensureActiveSlot(ctx, "")
 
 	id := generateID()
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := timestamppb.Now()
 
 	if name == "" {
 		name = "Session " + id[:6]
 	}
 
-	session := &protocol.Session{
-		ID:           id,
+	session := &pb.Session{
+		Id:           id,
 		Name:         name,
-		Status:       protocol.StatusCreating,
+		Status:       pb.SessionStatus_SESSION_STATUS_CREATING,
 		Repo:         repo,
 		RepoAccess:   repoAccess,
 		CreatedAt:    now,
@@ -187,7 +188,7 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAcc
 	return session, nil
 }
 
-func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *protocol.RepoAccess) {
+func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess) {
 	if m.config.UseWarmPool {
 		m.createSandboxViaClaim(ctx, sessionID, repo, repoAccess)
 	} else {
@@ -196,7 +197,7 @@ func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *str
 }
 
 // createSandboxDirect creates a sandbox directly (legacy mode)
-func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *protocol.RepoAccess) {
+func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess) {
 	env := map[string]string{
 		"SESSION_ID":        sessionID,
 		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
@@ -209,7 +210,7 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		// Generate scoped GitHub token if GitHub App is configured
 		if m.github != nil {
 			access := github.RepoAccessRead
-			if repoAccess != nil && *repoAccess == protocol.RepoAccessWrite {
+			if repoAccess != nil && *repoAccess == pb.RepoAccess_REPO_ACCESS_WRITE {
 				access = github.RepoAccessWrite
 			}
 
@@ -225,8 +226,8 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 	// Create sandbox
 	if err := m.k8s.CreateSandbox(ctx, sessionID, env); err != nil {
 		slog.Error("Failed to create sandbox", "sessionID", sessionID, "error", err)
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-		m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+		m.emitSessionError(ctx, sessionID, err.Error())
 		return
 	}
 
@@ -240,8 +241,8 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		} else {
 			slog.Info("Cleaned up sandbox after timeout", "sessionID", sessionID)
 		}
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-		m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+		m.emitSessionError(ctx, sessionID, err.Error())
 		return
 	}
 
@@ -256,19 +257,19 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 	m.mu.Lock()
 	if state, ok := m.sessions[sessionID]; ok {
 		state.ServiceFQDN = fqdn
-		state.Session.Status = protocol.StatusRunning
+		state.Session.Status = pb.SessionStatus_SESSION_STATUS_RUNNING
 		pendingPrompt = state.PendingPrompt
 		state.PendingPrompt = "" // Clear it
 	}
 	m.mu.Unlock()
 
-	if err := m.storage.UpdateSessionStatus(ctx, sessionID, protocol.StatusRunning); err != nil {
+	if err := m.storage.UpdateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_RUNNING); err != nil {
 		slog.Error("Failed to update session status", "sessionID", sessionID, "error", err)
 	}
 
 	// Emit update
 	if session := m.getSession(sessionID); session != nil {
-		m.emit(ctx, sessionID, protocol.NewSessionUpdated(session))
+		m.emitSessionUpdated(ctx, session)
 	}
 
 	// Process pending prompt if any
@@ -283,12 +284,12 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 }
 
 // createSandboxViaClaim uses SandboxClaim for warm pool allocation
-func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string, repoAccess *protocol.RepoAccess) {
+func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess) {
 	// Create SandboxClaim to request from warm pool
 	if err := m.k8s.CreateSandboxClaim(ctx, sessionID); err != nil {
 		slog.Error("Failed to create sandbox claim", "sessionID", sessionID, "error", err)
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-		m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+		m.emitSessionError(ctx, sessionID, err.Error())
 		return
 	}
 
@@ -302,8 +303,8 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 		} else {
 			slog.Info("Cleaned up sandbox claim after timeout", "sessionID", sessionID)
 		}
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-		m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+		m.emitSessionError(ctx, sessionID, err.Error())
 		return
 	}
 
@@ -319,8 +320,8 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 		if delErr := m.k8s.DeleteSandbox(ctx, sessionID); delErr != nil {
 			slog.Error("Failed to cleanup sandbox", "sessionID", sessionID, "error", delErr)
 		}
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-		m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, "failed to label sandbox"))
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+		m.emitSessionError(ctx, sessionID, "failed to label sandbox")
 		return
 	}
 
@@ -335,8 +336,8 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 		if delErr := m.k8s.DeleteSandbox(ctx, sessionID); delErr != nil {
 			slog.Error("Failed to cleanup sandbox", "sessionID", sessionID, "error", delErr)
 		}
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-		m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+		m.emitSessionError(ctx, sessionID, err.Error())
 		return
 	}
 
@@ -365,8 +366,8 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 			} else {
 				slog.Info("Cleaned up sandbox after timeout", "sessionID", sessionID)
 			}
-			m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-			m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, err.Error()))
+			m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+			m.emitSessionError(ctx, sessionID, err.Error())
 			return
 		}
 	}
@@ -382,19 +383,19 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 	m.mu.Lock()
 	if state, ok := m.sessions[sessionID]; ok {
 		state.ServiceFQDN = fqdn
-		state.Session.Status = protocol.StatusRunning
+		state.Session.Status = pb.SessionStatus_SESSION_STATUS_RUNNING
 		pendingPrompt = state.PendingPrompt
 		state.PendingPrompt = "" // Clear it
 	}
 	m.mu.Unlock()
 
-	if err := m.storage.UpdateSessionStatus(ctx, sessionID, protocol.StatusRunning); err != nil {
+	if err := m.storage.UpdateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_RUNNING); err != nil {
 		slog.Error("Failed to update session status", "sessionID", sessionID, "error", err)
 	}
 
 	// Emit update
 	if session := m.getSession(sessionID); session != nil {
-		m.emit(ctx, sessionID, protocol.NewSessionUpdated(session))
+		m.emitSessionUpdated(ctx, session)
 	}
 
 	// Process pending prompt if any
@@ -408,7 +409,7 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 	slog.Info("Session created via warm pool", "sessionID", sessionID, "fqdn", fqdn)
 }
 
-func (m *Manager) updateSessionStatus(ctx context.Context, sessionID string, status protocol.SessionStatus) {
+func (m *Manager) updateSessionStatus(ctx context.Context, sessionID string, status pb.SessionStatus) {
 	m.mu.Lock()
 	if state, ok := m.sessions[sessionID]; ok {
 		state.Session.Status = status
@@ -419,7 +420,7 @@ func (m *Manager) updateSessionStatus(ctx context.Context, sessionID string, sta
 
 	if session := m.getSession(sessionID); session != nil {
 		// Emit to session-specific subscribers
-		m.emit(ctx, sessionID, protocol.NewSessionUpdated(session))
+		m.emitSessionUpdated(ctx, session)
 
 		// Also broadcast globally so clients on the sessions list page see the update
 		if m.onSessionUpdated != nil {
@@ -439,7 +440,7 @@ func (m *Manager) updateSessionName(ctx context.Context, sessionID, name string)
 
 	if session := m.getSession(sessionID); session != nil {
 		// Emit to session-specific subscribers
-		m.emit(ctx, sessionID, protocol.NewSessionUpdated(session))
+		m.emitSessionUpdated(ctx, session)
 
 		// Also broadcast globally so clients on the sessions list page see the update
 		if m.onSessionUpdated != nil {
@@ -450,7 +451,7 @@ func (m *Manager) updateSessionName(ctx context.Context, sessionID, name string)
 
 // updateLastActiveAt updates the last active timestamp for a session.
 func (m *Manager) updateLastActiveAt(ctx context.Context, sessionID string) {
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := timestamppb.Now()
 
 	m.mu.Lock()
 	if state, ok := m.sessions[sessionID]; ok {
@@ -458,7 +459,7 @@ func (m *Manager) updateLastActiveAt(ctx context.Context, sessionID string) {
 	}
 	m.mu.Unlock()
 
-	_ = m.storage.UpdateSessionField(ctx, sessionID, "lastActiveAt", now)
+	_ = m.storage.UpdateSessionField(ctx, sessionID, "lastActiveAt", now.AsTime().UTC().Format(time.RFC3339))
 }
 
 // waitForSandbox waits for an existing sandbox to become ready (used when sandbox already exists).
@@ -466,8 +467,8 @@ func (m *Manager) waitForSandbox(ctx context.Context, sessionID string) {
 	fqdn, err := m.k8s.WaitForReady(ctx, sessionID, sandboxReadyTimeout)
 	if err != nil {
 		slog.Error("Sandbox failed to become ready", "sessionID", sessionID, "error", err)
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusError)
-		m.emit(ctx, sessionID, protocol.NewSessionError(sessionID, err.Error()))
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+		m.emitSessionError(ctx, sessionID, err.Error())
 		return
 	}
 
@@ -476,19 +477,19 @@ func (m *Manager) waitForSandbox(ctx context.Context, sessionID string) {
 	m.mu.Lock()
 	if state, ok := m.sessions[sessionID]; ok {
 		state.ServiceFQDN = fqdn
-		state.Session.Status = protocol.StatusReady
+		state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
 		pendingPrompt = state.PendingPrompt
 		state.PendingPrompt = "" // Clear it
 	}
 	m.mu.Unlock()
 
-	if err := m.storage.UpdateSessionStatus(ctx, sessionID, protocol.StatusReady); err != nil {
+	if err := m.storage.UpdateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_READY); err != nil {
 		slog.Error("Failed to update session status", "sessionID", sessionID, "error", err)
 	}
 
 	// Emit update
 	if session := m.getSession(sessionID); session != nil {
-		m.emit(ctx, sessionID, protocol.NewSessionUpdated(session))
+		m.emitSessionUpdated(ctx, session)
 	}
 
 	// Process pending prompt if any
@@ -503,7 +504,7 @@ func (m *Manager) waitForSandbox(ctx context.Context, sessionID string) {
 }
 
 // Resume resumes a paused session.
-func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, error) {
+func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	m.mu.Lock()
 	state, ok := m.sessions[id]
 	m.mu.Unlock()
@@ -525,13 +526,13 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 		// Sandbox already running and ready to accept prompts
 		m.mu.Lock()
 		state.ServiceFQDN = status.ServiceFQDN
-		wasAlreadyReady := state.Session.Status == protocol.StatusReady
-		state.Session.Status = protocol.StatusReady
+		wasAlreadyReady := state.Session.Status == pb.SessionStatus_SESSION_STATUS_READY
+		state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
 		m.mu.Unlock()
 
 		// Only update storage if status actually changed
 		if !wasAlreadyReady {
-			_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusReady)
+			_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_READY)
 		}
 		return state.Session, nil
 	}
@@ -539,10 +540,10 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 	if status.Exists {
 		// Sandbox exists but not ready yet - just wait for it
 		m.mu.Lock()
-		state.Session.Status = protocol.StatusResuming
+		state.Session.Status = pb.SessionStatus_SESSION_STATUS_RESUMING
 		m.mu.Unlock()
 
-		_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusResuming)
+		_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_RESUMING)
 
 		// Wait for existing sandbox to become ready
 		go m.waitForSandbox(context.Background(), id)
@@ -552,10 +553,10 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 
 	// No sandbox exists - create new one (resuming from paused state)
 	m.mu.Lock()
-	state.Session.Status = protocol.StatusResuming
+	state.Session.Status = pb.SessionStatus_SESSION_STATUS_RESUMING
 	m.mu.Unlock()
 
-	_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusResuming)
+	_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_RESUMING)
 
 	// Start sandbox creation in background
 	go m.createSandbox(context.Background(), id, state.Session.Repo, state.Session.RepoAccess)
@@ -564,7 +565,7 @@ func (m *Manager) Resume(ctx context.Context, id string) (*protocol.Session, err
 }
 
 // Pause pauses a running session.
-func (m *Manager) Pause(ctx context.Context, id string) (*protocol.Session, error) {
+func (m *Manager) Pause(ctx context.Context, id string) (*pb.Session, error) {
 	m.mu.Lock()
 	state, ok := m.sessions[id]
 	m.mu.Unlock()
@@ -600,10 +601,10 @@ func (m *Manager) Pause(ctx context.Context, id string) (*protocol.Session, erro
 	// Update state
 	m.mu.Lock()
 	state.ServiceFQDN = ""
-	state.Session.Status = protocol.StatusPaused
+	state.Session.Status = pb.SessionStatus_SESSION_STATUS_PAUSED
 	m.mu.Unlock()
 
-	_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusPaused)
+	_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_PAUSED)
 
 	return state.Session, nil
 }
@@ -673,33 +674,37 @@ func (m *Manager) ExposePort(ctx context.Context, sessionID string, port int) (s
 	}
 
 	previewURL := fmt.Sprintf("http://sandbox-%s:%d", sessionID, port)
+	port32 := int32(port)
 
 	// Create and persist the port_exposed event
-	event := protocol.AgentEvent{
-		Kind:       protocol.EventKindPortExposed,
-		Timestamp:  time.Now().UTC().Format(time.RFC3339),
-		Port:       port,
-		PreviewURL: &previewURL,
+	event := &pb.AgentEvent{
+		Kind:      pb.AgentEventKind_AGENT_EVENT_KIND_PORT_EXPOSED,
+		Timestamp: timestamppb.Now(),
+		Payload: &pb.AgentEvent_PortExposed{
+			PortExposed: &pb.PortExposedPayload{
+				Port:       port32,
+				PreviewUrl: &previewURL,
+			},
+		},
 	}
 
-	persistedEvent := &protocol.PersistedEvent{
-		ID:        "evt_" + uuid.NewString()[:12],
-		SessionID: sessionID,
+	persistedEvent := &pb.Event{
+		Id:        "evt_" + uuid.NewString()[:12],
+		Timestamp: timestamppb.Now(),
 		Event:     event,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
-	if err := m.storage.AppendEvent(ctx, persistedEvent); err != nil {
+	if err := m.storage.AppendEvent(ctx, sessionID, persistedEvent); err != nil {
 		slog.Warn("Failed to persist port exposed event", "sessionID", sessionID, "error", err)
 	}
 
 	// Emit to all connected clients
-	m.emit(ctx, sessionID, protocol.NewAgentEvent(sessionID, &event))
+	m.emitAgentEvent(ctx, sessionID, event)
 
 	return previewURL, nil
 }
 
 // List returns all sessions, reconciling with K8s state.
-func (m *Manager) List(ctx context.Context) ([]protocol.Session, error) {
+func (m *Manager) List(ctx context.Context) ([]pb.Session, error) {
 	// Reconcile with K8s
 	sandboxes, err := m.k8s.ListSandboxes(ctx)
 	if err != nil {
@@ -714,12 +719,12 @@ func (m *Manager) List(ctx context.Context) ([]protocol.Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	sessions := make([]protocol.Session, 0, len(m.sessions))
+	sessions := make([]pb.Session, 0, len(m.sessions))
 	for id, state := range m.sessions {
 		sb, exists := sandboxMap[id]
-		if !exists && (state.Session.Status == protocol.StatusRunning || state.Session.Status == protocol.StatusCreating) {
-			state.Session.Status = protocol.StatusPaused
-			_ = m.storage.UpdateSessionStatus(ctx, id, protocol.StatusPaused)
+		if !exists && (state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING || state.Session.Status == pb.SessionStatus_SESSION_STATUS_CREATING) {
+			state.Session.Status = pb.SessionStatus_SESSION_STATUS_PAUSED
+			_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_PAUSED)
 		} else if exists && sb.Ready {
 			state.ServiceFQDN = sb.ServiceFQDN
 		}
@@ -730,7 +735,7 @@ func (m *Manager) List(ctx context.Context) ([]protocol.Session, error) {
 }
 
 // Get returns a session by ID.
-func (m *Manager) Get(ctx context.Context, id string) (*protocol.Session, error) {
+func (m *Manager) Get(ctx context.Context, id string) (*pb.Session, error) {
 	m.mu.RLock()
 	state, ok := m.sessions[id]
 	m.mu.RUnlock()
@@ -744,7 +749,7 @@ func (m *Manager) Get(ctx context.Context, id string) (*protocol.Session, error)
 
 // GetWithHistory returns a session with its message and event history.
 // Also returns the lastNotificationID for cursor-based subscription.
-func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit int) (*protocol.Session, []protocol.PersistedMessage, []protocol.PersistedEvent, bool, string, error) {
+func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit int) (*pb.Session, []pb.Message, []pb.Event, bool, string, error) {
 	session, err := m.Get(ctx, id)
 	if err != nil {
 		return nil, nil, nil, false, "", err
@@ -769,12 +774,12 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit in
 	}
 
 	// Convert to value slices
-	msgSlice := make([]protocol.PersistedMessage, len(messages))
+	msgSlice := make([]pb.Message, len(messages))
 	for i, msg := range messages {
 		msgSlice[i] = *msg
 	}
 
-	evtSlice := make([]protocol.PersistedEvent, len(events))
+	evtSlice := make([]pb.Event, len(events))
 	for i, e := range events {
 		evtSlice[i] = *e
 	}
@@ -785,22 +790,23 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit in
 }
 
 // GetAllWithMeta returns all sessions with metadata.
-func (m *Manager) GetAllWithMeta(ctx context.Context) ([]protocol.SessionSummary, error) {
+func (m *Manager) GetAllWithMeta(ctx context.Context) ([]pb.SessionSummary, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	result := make([]protocol.SessionSummary, 0, len(m.sessions))
+	result := make([]pb.SessionSummary, 0, len(m.sessions))
 	for id, state := range m.sessions {
-		meta := protocol.SessionSummary{Session: *state.Session}
+		meta := pb.SessionSummary{Session: state.Session}
 
 		count, err := m.storage.GetMessageCount(ctx, id)
 		if err == nil {
-			meta.MessageCount = &count
+			count32 := int32(count)
+			meta.MessageCount = &count32
 		}
 
 		lastMsg, err := m.storage.GetLastMessage(ctx, id)
 		if err == nil && lastMsg != nil {
-			meta.LastMessageID = &lastMsg.ID
+			meta.LastMessageId = &lastMsg.Id
 		}
 
 		result = append(result, meta)
@@ -809,7 +815,7 @@ func (m *Manager) GetAllWithMeta(ctx context.Context) ([]protocol.SessionSummary
 	return result, nil
 }
 
-func (m *Manager) getSession(id string) *protocol.Session {
+func (m *Manager) getSession(id string) *pb.Session {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -827,10 +833,10 @@ func (m *Manager) getState(id string) *SessionState {
 }
 
 // isActiveStatus returns true if the status represents an active session (using resources).
-func isActiveStatus(status protocol.SessionStatus) bool {
-	return status == protocol.StatusCreating ||
-		status == protocol.StatusReady ||
-		status == protocol.StatusRunning
+func isActiveStatus(status pb.SessionStatus) bool {
+	return status == pb.SessionStatus_SESSION_STATUS_CREATING ||
+		status == pb.SessionStatus_SESSION_STATUS_READY ||
+		status == pb.SessionStatus_SESSION_STATUS_RUNNING
 }
 
 // countActiveSessions returns the number of active sessions.
@@ -859,10 +865,10 @@ func (m *Manager) findOldestActiveSessionLocked(excludeID string) *SessionState 
 			continue
 		}
 
-		lastActive, err := time.Parse(time.RFC3339, state.Session.LastActiveAt)
-		if err != nil {
+		if state.Session.LastActiveAt == nil {
 			continue
 		}
+		lastActive := state.Session.LastActiveAt.AsTime()
 
 		if oldest == nil || lastActive.Before(oldestTime) {
 			oldest = state
@@ -900,7 +906,7 @@ func (m *Manager) ensureActiveSlot(ctx context.Context, excludeID string) string
 			return lastPausedID
 		}
 
-		oldestID := oldest.Session.ID
+		oldestID := oldest.Session.Id
 		m.mu.Unlock()
 
 		// Pause the oldest session
@@ -944,7 +950,7 @@ func (m *Manager) enforceActiveLimit(ctx context.Context) {
 			return
 		}
 
-		oldestID := oldest.Session.ID
+		oldestID := oldest.Session.Id
 		m.mu.Unlock()
 
 		slog.Info("Enforcing active limit on startup", "sessionID", oldestID, "activeCount", activeCount, "maxActive", maxActive)
@@ -1014,7 +1020,7 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (map[s
 		// Generate scoped GitHub token if GitHub App is configured
 		if m.github != nil {
 			access := github.RepoAccessRead
-			if state.Session.RepoAccess != nil && *state.Session.RepoAccess == "write" {
+			if state.Session.RepoAccess != nil && *state.Session.RepoAccess == pb.RepoAccess_REPO_ACCESS_WRITE {
 				access = github.RepoAccessWrite
 			}
 
@@ -1038,18 +1044,293 @@ func (m *Manager) publishNotification(ctx context.Context, sessionID string, not
 	}
 }
 
-// emit is a helper to convert a ServerMessage to a Notification and publish it.
-// This maintains the existing API while using Redis Streams underneath.
-func (m *Manager) emit(ctx context.Context, sessionID string, msg protocol.ServerMessage) {
-	notification := serverMessageToNotification(sessionID, msg)
-	if notification != nil {
-		m.publishNotification(ctx, sessionID, notification)
+// emitSessionUpdated broadcasts a session update to all subscribers.
+func (m *Manager) emitSessionUpdated(ctx context.Context, session *pb.Session) {
+	payload, _ := json.Marshal(sessionToJSON(session))
+	m.publishNotification(ctx, session.Id, &storage.Notification{
+		Type:      "session_update",
+		Payload:   payload,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// emitSessionError broadcasts a session error to all subscribers.
+func (m *Manager) emitSessionError(ctx context.Context, sessionID, errMsg string) {
+	payload, _ := json.Marshal(map[string]string{
+		"error":     errMsg,
+		"sessionId": sessionID,
+	})
+	m.publishNotification(ctx, sessionID, &storage.Notification{
+		Type:      "session_error",
+		Payload:   payload,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// emitAgentEvent broadcasts an agent event to all subscribers.
+func (m *Manager) emitAgentEvent(ctx context.Context, sessionID string, event *pb.AgentEvent) {
+	payload, _ := json.Marshal(agentEventToJSON(event))
+	m.publishNotification(ctx, sessionID, &storage.Notification{
+		Type:      "event",
+		Payload:   payload,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// emitAgentMessage broadcasts an agent message to all subscribers.
+func (m *Manager) emitAgentMessage(ctx context.Context, sessionID, messageID, content string, partial bool) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"id":        messageID,
+		"sessionId": sessionID,
+		"role":      "assistant",
+		"content":   content,
+		"partial":   partial,
+	})
+	m.publishNotification(ctx, sessionID, &storage.Notification{
+		Type:      "message",
+		Payload:   payload,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// emitAgentDone broadcasts agent completion to all subscribers.
+func (m *Manager) emitAgentDone(ctx context.Context, sessionID string) {
+	m.publishNotification(ctx, sessionID, &storage.Notification{
+		Type:      "agent_done",
+		Payload:   json.RawMessage(`{}`),
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// emitAgentError broadcasts an agent error to all subscribers.
+func (m *Manager) emitAgentError(ctx context.Context, sessionID, errMsg string) {
+	payload, _ := json.Marshal(map[string]string{
+		"error": errMsg,
+	})
+	m.publishNotification(ctx, sessionID, &storage.Notification{
+		Type:      "agent_error",
+		Payload:   payload,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// emitUserMessage broadcasts a user message to all subscribers.
+func (m *Manager) emitUserMessage(ctx context.Context, sessionID, text string) {
+	payload, _ := json.Marshal(map[string]string{
+		"text":      text,
+		"sessionId": sessionID,
+	})
+	m.publishNotification(ctx, sessionID, &storage.Notification{
+		Type:      "user_message",
+		Payload:   payload,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// sessionToJSON converts a pb.Session to a JSON-friendly map.
+func sessionToJSON(s *pb.Session) map[string]interface{} {
+	result := map[string]interface{}{
+		"id":     s.Id,
+		"name":   s.Name,
+		"status": sessionStatusToString(s.Status),
+	}
+	if s.Repo != nil {
+		result["repo"] = *s.Repo
+	}
+	if s.RepoAccess != nil {
+		result["repoAccess"] = repoAccessToString(*s.RepoAccess)
+	}
+	if s.CreatedAt != nil {
+		result["createdAt"] = s.CreatedAt.AsTime().Format(time.RFC3339)
+	}
+	if s.LastActiveAt != nil {
+		result["lastActiveAt"] = s.LastActiveAt.AsTime().Format(time.RFC3339)
+	}
+	return result
+}
+
+// sessionStatusToString converts pb.SessionStatus to string for JSON.
+func sessionStatusToString(s pb.SessionStatus) string {
+	switch s {
+	case pb.SessionStatus_SESSION_STATUS_CREATING:
+		return "creating"
+	case pb.SessionStatus_SESSION_STATUS_RESUMING:
+		return "resuming"
+	case pb.SessionStatus_SESSION_STATUS_READY:
+		return "ready"
+	case pb.SessionStatus_SESSION_STATUS_RUNNING:
+		return "running"
+	case pb.SessionStatus_SESSION_STATUS_PAUSED:
+		return "paused"
+	case pb.SessionStatus_SESSION_STATUS_ERROR:
+		return "error"
+	case pb.SessionStatus_SESSION_STATUS_INTERRUPTED:
+		return "interrupted"
+	default:
+		return "unknown"
+	}
+}
+
+// repoAccessToString converts pb.RepoAccess to string for JSON.
+func repoAccessToString(r pb.RepoAccess) string {
+	switch r {
+	case pb.RepoAccess_REPO_ACCESS_READ:
+		return "read"
+	case pb.RepoAccess_REPO_ACCESS_WRITE:
+		return "write"
+	default:
+		return ""
+	}
+}
+
+// agentEventToJSON converts a pb.AgentEvent to a JSON-friendly map.
+// This preserves the flat structure expected by clients.
+func agentEventToJSON(e *pb.AgentEvent) map[string]interface{} {
+	result := map[string]interface{}{
+		"kind": agentEventKindToString(e.Kind),
+	}
+	if e.Timestamp != nil {
+		result["timestamp"] = e.Timestamp.AsTime().Format(time.RFC3339)
+	}
+
+	// Extract fields from oneof payload
+	switch p := e.Payload.(type) {
+	case *pb.AgentEvent_Tool:
+		if p.Tool != nil {
+			result["tool"] = p.Tool.Tool
+			result["toolUseId"] = p.Tool.ToolUseId
+			if p.Tool.ParentToolUseId != nil {
+				result["parentToolUseId"] = *p.Tool.ParentToolUseId
+			}
+			if p.Tool.Input != nil {
+				result["input"] = p.Tool.Input.AsMap()
+			}
+			if p.Tool.InputDelta != nil && *p.Tool.InputDelta != "" {
+				result["inputDelta"] = *p.Tool.InputDelta
+			}
+			if p.Tool.Result != nil {
+				result["result"] = *p.Tool.Result
+			}
+			if p.Tool.Error != nil {
+				result["error"] = *p.Tool.Error
+			}
+		}
+	case *pb.AgentEvent_FileChange:
+		if p.FileChange != nil {
+			result["path"] = p.FileChange.Path
+			result["action"] = fileActionToString(p.FileChange.Action)
+			if p.FileChange.LinesAdded != nil {
+				result["linesAdded"] = *p.FileChange.LinesAdded
+			}
+			if p.FileChange.LinesRemoved != nil {
+				result["linesRemoved"] = *p.FileChange.LinesRemoved
+			}
+		}
+	case *pb.AgentEvent_Command:
+		if p.Command != nil {
+			result["command"] = p.Command.Command
+			if p.Command.Cwd != nil {
+				result["cwd"] = *p.Command.Cwd
+			}
+			if p.Command.ExitCode != nil {
+				result["exitCode"] = *p.Command.ExitCode
+			}
+			if p.Command.Output != nil {
+				result["output"] = *p.Command.Output
+			}
+		}
+	case *pb.AgentEvent_Thinking:
+		if p.Thinking != nil {
+			result["content"] = p.Thinking.Content
+			result["thinkingId"] = p.Thinking.ThinkingId
+			result["partial"] = p.Thinking.Partial
+		}
+	case *pb.AgentEvent_PortExposed:
+		if p.PortExposed != nil {
+			result["port"] = p.PortExposed.Port
+			if p.PortExposed.Process != nil {
+				result["process"] = *p.PortExposed.Process
+			}
+			if p.PortExposed.PreviewUrl != nil {
+				result["previewUrl"] = *p.PortExposed.PreviewUrl
+			}
+		}
+	case *pb.AgentEvent_RepoClone:
+		if p.RepoClone != nil {
+			result["repo"] = p.RepoClone.Repo
+			result["stage"] = repoCloneStageToString(p.RepoClone.Stage)
+			result["message"] = p.RepoClone.Message
+		}
+	}
+
+	return result
+}
+
+// agentEventKindToString converts pb.AgentEventKind to string for JSON.
+func agentEventKindToString(k pb.AgentEventKind) string {
+	switch k {
+	case pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_START:
+		return "tool_start"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_INPUT:
+		return "tool_input"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_INPUT_COMPLETE:
+		return "tool_input_complete"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_END:
+		return "tool_end"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_FILE_CHANGE:
+		return "file_change"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_COMMAND_START:
+		return "command_start"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_COMMAND_END:
+		return "command_end"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_THINKING:
+		return "thinking"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_PORT_EXPOSED:
+		return "port_exposed"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_REPO_CLONE:
+		return "repo_clone"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_AGENT_DISCONNECTED:
+		return "agent_disconnected"
+	case pb.AgentEventKind_AGENT_EVENT_KIND_AGENT_RECONNECTED:
+		return "agent_reconnected"
+	default:
+		return "unknown"
+	}
+}
+
+// fileActionToString converts pb.FileAction to string for JSON.
+func fileActionToString(a pb.FileAction) string {
+	switch a {
+	case pb.FileAction_FILE_ACTION_CREATE:
+		return "create"
+	case pb.FileAction_FILE_ACTION_EDIT:
+		return "edit"
+	case pb.FileAction_FILE_ACTION_DELETE:
+		return "delete"
+	default:
+		return ""
+	}
+}
+
+// repoCloneStageToString converts pb.RepoCloneStage to string for JSON.
+func repoCloneStageToString(s pb.RepoCloneStage) string {
+	switch s {
+	case pb.RepoCloneStage_REPO_CLONE_STAGE_STARTING:
+		return "starting"
+	case pb.RepoCloneStage_REPO_CLONE_STAGE_CLONING:
+		return "cloning"
+	case pb.RepoCloneStage_REPO_CLONE_STAGE_DONE:
+		return "done"
+	case pb.RepoCloneStage_REPO_CLONE_STAGE_ERROR:
+		return "error"
+	default:
+		return ""
 	}
 }
 
 // EmitEvent broadcasts an event from a sandbox to all connected clients.
 // This is used by the internal API to receive events from entrypoint scripts.
-func (m *Manager) EmitEvent(ctx context.Context, sessionID string, event *protocol.AgentEvent) error {
+func (m *Manager) EmitEvent(ctx context.Context, sessionID string, event *pb.AgentEvent) error {
 	// Verify session exists
 	m.mu.RLock()
 	_, ok := m.sessions[sessionID]
@@ -1060,15 +1341,13 @@ func (m *Manager) EmitEvent(ctx context.Context, sessionID string, event *protoc
 	}
 
 	// Emit the event
-	m.emit(ctx, sessionID, protocol.NewAgentEvent(sessionID, event))
+	m.emitAgentEvent(ctx, sessionID, event)
 	slog.Debug("Emitted internal event", "sessionID", sessionID, "kind", event.Kind)
 	return nil
 }
 
 // emitTerminalOutput broadcasts terminal output to all connected clients.
 func (m *Manager) emitTerminalOutput(ctx context.Context, sessionID, data string) {
-	msg := protocol.NewTerminalOutput(sessionID, data)
-
 	// Terminal output is ephemeral (not persisted), so we broadcast directly
 	// to all subscribed clients without going through Redis Streams.
 	// Use json.Marshal to properly encode the data (handles escape sequences correctly)
@@ -1091,8 +1370,6 @@ func (m *Manager) emitTerminalOutput(ctx context.Context, sessionID, data string
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
 	m.publishNotification(ctx, sessionID, notification)
-
-	_ = msg // Suppress unused variable warning - msg is used for type reference
 }
 
 // SendTerminalInput sends input to the agent terminal.
@@ -1134,7 +1411,7 @@ func (m *Manager) RegisterAgentConnection(sessionID string, conn AgentConnection
 			pendingPrompt = state.PendingPrompt
 			state.PendingPrompt = "" // Clear it
 		}
-		wasInterrupted = (state.Session.Status == protocol.StatusInterrupted)
+		wasInterrupted = (state.Session.Status == pb.SessionStatus_SESSION_STATUS_INTERRUPTED)
 	}
 	m.mu.Unlock()
 
@@ -1144,9 +1421,11 @@ func (m *Manager) RegisterAgentConnection(sessionID string, conn AgentConnection
 
 	// If session was interrupted, emit reconnect event (status stays interrupted until user sends prompt)
 	if wasInterrupted {
-		timestamp := time.Now().UTC().Format(time.RFC3339)
-		event := protocol.NewAgentReconnectedEvent(timestamp)
-		m.emit(ctx, sessionID, protocol.NewAgentEvent(sessionID, event))
+		event := &pb.AgentEvent{
+			Kind:      pb.AgentEventKind_AGENT_EVENT_KIND_AGENT_RECONNECTED,
+			Timestamp: timestamppb.Now(),
+		}
+		m.emitAgentEvent(ctx, sessionID, event)
 		slog.Info("Emitted agent_reconnected event", "sessionID", sessionID)
 	}
 
@@ -1165,7 +1444,7 @@ func (m *Manager) UnregisterAgentConnection(sessionID string) {
 	m.mu.Lock()
 	wasRunning := false
 	if state, ok := m.sessions[sessionID]; ok {
-		wasRunning = (state.Session.Status == protocol.StatusRunning)
+		wasRunning = (state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING)
 	}
 	delete(m.agents, sessionID)
 	m.mu.Unlock()
@@ -1175,11 +1454,13 @@ func (m *Manager) UnregisterAgentConnection(sessionID string) {
 	// If session was running, mark as interrupted and emit event
 	if wasRunning {
 		ctx := context.Background()
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusInterrupted)
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_INTERRUPTED)
 
-		timestamp := time.Now().UTC().Format(time.RFC3339)
-		event := protocol.NewAgentDisconnectedEvent(timestamp)
-		m.emit(ctx, sessionID, protocol.NewAgentEvent(sessionID, event))
+		event := &pb.AgentEvent{
+			Kind:      pb.AgentEventKind_AGENT_EVENT_KIND_AGENT_DISCONNECTED,
+			Timestamp: timestamppb.Now(),
+		}
+		m.emitAgentEvent(ctx, sessionID, event)
 
 		slog.Info("Session marked as interrupted due to agent disconnect", "sessionID", sessionID)
 	}
@@ -1190,89 +1471,4 @@ func (m *Manager) GetAgentConnection(sessionID string) AgentConnection {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.agents[sessionID]
-}
-
-// serverMessageToNotification converts a protocol.ServerMessage to a storage.Notification.
-func serverMessageToNotification(sessionID string, msg protocol.ServerMessage) *storage.Notification {
-	timestamp := time.Now().UTC().Format(time.RFC3339)
-
-	switch msg.Type {
-	case protocol.MsgTypeAgentEvent:
-		if msg.Event == nil {
-			return nil
-		}
-		payload, _ := json.Marshal(msg.Event)
-		return &storage.Notification{
-			Type:      "event",
-			Payload:   payload,
-			Timestamp: timestamp,
-		}
-
-	case protocol.MsgTypeAgentMessage:
-		payload, _ := json.Marshal(map[string]interface{}{
-			"id":        msg.MessageID,
-			"sessionId": sessionID,
-			"role":      "assistant",
-			"content":   msg.Content,
-			"partial":   msg.Partial,
-		})
-		return &storage.Notification{
-			Type:      "message",
-			Payload:   payload,
-			Timestamp: timestamp,
-		}
-
-	case protocol.MsgTypeSessionUpdated:
-		if msg.Session == nil {
-			return nil
-		}
-		payload, _ := json.Marshal(msg.Session)
-		return &storage.Notification{
-			Type:      "session_update",
-			Payload:   payload,
-			Timestamp: timestamp,
-		}
-
-	case protocol.MsgTypeUserMessage:
-		payload, _ := json.Marshal(map[string]string{
-			"text":      msg.Content,
-			"sessionId": sessionID,
-		})
-		return &storage.Notification{
-			Type:      "user_message",
-			Payload:   payload,
-			Timestamp: timestamp,
-		}
-
-	case protocol.MsgTypeAgentDone:
-		return &storage.Notification{
-			Type:      "agent_done",
-			Payload:   json.RawMessage(`{}`),
-			Timestamp: timestamp,
-		}
-
-	case protocol.MsgTypeAgentError:
-		payload, _ := json.Marshal(map[string]string{
-			"error": msg.Error,
-		})
-		return &storage.Notification{
-			Type:      "agent_error",
-			Payload:   payload,
-			Timestamp: timestamp,
-		}
-
-	case protocol.MsgTypeSessionError:
-		payload, _ := json.Marshal(map[string]string{
-			"error":     msg.Error,
-			"sessionId": msg.ID,
-		})
-		return &storage.Notification{
-			Type:      "session_error",
-			Payload:   payload,
-			Timestamp: timestamp,
-		}
-
-	default:
-		return nil
-	}
 }

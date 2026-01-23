@@ -4,36 +4,36 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/redis/go-redis/v9"
 )
 
 // Notification represents a real-time update published to Redis Streams.
 type Notification struct {
-	Type      string          `json:"type"`      // "event", "message", "session_update", "user_message"
-	Payload   json.RawMessage `json:"payload"`   // The actual data
+	Type      string          `json:"type"`    // "event", "message", "session_update", "user_message"
+	Payload   json.RawMessage `json:"payload"` // The actual data
 	Timestamp string          `json:"timestamp"`
 }
 
 // Storage defines the interface for session persistence.
 type Storage interface {
 	// Sessions
-	SaveSession(ctx context.Context, s *protocol.Session) error
-	GetSession(ctx context.Context, id string) (*protocol.Session, error)
-	GetAllSessions(ctx context.Context) ([]*protocol.Session, error)
-	UpdateSessionStatus(ctx context.Context, id string, status protocol.SessionStatus) error
+	SaveSession(ctx context.Context, s *pb.Session) error
+	GetSession(ctx context.Context, id string) (*pb.Session, error)
+	GetAllSessions(ctx context.Context) ([]*pb.Session, error)
+	UpdateSessionStatus(ctx context.Context, id string, status pb.SessionStatus) error
 	UpdateSessionField(ctx context.Context, id, field, value string) error
 	DeleteSession(ctx context.Context, id string) error
 
-	// Messages
-	AppendMessage(ctx context.Context, msg *protocol.PersistedMessage) error
-	GetMessages(ctx context.Context, sessionID string, afterID *string) ([]*protocol.PersistedMessage, error)
-	GetLastMessage(ctx context.Context, sessionID string) (*protocol.PersistedMessage, error)
+	// Messages (sessionID passed separately since pb.Message doesn't include it)
+	AppendMessage(ctx context.Context, sessionID string, msg *pb.Message) error
+	GetMessages(ctx context.Context, sessionID string, afterID *string) ([]*pb.Message, error)
+	GetLastMessage(ctx context.Context, sessionID string) (*pb.Message, error)
 	GetMessageCount(ctx context.Context, sessionID string) (int, error)
 
-	// Events
-	AppendEvent(ctx context.Context, evt *protocol.PersistedEvent) error
-	GetEvents(ctx context.Context, sessionID string, limit int) ([]*protocol.PersistedEvent, error)
+	// Events (sessionID passed separately since pb.Event doesn't include it)
+	AppendEvent(ctx context.Context, sessionID string, evt *pb.Event) error
+	GetEvents(ctx context.Context, sessionID string, limit int) ([]*pb.Event, error)
 
 	// Notifications (real-time updates via Redis Streams)
 	PublishNotification(ctx context.Context, sessionID string, notification *Notification) (string, error)

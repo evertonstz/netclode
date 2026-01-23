@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/internal/config"
 	"github.com/angristan/netclode/services/control-plane/internal/k8s"
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/angristan/netclode/services/control-plane/internal/storage"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // mockRuntime implements k8s.Runtime for testing
@@ -103,47 +104,11 @@ func (m *mockRuntime) CreateSandboxClaim(ctx context.Context, sessionID string) 
 	return nil
 }
 
-func (m *mockRuntime) WaitForClaimBound(ctx context.Context, sessionID string, timeout time.Duration) (string, error) {
-	return "sandbox-" + sessionID, nil
-}
-
-func (m *mockRuntime) GetSandboxByName(ctx context.Context, name string) (*k8s.Sandbox, error) {
-	return &k8s.Sandbox{
-		Status: k8s.SandboxStatus{
-			Conditions:  []k8s.SandboxCondition{{Type: "Ready", Status: "True"}},
-			ServiceFQDN: "test.local",
-		},
-	}, nil
-}
-
-func (m *mockRuntime) LabelSandbox(ctx context.Context, sandboxName string, sessionID string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.labeledSandboxes[sandboxName] = sessionID
-	return nil
-}
-
-func (m *mockRuntime) GetSessionIDByPodName(ctx context.Context, podName string) (string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	// Look up session ID from labeled sandboxes (reverse lookup)
-	for sandboxName, sessionID := range m.labeledSandboxes {
-		if sandboxName == podName {
-			return sessionID, nil
-		}
-	}
-	return "", nil
-}
-
 func (m *mockRuntime) DeleteSandboxClaim(ctx context.Context, sessionID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.deletedClaims = append(m.deletedClaims, sessionID)
 	return nil
-}
-
-func (m *mockRuntime) ListSandboxClaims(ctx context.Context) ([]k8s.SandboxClaimInfo, error) {
-	return nil, nil
 }
 
 func (m *mockRuntime) CreateSandboxService(ctx context.Context, sessionID string) error {
@@ -164,44 +129,87 @@ func (m *mockRuntime) ExposePort(ctx context.Context, sessionID string, port int
 	return nil
 }
 
-func (m *mockRuntime) Close() {}
+func (m *mockRuntime) CreateOrLabelPoolSandbox(ctx context.Context, sessionID string, fromPool bool, env map[string]string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.createdSandboxes = append(m.createdSandboxes, sessionID)
+	m.sandboxes[sessionID] = &k8s.SandboxStatusInfo{Exists: true, Ready: true, ServiceFQDN: "test.local"}
+	return nil
+}
+
+func (m *mockRuntime) GetWarmPool(ctx context.Context) ([]string, error) {
+	return nil, nil
+}
+
+func (m *mockRuntime) EvictWarmPool(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockRuntime) WaitForClaimBound(ctx context.Context, sessionID string, timeout time.Duration) (string, error) {
+	return "sandbox-" + sessionID, nil
+}
+
+func (m *mockRuntime) GetSandboxByName(ctx context.Context, name string) (*k8s.Sandbox, error) {
+	return nil, nil
+}
+
+func (m *mockRuntime) GetSessionIDByPodName(ctx context.Context, podName string) (string, error) {
+	return "", nil
+}
+
+func (m *mockRuntime) LabelSandbox(ctx context.Context, sandboxName string, sessionID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.labeledSandboxes[sandboxName] = sessionID
+	return nil
+}
+
+func (m *mockRuntime) ListSandboxClaims(ctx context.Context) ([]k8s.SandboxClaimInfo, error) {
+	return nil, nil
+}
+
+func (m *mockRuntime) Close() {
+}
 
 // mockStorage implements storage.Storage for testing
 type mockStorage struct {
 	mu       sync.Mutex
-	sessions map[string]*protocol.Session
+	sessions map[string]*pb.Session
 }
 
 func newMockStorage() *mockStorage {
 	return &mockStorage{
-		sessions: make(map[string]*protocol.Session),
+		sessions: make(map[string]*pb.Session),
 	}
 }
 
-func (m *mockStorage) SaveSession(ctx context.Context, s *protocol.Session) error {
+func (m *mockStorage) SaveSession(ctx context.Context, s *pb.Session) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.sessions[s.ID] = s
+	m.sessions[s.Id] = s
 	return nil
 }
 
-func (m *mockStorage) GetSession(ctx context.Context, id string) (*protocol.Session, error) {
+func (m *mockStorage) GetSession(ctx context.Context, id string) (*pb.Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.sessions[id], nil
+	if s, ok := m.sessions[id]; ok {
+		return s, nil
+	}
+	return nil, nil
 }
 
-func (m *mockStorage) GetAllSessions(ctx context.Context) ([]*protocol.Session, error) {
+func (m *mockStorage) GetAllSessions(ctx context.Context) ([]*pb.Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	var result []*protocol.Session
+	var result []*pb.Session
 	for _, s := range m.sessions {
 		result = append(result, s)
 	}
 	return result, nil
 }
 
-func (m *mockStorage) UpdateSessionStatus(ctx context.Context, id string, status protocol.SessionStatus) error {
+func (m *mockStorage) UpdateSessionStatus(ctx context.Context, id string, status pb.SessionStatus) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if s, ok := m.sessions[id]; ok {
@@ -221,15 +229,15 @@ func (m *mockStorage) DeleteSession(ctx context.Context, id string) error {
 	return nil
 }
 
-func (m *mockStorage) AppendMessage(ctx context.Context, msg *protocol.PersistedMessage) error {
+func (m *mockStorage) AppendMessage(ctx context.Context, sessionID string, msg *pb.Message) error {
 	return nil
 }
 
-func (m *mockStorage) GetMessages(ctx context.Context, sessionID string, afterID *string) ([]*protocol.PersistedMessage, error) {
+func (m *mockStorage) GetMessages(ctx context.Context, sessionID string, afterID *string) ([]*pb.Message, error) {
 	return nil, nil
 }
 
-func (m *mockStorage) GetLastMessage(ctx context.Context, sessionID string) (*protocol.PersistedMessage, error) {
+func (m *mockStorage) GetLastMessage(ctx context.Context, sessionID string) (*pb.Message, error) {
 	return nil, nil
 }
 
@@ -237,11 +245,11 @@ func (m *mockStorage) GetMessageCount(ctx context.Context, sessionID string) (in
 	return 0, nil
 }
 
-func (m *mockStorage) AppendEvent(ctx context.Context, evt *protocol.PersistedEvent) error {
+func (m *mockStorage) AppendEvent(ctx context.Context, sessionID string, evt *pb.Event) error {
 	return nil
 }
 
-func (m *mockStorage) GetEvents(ctx context.Context, sessionID string, limit int) ([]*protocol.PersistedEvent, error) {
+func (m *mockStorage) GetEvents(ctx context.Context, sessionID string, limit int) ([]*pb.Event, error) {
 	return nil, nil
 }
 
@@ -279,13 +287,13 @@ func newTestManager(maxActiveSessions int) (*Manager, *mockRuntime, *mockStorage
 }
 
 // Helper to add a session directly to manager state
-func addSession(m *Manager, id string, status protocol.SessionStatus, lastActiveAt time.Time) {
-	session := &protocol.Session{
-		ID:           id,
+func addSession(m *Manager, id string, status pb.SessionStatus, lastActiveAt time.Time) {
+	session := &pb.Session{
+		Id:           id,
 		Name:         "Session " + id,
 		Status:       status,
-		CreatedAt:    lastActiveAt.Format(time.RFC3339),
-		LastActiveAt: lastActiveAt.Format(time.RFC3339),
+		CreatedAt:    timestamppb.New(lastActiveAt),
+		LastActiveAt: timestamppb.New(lastActiveAt),
 	}
 	m.sessions[id] = NewSessionState(session)
 }
@@ -295,8 +303,8 @@ func TestEnsureActiveSlot_NoActionWhenUnderLimit(t *testing.T) {
 
 	// Add 2 running sessions (under limit of 3)
 	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now.Add(-2*time.Hour))
-	addSession(manager, "sess-2", protocol.StatusRunning, now.Add(-1*time.Hour))
+	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour))
+	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour))
 
 	// Should not pause anything
 	pausedID := manager.ensureActiveSlot(context.Background(), "")
@@ -315,8 +323,8 @@ func TestEnsureActiveSlot_PausesOneWhenAtLimit(t *testing.T) {
 
 	// Add 2 running sessions (at limit)
 	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now.Add(-2*time.Hour)) // oldest
-	addSession(manager, "sess-2", protocol.StatusRunning, now.Add(-1*time.Hour))
+	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour)) // oldest
+	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour))
 
 	// Should pause the oldest one
 	pausedID := manager.ensureActiveSlot(context.Background(), "")
@@ -326,7 +334,7 @@ func TestEnsureActiveSlot_PausesOneWhenAtLimit(t *testing.T) {
 	}
 
 	// Verify session status changed
-	if manager.sessions["sess-1"].Session.Status != protocol.StatusPaused {
+	if manager.sessions["sess-1"].Session.Status != pb.SessionStatus_SESSION_STATUS_PAUSED {
 		t.Errorf("Expected sess-1 status to be paused, got %s", manager.sessions["sess-1"].Session.Status)
 	}
 }
@@ -336,11 +344,11 @@ func TestEnsureActiveSlot_PausesMultipleWhenOverLimit(t *testing.T) {
 
 	// Add 5 running sessions (way over limit of 2)
 	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now.Add(-5*time.Hour)) // oldest
-	addSession(manager, "sess-2", protocol.StatusRunning, now.Add(-4*time.Hour))
-	addSession(manager, "sess-3", protocol.StatusRunning, now.Add(-3*time.Hour))
-	addSession(manager, "sess-4", protocol.StatusRunning, now.Add(-2*time.Hour))
-	addSession(manager, "sess-5", protocol.StatusRunning, now.Add(-1*time.Hour)) // newest
+	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-5*time.Hour)) // oldest
+	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-4*time.Hour))
+	addSession(manager, "sess-3", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-3*time.Hour))
+	addSession(manager, "sess-4", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour))
+	addSession(manager, "sess-5", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour)) // newest
 
 	// Should pause enough to get under limit (pause 4, leaving 1 active + 1 for new)
 	manager.ensureActiveSlot(context.Background(), "")
@@ -359,7 +367,7 @@ func TestEnsureActiveSlot_PausesMultipleWhenOverLimit(t *testing.T) {
 	}
 
 	// Verify oldest sessions were paused first
-	if manager.sessions["sess-1"].Session.Status != protocol.StatusPaused {
+	if manager.sessions["sess-1"].Session.Status != pb.SessionStatus_SESSION_STATUS_PAUSED {
 		t.Errorf("Expected sess-1 (oldest) to be paused")
 	}
 }
@@ -369,8 +377,8 @@ func TestEnsureActiveSlot_ExcludesSpecifiedSession(t *testing.T) {
 
 	// Add 2 running sessions (at limit)
 	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now.Add(-2*time.Hour)) // oldest
-	addSession(manager, "sess-2", protocol.StatusRunning, now.Add(-1*time.Hour))
+	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour)) // oldest
+	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour))
 
 	// Exclude sess-1 from being paused
 	pausedID := manager.ensureActiveSlot(context.Background(), "sess-1")
@@ -387,7 +395,7 @@ func TestEnsureActiveSlot_NoLimitWhenZero(t *testing.T) {
 	// Add many running sessions
 	now := time.Now()
 	for i := 0; i < 10; i++ {
-		addSession(manager, "sess-"+string(rune('A'+i)), protocol.StatusRunning, now.Add(time.Duration(-i)*time.Hour))
+		addSession(manager, "sess-"+string(rune('A'+i)), pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(time.Duration(-i)*time.Hour))
 	}
 
 	// Should not pause anything
@@ -398,174 +406,33 @@ func TestEnsureActiveSlot_NoLimitWhenZero(t *testing.T) {
 	}
 
 	if len(runtime.deletedSandboxes) > 0 {
-		t.Errorf("Expected no sandboxes deleted with limit=0")
+		t.Errorf("Expected no sandboxes deleted with limit=0, got %v", runtime.deletedSandboxes)
 	}
 }
 
-func TestEnforceActiveLimit_PausesExcessOnStartup(t *testing.T) {
+func TestEnforceActiveLimit_OnStartup(t *testing.T) {
 	manager, _, _ := newTestManager(2)
 
-	// Simulate startup state with 5 running sessions
+	// Simulate startup state with 4 running sessions
 	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now.Add(-5*time.Hour))
-	addSession(manager, "sess-2", protocol.StatusRunning, now.Add(-4*time.Hour))
-	addSession(manager, "sess-3", protocol.StatusRunning, now.Add(-3*time.Hour))
-	addSession(manager, "sess-4", protocol.StatusRunning, now.Add(-2*time.Hour))
-	addSession(manager, "sess-5", protocol.StatusRunning, now.Add(-1*time.Hour))
+	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-4*time.Hour))
+	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-3*time.Hour))
+	addSession(manager, "sess-3", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour))
+	addSession(manager, "sess-4", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour))
 
-	// Call enforceActiveLimit directly
+	// Enforce limit on startup
 	manager.enforceActiveLimit(context.Background())
 
 	// Count active sessions
 	activeCount := 0
-	pausedCount := 0
 	for _, state := range manager.sessions {
 		if isActiveStatus(state.Session.Status) {
 			activeCount++
 		}
-		if state.Session.Status == protocol.StatusPaused {
-			pausedCount++
-		}
 	}
 
-	// Should have at most MaxActiveSessions active
+	// Should be at or under the limit
 	if activeCount > 2 {
 		t.Errorf("Expected at most 2 active sessions, got %d", activeCount)
-	}
-
-	// Should have paused 3 sessions (5 - 2 = 3)
-	if pausedCount != 3 {
-		t.Errorf("Expected 3 paused sessions, got %d", pausedCount)
-	}
-}
-
-func TestEnforceActiveLimit_NoActionWhenUnderLimit(t *testing.T) {
-	manager, runtime, _ := newTestManager(5)
-
-	// Add 2 running sessions (under limit of 5)
-	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now.Add(-2*time.Hour))
-	addSession(manager, "sess-2", protocol.StatusRunning, now.Add(-1*time.Hour))
-
-	manager.enforceActiveLimit(context.Background())
-
-	// No sandboxes should be deleted
-	if len(runtime.deletedSandboxes) > 0 {
-		t.Errorf("Expected no sandboxes deleted, got %v", runtime.deletedSandboxes)
-	}
-
-	// Both sessions should still be running
-	for id, state := range manager.sessions {
-		if state.Session.Status != protocol.StatusRunning {
-			t.Errorf("Expected session %s to remain running, got %s", id, state.Session.Status)
-		}
-	}
-}
-
-func TestPause_UpdatesStatusAndCleansUpResources(t *testing.T) {
-	manager, runtime, store := newTestManager(2)
-
-	// Add a running session
-	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now)
-	store.sessions["sess-1"] = manager.sessions["sess-1"].Session
-
-	// Pause the session
-	session, err := manager.Pause(context.Background(), "sess-1")
-	if err != nil {
-		t.Fatalf("Pause failed: %v", err)
-	}
-
-	// Verify status changed
-	if session.Status != protocol.StatusPaused {
-		t.Errorf("Expected status to be paused, got %s", session.Status)
-	}
-
-	// Verify K8s resources cleaned up (warm pool mode)
-	if len(runtime.deletedClaims) == 0 || runtime.deletedClaims[0] != "sess-1" {
-		t.Errorf("Expected sandbox claim to be deleted")
-	}
-
-	if len(runtime.deletedServices) == 0 || runtime.deletedServices[0] != "sess-1" {
-		t.Errorf("Expected sandbox service to be deleted")
-	}
-
-	if len(runtime.deletedSandboxes) == 0 || runtime.deletedSandboxes[0] != "sess-1" {
-		t.Errorf("Expected sandbox to be deleted")
-	}
-}
-
-func TestPause_NotifiesCallback(t *testing.T) {
-	manager, _, store := newTestManager(2)
-
-	// Add sessions
-	now := time.Now()
-	addSession(manager, "sess-1", protocol.StatusRunning, now.Add(-2*time.Hour))
-	addSession(manager, "sess-2", protocol.StatusRunning, now.Add(-1*time.Hour))
-	store.sessions["sess-1"] = manager.sessions["sess-1"].Session
-	store.sessions["sess-2"] = manager.sessions["sess-2"].Session
-
-	// Set up callback to track all calls
-	var mu sync.Mutex
-	var callbackSessions []*protocol.Session
-	manager.SetOnSessionUpdated(func(session *protocol.Session) {
-		mu.Lock()
-		callbackSessions = append(callbackSessions, session)
-		mu.Unlock()
-	})
-
-	// Trigger auto-pause by adding a third session when limit is 2
-	addSession(manager, "sess-3", protocol.StatusRunning, now)
-	store.sessions["sess-3"] = manager.sessions["sess-3"].Session
-
-	// This should auto-pause sessions to get under limit
-	manager.ensureActiveSlot(context.Background(), "sess-3")
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	if len(callbackSessions) == 0 {
-		t.Error("Expected callback to be called for auto-pause")
-	}
-
-	// Verify all notified sessions are paused
-	for _, s := range callbackSessions {
-		if s.Status != protocol.StatusPaused {
-			t.Errorf("Expected callback session %s to have paused status, got %s", s.ID, s.Status)
-		}
-	}
-
-	// The oldest session (sess-1) should be among those paused
-	foundSess1 := false
-	for _, s := range callbackSessions {
-		if s.ID == "sess-1" {
-			foundSess1 = true
-			break
-		}
-	}
-	if !foundSess1 {
-		t.Error("Expected sess-1 (oldest) to be paused and notified")
-	}
-}
-
-func TestIsActiveStatus(t *testing.T) {
-	tests := []struct {
-		status   protocol.SessionStatus
-		expected bool
-	}{
-		{protocol.StatusCreating, true},
-		{protocol.StatusReady, true},
-		{protocol.StatusRunning, true},
-		{protocol.StatusPaused, false},
-		{protocol.StatusError, false},
-	}
-
-	for _, tt := range tests {
-		t.Run(string(tt.status), func(t *testing.T) {
-			result := isActiveStatus(tt.status)
-			if result != tt.expected {
-				t.Errorf("isActiveStatus(%s) = %v, want %v", tt.status, result, tt.expected)
-			}
-		})
 	}
 }

@@ -13,7 +13,6 @@ import (
 
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/gen/netclode/v1/netclodev1connect"
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
 	"github.com/angristan/netclode/services/control-plane/internal/session"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -45,10 +44,13 @@ func NewServer(manager *session.Manager) *Server {
 	}
 
 	// Set up callback for auto-pause broadcasts
-	manager.SetOnSessionUpdated(func(session *protocol.Session) {
-		// Convert protocol.ServerMessage to pb.ServerMessage for Connect clients
-		protoMsg := protocol.NewSessionUpdated(session)
-		pbMsg := convertServerMessage(protoMsg)
+	manager.SetOnSessionUpdated(func(session *pb.Session) {
+		// Session is already *pb.Session, create pb.ServerMessage directly
+		pbMsg := &pb.ServerMessage{
+			Message: &pb.ServerMessage_SessionUpdated{
+				SessionUpdated: &pb.SessionUpdatedResponse{Session: session},
+			},
+		}
 		s.BroadcastToAllConnect(pbMsg, nil)
 	})
 
@@ -231,7 +233,7 @@ func (s *Server) handleInternalEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var event protocol.AgentEvent
+	var event pb.AgentEvent
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		http.Error(w, "invalid event JSON: "+err.Error(), http.StatusBadRequest)
 		return

@@ -3,13 +3,13 @@ package session
 import (
 	"strings"
 
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 )
 
 // SessionState holds the in-memory state for a session.
 // Real-time updates are handled via Redis Streams, not in-memory channels.
 type SessionState struct {
-	Session       *protocol.Session
+	Session       *pb.Session
 	ServiceFQDN   string // DNS name of the agent service when running (legacy, kept for k8s)
 	PendingPrompt string // Prompt queued before agent connected
 
@@ -22,7 +22,7 @@ type SessionState struct {
 }
 
 // NewSessionState creates a new session state.
-func NewSessionState(session *protocol.Session) *SessionState {
+func NewSessionState(session *pb.Session) *SessionState {
 	return &SessionState{
 		Session:         session,
 		ThinkingBuffers: make(map[string]string),

@@ -179,8 +179,8 @@ message SessionListResponse {
 
 message SessionStateResponse {
   Session session = 1;
-  repeated PersistedMessage messages = 2;
-  repeated PersistedEvent events = 3;
+  repeated Message messages = 2;
+  repeated Event events = 3;
   bool has_more = 4;                         // true if more messages available for pagination
   optional string last_notification_id = 5;  // Cursor for subscribing to real-time updates
   optional string request_id = 6;

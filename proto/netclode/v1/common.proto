@@ -80,8 +80,8 @@ enum GitFileStatus {
   GIT_FILE_STATUS_UNMERGED = 8;
 }
 
-// PersistedMessage represents a chat message stored in history.
-message PersistedMessage {
+// Message represents a chat message in a session.
+message Message {
   string id = 1;
   MessageRole role = 2;
   string content = 3;
@@ -95,9 +95,8 @@ enum MessageRole {
   MESSAGE_ROLE_ASSISTANT = 2;
 }
 
-// PersistedEvent represents an agent event stored in history.
-// Events are stored with their full structure for replay during session open.
-message PersistedEvent {
+// Event represents an agent event in a session.
+message Event {
   string id = 1;
   string message_id = 2;                 // Parent message ID (for future correlation)
   google.protobuf.Timestamp timestamp = 3;

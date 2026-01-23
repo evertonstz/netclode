@@ -8,20 +8,20 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { AgentEvent } from "./events_pb";
 import { file_netclode_v1_events } from "./events_pb";
-import type { Message } from "@bufbuild/protobuf";
+import type { Message as Message$1 } from "@bufbuild/protobuf";
 
 /**
  * Describes the file netclode/v1/common.proto.
  */
 export const file_netclode_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChhuZXRjbG9kZS92MS9jb21tb24ucHJvdG8SC25ldGNsb2RlLnYxIpICCgdTZXNzaW9uEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSKgoGc3RhdHVzGAMgASgOMhoubmV0Y2xvZGUudjEuU2Vzc2lvblN0YXR1cxIRCgRyZXBvGAQgASgJSACIAQESMQoLcmVwb19hY2Nlc3MYBSABKA4yFy5uZXRjbG9kZS52MS5SZXBvQWNjZXNzSAGIAQESLgoKY3JlYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMgoObGFzdF9hY3RpdmVfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgcKBV9yZXBvQg4KDF9yZXBvX2FjY2VzcyKXAQoOU2Vzc2lvblN1bW1hcnkSJQoHc2Vzc2lvbhgBIAEoCzIULm5ldGNsb2RlLnYxLlNlc3Npb24SGgoNbWVzc2FnZV9jb3VudBgCIAEoBUgAiAEBEhwKD2xhc3RfbWVzc2FnZV9pZBgDIAEoCUgBiAEBQhAKDl9tZXNzYWdlX2NvdW50QhIKEF9sYXN0X21lc3NhZ2VfaWQi4AEKDVNlc3Npb25Db25maWcSEgoKc2Vzc2lvbl9pZBgBIAEoCRIVCg13b3Jrc3BhY2VfZGlyGAIgASgJEhkKDGdpdGh1Yl90b2tlbhgDIAEoCUgAiAEBEhEKBHJlcG8YBCABKAlIAYgBARIxCgtyZXBvX2FjY2VzcxgFIAEoDjIXLm5ldGNsb2RlLnYxLlJlcG9BY2Nlc3NIAogBARIZChFjb250cm9sX3BsYW5lX3VybBgGIAEoCUIPCg1fZ2l0aHViX3Rva2VuQgcKBV9yZXBvQg4KDF9yZXBvX2FjY2VzcyJoCgpHaXRIdWJSZXBvEgwKBG5hbWUYASABKAkSEQoJZnVsbF9uYW1lGAIgASgJEg8KB3ByaXZhdGUYAyABKAgSGAoLZGVzY3JpcHRpb24YBCABKAlIAIgBAUIOCgxfZGVzY3JpcHRpb24iWQoNR2l0RmlsZUNoYW5nZRIMCgRwYXRoGAEgASgJEioKBnN0YXR1cxgCIAEoDjIaLm5ldGNsb2RlLnYxLkdpdEZpbGVTdGF0dXMSDgoGc3RhZ2VkGAMgASgIIoYBChBQZXJzaXN0ZWRNZXNzYWdlEgoKAmlkGAEgASgJEiYKBHJvbGUYAiABKA4yGC5uZXRjbG9kZS52MS5NZXNzYWdlUm9sZRIPCgdjb250ZW50GAMgASgJEi0KCXRpbWVzdGFtcBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAihwEKDlBlcnNpc3RlZEV2ZW50EgoKAmlkGAEgASgJEhIKCm1lc3NhZ2VfaWQYAiABKAkSLQoJdGltZXN0YW1wGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBImCgVldmVudBgEIAEoCzIXLm5ldGNsb2RlLnYxLkFnZW50RXZlbnQisAEKBUVycm9yEgwKBGNvZGUYASABKAkSDwoHbWVzc2FnZRgCIAEoCRIXCgpzZXNzaW9uX2lkGAMgASgJSACIAQESMAoHZGV0YWlscxgEIAMoCzIfLm5ldGNsb2RlLnYxLkVycm9yLkRldGFpbHNFbnRyeRouCgxEZXRhaWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4AUINCgtfc2Vzc2lvbl9pZCpWCgpSZXBvQWNjZXNzEhsKF1JFUE9fQUNDRVNTX1VOU1BFQ0lGSUVEEAASFAoQUkVQT19BQ0NFU1NfUkVBRBABEhUKEVJFUE9fQUNDRVNTX1dSSVRFEAIq9AEKDVNlc3Npb25TdGF0dXMSHgoaU0VTU0lPTl9TVEFUVVNfVU5TUEVDSUZJRUQQABIbChdTRVNTSU9OX1NUQVRVU19DUkVBVElORxABEhsKF1NFU1NJT05fU1RBVFVTX1JFU1VNSU5HEAISGAoUU0VTU0lPTl9TVEFUVVNfUkVBRFkQAxIaChZTRVNTSU9OX1NUQVRVU19SVU5OSU5HEAQSGQoVU0VTU0lPTl9TVEFUVVNfUEFVU0VEEAUSGAoUU0VTU0lPTl9TVEFUVVNfRVJST1IQBhIeChpTRVNTSU9OX1NUQVRVU19JTlRFUlJVUFRFRBAHKpkCCg1HaXRGaWxlU3RhdHVzEh8KG0dJVF9GSUxFX1NUQVRVU19VTlNQRUNJRklFRBAAEhwKGEdJVF9GSUxFX1NUQVRVU19NT0RJRklFRBABEhkKFUdJVF9GSUxFX1NUQVRVU19BRERFRBACEhsKF0dJVF9GSUxFX1NUQVRVU19ERUxFVEVEEAMSGwoXR0lUX0ZJTEVfU1RBVFVTX1JFTkFNRUQQBBIdChlHSVRfRklMRV9TVEFUVVNfVU5UUkFDS0VEEAUSGgoWR0lUX0ZJTEVfU1RBVFVTX0NPUElFRBAGEhsKF0dJVF9GSUxFX1NUQVRVU19JR05PUkVEEAcSHAoYR0lUX0ZJTEVfU1RBVFVTX1VOTUVSR0VEEAgqXgoLTWVzc2FnZVJvbGUSHAoYTUVTU0FHRV9ST0xFX1VOU1BFQ0lGSUVEEAASFQoRTUVTU0FHRV9ST0xFX1VTRVIQARIaChZNRVNTQUdFX1JPTEVfQVNTSVNUQU5UEAJCvAEKD2NvbS5uZXRjbG9kZS52MUILQ29tbW9uUHJvdG9QAVpPZ2l0aHViLmNvbS9hbmdyaXN0YW4vbmV0Y2xvZGUvc2VydmljZXMvY29udHJvbC1wbGFuZS9nZW4vbmV0Y2xvZGUvdjE7bmV0Y2xvZGV2MaICA05YWKoCC05ldGNsb2RlLlYxygILTmV0Y2xvZGVcVjHiAhdOZXRjbG9kZVxWMVxHUEJNZXRhZGF0YeoCDE5ldGNsb2RlOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_netclode_v1_events]);
+  fileDesc("ChhuZXRjbG9kZS92MS9jb21tb24ucHJvdG8SC25ldGNsb2RlLnYxIpICCgdTZXNzaW9uEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSKgoGc3RhdHVzGAMgASgOMhoubmV0Y2xvZGUudjEuU2Vzc2lvblN0YXR1cxIRCgRyZXBvGAQgASgJSACIAQESMQoLcmVwb19hY2Nlc3MYBSABKA4yFy5uZXRjbG9kZS52MS5SZXBvQWNjZXNzSAGIAQESLgoKY3JlYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMgoObGFzdF9hY3RpdmVfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgcKBV9yZXBvQg4KDF9yZXBvX2FjY2VzcyKXAQoOU2Vzc2lvblN1bW1hcnkSJQoHc2Vzc2lvbhgBIAEoCzIULm5ldGNsb2RlLnYxLlNlc3Npb24SGgoNbWVzc2FnZV9jb3VudBgCIAEoBUgAiAEBEhwKD2xhc3RfbWVzc2FnZV9pZBgDIAEoCUgBiAEBQhAKDl9tZXNzYWdlX2NvdW50QhIKEF9sYXN0X21lc3NhZ2VfaWQi4AEKDVNlc3Npb25Db25maWcSEgoKc2Vzc2lvbl9pZBgBIAEoCRIVCg13b3Jrc3BhY2VfZGlyGAIgASgJEhkKDGdpdGh1Yl90b2tlbhgDIAEoCUgAiAEBEhEKBHJlcG8YBCABKAlIAYgBARIxCgtyZXBvX2FjY2VzcxgFIAEoDjIXLm5ldGNsb2RlLnYxLlJlcG9BY2Nlc3NIAogBARIZChFjb250cm9sX3BsYW5lX3VybBgGIAEoCUIPCg1fZ2l0aHViX3Rva2VuQgcKBV9yZXBvQg4KDF9yZXBvX2FjY2VzcyJoCgpHaXRIdWJSZXBvEgwKBG5hbWUYASABKAkSEQoJZnVsbF9uYW1lGAIgASgJEg8KB3ByaXZhdGUYAyABKAgSGAoLZGVzY3JpcHRpb24YBCABKAlIAIgBAUIOCgxfZGVzY3JpcHRpb24iWQoNR2l0RmlsZUNoYW5nZRIMCgRwYXRoGAEgASgJEioKBnN0YXR1cxgCIAEoDjIaLm5ldGNsb2RlLnYxLkdpdEZpbGVTdGF0dXMSDgoGc3RhZ2VkGAMgASgIIn0KB01lc3NhZ2USCgoCaWQYASABKAkSJgoEcm9sZRgCIAEoDjIYLm5ldGNsb2RlLnYxLk1lc3NhZ2VSb2xlEg8KB2NvbnRlbnQYAyABKAkSLQoJdGltZXN0YW1wGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJ+CgVFdmVudBIKCgJpZBgBIAEoCRISCgptZXNzYWdlX2lkGAIgASgJEi0KCXRpbWVzdGFtcBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJgoFZXZlbnQYBCABKAsyFy5uZXRjbG9kZS52MS5BZ2VudEV2ZW50IrABCgVFcnJvchIMCgRjb2RlGAEgASgJEg8KB21lc3NhZ2UYAiABKAkSFwoKc2Vzc2lvbl9pZBgDIAEoCUgAiAEBEjAKB2RldGFpbHMYBCADKAsyHy5uZXRjbG9kZS52MS5FcnJvci5EZXRhaWxzRW50cnkaLgoMRGV0YWlsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAFCDQoLX3Nlc3Npb25faWQqVgoKUmVwb0FjY2VzcxIbChdSRVBPX0FDQ0VTU19VTlNQRUNJRklFRBAAEhQKEFJFUE9fQUNDRVNTX1JFQUQQARIVChFSRVBPX0FDQ0VTU19XUklURRACKvQBCg1TZXNzaW9uU3RhdHVzEh4KGlNFU1NJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXU0VTU0lPTl9TVEFUVVNfQ1JFQVRJTkcQARIbChdTRVNTSU9OX1NUQVRVU19SRVNVTUlORxACEhgKFFNFU1NJT05fU1RBVFVTX1JFQURZEAMSGgoWU0VTU0lPTl9TVEFUVVNfUlVOTklORxAEEhkKFVNFU1NJT05fU1RBVFVTX1BBVVNFRBAFEhgKFFNFU1NJT05fU1RBVFVTX0VSUk9SEAYSHgoaU0VTU0lPTl9TVEFUVVNfSU5URVJSVVBURUQQByqZAgoNR2l0RmlsZVN0YXR1cxIfChtHSVRfRklMRV9TVEFUVVNfVU5TUEVDSUZJRUQQABIcChhHSVRfRklMRV9TVEFUVVNfTU9ESUZJRUQQARIZChVHSVRfRklMRV9TVEFUVVNfQURERUQQAhIbChdHSVRfRklMRV9TVEFUVVNfREVMRVRFRBADEhsKF0dJVF9GSUxFX1NUQVRVU19SRU5BTUVEEAQSHQoZR0lUX0ZJTEVfU1RBVFVTX1VOVFJBQ0tFRBAFEhoKFkdJVF9GSUxFX1NUQVRVU19DT1BJRUQQBhIbChdHSVRfRklMRV9TVEFUVVNfSUdOT1JFRBAHEhwKGEdJVF9GSUxFX1NUQVRVU19VTk1FUkdFRBAIKl4KC01lc3NhZ2VSb2xlEhwKGE1FU1NBR0VfUk9MRV9VTlNQRUNJRklFRBAAEhUKEU1FU1NBR0VfUk9MRV9VU0VSEAESGgoWTUVTU0FHRV9ST0xFX0FTU0lTVEFOVBACQrwBCg9jb20ubmV0Y2xvZGUudjFCC0NvbW1vblByb3RvUAFaT2dpdGh1Yi5jb20vYW5ncmlzdGFuL25ldGNsb2RlL3NlcnZpY2VzL2NvbnRyb2wtcGxhbmUvZ2VuL25ldGNsb2RlL3YxO25ldGNsb2RldjGiAgNOWFiqAgtOZXRjbG9kZS5WMcoCC05ldGNsb2RlXFYx4gIXTmV0Y2xvZGVcVjFcR1BCTWV0YWRhdGHqAgxOZXRjbG9kZTo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_netclode_v1_events]);
 
 /**
  * Session represents a coding session with an AI agent.
  *
  * @generated from message netclode.v1.Session
  */
-export type Session = Message<"netclode.v1.Session"> & {
+export type Session = Message$1<"netclode.v1.Session"> & {
   /**
    * @generated from field: string id = 1;
    */
@@ -74,7 +74,7 @@ export const SessionSchema: GenMessage<Session> = /*@__PURE__*/
  *
  * @generated from message netclode.v1.SessionSummary
  */
-export type SessionSummary = Message<"netclode.v1.SessionSummary"> & {
+export type SessionSummary = Message$1<"netclode.v1.SessionSummary"> & {
   /**
    * @generated from field: netclode.v1.Session session = 1;
    */
@@ -107,7 +107,7 @@ export const SessionSummarySchema: GenMessage<SessionSummary> = /*@__PURE__*/
  *
  * @generated from message netclode.v1.SessionConfig
  */
-export type SessionConfig = Message<"netclode.v1.SessionConfig"> & {
+export type SessionConfig = Message$1<"netclode.v1.SessionConfig"> & {
   /**
    * @generated from field: string session_id = 1;
    */
@@ -161,7 +161,7 @@ export const SessionConfigSchema: GenMessage<SessionConfig> = /*@__PURE__*/
  *
  * @generated from message netclode.v1.GitHubRepo
  */
-export type GitHubRepo = Message<"netclode.v1.GitHubRepo"> & {
+export type GitHubRepo = Message$1<"netclode.v1.GitHubRepo"> & {
   /**
    * Repository name (e.g., "my-repo")
    *
@@ -203,7 +203,7 @@ export const GitHubRepoSchema: GenMessage<GitHubRepo> = /*@__PURE__*/
  *
  * @generated from message netclode.v1.GitFileChange
  */
-export type GitFileChange = Message<"netclode.v1.GitFileChange"> & {
+export type GitFileChange = Message$1<"netclode.v1.GitFileChange"> & {
   /**
    * File path relative to repository root
    *
@@ -234,11 +234,11 @@ export const GitFileChangeSchema: GenMessage<GitFileChange> = /*@__PURE__*/
   messageDesc(file_netclode_v1_common, 4);
 
 /**
- * PersistedMessage represents a chat message stored in history.
+ * Message represents a chat message in a session.
  *
- * @generated from message netclode.v1.PersistedMessage
+ * @generated from message netclode.v1.Message
  */
-export type PersistedMessage = Message<"netclode.v1.PersistedMessage"> & {
+export type Message = Message$1<"netclode.v1.Message"> & {
   /**
    * @generated from field: string id = 1;
    */
@@ -261,19 +261,18 @@ export type PersistedMessage = Message<"netclode.v1.PersistedMessage"> & {
 };
 
 /**
- * Describes the message netclode.v1.PersistedMessage.
- * Use `create(PersistedMessageSchema)` to create a new message.
+ * Describes the message netclode.v1.Message.
+ * Use `create(MessageSchema)` to create a new message.
  */
-export const PersistedMessageSchema: GenMessage<PersistedMessage> = /*@__PURE__*/
+export const MessageSchema: GenMessage<Message> = /*@__PURE__*/
   messageDesc(file_netclode_v1_common, 5);
 
 /**
- * PersistedEvent represents an agent event stored in history.
- * Events are stored with their full structure for replay during session open.
+ * Event represents an agent event in a session.
  *
- * @generated from message netclode.v1.PersistedEvent
+ * @generated from message netclode.v1.Event
  */
-export type PersistedEvent = Message<"netclode.v1.PersistedEvent"> & {
+export type Event = Message$1<"netclode.v1.Event"> & {
   /**
    * @generated from field: string id = 1;
    */
@@ -300,10 +299,10 @@ export type PersistedEvent = Message<"netclode.v1.PersistedEvent"> & {
 };
 
 /**
- * Describes the message netclode.v1.PersistedEvent.
- * Use `create(PersistedEventSchema)` to create a new message.
+ * Describes the message netclode.v1.Event.
+ * Use `create(EventSchema)` to create a new message.
  */
-export const PersistedEventSchema: GenMessage<PersistedEvent> = /*@__PURE__*/
+export const EventSchema: GenMessage<Event> = /*@__PURE__*/
   messageDesc(file_netclode_v1_common, 6);
 
 /**
@@ -312,7 +311,7 @@ export const PersistedEventSchema: GenMessage<PersistedEvent> = /*@__PURE__*/
  *
  * @generated from message netclode.v1.Error
  */
-export type Error = Message<"netclode.v1.Error"> & {
+export type Error = Message$1<"netclode.v1.Error"> & {
   /**
    * Machine-readable error code (e.g., "SESSION_NOT_FOUND")
    *

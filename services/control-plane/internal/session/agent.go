@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -32,27 +33,26 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 		state.PendingPrompt = text
 		m.mu.Unlock()
 		// Still set status to running so UI shows activity
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusRunning)
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_RUNNING)
 		return nil
 	}
 
 	// Persist user message
-	userMsg := &protocol.PersistedMessage{
-		ID:        "msg_" + uuid.NewString()[:12],
-		SessionID: sessionID,
-		Role:      protocol.RoleUser,
+	userMsg := &pb.Message{
+		Id:        "msg_" + uuid.NewString()[:12],
+		Role:      pb.MessageRole_MESSAGE_ROLE_USER,
 		Content:   text,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Timestamp: timestamppb.Now(),
 	}
-	if err := m.storage.AppendMessage(ctx, userMsg); err != nil {
+	if err := m.storage.AppendMessage(ctx, sessionID, userMsg); err != nil {
 		slog.Warn("Failed to persist user message", "sessionID", sessionID, "error", err)
 	}
 
 	// Broadcast user message to all subscribers (for cross-client sync)
-	m.emit(ctx, sessionID, protocol.NewUserMessage(sessionID, text))
+	m.emitUserMessage(ctx, sessionID, text)
 
 	// Update session status to running and last active time
-	m.updateSessionStatus(ctx, sessionID, protocol.StatusRunning)
+	m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_RUNNING)
 	m.updateLastActiveAt(ctx, sessionID)
 
 	// Initialize streaming state
@@ -65,8 +65,8 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 	// Send prompt to agent via bidirectional stream
 	if err := agent.ExecutePrompt(text); err != nil {
 		slog.Error("Failed to send prompt to agent", "sessionID", sessionID, "error", err)
-		m.emit(ctx, sessionID, protocol.NewAgentError(sessionID, err.Error()))
-		m.updateSessionStatus(ctx, sessionID, protocol.StatusReady)
+		m.emitAgentError(ctx, sessionID, err.Error())
+		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_READY)
 		return err
 	}
 
@@ -75,13 +75,13 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 
 func (m *Manager) handleAgentError(ctx context.Context, sessionID string, err error) {
 	slog.Error("Agent error", "sessionID", sessionID, "error", err)
-	m.emit(ctx, sessionID, protocol.NewAgentError(sessionID, err.Error()))
-	m.updateSessionStatus(ctx, sessionID, protocol.StatusReady)
+	m.emitAgentError(ctx, sessionID, err.Error())
+	m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_READY)
 }
 
 // pendingGitRequests tracks pending git status/diff requests with response channels
 type gitStatusResult struct {
-	files []protocol.GitFileChange
+	files []pb.GitFileChange
 	err   error
 }
 
@@ -97,7 +97,7 @@ var (
 )
 
 // GetGitStatus fetches git status from the agent.
-func (m *Manager) GetGitStatus(ctx context.Context, sessionID string) ([]protocol.GitFileChange, error) {
+func (m *Manager) GetGitStatus(ctx context.Context, sessionID string) ([]pb.GitFileChange, error) {
 	agent := m.GetAgentConnection(sessionID)
 	if agent == nil {
 		return nil, fmt.Errorf("no agent connected for session %s", sessionID)

@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/angristan/netclode/services/control-plane/internal/protocol"
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/internal/storage"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 type StreamSubscriber struct {
 	sessionID          string
 	lastNotificationID string // Redis Stream cursor ("$" = new only, "0" = from beginning)
-	messages           chan protocol.ServerMessage
+	messages           chan *pb.ServerMessage
 	done               chan struct{}
 	client             *redis.Client
 }
@@ -39,14 +40,14 @@ func NewStreamSubscriber(sessionID, lastNotificationID string, client *redis.Cli
 	return &StreamSubscriber{
 		sessionID:          sessionID,
 		lastNotificationID: lastNotificationID,
-		messages:           make(chan protocol.ServerMessage, 64),
+		messages:           make(chan *pb.ServerMessage, 64),
 		done:               make(chan struct{}),
 		client:             client,
 	}
 }
 
 // Messages returns the channel to receive notifications as ServerMessages.
-func (s *StreamSubscriber) Messages() <-chan protocol.ServerMessage {
+func (s *StreamSubscriber) Messages() <-chan *pb.ServerMessage {
 	return s.messages
 }
 
@@ -109,9 +110,9 @@ func (s *StreamSubscriber) Run(ctx context.Context) {
 				}
 
 				// Convert notification to ServerMessage
-				serverMsg, err := notificationToServerMessage(s.sessionID, &notification, msg.ID)
-				if err != nil {
-					slog.Warn("failed to convert notification", "session", s.sessionID, "type", notification.Type, "error", err)
+				serverMsg := notificationToServerMessage(s.sessionID, &notification)
+				if serverMsg == nil {
+					slog.Warn("failed to convert notification", "session", s.sessionID, "type", notification.Type)
 					continue
 				}
 
@@ -138,71 +139,105 @@ func (s *StreamSubscriber) Close() {
 	}
 }
 
-// notificationToServerMessage converts a storage.Notification to a protocol.ServerMessage.
-func notificationToServerMessage(sessionID string, n *storage.Notification, streamID string) (protocol.ServerMessage, error) {
+// notificationToServerMessage converts a storage.Notification to a pb.ServerMessage.
+func notificationToServerMessage(sessionID string, n *storage.Notification) *pb.ServerMessage {
 	switch n.Type {
 	case "event":
-		var event protocol.AgentEvent
-		if err := json.Unmarshal(n.Payload, &event); err != nil {
-			return protocol.ServerMessage{}, err
+		var event pb.AgentEvent
+		if err := protojson.Unmarshal(n.Payload, &event); err != nil {
+			slog.Warn("failed to unmarshal agent event", "session", sessionID, "error", err)
+			return nil
 		}
-		msg := protocol.NewAgentEvent(sessionID, &event)
-		msg.ID = streamID // Include stream ID for cursor tracking
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_AgentEvent{
+				AgentEvent: &pb.AgentEventResponse{
+					SessionId: sessionID,
+					Event:     &event,
+				},
+			},
+		}
 
 	case "message":
 		// The payload contains message data including partial flag
 		var payload struct {
-			ID        string `json:"id"`
-			SessionID string `json:"sessionId"`
-			Role      string `json:"role"`
-			Content   string `json:"content"`
-			Partial   bool   `json:"partial"`
+			ID      string `json:"id"`
+			Content string `json:"content"`
+			Partial bool   `json:"partial"`
 		}
 		if err := json.Unmarshal(n.Payload, &payload); err != nil {
-			return protocol.ServerMessage{}, err
+			slog.Warn("failed to unmarshal message payload", "session", sessionID, "error", err)
+			return nil
 		}
-		msg := protocol.NewAgentMessage(sessionID, payload.Content, payload.Partial, payload.ID)
-		msg.ID = streamID
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_AgentMessage{
+				AgentMessage: &pb.AgentMessageResponse{
+					SessionId: sessionID,
+					Content:   payload.Content,
+					Partial:   payload.Partial,
+					MessageId: payload.ID,
+				},
+			},
+		}
 
 	case "session_update":
-		var session protocol.Session
-		if err := json.Unmarshal(n.Payload, &session); err != nil {
-			return protocol.ServerMessage{}, err
+		var session pb.Session
+		if err := protojson.Unmarshal(n.Payload, &session); err != nil {
+			slog.Warn("failed to unmarshal session", "session", sessionID, "error", err)
+			return nil
 		}
-		msg := protocol.NewSessionUpdated(&session)
-		msg.ID = streamID
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_SessionUpdated{
+				SessionUpdated: &pb.SessionUpdatedResponse{
+					Session: &session,
+				},
+			},
+		}
 
 	case "user_message":
-		// User message payload contains the text
 		var payload struct {
-			Text      string `json:"text"`
-			SessionID string `json:"sessionId"`
+			Text string `json:"text"`
 		}
 		if err := json.Unmarshal(n.Payload, &payload); err != nil {
-			return protocol.ServerMessage{}, err
+			slog.Warn("failed to unmarshal user message payload", "session", sessionID, "error", err)
+			return nil
 		}
-		msg := protocol.NewUserMessage(sessionID, payload.Text)
-		msg.ID = streamID
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_UserMessage{
+				UserMessage: &pb.UserMessageResponse{
+					SessionId: sessionID,
+					Content:   payload.Text,
+				},
+			},
+		}
 
 	case "agent_done":
-		msg := protocol.NewAgentDone(sessionID)
-		msg.ID = streamID
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_AgentDone{
+				AgentDone: &pb.AgentDoneResponse{
+					SessionId: sessionID,
+				},
+			},
+		}
 
 	case "agent_error":
 		var payload struct {
 			Error string `json:"error"`
 		}
 		if err := json.Unmarshal(n.Payload, &payload); err != nil {
-			return protocol.ServerMessage{}, err
+			slog.Warn("failed to unmarshal agent error payload", "session", sessionID, "error", err)
+			return nil
 		}
-		msg := protocol.NewAgentError(sessionID, payload.Error)
-		msg.ID = streamID
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_Error{
+				Error: &pb.ErrorResponse{
+					Error: &pb.Error{
+						Code:      "AGENT_ERROR",
+						Message:   payload.Error,
+						SessionId: &sessionID,
+					},
+				},
+			},
+		}
 
 	case "session_error":
 		var payload struct {
@@ -210,35 +245,44 @@ func notificationToServerMessage(sessionID string, n *storage.Notification, stre
 			SessionID string `json:"sessionId"`
 		}
 		if err := json.Unmarshal(n.Payload, &payload); err != nil {
-			return protocol.ServerMessage{}, err
+			slog.Warn("failed to unmarshal session error payload", "session", sessionID, "error", err)
+			return nil
 		}
-		// Use the session ID from payload if available, otherwise fall back to the subscriber's sessionID
 		sid := payload.SessionID
 		if sid == "" {
 			sid = sessionID
 		}
-		msg := protocol.NewSessionError(sid, payload.Error)
-		msg.ID = streamID
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_Error{
+				Error: &pb.ErrorResponse{
+					Error: &pb.Error{
+						Code:      "SESSION_ERROR",
+						Message:   payload.Error,
+						SessionId: &sid,
+					},
+				},
+			},
+		}
 
 	case "terminal_output":
 		var payload struct {
-			SessionID string `json:"sessionId"`
-			Data      string `json:"data"`
+			Data string `json:"data"`
 		}
 		if err := json.Unmarshal(n.Payload, &payload); err != nil {
-			return protocol.ServerMessage{}, err
+			slog.Warn("failed to unmarshal terminal output payload", "session", sessionID, "error", err)
+			return nil
 		}
-		msg := protocol.NewTerminalOutput(sessionID, payload.Data)
-		msg.ID = streamID
-		return msg, nil
+		return &pb.ServerMessage{
+			Message: &pb.ServerMessage_TerminalOutput{
+				TerminalOutput: &pb.TerminalOutputResponse{
+					SessionId: sessionID,
+					Data:      payload.Data,
+				},
+			},
+		}
 
 	default:
-		// Unknown type - return a generic message
-		return protocol.ServerMessage{
-			Type:      n.Type,
-			SessionID: sessionID,
-			ID:        streamID,
-		}, nil
+		slog.Warn("unknown notification type", "session", sessionID, "type", n.Type)
+		return nil
 	}
 }

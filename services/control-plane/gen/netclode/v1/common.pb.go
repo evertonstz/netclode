@@ -624,8 +624,8 @@ func (x *GitFileChange) GetStaged() bool {
 	return false
 }
 
-// PersistedMessage represents a chat message stored in history.
-type PersistedMessage struct {
+// Message represents a chat message in a session.
+type Message struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Role          MessageRole            `protobuf:"varint,2,opt,name=role,proto3,enum=netclode.v1.MessageRole" json:"role,omitempty"`
@@ -635,20 +635,20 @@ type PersistedMessage struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PersistedMessage) Reset() {
-	*x = PersistedMessage{}
+func (x *Message) Reset() {
+	*x = Message{}
 	mi := &file_netclode_v1_common_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PersistedMessage) String() string {
+func (x *Message) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PersistedMessage) ProtoMessage() {}
+func (*Message) ProtoMessage() {}
 
-func (x *PersistedMessage) ProtoReflect() protoreflect.Message {
+func (x *Message) ProtoReflect() protoreflect.Message {
 	mi := &file_netclode_v1_common_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -660,42 +660,41 @@ func (x *PersistedMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PersistedMessage.ProtoReflect.Descriptor instead.
-func (*PersistedMessage) Descriptor() ([]byte, []int) {
+// Deprecated: Use Message.ProtoReflect.Descriptor instead.
+func (*Message) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *PersistedMessage) GetId() string {
+func (x *Message) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *PersistedMessage) GetRole() MessageRole {
+func (x *Message) GetRole() MessageRole {
 	if x != nil {
 		return x.Role
 	}
 	return MessageRole_MESSAGE_ROLE_UNSPECIFIED
 }
 
-func (x *PersistedMessage) GetContent() string {
+func (x *Message) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
 	return ""
 }
 
-func (x *PersistedMessage) GetTimestamp() *timestamppb.Timestamp {
+func (x *Message) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
 	return nil
 }
 
-// PersistedEvent represents an agent event stored in history.
-// Events are stored with their full structure for replay during session open.
-type PersistedEvent struct {
+// Event represents an agent event in a session.
+type Event struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	MessageId     string                 `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // Parent message ID (for future correlation)
@@ -705,20 +704,20 @@ type PersistedEvent struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PersistedEvent) Reset() {
-	*x = PersistedEvent{}
+func (x *Event) Reset() {
+	*x = Event{}
 	mi := &file_netclode_v1_common_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PersistedEvent) String() string {
+func (x *Event) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PersistedEvent) ProtoMessage() {}
+func (*Event) ProtoMessage() {}
 
-func (x *PersistedEvent) ProtoReflect() protoreflect.Message {
+func (x *Event) ProtoReflect() protoreflect.Message {
 	mi := &file_netclode_v1_common_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -730,33 +729,33 @@ func (x *PersistedEvent) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PersistedEvent.ProtoReflect.Descriptor instead.
-func (*PersistedEvent) Descriptor() ([]byte, []int) {
+// Deprecated: Use Event.ProtoReflect.Descriptor instead.
+func (*Event) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_common_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *PersistedEvent) GetId() string {
+func (x *Event) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *PersistedEvent) GetMessageId() string {
+func (x *Event) GetMessageId() string {
 	if x != nil {
 		return x.MessageId
 	}
 	return ""
 }
 
-func (x *PersistedEvent) GetTimestamp() *timestamppb.Timestamp {
+func (x *Event) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
 	return nil
 }
 
-func (x *PersistedEvent) GetEvent() *AgentEvent {
+func (x *Event) GetEvent() *AgentEvent {
 	if x != nil {
 		return x.Event
 	}
@@ -878,13 +877,13 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\rGitFileChange\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x122\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1a.netclode.v1.GitFileStatusR\x06status\x12\x16\n" +
-	"\x06staged\x18\x03 \x01(\bR\x06staged\"\xa4\x01\n" +
-	"\x10PersistedMessage\x12\x0e\n" +
+	"\x06staged\x18\x03 \x01(\bR\x06staged\"\x9b\x01\n" +
+	"\aMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12,\n" +
 	"\x04role\x18\x02 \x01(\x0e2\x18.netclode.v1.MessageRoleR\x04role\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x128\n" +
-	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\xa8\x01\n" +
-	"\x0ePersistedEvent\x12\x0e\n" +
+	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\x9f\x01\n" +
+	"\x05Event\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x02 \x01(\tR\tmessageId\x128\n" +
@@ -954,8 +953,8 @@ var file_netclode_v1_common_proto_goTypes = []any{
 	(*SessionConfig)(nil),         // 6: netclode.v1.SessionConfig
 	(*GitHubRepo)(nil),            // 7: netclode.v1.GitHubRepo
 	(*GitFileChange)(nil),         // 8: netclode.v1.GitFileChange
-	(*PersistedMessage)(nil),      // 9: netclode.v1.PersistedMessage
-	(*PersistedEvent)(nil),        // 10: netclode.v1.PersistedEvent
+	(*Message)(nil),               // 9: netclode.v1.Message
+	(*Event)(nil),                 // 10: netclode.v1.Event
 	(*Error)(nil),                 // 11: netclode.v1.Error
 	nil,                           // 12: netclode.v1.Error.DetailsEntry
 	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
@@ -969,10 +968,10 @@ var file_netclode_v1_common_proto_depIdxs = []int32{
 	4,  // 4: netclode.v1.SessionSummary.session:type_name -> netclode.v1.Session
 	0,  // 5: netclode.v1.SessionConfig.repo_access:type_name -> netclode.v1.RepoAccess
 	2,  // 6: netclode.v1.GitFileChange.status:type_name -> netclode.v1.GitFileStatus
-	3,  // 7: netclode.v1.PersistedMessage.role:type_name -> netclode.v1.MessageRole
-	13, // 8: netclode.v1.PersistedMessage.timestamp:type_name -> google.protobuf.Timestamp
-	13, // 9: netclode.v1.PersistedEvent.timestamp:type_name -> google.protobuf.Timestamp
-	14, // 10: netclode.v1.PersistedEvent.event:type_name -> netclode.v1.AgentEvent
+	3,  // 7: netclode.v1.Message.role:type_name -> netclode.v1.MessageRole
+	13, // 8: netclode.v1.Message.timestamp:type_name -> google.protobuf.Timestamp
+	13, // 9: netclode.v1.Event.timestamp:type_name -> google.protobuf.Timestamp
+	14, // 10: netclode.v1.Event.event:type_name -> netclode.v1.AgentEvent
 	12, // 11: netclode.v1.Error.details:type_name -> netclode.v1.Error.DetailsEntry
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type

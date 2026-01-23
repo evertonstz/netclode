@@ -668,7 +668,7 @@ final class ConnectService {
         }
     }
     
-    private func convertPersistedMessage(_ proto: Netclode_V1_PersistedMessage, sessionId: String) -> PersistedMessage {
+    private func convertPersistedMessage(_ proto: Netclode_V1_Message, sessionId: String) -> PersistedMessage {
         PersistedMessage(
             id: proto.id,
             sessionId: sessionId,
@@ -686,7 +686,7 @@ final class ConnectService {
         }
     }
     
-    private func convertPersistedEvent(_ proto: Netclode_V1_PersistedEvent, sessionId: String) -> PersistedEvent {
+    private func convertPersistedEvent(_ proto: Netclode_V1_Event, sessionId: String) -> PersistedEvent {
         // Convert the embedded AgentEvent to RawAgentEventData
         let agentEvent = proto.event
         let eventData = convertAgentEventToRaw(agentEvent)

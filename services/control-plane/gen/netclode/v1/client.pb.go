@@ -1795,8 +1795,8 @@ func (x *SessionListResponse) GetRequestId() string {
 type SessionStateResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Session            *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
-	Messages           []*PersistedMessage    `protobuf:"bytes,2,rep,name=messages,proto3" json:"messages,omitempty"`
-	Events             []*PersistedEvent      `protobuf:"bytes,3,rep,name=events,proto3" json:"events,omitempty"`
+	Messages           []*Message             `protobuf:"bytes,2,rep,name=messages,proto3" json:"messages,omitempty"`
+	Events             []*Event               `protobuf:"bytes,3,rep,name=events,proto3" json:"events,omitempty"`
 	HasMore            bool                   `protobuf:"varint,4,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`                                         // true if more messages available for pagination
 	LastNotificationId *string                `protobuf:"bytes,5,opt,name=last_notification_id,json=lastNotificationId,proto3,oneof" json:"last_notification_id,omitempty"` // Cursor for subscribing to real-time updates
 	RequestId          *string                `protobuf:"bytes,6,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
@@ -1841,14 +1841,14 @@ func (x *SessionStateResponse) GetSession() *Session {
 	return nil
 }
 
-func (x *SessionStateResponse) GetMessages() []*PersistedMessage {
+func (x *SessionStateResponse) GetMessages() []*Message {
 	if x != nil {
 		return x.Messages
 	}
 	return nil
 }
 
-func (x *SessionStateResponse) GetEvents() []*PersistedEvent {
+func (x *SessionStateResponse) GetEvents() []*Event {
 	if x != nil {
 		return x.Events
 	}
@@ -2677,11 +2677,11 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\bsessions\x18\x01 \x03(\v2\x14.netclode.v1.SessionR\bsessions\x12\"\n" +
 	"\n" +
 	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
-	"\v_request_id\"\xd4\x02\n" +
+	"\v_request_id\"\xc2\x02\n" +
 	"\x14SessionStateResponse\x12.\n" +
-	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\x129\n" +
-	"\bmessages\x18\x02 \x03(\v2\x1d.netclode.v1.PersistedMessageR\bmessages\x123\n" +
-	"\x06events\x18\x03 \x03(\v2\x1b.netclode.v1.PersistedEventR\x06events\x12\x19\n" +
+	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\x120\n" +
+	"\bmessages\x18\x02 \x03(\v2\x14.netclode.v1.MessageR\bmessages\x12*\n" +
+	"\x06events\x18\x03 \x03(\v2\x12.netclode.v1.EventR\x06events\x12\x19\n" +
 	"\bhas_more\x18\x04 \x01(\bR\ahasMore\x125\n" +
 	"\x14last_notification_id\x18\x05 \x01(\tH\x00R\x12lastNotificationId\x88\x01\x01\x12\"\n" +
 	"\n" +
@@ -2805,8 +2805,8 @@ var file_netclode_v1_client_proto_goTypes = []any{
 	(*ErrorResponse)(nil),              // 34: netclode.v1.ErrorResponse
 	(RepoAccess)(0),                    // 35: netclode.v1.RepoAccess
 	(*Session)(nil),                    // 36: netclode.v1.Session
-	(*PersistedMessage)(nil),           // 37: netclode.v1.PersistedMessage
-	(*PersistedEvent)(nil),             // 38: netclode.v1.PersistedEvent
+	(*Message)(nil),                    // 37: netclode.v1.Message
+	(*Event)(nil),                      // 38: netclode.v1.Event
 	(*SessionSummary)(nil),             // 39: netclode.v1.SessionSummary
 	(*timestamppb.Timestamp)(nil),      // 40: google.protobuf.Timestamp
 	(*AgentEvent)(nil),                 // 41: netclode.v1.AgentEvent
@@ -2853,8 +2853,8 @@ var file_netclode_v1_client_proto_depIdxs = []int32{
 	36, // 35: netclode.v1.SessionUpdatedResponse.session:type_name -> netclode.v1.Session
 	36, // 36: netclode.v1.SessionListResponse.sessions:type_name -> netclode.v1.Session
 	36, // 37: netclode.v1.SessionStateResponse.session:type_name -> netclode.v1.Session
-	37, // 38: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.PersistedMessage
-	38, // 39: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.PersistedEvent
+	37, // 38: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.Message
+	38, // 39: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.Event
 	39, // 40: netclode.v1.SyncResponse.sessions:type_name -> netclode.v1.SessionSummary
 	40, // 41: netclode.v1.SyncResponse.server_time:type_name -> google.protobuf.Timestamp
 	41, // 42: netclode.v1.AgentEventResponse.event:type_name -> netclode.v1.AgentEvent

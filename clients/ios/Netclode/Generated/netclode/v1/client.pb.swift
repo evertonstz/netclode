@@ -933,9 +933,9 @@ public struct Netclode_V1_SessionStateResponse: Sendable {
   /// Clears the value of `session`. Subsequent reads from it will return its default value.
   public mutating func clearSession() {self._session = nil}
 
-  public var messages: [Netclode_V1_PersistedMessage] = []
+  public var messages: [Netclode_V1_Message] = []
 
-  public var events: [Netclode_V1_PersistedEvent] = []
+  public var events: [Netclode_V1_Event] = []
 
   /// true if more messages available for pagination
   public var hasMore_p: Bool = false
