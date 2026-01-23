@@ -4,6 +4,9 @@ import Foundation
 @Observable
 final class EventStore {
     private(set) var eventsBySession: [String: [AgentEvent]] = [:]
+    
+    /// Track accumulated inputDelta JSON strings by toolUseId
+    private var streamingToolInput: [String: String] = [:]
 
     func events(for sessionId: String) -> [AgentEvent] {
         eventsBySession[sessionId] ?? []
@@ -80,8 +83,24 @@ final class EventStore {
         eventsBySession.removeValue(forKey: sessionId)
     }
 
+    /// Append streaming tool input delta and try to parse/update the tool_start event
+    func appendToolInputDelta(sessionId: String, toolUseId: String, inputDelta: String) {
+        // Accumulate the delta
+        let accumulated = (streamingToolInput[toolUseId] ?? "") + inputDelta
+        streamingToolInput[toolUseId] = accumulated
+        
+        // Try to parse as JSON and update the tool_start event
+        if let data = accumulated.data(using: .utf8),
+           let parsed = try? JSONDecoder().decode([String: AnyCodableValue].self, from: data) {
+            updateToolInput(sessionId: sessionId, toolUseId: toolUseId, input: parsed)
+        }
+    }
+    
     /// Update a tool_start event with complete input (received after streaming started)
     func updateToolInput(sessionId: String, toolUseId: String, input: [String: AnyCodableValue]) {
+        // Clear streaming state
+        streamingToolInput.removeValue(forKey: toolUseId)
+        
         guard var events = eventsBySession[sessionId] else { return }
 
         if let index = events.lastIndex(where: { event in

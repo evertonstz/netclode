@@ -144,6 +144,13 @@ final class MessageRouter {
                         eventStore.appendEvent(sessionId: sessionId, event: event)
                     }
                 }
+            } else if case .toolInput(let inputEvent) = event {
+                // Accumulate streaming tool input delta
+                eventStore.appendToolInputDelta(
+                    sessionId: sessionId,
+                    toolUseId: inputEvent.toolUseId,
+                    inputDelta: inputEvent.inputDelta
+                )
             } else if case .toolInputComplete(let inputEvent) = event {
                 // Update existing tool_start event with full input
                 eventStore.updateToolInput(
