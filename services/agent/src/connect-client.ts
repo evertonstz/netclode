@@ -327,7 +327,7 @@ export async function connectToControlPlane(
 
     // Handle incoming messages from control plane
     for await (const msg of stream) {
-      await handleControlPlaneMessage(msg, sendMessage);
+      await handleControlPlaneMessage(sessionId, msg, sendMessage);
     }
   } finally {
     // Clear terminal output callback
@@ -341,6 +341,7 @@ export async function connectToControlPlane(
  * Handle a message from the control plane.
  */
 async function handleControlPlaneMessage(
+  sessionId: string,
   msg: ControlPlaneMessage,
   send: (msg: AgentMessage) => void
 ): Promise<void> {
@@ -358,7 +359,7 @@ async function handleControlPlaneMessage(
       break;
 
     case "executePrompt":
-      await handleExecutePrompt(msg.message.value.text, send);
+      await handleExecutePrompt(sessionId, msg.message.value.text, send);
       break;
 
     case "interrupt":
@@ -391,6 +392,7 @@ async function handleControlPlaneMessage(
  * Handle execute prompt request
  */
 async function handleExecutePrompt(
+  sessionId: string,
   text: string,
   send: (msg: AgentMessage) => void
 ): Promise<void> {
@@ -398,7 +400,7 @@ async function handleExecutePrompt(
 
   try {
     for await (const event of executePrompt(
-      "", // sessionId not needed for local execution
+      sessionId,
       text,
       config ? { repo: config.repo, githubToken: config.githubToken } : undefined
     )) {
