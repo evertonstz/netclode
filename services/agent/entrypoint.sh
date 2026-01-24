@@ -8,6 +8,13 @@ set -e
 # /agent/.local/share/mise is for mise installed tools (persisted)
 # /agent/.cache/mise is for mise package cache
 # /agent/.config is for various tool configs (git, opencode, etc.)
+
+# Fix legacy issue where .config might be a file instead of directory
+if [ -f /agent/.config ]; then
+	echo "[entrypoint] Removing legacy .config file..."
+	rm -f /agent/.config
+fi
+
 mkdir -p /agent/workspace /agent/docker /agent/.local/share/mise /agent/.cache/mise /agent/.config
 chown -R agent:agent /agent
 
