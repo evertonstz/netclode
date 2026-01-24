@@ -71,12 +71,11 @@ export class OpenCodeAdapter implements SDKAdapter {
     });
 
     // Wait for server to be ready - use polling only, stdout detection can be unreliable
-    // First request triggers plugin installation which can take 60+ seconds
     const url = await new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
         proc.kill();
         reject(new Error("Timeout waiting for opencode server to start"));
-      }, 120000); // 2 minutes - first request installs plugins
+      }, 30000);
 
       let stdout = "";
       let stderr = "";
