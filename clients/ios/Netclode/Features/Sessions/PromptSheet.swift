@@ -13,12 +13,46 @@ struct PromptSheet: View {
     @State private var repoURL = ""
     @State private var repoAccess: RepoAccess = .write
     @State private var selectedSdkType: SdkType = .claude
-    @State private var selectedModelId: String = ModelsStore.defaultModelId
+    @State private var selectedClaudeModelId: String = ModelsStore.defaultModelId
+    @State private var selectedOpenCodeModelId: String = ModelsStore.defaultModelId
     @State private var selectedCopilotBackend: CopilotBackend = .anthropic
     @State private var selectedCopilotModelId: String = CopilotStore.defaultAnthropicModelId
     @State private var isSubmitting = false
     @State private var canSubmit = false
+    @State private var showModelDropdown = false
     @FocusState private var isFocused: Bool
+
+    /// Get available models as PickerModels based on current SDK selection
+    private var availablePickerModels: [PickerModel] {
+        switch selectedSdkType {
+        case .claude, .opencode:
+            return modelsStore.anthropicModels.map { PickerModel.from($0) }
+        case .copilot:
+            return copilotStore.models(for: selectedCopilotBackend).map { PickerModel.from($0) }
+        }
+    }
+
+    /// Binding to the appropriate model ID based on SDK type
+    private var selectedModelIdBinding: Binding<String> {
+        switch selectedSdkType {
+        case .claude:
+            return $selectedClaudeModelId
+        case .opencode:
+            return $selectedOpenCodeModelId
+        case .copilot:
+            return $selectedCopilotModelId
+        }
+    }
+
+    /// Whether models are loading
+    private var isLoadingModels: Bool {
+        switch selectedSdkType {
+        case .claude, .opencode:
+            return modelsStore.isLoading
+        case .copilot:
+            return copilotStore.isLoadingModels
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -55,27 +89,7 @@ struct PromptSheet: View {
                     }
                     .pickerStyle(.segmented)
 
-                    // Model picker (shown for OpenCode and Copilot with model support)
-                    if selectedSdkType == .opencode {
-                        HStack(spacing: Theme.Spacing.xs) {
-                            Image(systemName: "sparkles")
-                                .foregroundStyle(.secondary)
-                            Text("Model")
-                                .font(.netclodeCaption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.top, Theme.Spacing.xs)
-
-                        Picker("Model", selection: $selectedModelId) {
-                            ForEach(modelsStore.anthropicModels) { model in
-                                Text(model.name).tag(model.fullModelId)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.Radius.md))
-                    }
-
-                    // Backend and model picker (only shown for Copilot)
+                    // Backend picker (only for Copilot)
                     if selectedSdkType == .copilot {
                         HStack(spacing: Theme.Spacing.xs) {
                             Image(systemName: "server.rack")
@@ -98,45 +112,35 @@ struct PromptSheet: View {
                             // Fetch models for the new backend
                             fetchCopilotModels(for: newBackend)
                         }
+                    }
 
-                        // Model picker for Copilot
-                        HStack(spacing: Theme.Spacing.xs) {
-                            Image(systemName: "sparkles")
-                                .foregroundStyle(.secondary)
-                            Text("Model")
+                    // Model picker (shown for all SDK types)
+                    HStack(spacing: Theme.Spacing.xs) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.secondary)
+                        Text("Model")
+                            .font(.netclodeCaption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, Theme.Spacing.xs)
+
+                    if isLoadingModels {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Loading models...")
                                 .font(.netclodeCaption)
                                 .foregroundStyle(.secondary)
-                            
-                            if copilotStore.isLoadingModels {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            }
+                            Spacer()
                         }
-                        .padding(.top, Theme.Spacing.xs)
-
-                        let models = copilotStore.models(for: selectedCopilotBackend)
-                        if models.isEmpty && !copilotStore.isLoadingModels {
-                            // Show default model when models haven't loaded
-                            Text(copilotStore.defaultModelId(for: selectedCopilotBackend))
-                                .font(.netclodeCaption)
-                                .foregroundStyle(.secondary)
-                                .padding(.vertical, Theme.Spacing.xs)
-                        } else {
-                            Picker("Model", selection: $selectedCopilotModelId) {
-                                ForEach(models) { model in
-                                    HStack {
-                                        Text(model.name)
-                                        if let multiplier = model.billingMultiplier, multiplier != 1.0 {
-                                            Text(multiplier < 1.0 ? "(\(String(format: "%.2fx", multiplier)))" : "(\(String(format: "%.0fx", multiplier)))")
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    .tag(model.id)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.Radius.md))
-                        }
+                        .padding(Theme.Spacing.sm)
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.Radius.md))
+                    } else {
+                        InlineModelPicker(
+                            selectedModelId: selectedModelIdBinding,
+                            models: availablePickerModels,
+                            isExpanded: $showModelDropdown
+                        )
                     }
                 }
                 .padding(.horizontal, Theme.Spacing.md)
@@ -239,6 +243,26 @@ struct PromptSheet: View {
         .interactiveDismissDisabled(isSubmitting)
     }
 
+    @ViewBuilder
+    private func modelLabel(for model: PickerModel) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.name)
+                if let provider = model.provider {
+                    Text(provider)
+                        .font(.netclodeCaption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            if let multiplier = model.billingMultiplier, multiplier != 1.0 {
+                Text(multiplier < 1.0 ? String(format: "%.2fx", multiplier) : String(format: "%.0fx", multiplier))
+                    .font(.netclodeCaption)
+                    .foregroundStyle(multiplier < 1.0 ? .green : (multiplier <= 2.0 ? .orange : .red))
+            }
+        }
+    }
+
     private func submitPrompt() {
         let text = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
@@ -263,15 +287,15 @@ struct PromptSheet: View {
         let copilotBackendParam: CopilotBackend?
         
         switch selectedSdkType {
+        case .claude:
+            modelParam = selectedClaudeModelId
+            copilotBackendParam = nil
         case .opencode:
-            modelParam = selectedModelId
+            modelParam = selectedOpenCodeModelId
             copilotBackendParam = nil
         case .copilot:
             modelParam = selectedCopilotModelId
             copilotBackendParam = selectedCopilotBackend
-        case .claude:
-            modelParam = nil
-            copilotBackendParam = nil
         }
         
         // Create session
