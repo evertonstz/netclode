@@ -7,7 +7,8 @@ set -e
 # /agent/docker is for Docker data
 # /agent/.local/share/mise is for mise installed tools (persisted)
 # /agent/.cache/mise is for mise package cache
-mkdir -p /agent/workspace /agent/docker /agent/.local/share/mise /agent/.cache/mise
+# /agent/.config is for various tool configs (git, opencode, etc.)
+mkdir -p /agent/workspace /agent/docker /agent/.local/share/mise /agent/.cache/mise /agent/.config
 chown -R agent:agent /agent
 
 # Start Docker daemon with data on JuiceFS
