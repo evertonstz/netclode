@@ -43,6 +43,16 @@ if [ -n "$GITHUB_TOKEN" ]; then
 	chmod 600 /agent/.git-credentials
 fi
 
+# Copy pre-cached OpenCode plugins if not already present
+# This avoids slow plugin download on first request
+if [ -d /opt/opencode-cache/config/opencode ] && [ ! -d /agent/.local/config/opencode ]; then
+	echo "[entrypoint] Copying pre-cached OpenCode plugins..."
+	mkdir -p /agent/.local/config /agent/.cache
+	cp -r /opt/opencode-cache/config/opencode /agent/.local/config/
+	cp -r /opt/opencode-cache/cache/opencode /agent/.cache/ 2>/dev/null || true
+	chown -R agent:agent /agent/.local/config/opencode /agent/.cache/opencode 2>/dev/null || true
+fi
+
 # Drop privileges and run agent
 # Preserve PATH and mise env vars for the agent user
 # Include shims path so mise-installed tools are available
@@ -52,7 +62,8 @@ exec su -s /bin/bash agent -c "
     export MISE_DATA_DIR=/agent/.local/share/mise
     export MISE_CACHE_DIR=/agent/.cache/mise
     export XDG_CONFIG_HOME=/agent/.local/config
-    export PATH='/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:/usr/local/bin:/usr/bin:/bin'
-    mkdir -p /agent/.local/config
+    export XDG_CACHE_HOME=/agent/.cache
+    export PATH='/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:/opt:/usr/local/bin:/usr/bin:/bin'
+    mkdir -p /agent/.local/config /agent/.cache
     cd /opt/agent && /opt/node/bin/node agent.js
 "

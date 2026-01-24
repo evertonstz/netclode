@@ -65,6 +65,25 @@ RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/latest/download/o
     chmod +x /usr/local/bin/opencode && \
     rm -rf /tmp/opencode.tar.gz
 
+# Install bun for OpenCode plugin installation
+RUN curl -fsSL https://bun.sh/install | bash
+
+# Pre-install OpenCode plugins by running it once
+# This downloads all required npm packages so they're cached in the image
+ENV PATH="/root/.bun/bin:${PATH}"
+RUN mkdir -p /opt/opencode-cache/config /opt/opencode-cache/cache && \
+    XDG_CONFIG_HOME=/opt/opencode-cache/config XDG_CACHE_HOME=/opt/opencode-cache/cache \
+    timeout 120 /bin/sh -c 'opencode serve --port 19999 2>&1 & \
+    sleep 3 && \
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do \
+      if curl -s http://127.0.0.1:19999/session > /dev/null 2>&1; then \
+        echo "OpenCode ready after ${i}0 seconds"; \
+        break; \
+      fi; \
+      sleep 10; \
+    done; \
+    pkill opencode || true'
+
 # =============================================================================
 # Runtime
 # =============================================================================
@@ -83,8 +102,9 @@ RUN useradd -m -u 1000 -G docker -d /agent agent && \
 COPY --from=builder --chown=agent:agent /build/services/agent/dist/agent.js /opt/agent/
 COPY --from=builder --chown=agent:agent /build/services/agent/node_modules /opt/agent/node_modules
 
-# Copy OpenCode binary from builder
+# Copy OpenCode binary and pre-cached plugins from builder
 COPY --from=builder /usr/local/bin/opencode /usr/local/bin/opencode
+COPY --from=builder /opt/opencode-cache /opt/opencode-cache
 
 # Copy mise and node to /opt (NOT /agent which is a volume mount)
 # mise binary and shims need to be in a persistent location
@@ -110,11 +130,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends unzip && \
 RUN echo 'export MISE_DATA_DIR=/agent/.local/share/mise' >> /etc/profile.d/mise.sh && \
     echo 'export MISE_CACHE_DIR=/agent/.cache/mise' >> /etc/profile.d/mise.sh && \
     echo 'export XDG_CONFIG_HOME=/agent/.local/config' >> /etc/profile.d/mise.sh && \
+    echo 'export XDG_CACHE_HOME=/agent/.cache' >> /etc/profile.d/mise.sh && \
     echo 'export PATH="/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:/opt:$PATH"' >> /etc/profile.d/mise.sh && \
     chmod +x /etc/profile.d/mise.sh && \
     echo 'export MISE_DATA_DIR=/agent/.local/share/mise' >> /etc/bash.bashrc && \
     echo 'export MISE_CACHE_DIR=/agent/.cache/mise' >> /etc/bash.bashrc && \
     echo 'export XDG_CONFIG_HOME=/agent/.local/config' >> /etc/bash.bashrc && \
+    echo 'export XDG_CACHE_HOME=/agent/.cache' >> /etc/bash.bashrc && \
     echo 'export PATH="/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:/opt:$PATH"' >> /etc/bash.bashrc && \
     echo 'export PS1='"'"'\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '"'" >> /etc/bash.bashrc
 
@@ -129,6 +151,7 @@ ENV HOME=/agent
 ENV MISE_DATA_DIR=/agent/.local/share/mise
 ENV MISE_CACHE_DIR=/agent/.cache/mise
 ENV XDG_CONFIG_HOME=/agent/.local/config
+ENV XDG_CACHE_HOME=/agent/.cache
 ENV PATH="/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:/opt:${PATH}"
 
 EXPOSE 3002
