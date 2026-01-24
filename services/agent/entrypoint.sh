@@ -43,22 +43,17 @@ if [ -n "$GITHUB_TOKEN" ]; then
 	chmod 600 /agent/.git-credentials
 fi
 
-# Copy pre-installed bun cache (contains @opencode-ai/plugin)
-# This speeds up any future bun installs
-if [ -d /opt/bun-cache ] && [ ! -d /agent/.bun ]; then
-	echo "[entrypoint] Copying pre-installed bun cache..."
-	cp -r /opt/bun-cache /agent/.bun
-	chown -R agent:agent /agent/.bun
+# Symlink pre-installed bun cache (contains @opencode-ai/plugin)
+# Symlink is instant vs cp -r which takes ~60s on JuiceFS (1400+ files)
+if [ -d /opt/bun-cache ] && [ ! -e /agent/.bun ]; then
+	ln -s /opt/bun-cache /agent/.bun
 fi
 
-# Copy pre-installed OpenCode config (with node_modules)
+# Symlink pre-installed OpenCode config (with node_modules)
 # This makes OpenCode skip the bun add step entirely on first request
-# XDG_CONFIG_HOME is set to /agent/.local/config, so OpenCode looks in /agent/.local/config/opencode
-if [ -d /opt/opencode-config ] && [ ! -d /agent/.local/config/opencode/node_modules ]; then
-	echo "[entrypoint] Copying pre-installed OpenCode config..."
-	mkdir -p /agent/.local/config/opencode
-	cp -r /opt/opencode-config/* /agent/.local/config/opencode/
-	chown -R agent:agent /agent/.local/config/opencode
+if [ -d /opt/opencode-config ] && [ ! -e /agent/.local/config/opencode ]; then
+	mkdir -p /agent/.local/config
+	ln -s /opt/opencode-config /agent/.local/config/opencode
 fi
 
 # Drop privileges and run agent
