@@ -34,6 +34,7 @@ import {
 import {
   GitFileStatus,
   GitFileChangeSchema,
+  CopilotBackend as ProtoCopilotBackend,
   type SessionConfig,
 } from "../gen/netclode/v1/common_pb.js";
 
@@ -51,6 +52,7 @@ import {
   type SDKAdapter,
   type PromptEvent,
   type SdkType,
+  type CopilotBackend,
 } from "./sdk/index.js";
 import { SdkType as ProtoSdkType } from "../gen/netclode/v1/common_pb.js";
 
@@ -75,6 +77,21 @@ function parseSdkTypeFromProto(protoSdkType: ProtoSdkType | undefined): SdkType 
     case ProtoSdkType.UNSPECIFIED:
     default:
       return "claude";
+  }
+}
+
+/**
+ * Convert proto CopilotBackend enum to internal CopilotBackend string
+ */
+function parseCopilotBackendFromProto(protoBackend: ProtoCopilotBackend | undefined): CopilotBackend | undefined {
+  switch (protoBackend) {
+    case ProtoCopilotBackend.GITHUB:
+      return "github";
+    case ProtoCopilotBackend.ANTHROPIC:
+      return "anthropic";
+    case ProtoCopilotBackend.UNSPECIFIED:
+    default:
+      return undefined; // Let adapter auto-detect
   }
 }
 
@@ -399,14 +416,17 @@ async function handleControlPlaneMessage(
           // Initialize SDK adapter based on session config
           const config = msg.message.value.config;
           const sdkType = parseSdkTypeFromProto(config.sdkType);
-          console.log(`[agent] Initializing SDK adapter: ${sdkType}, model: ${config.model || "(default)"}`);
+          const copilotBackend = parseCopilotBackendFromProto(config.copilotBackend);
+          console.log(`[agent] Initializing SDK adapter: ${sdkType}, model: ${config.model || "(default)"}, copilotBackend: ${copilotBackend || "(auto)"}`);
 
           try {
             currentAdapter = await createSDKAdapter({
               sdkType,
               workspaceDir: WORKSPACE_DIR,
               anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+              githubToken: config.githubToken,
               model: config.model,
+              copilotBackend,
             });
           } catch (err) {
             console.error("[agent] Failed to initialize SDK adapter:", err);

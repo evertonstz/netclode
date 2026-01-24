@@ -14,7 +14,7 @@ import type { Message as Message$1 } from "@bufbuild/protobuf";
  * Describes the file netclode/v1/common.proto.
  */
 export const file_netclode_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChhuZXRjbG9kZS92MS9jb21tb24ucHJvdG8SC25ldGNsb2RlLnYxIuoCCgdTZXNzaW9uEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSKgoGc3RhdHVzGAMgASgOMhoubmV0Y2xvZGUudjEuU2Vzc2lvblN0YXR1cxIRCgRyZXBvGAQgASgJSACIAQESMQoLcmVwb19hY2Nlc3MYBSABKA4yFy5uZXRjbG9kZS52MS5SZXBvQWNjZXNzSAGIAQESLgoKY3JlYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMgoObGFzdF9hY3RpdmVfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEisKCHNka190eXBlGAggASgOMhQubmV0Y2xvZGUudjEuU2RrVHlwZUgCiAEBEhIKBW1vZGVsGAkgASgJSAOIAQFCBwoFX3JlcG9CDgoMX3JlcG9fYWNjZXNzQgsKCV9zZGtfdHlwZUIICgZfbW9kZWwilwEKDlNlc3Npb25TdW1tYXJ5EiUKB3Nlc3Npb24YASABKAsyFC5uZXRjbG9kZS52MS5TZXNzaW9uEhoKDW1lc3NhZ2VfY291bnQYAiABKAVIAIgBARIcCg9sYXN0X21lc3NhZ2VfaWQYAyABKAlIAYgBAUIQCg5fbWVzc2FnZV9jb3VudEISChBfbGFzdF9tZXNzYWdlX2lkIrgCCg1TZXNzaW9uQ29uZmlnEhIKCnNlc3Npb25faWQYASABKAkSFQoNd29ya3NwYWNlX2RpchgCIAEoCRIZCgxnaXRodWJfdG9rZW4YAyABKAlIAIgBARIRCgRyZXBvGAQgASgJSAGIAQESMQoLcmVwb19hY2Nlc3MYBSABKA4yFy5uZXRjbG9kZS52MS5SZXBvQWNjZXNzSAKIAQESGQoRY29udHJvbF9wbGFuZV91cmwYBiABKAkSKwoIc2RrX3R5cGUYByABKA4yFC5uZXRjbG9kZS52MS5TZGtUeXBlSAOIAQESEgoFbW9kZWwYCCABKAlIBIgBAUIPCg1fZ2l0aHViX3Rva2VuQgcKBV9yZXBvQg4KDF9yZXBvX2FjY2Vzc0ILCglfc2RrX3R5cGVCCAoGX21vZGVsImgKCkdpdEh1YlJlcG8SDAoEbmFtZRgBIAEoCRIRCglmdWxsX25hbWUYAiABKAkSDwoHcHJpdmF0ZRgDIAEoCBIYCgtkZXNjcmlwdGlvbhgEIAEoCUgAiAEBQg4KDF9kZXNjcmlwdGlvbiJZCg1HaXRGaWxlQ2hhbmdlEgwKBHBhdGgYASABKAkSKgoGc3RhdHVzGAIgASgOMhoubmV0Y2xvZGUudjEuR2l0RmlsZVN0YXR1cxIOCgZzdGFnZWQYAyABKAgifQoHTWVzc2FnZRIKCgJpZBgBIAEoCRImCgRyb2xlGAIgASgOMhgubmV0Y2xvZGUudjEuTWVzc2FnZVJvbGUSDwoHY29udGVudBgDIAEoCRItCgl0aW1lc3RhbXAYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIn4KBUV2ZW50EgoKAmlkGAEgASgJEhIKCm1lc3NhZ2VfaWQYAiABKAkSLQoJdGltZXN0YW1wGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBImCgVldmVudBgEIAEoCzIXLm5ldGNsb2RlLnYxLkFnZW50RXZlbnQisAEKBUVycm9yEgwKBGNvZGUYASABKAkSDwoHbWVzc2FnZRgCIAEoCRIXCgpzZXNzaW9uX2lkGAMgASgJSACIAQESMAoHZGV0YWlscxgEIAMoCzIfLm5ldGNsb2RlLnYxLkVycm9yLkRldGFpbHNFbnRyeRouCgxEZXRhaWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4AUINCgtfc2Vzc2lvbl9pZCpWCgpSZXBvQWNjZXNzEhsKF1JFUE9fQUNDRVNTX1VOU1BFQ0lGSUVEEAASFAoQUkVQT19BQ0NFU1NfUkVBRBABEhUKEVJFUE9fQUNDRVNTX1dSSVRFEAIqZQoHU2RrVHlwZRIYChRTREtfVFlQRV9VTlNQRUNJRklFRBAAEhMKD1NES19UWVBFX0NMQVVERRABEhUKEVNES19UWVBFX09QRU5DT0RFEAISFAoQU0RLX1RZUEVfQ09QSUxPVBADKvQBCg1TZXNzaW9uU3RhdHVzEh4KGlNFU1NJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXU0VTU0lPTl9TVEFUVVNfQ1JFQVRJTkcQARIbChdTRVNTSU9OX1NUQVRVU19SRVNVTUlORxACEhgKFFNFU1NJT05fU1RBVFVTX1JFQURZEAMSGgoWU0VTU0lPTl9TVEFUVVNfUlVOTklORxAEEhkKFVNFU1NJT05fU1RBVFVTX1BBVVNFRBAFEhgKFFNFU1NJT05fU1RBVFVTX0VSUk9SEAYSHgoaU0VTU0lPTl9TVEFUVVNfSU5URVJSVVBURUQQByqZAgoNR2l0RmlsZVN0YXR1cxIfChtHSVRfRklMRV9TVEFUVVNfVU5TUEVDSUZJRUQQABIcChhHSVRfRklMRV9TVEFUVVNfTU9ESUZJRUQQARIZChVHSVRfRklMRV9TVEFUVVNfQURERUQQAhIbChdHSVRfRklMRV9TVEFUVVNfREVMRVRFRBADEhsKF0dJVF9GSUxFX1NUQVRVU19SRU5BTUVEEAQSHQoZR0lUX0ZJTEVfU1RBVFVTX1VOVFJBQ0tFRBAFEhoKFkdJVF9GSUxFX1NUQVRVU19DT1BJRUQQBhIbChdHSVRfRklMRV9TVEFUVVNfSUdOT1JFRBAHEhwKGEdJVF9GSUxFX1NUQVRVU19VTk1FUkdFRBAIKl4KC01lc3NhZ2VSb2xlEhwKGE1FU1NBR0VfUk9MRV9VTlNQRUNJRklFRBAAEhUKEU1FU1NBR0VfUk9MRV9VU0VSEAESGgoWTUVTU0FHRV9ST0xFX0FTU0lTVEFOVBACQrwBCg9jb20ubmV0Y2xvZGUudjFCC0NvbW1vblByb3RvUAFaT2dpdGh1Yi5jb20vYW5ncmlzdGFuL25ldGNsb2RlL3NlcnZpY2VzL2NvbnRyb2wtcGxhbmUvZ2VuL25ldGNsb2RlL3YxO25ldGNsb2RldjGiAgNOWFiqAgtOZXRjbG9kZS5WMcoCC05ldGNsb2RlXFYx4gIXTmV0Y2xvZGVcVjFcR1BCTWV0YWRhdGHqAgxOZXRjbG9kZTo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_netclode_v1_events]);
+  fileDesc("ChhuZXRjbG9kZS92MS9jb21tb24ucHJvdG8SC25ldGNsb2RlLnYxIrkDCgdTZXNzaW9uEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSKgoGc3RhdHVzGAMgASgOMhoubmV0Y2xvZGUudjEuU2Vzc2lvblN0YXR1cxIRCgRyZXBvGAQgASgJSACIAQESMQoLcmVwb19hY2Nlc3MYBSABKA4yFy5uZXRjbG9kZS52MS5SZXBvQWNjZXNzSAGIAQESLgoKY3JlYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMgoObGFzdF9hY3RpdmVfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEisKCHNka190eXBlGAggASgOMhQubmV0Y2xvZGUudjEuU2RrVHlwZUgCiAEBEhIKBW1vZGVsGAkgASgJSAOIAQESOQoPY29waWxvdF9iYWNrZW5kGAogASgOMhsubmV0Y2xvZGUudjEuQ29waWxvdEJhY2tlbmRIBIgBAUIHCgVfcmVwb0IOCgxfcmVwb19hY2Nlc3NCCwoJX3Nka190eXBlQggKBl9tb2RlbEISChBfY29waWxvdF9iYWNrZW5kIpcBCg5TZXNzaW9uU3VtbWFyeRIlCgdzZXNzaW9uGAEgASgLMhQubmV0Y2xvZGUudjEuU2Vzc2lvbhIaCg1tZXNzYWdlX2NvdW50GAIgASgFSACIAQESHAoPbGFzdF9tZXNzYWdlX2lkGAMgASgJSAGIAQFCEAoOX21lc3NhZ2VfY291bnRCEgoQX2xhc3RfbWVzc2FnZV9pZCKHAwoNU2Vzc2lvbkNvbmZpZxISCgpzZXNzaW9uX2lkGAEgASgJEhUKDXdvcmtzcGFjZV9kaXIYAiABKAkSGQoMZ2l0aHViX3Rva2VuGAMgASgJSACIAQESEQoEcmVwbxgEIAEoCUgBiAEBEjEKC3JlcG9fYWNjZXNzGAUgASgOMhcubmV0Y2xvZGUudjEuUmVwb0FjY2Vzc0gCiAEBEhkKEWNvbnRyb2xfcGxhbmVfdXJsGAYgASgJEisKCHNka190eXBlGAcgASgOMhQubmV0Y2xvZGUudjEuU2RrVHlwZUgDiAEBEhIKBW1vZGVsGAggASgJSASIAQESOQoPY29waWxvdF9iYWNrZW5kGAkgASgOMhsubmV0Y2xvZGUudjEuQ29waWxvdEJhY2tlbmRIBYgBAUIPCg1fZ2l0aHViX3Rva2VuQgcKBV9yZXBvQg4KDF9yZXBvX2FjY2Vzc0ILCglfc2RrX3R5cGVCCAoGX21vZGVsQhIKEF9jb3BpbG90X2JhY2tlbmQiaAoKR2l0SHViUmVwbxIMCgRuYW1lGAEgASgJEhEKCWZ1bGxfbmFtZRgCIAEoCRIPCgdwcml2YXRlGAMgASgIEhgKC2Rlc2NyaXB0aW9uGAQgASgJSACIAQFCDgoMX2Rlc2NyaXB0aW9uIlkKDUdpdEZpbGVDaGFuZ2USDAoEcGF0aBgBIAEoCRIqCgZzdGF0dXMYAiABKA4yGi5uZXRjbG9kZS52MS5HaXRGaWxlU3RhdHVzEg4KBnN0YWdlZBgDIAEoCCJ9CgdNZXNzYWdlEgoKAmlkGAEgASgJEiYKBHJvbGUYAiABKA4yGC5uZXRjbG9kZS52MS5NZXNzYWdlUm9sZRIPCgdjb250ZW50GAMgASgJEi0KCXRpbWVzdGFtcBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAifgoFRXZlbnQSCgoCaWQYASABKAkSEgoKbWVzc2FnZV9pZBgCIAEoCRItCgl0aW1lc3RhbXAYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiYKBWV2ZW50GAQgASgLMhcubmV0Y2xvZGUudjEuQWdlbnRFdmVudCKwAQoFRXJyb3ISDAoEY29kZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhcKCnNlc3Npb25faWQYAyABKAlIAIgBARIwCgdkZXRhaWxzGAQgAygLMh8ubmV0Y2xvZGUudjEuRXJyb3IuRGV0YWlsc0VudHJ5Gi4KDERldGFpbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBQg0KC19zZXNzaW9uX2lkIpcBCglNb2RlbEluZm8SCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIVCghwcm92aWRlchgDIAEoCUgAiAEBEh8KEmJpbGxpbmdfbXVsdGlwbGllchgEIAEoAUgBiAEBEhQKDGNhcGFiaWxpdGllcxgFIAMoCUILCglfcHJvdmlkZXJCFQoTX2JpbGxpbmdfbXVsdGlwbGllciJxChFDb3BpbG90QXV0aFN0YXR1cxIYChBpc19hdXRoZW50aWNhdGVkGAEgASgIEhYKCWF1dGhfdHlwZRgCIAEoCUgAiAEBEhIKBWxvZ2luGAMgASgJSAGIAQFCDAoKX2F1dGhfdHlwZUIICgZfbG9naW4iaQoTQ29waWxvdFByZW1pdW1RdW90YRIMCgR1c2VkGAEgASgFEg0KBWxpbWl0GAIgASgFEhEKCXJlbWFpbmluZxgDIAEoBRIVCghyZXNldF9hdBgEIAEoCUgAiAEBQgsKCV9yZXNldF9hdCpWCgpSZXBvQWNjZXNzEhsKF1JFUE9fQUNDRVNTX1VOU1BFQ0lGSUVEEAASFAoQUkVQT19BQ0NFU1NfUkVBRBABEhUKEVJFUE9fQUNDRVNTX1dSSVRFEAIqZQoHU2RrVHlwZRIYChRTREtfVFlQRV9VTlNQRUNJRklFRBAAEhMKD1NES19UWVBFX0NMQVVERRABEhUKEVNES19UWVBFX09QRU5DT0RFEAISFAoQU0RLX1RZUEVfQ09QSUxPVBADKmwKDkNvcGlsb3RCYWNrZW5kEh8KG0NPUElMT1RfQkFDS0VORF9VTlNQRUNJRklFRBAAEhoKFkNPUElMT1RfQkFDS0VORF9HSVRIVUIQARIdChlDT1BJTE9UX0JBQ0tFTkRfQU5USFJPUElDEAIq9AEKDVNlc3Npb25TdGF0dXMSHgoaU0VTU0lPTl9TVEFUVVNfVU5TUEVDSUZJRUQQABIbChdTRVNTSU9OX1NUQVRVU19DUkVBVElORxABEhsKF1NFU1NJT05fU1RBVFVTX1JFU1VNSU5HEAISGAoUU0VTU0lPTl9TVEFUVVNfUkVBRFkQAxIaChZTRVNTSU9OX1NUQVRVU19SVU5OSU5HEAQSGQoVU0VTU0lPTl9TVEFUVVNfUEFVU0VEEAUSGAoUU0VTU0lPTl9TVEFUVVNfRVJST1IQBhIeChpTRVNTSU9OX1NUQVRVU19JTlRFUlJVUFRFRBAHKpkCCg1HaXRGaWxlU3RhdHVzEh8KG0dJVF9GSUxFX1NUQVRVU19VTlNQRUNJRklFRBAAEhwKGEdJVF9GSUxFX1NUQVRVU19NT0RJRklFRBABEhkKFUdJVF9GSUxFX1NUQVRVU19BRERFRBACEhsKF0dJVF9GSUxFX1NUQVRVU19ERUxFVEVEEAMSGwoXR0lUX0ZJTEVfU1RBVFVTX1JFTkFNRUQQBBIdChlHSVRfRklMRV9TVEFUVVNfVU5UUkFDS0VEEAUSGgoWR0lUX0ZJTEVfU1RBVFVTX0NPUElFRBAGEhsKF0dJVF9GSUxFX1NUQVRVU19JR05PUkVEEAcSHAoYR0lUX0ZJTEVfU1RBVFVTX1VOTUVSR0VEEAgqXgoLTWVzc2FnZVJvbGUSHAoYTUVTU0FHRV9ST0xFX1VOU1BFQ0lGSUVEEAASFQoRTUVTU0FHRV9ST0xFX1VTRVIQARIaChZNRVNTQUdFX1JPTEVfQVNTSVNUQU5UEAJCvAEKD2NvbS5uZXRjbG9kZS52MUILQ29tbW9uUHJvdG9QAVpPZ2l0aHViLmNvbS9hbmdyaXN0YW4vbmV0Y2xvZGUvc2VydmljZXMvY29udHJvbC1wbGFuZS9nZW4vbmV0Y2xvZGUvdjE7bmV0Y2xvZGV2MaICA05YWKoCC05ldGNsb2RlLlYxygILTmV0Y2xvZGVcVjHiAhdOZXRjbG9kZVxWMVxHUEJNZXRhZGF0YeoCDE5ldGNsb2RlOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_netclode_v1_events]);
 
 /**
  * Session represents a coding session with an AI agent.
@@ -69,11 +69,18 @@ export type Session = Message$1<"netclode.v1.Session"> & {
   sdkType?: SdkType;
 
   /**
-   * Model ID for OpenCode (e.g., "claude-sonnet-4-0")
+   * Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
    *
    * @generated from field: optional string model = 9;
    */
   model?: string;
+
+  /**
+   * Backend for Copilot sessions (ignored for other SDKs)
+   *
+   * @generated from field: optional netclode.v1.CopilotBackend copilot_backend = 10;
+   */
+  copilotBackend?: CopilotBackend;
 };
 
 /**
@@ -175,6 +182,13 @@ export type SessionConfig = Message$1<"netclode.v1.SessionConfig"> & {
    * @generated from field: optional string model = 8;
    */
   model?: string;
+
+  /**
+   * Backend for Copilot sessions
+   *
+   * @generated from field: optional netclode.v1.CopilotBackend copilot_backend = 9;
+   */
+  copilotBackend?: CopilotBackend;
 };
 
 /**
@@ -377,6 +391,132 @@ export const ErrorSchema: GenMessage<Error> = /*@__PURE__*/
   messageDesc(file_netclode_v1_common, 7);
 
 /**
+ * ModelInfo represents an AI model available for use.
+ *
+ * @generated from message netclode.v1.ModelInfo
+ */
+export type ModelInfo = Message$1<"netclode.v1.ModelInfo"> & {
+  /**
+   * Model identifier (e.g., "claude-sonnet-4-0", "gpt-4o")
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * Human-readable name (e.g., "Claude Sonnet 4")
+   *
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * Provider name (e.g., "anthropic", "openai")
+   *
+   * @generated from field: optional string provider = 3;
+   */
+  provider?: string;
+
+  /**
+   * Cost multiplier for GitHub Copilot (e.g., 0.33, 1.0, 3.0)
+   *
+   * @generated from field: optional double billing_multiplier = 4;
+   */
+  billingMultiplier?: number;
+
+  /**
+   * Model capabilities (e.g., "chat", "vision", "code")
+   *
+   * @generated from field: repeated string capabilities = 5;
+   */
+  capabilities: string[];
+};
+
+/**
+ * Describes the message netclode.v1.ModelInfo.
+ * Use `create(ModelInfoSchema)` to create a new message.
+ */
+export const ModelInfoSchema: GenMessage<ModelInfo> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_common, 8);
+
+/**
+ * CopilotAuthStatus represents GitHub Copilot authentication state.
+ *
+ * @generated from message netclode.v1.CopilotAuthStatus
+ */
+export type CopilotAuthStatus = Message$1<"netclode.v1.CopilotAuthStatus"> & {
+  /**
+   * Whether the user is authenticated with GitHub
+   *
+   * @generated from field: bool is_authenticated = 1;
+   */
+  isAuthenticated: boolean;
+
+  /**
+   * Auth method: "user", "env", "gh-cli", "token", etc.
+   *
+   * @generated from field: optional string auth_type = 2;
+   */
+  authType?: string;
+
+  /**
+   * GitHub username if authenticated
+   *
+   * @generated from field: optional string login = 3;
+   */
+  login?: string;
+};
+
+/**
+ * Describes the message netclode.v1.CopilotAuthStatus.
+ * Use `create(CopilotAuthStatusSchema)` to create a new message.
+ */
+export const CopilotAuthStatusSchema: GenMessage<CopilotAuthStatus> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_common, 9);
+
+/**
+ * CopilotPremiumQuota represents GitHub Copilot premium request quota.
+ *
+ * @generated from message netclode.v1.CopilotPremiumQuota
+ */
+export type CopilotPremiumQuota = Message$1<"netclode.v1.CopilotPremiumQuota"> & {
+  /**
+   * Number of premium requests used this period
+   *
+   * @generated from field: int32 used = 1;
+   */
+  used: number;
+
+  /**
+   * Maximum premium requests allowed
+   *
+   * @generated from field: int32 limit = 2;
+   */
+  limit: number;
+
+  /**
+   * Remaining premium requests
+   *
+   * @generated from field: int32 remaining = 3;
+   */
+  remaining: number;
+
+  /**
+   * ISO timestamp when quota resets
+   *
+   * @generated from field: optional string reset_at = 4;
+   */
+  resetAt?: string;
+};
+
+/**
+ * Describes the message netclode.v1.CopilotPremiumQuota.
+ * Use `create(CopilotPremiumQuotaSchema)` to create a new message.
+ */
+export const CopilotPremiumQuotaSchema: GenMessage<CopilotPremiumQuota> = /*@__PURE__*/
+  messageDesc(file_netclode_v1_common, 10);
+
+/**
  * RepoAccess defines the permission level for repository operations.
  *
  * @generated from enum netclode.v1.RepoAccess
@@ -450,6 +590,40 @@ export const SdkTypeSchema: GenEnum<SdkType> = /*@__PURE__*/
   enumDesc(file_netclode_v1_common, 1);
 
 /**
+ * CopilotBackend defines which backend to use for Copilot SDK sessions.
+ *
+ * @generated from enum netclode.v1.CopilotBackend
+ */
+export enum CopilotBackend {
+  /**
+   * Defaults to GITHUB if authenticated, else ANTHROPIC
+   *
+   * @generated from enum value: COPILOT_BACKEND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * GitHub Copilot API (requires GitHub authentication)
+   *
+   * @generated from enum value: COPILOT_BACKEND_GITHUB = 1;
+   */
+  GITHUB = 1,
+
+  /**
+   * Anthropic API (BYOK mode, requires ANTHROPIC_API_KEY)
+   *
+   * @generated from enum value: COPILOT_BACKEND_ANTHROPIC = 2;
+   */
+  ANTHROPIC = 2,
+}
+
+/**
+ * Describes the enum netclode.v1.CopilotBackend.
+ */
+export const CopilotBackendSchema: GenEnum<CopilotBackend> = /*@__PURE__*/
+  enumDesc(file_netclode_v1_common, 2);
+
+/**
  * SessionStatus represents the lifecycle state of a session.
  *
  * @generated from enum netclode.v1.SessionStatus
@@ -514,7 +688,7 @@ export enum SessionStatus {
  * Describes the enum netclode.v1.SessionStatus.
  */
 export const SessionStatusSchema: GenEnum<SessionStatus> = /*@__PURE__*/
-  enumDesc(file_netclode_v1_common, 2);
+  enumDesc(file_netclode_v1_common, 3);
 
 /**
  * GitFileStatus represents the type of change to a file.
@@ -572,7 +746,7 @@ export enum GitFileStatus {
  * Describes the enum netclode.v1.GitFileStatus.
  */
 export const GitFileStatusSchema: GenEnum<GitFileStatus> = /*@__PURE__*/
-  enumDesc(file_netclode_v1_common, 3);
+  enumDesc(file_netclode_v1_common, 4);
 
 /**
  * MessageRole identifies the sender of a message.
@@ -600,5 +774,5 @@ export enum MessageRole {
  * Describes the enum netclode.v1.MessageRole.
  */
 export const MessageRoleSchema: GenEnum<MessageRole> = /*@__PURE__*/
-  enumDesc(file_netclode_v1_common, 4);
+  enumDesc(file_netclode_v1_common, 5);
 

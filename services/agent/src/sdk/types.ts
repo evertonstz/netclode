@@ -10,13 +10,20 @@ import type { JsonObject } from "@bufbuild/protobuf";
 export type SdkType = "claude" | "opencode" | "copilot";
 
 /**
+ * Backend for Copilot SDK sessions
+ */
+export type CopilotBackend = "github" | "anthropic";
+
+/**
  * Configuration for SDK initialization
  */
 export interface SDKConfig {
   sdkType: SdkType;
   workspaceDir: string;
   anthropicApiKey: string;
+  githubToken?: string;
   model?: string; // e.g., "anthropic/claude-sonnet-4-0" for OpenCode
+  copilotBackend?: CopilotBackend; // For Copilot SDK: "github" or "anthropic"
 }
 
 /**

@@ -223,6 +223,7 @@ struct SessionWithMeta: Codable, Sendable {
     let lastMessageId: String?
     let sdkType: SdkType?
     let model: String?
+    let copilotBackend: CopilotBackend?
 
     func toSession() -> Session {
         Session(
@@ -234,7 +235,8 @@ struct SessionWithMeta: Codable, Sendable {
             createdAt: createdAt,
             lastActiveAt: lastActiveAt,
             sdkType: sdkType,
-            model: model
+            model: model,
+            copilotBackend: copilotBackend
         )
     }
 }

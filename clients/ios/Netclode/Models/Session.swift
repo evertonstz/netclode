@@ -70,6 +70,26 @@ enum SdkType: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Backend for Copilot SDK sessions.
+enum CopilotBackend: String, Codable, CaseIterable, Sendable {
+    case github
+    case anthropic
+
+    var displayName: String {
+        switch self {
+        case .github: "GitHub"
+        case .anthropic: "Anthropic (BYOK)"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .github: "Uses GitHub Copilot API with premium requests"
+        case .anthropic: "Uses Anthropic API directly (Bring Your Own Key)"
+        }
+    }
+}
+
 struct Session: Identifiable, Codable, Hashable, Sendable {
     let id: String
     var name: String
@@ -80,6 +100,7 @@ struct Session: Identifiable, Codable, Hashable, Sendable {
     var lastActiveAt: Date
     var sdkType: SdkType?
     var model: String?
+    var copilotBackend: CopilotBackend?
 
     var isActive: Bool {
         status == .ready || status == .running

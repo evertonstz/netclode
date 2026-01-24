@@ -125,6 +125,56 @@ func (SdkType) EnumDescriptor() ([]byte, []int) {
 	return file_netclode_v1_common_proto_rawDescGZIP(), []int{1}
 }
 
+// CopilotBackend defines which backend to use for Copilot SDK sessions.
+type CopilotBackend int32
+
+const (
+	CopilotBackend_COPILOT_BACKEND_UNSPECIFIED CopilotBackend = 0 // Defaults to GITHUB if authenticated, else ANTHROPIC
+	CopilotBackend_COPILOT_BACKEND_GITHUB      CopilotBackend = 1 // GitHub Copilot API (requires GitHub authentication)
+	CopilotBackend_COPILOT_BACKEND_ANTHROPIC   CopilotBackend = 2 // Anthropic API (BYOK mode, requires ANTHROPIC_API_KEY)
+)
+
+// Enum value maps for CopilotBackend.
+var (
+	CopilotBackend_name = map[int32]string{
+		0: "COPILOT_BACKEND_UNSPECIFIED",
+		1: "COPILOT_BACKEND_GITHUB",
+		2: "COPILOT_BACKEND_ANTHROPIC",
+	}
+	CopilotBackend_value = map[string]int32{
+		"COPILOT_BACKEND_UNSPECIFIED": 0,
+		"COPILOT_BACKEND_GITHUB":      1,
+		"COPILOT_BACKEND_ANTHROPIC":   2,
+	}
+)
+
+func (x CopilotBackend) Enum() *CopilotBackend {
+	p := new(CopilotBackend)
+	*p = x
+	return p
+}
+
+func (x CopilotBackend) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CopilotBackend) Descriptor() protoreflect.EnumDescriptor {
+	return file_netclode_v1_common_proto_enumTypes[2].Descriptor()
+}
+
+func (CopilotBackend) Type() protoreflect.EnumType {
+	return &file_netclode_v1_common_proto_enumTypes[2]
+}
+
+func (x CopilotBackend) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CopilotBackend.Descriptor instead.
+func (CopilotBackend) EnumDescriptor() ([]byte, []int) {
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{2}
+}
+
 // SessionStatus represents the lifecycle state of a session.
 type SessionStatus int32
 
@@ -174,11 +224,11 @@ func (x SessionStatus) String() string {
 }
 
 func (SessionStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_netclode_v1_common_proto_enumTypes[2].Descriptor()
+	return file_netclode_v1_common_proto_enumTypes[3].Descriptor()
 }
 
 func (SessionStatus) Type() protoreflect.EnumType {
-	return &file_netclode_v1_common_proto_enumTypes[2]
+	return &file_netclode_v1_common_proto_enumTypes[3]
 }
 
 func (x SessionStatus) Number() protoreflect.EnumNumber {
@@ -187,7 +237,7 @@ func (x SessionStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SessionStatus.Descriptor instead.
 func (SessionStatus) EnumDescriptor() ([]byte, []int) {
-	return file_netclode_v1_common_proto_rawDescGZIP(), []int{2}
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
 // GitFileStatus represents the type of change to a file.
@@ -242,11 +292,11 @@ func (x GitFileStatus) String() string {
 }
 
 func (GitFileStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_netclode_v1_common_proto_enumTypes[3].Descriptor()
+	return file_netclode_v1_common_proto_enumTypes[4].Descriptor()
 }
 
 func (GitFileStatus) Type() protoreflect.EnumType {
-	return &file_netclode_v1_common_proto_enumTypes[3]
+	return &file_netclode_v1_common_proto_enumTypes[4]
 }
 
 func (x GitFileStatus) Number() protoreflect.EnumNumber {
@@ -255,7 +305,7 @@ func (x GitFileStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GitFileStatus.Descriptor instead.
 func (GitFileStatus) EnumDescriptor() ([]byte, []int) {
-	return file_netclode_v1_common_proto_rawDescGZIP(), []int{3}
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
 // MessageRole identifies the sender of a message.
@@ -292,11 +342,11 @@ func (x MessageRole) String() string {
 }
 
 func (MessageRole) Descriptor() protoreflect.EnumDescriptor {
-	return file_netclode_v1_common_proto_enumTypes[4].Descriptor()
+	return file_netclode_v1_common_proto_enumTypes[5].Descriptor()
 }
 
 func (MessageRole) Type() protoreflect.EnumType {
-	return &file_netclode_v1_common_proto_enumTypes[4]
+	return &file_netclode_v1_common_proto_enumTypes[5]
 }
 
 func (x MessageRole) Number() protoreflect.EnumNumber {
@@ -305,23 +355,24 @@ func (x MessageRole) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MessageRole.Descriptor instead.
 func (MessageRole) EnumDescriptor() ([]byte, []int) {
-	return file_netclode_v1_common_proto_rawDescGZIP(), []int{4}
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 // Session represents a coding session with an AI agent.
 type Session struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Status        SessionStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=netclode.v1.SessionStatus" json:"status,omitempty"`
-	Repo          *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                            // GitHub repository URL (e.g., "owner/repo")
-	RepoAccess    *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"` // Permission level for repository operations
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastActiveAt  *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
-	SdkType       *SdkType               `protobuf:"varint,8,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"` // SDK to use (defaults to CLAUDE)
-	Model         *string                `protobuf:"bytes,9,opt,name=model,proto3,oneof" json:"model,omitempty"`                                              // Model ID for OpenCode (e.g., "claude-sonnet-4-0")
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Status         SessionStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=netclode.v1.SessionStatus" json:"status,omitempty"`
+	Repo           *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                            // GitHub repository URL (e.g., "owner/repo")
+	RepoAccess     *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"` // Permission level for repository operations
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastActiveAt   *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
+	SdkType        *SdkType               `protobuf:"varint,8,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`                              // SDK to use (defaults to CLAUDE)
+	Model          *string                `protobuf:"bytes,9,opt,name=model,proto3,oneof" json:"model,omitempty"`                                                                           // Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
+	CopilotBackend *CopilotBackend        `protobuf:"varint,10,opt,name=copilot_backend,json=copilotBackend,proto3,enum=netclode.v1.CopilotBackend,oneof" json:"copilot_backend,omitempty"` // Backend for Copilot sessions (ignored for other SDKs)
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Session) Reset() {
@@ -417,6 +468,13 @@ func (x *Session) GetModel() string {
 	return ""
 }
 
+func (x *Session) GetCopilotBackend() CopilotBackend {
+	if x != nil && x.CopilotBackend != nil {
+		return *x.CopilotBackend
+	}
+	return CopilotBackend_COPILOT_BACKEND_UNSPECIFIED
+}
+
 // SessionSummary includes session data plus metadata for list views.
 type SessionSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -482,13 +540,14 @@ func (x *SessionSummary) GetLastMessageId() string {
 type SessionConfig struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	SessionId       string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	WorkspaceDir    string                 `protobuf:"bytes,2,opt,name=workspace_dir,json=workspaceDir,proto3" json:"workspace_dir,omitempty"`                              // Absolute path to workspace directory
-	GithubToken     *string                `protobuf:"bytes,3,opt,name=github_token,json=githubToken,proto3,oneof" json:"github_token,omitempty"`                           // GitHub token for repository access
-	Repo            *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                            // Repository to clone (e.g., "owner/repo")
-	RepoAccess      *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"` // Permission level for repository operations
-	ControlPlaneUrl string                 `protobuf:"bytes,6,opt,name=control_plane_url,json=controlPlaneUrl,proto3" json:"control_plane_url,omitempty"`                   // URL of control plane for callbacks
-	SdkType         *SdkType               `protobuf:"varint,7,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`             // SDK type for agent to use
-	Model           *string                `protobuf:"bytes,8,opt,name=model,proto3,oneof" json:"model,omitempty"`                                                          // Model ID (e.g., "anthropic/claude-sonnet-4-0")
+	WorkspaceDir    string                 `protobuf:"bytes,2,opt,name=workspace_dir,json=workspaceDir,proto3" json:"workspace_dir,omitempty"`                                              // Absolute path to workspace directory
+	GithubToken     *string                `protobuf:"bytes,3,opt,name=github_token,json=githubToken,proto3,oneof" json:"github_token,omitempty"`                                           // GitHub token for repository access
+	Repo            *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                                            // Repository to clone (e.g., "owner/repo")
+	RepoAccess      *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"`                 // Permission level for repository operations
+	ControlPlaneUrl string                 `protobuf:"bytes,6,opt,name=control_plane_url,json=controlPlaneUrl,proto3" json:"control_plane_url,omitempty"`                                   // URL of control plane for callbacks
+	SdkType         *SdkType               `protobuf:"varint,7,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`                             // SDK type for agent to use
+	Model           *string                `protobuf:"bytes,8,opt,name=model,proto3,oneof" json:"model,omitempty"`                                                                          // Model ID (e.g., "anthropic/claude-sonnet-4-0")
+	CopilotBackend  *CopilotBackend        `protobuf:"varint,9,opt,name=copilot_backend,json=copilotBackend,proto3,enum=netclode.v1.CopilotBackend,oneof" json:"copilot_backend,omitempty"` // Backend for Copilot sessions
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -577,6 +636,13 @@ func (x *SessionConfig) GetModel() string {
 		return *x.Model
 	}
 	return ""
+}
+
+func (x *SessionConfig) GetCopilotBackend() CopilotBackend {
+	if x != nil && x.CopilotBackend != nil {
+		return *x.CopilotBackend
+	}
+	return CopilotBackend_COPILOT_BACKEND_UNSPECIFIED
 }
 
 // GitHubRepo represents a GitHub repository from the user's account.
@@ -917,11 +983,218 @@ func (x *Error) GetDetails() map[string]string {
 	return nil
 }
 
+// ModelInfo represents an AI model available for use.
+type ModelInfo struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                // Model identifier (e.g., "claude-sonnet-4-0", "gpt-4o")
+	Name              string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                                            // Human-readable name (e.g., "Claude Sonnet 4")
+	Provider          *string                `protobuf:"bytes,3,opt,name=provider,proto3,oneof" json:"provider,omitempty"`                                              // Provider name (e.g., "anthropic", "openai")
+	BillingMultiplier *float64               `protobuf:"fixed64,4,opt,name=billing_multiplier,json=billingMultiplier,proto3,oneof" json:"billing_multiplier,omitempty"` // Cost multiplier for GitHub Copilot (e.g., 0.33, 1.0, 3.0)
+	Capabilities      []string               `protobuf:"bytes,5,rep,name=capabilities,proto3" json:"capabilities,omitempty"`                                            // Model capabilities (e.g., "chat", "vision", "code")
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *ModelInfo) Reset() {
+	*x = ModelInfo{}
+	mi := &file_netclode_v1_common_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelInfo) ProtoMessage() {}
+
+func (x *ModelInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_common_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelInfo.ProtoReflect.Descriptor instead.
+func (*ModelInfo) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ModelInfo) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ModelInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ModelInfo) GetProvider() string {
+	if x != nil && x.Provider != nil {
+		return *x.Provider
+	}
+	return ""
+}
+
+func (x *ModelInfo) GetBillingMultiplier() float64 {
+	if x != nil && x.BillingMultiplier != nil {
+		return *x.BillingMultiplier
+	}
+	return 0
+}
+
+func (x *ModelInfo) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+// CopilotAuthStatus represents GitHub Copilot authentication state.
+type CopilotAuthStatus struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	IsAuthenticated bool                   `protobuf:"varint,1,opt,name=is_authenticated,json=isAuthenticated,proto3" json:"is_authenticated,omitempty"` // Whether the user is authenticated with GitHub
+	AuthType        *string                `protobuf:"bytes,2,opt,name=auth_type,json=authType,proto3,oneof" json:"auth_type,omitempty"`                 // Auth method: "user", "env", "gh-cli", "token", etc.
+	Login           *string                `protobuf:"bytes,3,opt,name=login,proto3,oneof" json:"login,omitempty"`                                       // GitHub username if authenticated
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CopilotAuthStatus) Reset() {
+	*x = CopilotAuthStatus{}
+	mi := &file_netclode_v1_common_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CopilotAuthStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CopilotAuthStatus) ProtoMessage() {}
+
+func (x *CopilotAuthStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_common_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CopilotAuthStatus.ProtoReflect.Descriptor instead.
+func (*CopilotAuthStatus) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CopilotAuthStatus) GetIsAuthenticated() bool {
+	if x != nil {
+		return x.IsAuthenticated
+	}
+	return false
+}
+
+func (x *CopilotAuthStatus) GetAuthType() string {
+	if x != nil && x.AuthType != nil {
+		return *x.AuthType
+	}
+	return ""
+}
+
+func (x *CopilotAuthStatus) GetLogin() string {
+	if x != nil && x.Login != nil {
+		return *x.Login
+	}
+	return ""
+}
+
+// CopilotPremiumQuota represents GitHub Copilot premium request quota.
+type CopilotPremiumQuota struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Used          int32                  `protobuf:"varint,1,opt,name=used,proto3" json:"used,omitempty"`                           // Number of premium requests used this period
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`                         // Maximum premium requests allowed
+	Remaining     int32                  `protobuf:"varint,3,opt,name=remaining,proto3" json:"remaining,omitempty"`                 // Remaining premium requests
+	ResetAt       *string                `protobuf:"bytes,4,opt,name=reset_at,json=resetAt,proto3,oneof" json:"reset_at,omitempty"` // ISO timestamp when quota resets
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CopilotPremiumQuota) Reset() {
+	*x = CopilotPremiumQuota{}
+	mi := &file_netclode_v1_common_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CopilotPremiumQuota) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CopilotPremiumQuota) ProtoMessage() {}
+
+func (x *CopilotPremiumQuota) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_common_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CopilotPremiumQuota.ProtoReflect.Descriptor instead.
+func (*CopilotPremiumQuota) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CopilotPremiumQuota) GetUsed() int32 {
+	if x != nil {
+		return x.Used
+	}
+	return 0
+}
+
+func (x *CopilotPremiumQuota) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *CopilotPremiumQuota) GetRemaining() int32 {
+	if x != nil {
+		return x.Remaining
+	}
+	return 0
+}
+
+func (x *CopilotPremiumQuota) GetResetAt() string {
+	if x != nil && x.ResetAt != nil {
+		return *x.ResetAt
+	}
+	return ""
+}
+
 var File_netclode_v1_common_proto protoreflect.FileDescriptor
 
 const file_netclode_v1_common_proto_rawDesc = "" +
 	"\n" +
-	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18netclode/v1/events.proto\"\xb7\x03\n" +
+	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18netclode/v1/events.proto\"\x96\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x122\n" +
@@ -933,17 +1206,20 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12@\n" +
 	"\x0elast_active_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveAt\x124\n" +
 	"\bsdk_type\x18\b \x01(\x0e2\x14.netclode.v1.SdkTypeH\x02R\asdkType\x88\x01\x01\x12\x19\n" +
-	"\x05model\x18\t \x01(\tH\x03R\x05model\x88\x01\x01B\a\n" +
+	"\x05model\x18\t \x01(\tH\x03R\x05model\x88\x01\x01\x12I\n" +
+	"\x0fcopilot_backend\x18\n" +
+	" \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x04R\x0ecopilotBackend\x88\x01\x01B\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\v\n" +
 	"\t_sdk_typeB\b\n" +
-	"\x06_model\"\xbd\x01\n" +
+	"\x06_modelB\x12\n" +
+	"\x10_copilot_backend\"\xbd\x01\n" +
 	"\x0eSessionSummary\x12.\n" +
 	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\x12(\n" +
 	"\rmessage_count\x18\x02 \x01(\x05H\x00R\fmessageCount\x88\x01\x01\x12+\n" +
 	"\x0flast_message_id\x18\x03 \x01(\tH\x01R\rlastMessageId\x88\x01\x01B\x10\n" +
 	"\x0e_message_countB\x12\n" +
-	"\x10_last_message_id\"\x91\x03\n" +
+	"\x10_last_message_id\"\xf0\x03\n" +
 	"\rSessionConfig\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
@@ -954,12 +1230,14 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"repoAccess\x88\x01\x01\x12*\n" +
 	"\x11control_plane_url\x18\x06 \x01(\tR\x0fcontrolPlaneUrl\x124\n" +
 	"\bsdk_type\x18\a \x01(\x0e2\x14.netclode.v1.SdkTypeH\x03R\asdkType\x88\x01\x01\x12\x19\n" +
-	"\x05model\x18\b \x01(\tH\x04R\x05model\x88\x01\x01B\x0f\n" +
+	"\x05model\x18\b \x01(\tH\x04R\x05model\x88\x01\x01\x12I\n" +
+	"\x0fcopilot_backend\x18\t \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x05R\x0ecopilotBackend\x88\x01\x01B\x0f\n" +
 	"\r_github_tokenB\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\v\n" +
 	"\t_sdk_typeB\b\n" +
-	"\x06_model\"\x8e\x01\n" +
+	"\x06_modelB\x12\n" +
+	"\x10_copilot_backend\"\x8e\x01\n" +
 	"\n" +
 	"GitHubRepo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
@@ -991,7 +1269,28 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
-	"\v_session_id*V\n" +
+	"\v_session_id\"\xcc\x01\n" +
+	"\tModelInfo\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
+	"\bprovider\x18\x03 \x01(\tH\x00R\bprovider\x88\x01\x01\x122\n" +
+	"\x12billing_multiplier\x18\x04 \x01(\x01H\x01R\x11billingMultiplier\x88\x01\x01\x12\"\n" +
+	"\fcapabilities\x18\x05 \x03(\tR\fcapabilitiesB\v\n" +
+	"\t_providerB\x15\n" +
+	"\x13_billing_multiplier\"\x93\x01\n" +
+	"\x11CopilotAuthStatus\x12)\n" +
+	"\x10is_authenticated\x18\x01 \x01(\bR\x0fisAuthenticated\x12 \n" +
+	"\tauth_type\x18\x02 \x01(\tH\x00R\bauthType\x88\x01\x01\x12\x19\n" +
+	"\x05login\x18\x03 \x01(\tH\x01R\x05login\x88\x01\x01B\f\n" +
+	"\n" +
+	"_auth_typeB\b\n" +
+	"\x06_login\"\x8a\x01\n" +
+	"\x13CopilotPremiumQuota\x12\x12\n" +
+	"\x04used\x18\x01 \x01(\x05R\x04used\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x1c\n" +
+	"\tremaining\x18\x03 \x01(\x05R\tremaining\x12\x1e\n" +
+	"\breset_at\x18\x04 \x01(\tH\x00R\aresetAt\x88\x01\x01B\v\n" +
+	"\t_reset_at*V\n" +
 	"\n" +
 	"RepoAccess\x12\x1b\n" +
 	"\x17REPO_ACCESS_UNSPECIFIED\x10\x00\x12\x14\n" +
@@ -1001,7 +1300,11 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x14SDK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fSDK_TYPE_CLAUDE\x10\x01\x12\x15\n" +
 	"\x11SDK_TYPE_OPENCODE\x10\x02\x12\x14\n" +
-	"\x10SDK_TYPE_COPILOT\x10\x03*\xf4\x01\n" +
+	"\x10SDK_TYPE_COPILOT\x10\x03*l\n" +
+	"\x0eCopilotBackend\x12\x1f\n" +
+	"\x1bCOPILOT_BACKEND_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16COPILOT_BACKEND_GITHUB\x10\x01\x12\x1d\n" +
+	"\x19COPILOT_BACKEND_ANTHROPIC\x10\x02*\xf4\x01\n" +
 	"\rSessionStatus\x12\x1e\n" +
 	"\x1aSESSION_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17SESSION_STATUS_CREATING\x10\x01\x12\x1b\n" +
@@ -1039,46 +1342,52 @@ func file_netclode_v1_common_proto_rawDescGZIP() []byte {
 	return file_netclode_v1_common_proto_rawDescData
 }
 
-var file_netclode_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_netclode_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_netclode_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_netclode_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_netclode_v1_common_proto_goTypes = []any{
 	(RepoAccess)(0),               // 0: netclode.v1.RepoAccess
 	(SdkType)(0),                  // 1: netclode.v1.SdkType
-	(SessionStatus)(0),            // 2: netclode.v1.SessionStatus
-	(GitFileStatus)(0),            // 3: netclode.v1.GitFileStatus
-	(MessageRole)(0),              // 4: netclode.v1.MessageRole
-	(*Session)(nil),               // 5: netclode.v1.Session
-	(*SessionSummary)(nil),        // 6: netclode.v1.SessionSummary
-	(*SessionConfig)(nil),         // 7: netclode.v1.SessionConfig
-	(*GitHubRepo)(nil),            // 8: netclode.v1.GitHubRepo
-	(*GitFileChange)(nil),         // 9: netclode.v1.GitFileChange
-	(*Message)(nil),               // 10: netclode.v1.Message
-	(*Event)(nil),                 // 11: netclode.v1.Event
-	(*Error)(nil),                 // 12: netclode.v1.Error
-	nil,                           // 13: netclode.v1.Error.DetailsEntry
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*AgentEvent)(nil),            // 15: netclode.v1.AgentEvent
+	(CopilotBackend)(0),           // 2: netclode.v1.CopilotBackend
+	(SessionStatus)(0),            // 3: netclode.v1.SessionStatus
+	(GitFileStatus)(0),            // 4: netclode.v1.GitFileStatus
+	(MessageRole)(0),              // 5: netclode.v1.MessageRole
+	(*Session)(nil),               // 6: netclode.v1.Session
+	(*SessionSummary)(nil),        // 7: netclode.v1.SessionSummary
+	(*SessionConfig)(nil),         // 8: netclode.v1.SessionConfig
+	(*GitHubRepo)(nil),            // 9: netclode.v1.GitHubRepo
+	(*GitFileChange)(nil),         // 10: netclode.v1.GitFileChange
+	(*Message)(nil),               // 11: netclode.v1.Message
+	(*Event)(nil),                 // 12: netclode.v1.Event
+	(*Error)(nil),                 // 13: netclode.v1.Error
+	(*ModelInfo)(nil),             // 14: netclode.v1.ModelInfo
+	(*CopilotAuthStatus)(nil),     // 15: netclode.v1.CopilotAuthStatus
+	(*CopilotPremiumQuota)(nil),   // 16: netclode.v1.CopilotPremiumQuota
+	nil,                           // 17: netclode.v1.Error.DetailsEntry
+	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
+	(*AgentEvent)(nil),            // 19: netclode.v1.AgentEvent
 }
 var file_netclode_v1_common_proto_depIdxs = []int32{
-	2,  // 0: netclode.v1.Session.status:type_name -> netclode.v1.SessionStatus
+	3,  // 0: netclode.v1.Session.status:type_name -> netclode.v1.SessionStatus
 	0,  // 1: netclode.v1.Session.repo_access:type_name -> netclode.v1.RepoAccess
-	14, // 2: netclode.v1.Session.created_at:type_name -> google.protobuf.Timestamp
-	14, // 3: netclode.v1.Session.last_active_at:type_name -> google.protobuf.Timestamp
+	18, // 2: netclode.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	18, // 3: netclode.v1.Session.last_active_at:type_name -> google.protobuf.Timestamp
 	1,  // 4: netclode.v1.Session.sdk_type:type_name -> netclode.v1.SdkType
-	5,  // 5: netclode.v1.SessionSummary.session:type_name -> netclode.v1.Session
-	0,  // 6: netclode.v1.SessionConfig.repo_access:type_name -> netclode.v1.RepoAccess
-	1,  // 7: netclode.v1.SessionConfig.sdk_type:type_name -> netclode.v1.SdkType
-	3,  // 8: netclode.v1.GitFileChange.status:type_name -> netclode.v1.GitFileStatus
-	4,  // 9: netclode.v1.Message.role:type_name -> netclode.v1.MessageRole
-	14, // 10: netclode.v1.Message.timestamp:type_name -> google.protobuf.Timestamp
-	14, // 11: netclode.v1.Event.timestamp:type_name -> google.protobuf.Timestamp
-	15, // 12: netclode.v1.Event.event:type_name -> netclode.v1.AgentEvent
-	13, // 13: netclode.v1.Error.details:type_name -> netclode.v1.Error.DetailsEntry
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	2,  // 5: netclode.v1.Session.copilot_backend:type_name -> netclode.v1.CopilotBackend
+	6,  // 6: netclode.v1.SessionSummary.session:type_name -> netclode.v1.Session
+	0,  // 7: netclode.v1.SessionConfig.repo_access:type_name -> netclode.v1.RepoAccess
+	1,  // 8: netclode.v1.SessionConfig.sdk_type:type_name -> netclode.v1.SdkType
+	2,  // 9: netclode.v1.SessionConfig.copilot_backend:type_name -> netclode.v1.CopilotBackend
+	4,  // 10: netclode.v1.GitFileChange.status:type_name -> netclode.v1.GitFileStatus
+	5,  // 11: netclode.v1.Message.role:type_name -> netclode.v1.MessageRole
+	18, // 12: netclode.v1.Message.timestamp:type_name -> google.protobuf.Timestamp
+	18, // 13: netclode.v1.Event.timestamp:type_name -> google.protobuf.Timestamp
+	19, // 14: netclode.v1.Event.event:type_name -> netclode.v1.AgentEvent
+	17, // 15: netclode.v1.Error.details:type_name -> netclode.v1.Error.DetailsEntry
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_netclode_v1_common_proto_init() }
@@ -1092,13 +1401,16 @@ func file_netclode_v1_common_proto_init() {
 	file_netclode_v1_common_proto_msgTypes[2].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[3].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[7].OneofWrappers = []any{}
+	file_netclode_v1_common_proto_msgTypes[8].OneofWrappers = []any{}
+	file_netclode_v1_common_proto_msgTypes[9].OneofWrappers = []any{}
+	file_netclode_v1_common_proto_msgTypes[10].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_netclode_v1_common_proto_rawDesc), len(file_netclode_v1_common_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   9,
+			NumEnums:      6,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

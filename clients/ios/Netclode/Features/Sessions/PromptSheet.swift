@@ -13,6 +13,7 @@ struct PromptSheet: View {
     @State private var repoAccess: RepoAccess = .write
     @State private var selectedSdkType: SdkType = .claude
     @State private var selectedModelId: String = ModelsStore.defaultModelId
+    @State private var selectedCopilotBackend: CopilotBackend = .anthropic
     @State private var isSubmitting = false
     @State private var canSubmit = false
     @FocusState private var isFocused: Bool
@@ -52,7 +53,7 @@ struct PromptSheet: View {
                     }
                     .pickerStyle(.segmented)
 
-                    // Model picker (only shown for OpenCode)
+                    // Model picker (shown for OpenCode and Copilot with model support)
                     if selectedSdkType == .opencode {
                         HStack(spacing: Theme.Spacing.xs) {
                             Image(systemName: "sparkles")
@@ -70,6 +71,25 @@ struct PromptSheet: View {
                         }
                         .pickerStyle(.menu)
                         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.Radius.md))
+                    }
+
+                    // Backend picker (only shown for Copilot)
+                    if selectedSdkType == .copilot {
+                        HStack(spacing: Theme.Spacing.xs) {
+                            Image(systemName: "server.rack")
+                                .foregroundStyle(.secondary)
+                            Text("Backend")
+                                .font(.netclodeCaption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.top, Theme.Spacing.xs)
+
+                        Picker("Backend", selection: $selectedCopilotBackend) {
+                            ForEach(CopilotBackend.allCases, id: \.self) { backend in
+                                Text(backend.displayName).tag(backend)
+                            }
+                        }
+                        .pickerStyle(.segmented)
                     }
                 }
                 .padding(.horizontal, Theme.Spacing.md)
@@ -180,9 +200,10 @@ struct PromptSheet: View {
         let repoParam = repo.isEmpty ? nil : repo
         let accessParam = repoParam != nil ? repoAccess : nil
 
-        // SDK and model params
+        // SDK, model, and backend params
         let sdkParam = selectedSdkType
         let modelParam = selectedSdkType == .opencode ? selectedModelId : nil
+        let copilotBackendParam = selectedSdkType == .copilot ? selectedCopilotBackend : nil
         
         // Create session
         connectService.send(.sessionCreate(
@@ -191,7 +212,8 @@ struct PromptSheet: View {
             repoAccess: accessParam,
             initialPrompt: text,
             sdkType: sdkParam,
-            model: modelParam
+            model: modelParam,
+            copilotBackend: copilotBackendParam
         ))
 
         dismiss()

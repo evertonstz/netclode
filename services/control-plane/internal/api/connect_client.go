@@ -192,6 +192,10 @@ func (c *ConnectConnection) handleMessage(ctx context.Context, msg *pb.ClientMes
 		return c.handleGitStatus(ctx, m.GitStatus.SessionId)
 	case *pb.ClientMessage_GitDiff:
 		return c.handleGitDiff(ctx, m.GitDiff)
+	case *pb.ClientMessage_ListModels:
+		return c.handleListModels(ctx, m.ListModels)
+	case *pb.ClientMessage_GetCopilotStatus:
+		return c.handleGetCopilotStatus(ctx)
 	default:
 		return connect.NewError(connect.CodeInvalidArgument, errUnknownMessage)
 	}
@@ -304,6 +308,7 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 	var repoAccessPtr *pb.RepoAccess
 	var sdkTypePtr *pb.SdkType
 	var modelPtr *string
+	var copilotBackendPtr *pb.CopilotBackend
 
 	if req.Repo != nil {
 		repoPtr = req.Repo
@@ -317,13 +322,16 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 	if req.Model != nil {
 		modelPtr = req.Model
 	}
+	if req.CopilotBackend != nil {
+		copilotBackendPtr = req.CopilotBackend
+	}
 
 	name := ""
 	if req.Name != nil {
 		name = *req.Name
 	}
 
-	sess, err := c.manager.Create(ctx, name, repoPtr, repoAccessPtr, sdkTypePtr, modelPtr)
+	sess, err := c.manager.Create(ctx, name, repoPtr, repoAccessPtr, sdkTypePtr, modelPtr, copilotBackendPtr)
 	if err != nil {
 		return err
 	}
@@ -668,3 +676,28 @@ func (c *ConnectConnection) handleGitDiff(ctx context.Context, req *pb.GitDiffRe
 // All conversion helpers have been removed since we now use proto types (pb.*) directly.
 // The Manager now returns *pb.Session, pb.Message, pb.Event, etc.
 // The StreamSubscriber now returns *pb.ServerMessage directly.
+
+// handleListModels returns available models for the specified SDK type.
+func (c *ConnectConnection) handleListModels(ctx context.Context, req *pb.ListModelsRequest) error {
+	models := c.manager.ListModels(req.SdkType, req.CopilotBackend)
+
+	return c.send(&pb.ServerMessage{
+		Message: &pb.ServerMessage_Models{
+			Models: &pb.ModelsResponse{
+				Models:    models,
+				RequestId: req.RequestId,
+			},
+		},
+	})
+}
+
+// handleGetCopilotStatus returns GitHub Copilot authentication status and quota.
+func (c *ConnectConnection) handleGetCopilotStatus(ctx context.Context) error {
+	status := c.manager.GetCopilotStatus(ctx)
+
+	return c.send(&pb.ServerMessage{
+		Message: &pb.ServerMessage_CopilotStatus{
+			CopilotStatus: status,
+		},
+	})
+}

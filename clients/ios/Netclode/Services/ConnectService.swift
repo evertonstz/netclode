@@ -420,6 +420,14 @@ final class ConnectService {
             }
             return .error(message: errorMessage)
             
+        case .models:
+            // Models response - currently not handled in UI, can be added later
+            return nil
+
+        case .copilotStatus:
+            // Copilot status response - currently not handled in UI, can be added later
+            return nil
+
         case .none:
             return nil
         }
@@ -437,7 +445,8 @@ final class ConnectService {
             createdAt: proto.createdAt.date,
             lastActiveAt: proto.lastActiveAt.date,
             sdkType: proto.hasSdkType ? convertSdkType(proto.sdkType) : nil,
-            model: proto.hasModel ? proto.model : nil
+            model: proto.hasModel ? proto.model : nil,
+            copilotBackend: proto.hasCopilotBackend ? convertCopilotBackend(proto.copilotBackend) : nil
         )
     }
 
@@ -472,6 +481,21 @@ final class ConnectService {
         case .copilot: return .copilot
         }
     }
+
+    private func convertToProtoCopilotBackend(_ backend: CopilotBackend) -> Netclode_V1_CopilotBackend {
+        switch backend {
+        case .github: return .github
+        case .anthropic: return .anthropic
+        }
+    }
+
+    private func convertCopilotBackend(_ proto: Netclode_V1_CopilotBackend) -> CopilotBackend {
+        switch proto {
+        case .github: return .github
+        case .anthropic: return .anthropic
+        case .unspecified, .UNRECOGNIZED: return .anthropic
+        }
+    }
     
     private func convertSessionSummary(_ proto: Netclode_V1_SessionSummary) -> SessionWithMeta {
         let session = proto.session
@@ -486,7 +510,8 @@ final class ConnectService {
             messageCount: proto.hasMessageCount ? Int(proto.messageCount) : nil,
             lastMessageId: proto.hasLastMessageID ? proto.lastMessageID : nil,
             sdkType: session.hasSdkType ? convertSdkType(session.sdkType) : nil,
-            model: session.hasModel ? session.model : nil
+            model: session.hasModel ? session.model : nil,
+            copilotBackend: session.hasCopilotBackend ? convertCopilotBackend(session.copilotBackend) : nil
         )
     }
     
@@ -1007,7 +1032,7 @@ final class ConnectService {
         case .sync:
             proto.message = .sync(Netclode_V1_SyncRequest())
             
-        case .sessionCreate(let name, let repo, let repoAccess, let initialPrompt, let sdkType, let model):
+        case .sessionCreate(let name, let repo, let repoAccess, let initialPrompt, let sdkType, let model, let copilotBackend):
             var req = Netclode_V1_CreateSessionRequest()
             if let name = name {
                 req.name = name
@@ -1026,6 +1051,9 @@ final class ConnectService {
             }
             if let model = model {
                 req.model = model
+            }
+            if let copilotBackend = copilotBackend {
+                req.copilotBackend = convertToProtoCopilotBackend(copilotBackend)
             }
             proto.message = .createSession(req)
             

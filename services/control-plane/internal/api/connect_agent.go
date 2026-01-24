@@ -90,6 +90,7 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 		WorkspaceDir:    "/workspace",
 		ControlPlaneUrl: "http://control-plane.netclode.svc.cluster.local",
 		SdkType:         config.SdkType,
+		CopilotBackend:  config.CopilotBackend,
 	}
 	if config.Repo != "" {
 		sessionConfig.Repo = &config.Repo

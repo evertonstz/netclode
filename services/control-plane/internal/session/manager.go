@@ -34,6 +34,7 @@ type AgentSessionConfig struct {
 	RepoAccess      *pb.RepoAccess
 	SdkType         *pb.SdkType
 	Model           string
+	CopilotBackend  *pb.CopilotBackend
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -166,7 +167,7 @@ func generateID() string {
 }
 
 // Create creates a new session.
-func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string) (*pb.Session, error) {
+func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string, copilotBackend *pb.CopilotBackend) (*pb.Session, error) {
 	// Ensure we have a slot for a new active session
 	m.ensureActiveSlot(ctx, "")
 
@@ -178,15 +179,16 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAcc
 	}
 
 	session := &pb.Session{
-		Id:           id,
-		Name:         name,
-		Status:       pb.SessionStatus_SESSION_STATUS_CREATING,
-		Repo:         repo,
-		RepoAccess:   repoAccess,
-		CreatedAt:    now,
-		LastActiveAt: now,
-		SdkType:      sdkType,
-		Model:        model,
+		Id:             id,
+		Name:           name,
+		Status:         pb.SessionStatus_SESSION_STATUS_CREATING,
+		Repo:           repo,
+		RepoAccess:     repoAccess,
+		CreatedAt:      now,
+		LastActiveAt:   now,
+		SdkType:        sdkType,
+		Model:          model,
+		CopilotBackend: copilotBackend,
 	}
 
 	// Save to storage
@@ -1037,6 +1039,7 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 		AnthropicAPIKey: m.config.AnthropicAPIKey,
 		GitHubToken:     m.config.GitHubToken,
 		SdkType:         state.Session.SdkType,
+		CopilotBackend:  state.Session.CopilotBackend,
 	}
 
 	if state.Session.Model != nil {
@@ -1299,4 +1302,151 @@ func (m *Manager) GetAgentConnection(sessionID string) AgentConnection {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.agents[sessionID]
+}
+
+// ListModels returns available models for the specified SDK type.
+// For Copilot SDK, it can return different models based on the backend (GitHub vs Anthropic).
+func (m *Manager) ListModels(sdkType pb.SdkType, copilotBackend *pb.CopilotBackend) []*pb.ModelInfo {
+	switch sdkType {
+	case pb.SdkType_SDK_TYPE_CLAUDE:
+		return getClaudeModels()
+	case pb.SdkType_SDK_TYPE_OPENCODE:
+		return getOpenCodeModels()
+	case pb.SdkType_SDK_TYPE_COPILOT:
+		if copilotBackend != nil && *copilotBackend == pb.CopilotBackend_COPILOT_BACKEND_GITHUB {
+			return getGitHubCopilotModels()
+		}
+		return getAnthropicCopilotModels()
+	default:
+		return getClaudeModels()
+	}
+}
+
+// GetCopilotStatus returns GitHub Copilot authentication status and quota.
+// Note: This is currently a placeholder - actual implementation would require
+// calling the GitHub Copilot API which needs the agent to be running.
+func (m *Manager) GetCopilotStatus(ctx context.Context) *pb.CopilotStatusResponse {
+	// Check if we have a GitHub token configured
+	hasGitHubToken := m.config.GitHubToken != ""
+
+	return &pb.CopilotStatusResponse{
+		Auth: &pb.CopilotAuthStatus{
+			IsAuthenticated: hasGitHubToken,
+			AuthType:        strPtr("env"),
+		},
+		// Quota is not available without calling the GitHub API
+		// which would require an active agent session
+		Quota: nil,
+	}
+}
+
+// Helper for optional string pointers
+func strPtr(s string) *string {
+	return &s
+}
+
+// floatPtr returns a pointer to a float64 value
+func floatPtr(f float64) *float64 {
+	return &f
+}
+
+// getClaudeModels returns available Claude Code SDK models
+func getClaudeModels() []*pb.ModelInfo {
+	return []*pb.ModelInfo{
+		{
+			Id:           "claude-sonnet-4-20250514",
+			Name:         "Claude Sonnet 4",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "vision", "code"},
+		},
+		{
+			Id:           "claude-3-5-sonnet-20241022",
+			Name:         "Claude 3.5 Sonnet",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "vision", "code"},
+		},
+	}
+}
+
+// getOpenCodeModels returns available OpenCode SDK models
+func getOpenCodeModels() []*pb.ModelInfo {
+	return []*pb.ModelInfo{
+		{
+			Id:           "anthropic/claude-sonnet-4-20250514",
+			Name:         "Claude Sonnet 4",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "vision", "code"},
+		},
+		{
+			Id:           "anthropic/claude-3-5-sonnet-20241022",
+			Name:         "Claude 3.5 Sonnet",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "vision", "code"},
+		},
+		{
+			Id:           "anthropic/claude-3-5-haiku-20241022",
+			Name:         "Claude 3.5 Haiku",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "code"},
+		},
+	}
+}
+
+// getAnthropicCopilotModels returns models available when using Copilot SDK with Anthropic backend (BYOK)
+func getAnthropicCopilotModels() []*pb.ModelInfo {
+	return []*pb.ModelInfo{
+		{
+			Id:           "claude-sonnet-4-20250514",
+			Name:         "Claude Sonnet 4",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "vision", "code"},
+		},
+		{
+			Id:           "claude-3-5-sonnet-20241022",
+			Name:         "Claude 3.5 Sonnet",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "vision", "code"},
+		},
+		{
+			Id:           "claude-3-5-haiku-20241022",
+			Name:         "Claude 3.5 Haiku",
+			Provider:     strPtr("anthropic"),
+			Capabilities: []string{"chat", "code"},
+		},
+	}
+}
+
+// getGitHubCopilotModels returns models available when using Copilot SDK with GitHub backend
+// These have billing multipliers that affect premium request usage
+func getGitHubCopilotModels() []*pb.ModelInfo {
+	return []*pb.ModelInfo{
+		{
+			Id:                "gpt-4o",
+			Name:              "GPT-4o",
+			Provider:          strPtr("openai"),
+			BillingMultiplier: floatPtr(1.0),
+			Capabilities:      []string{"chat", "vision", "code"},
+		},
+		{
+			Id:                "claude-sonnet-4",
+			Name:              "Claude Sonnet 4",
+			Provider:          strPtr("anthropic"),
+			BillingMultiplier: floatPtr(1.0),
+			Capabilities:      []string{"chat", "vision", "code"},
+		},
+		{
+			Id:                "o3-mini",
+			Name:              "o3-mini",
+			Provider:          strPtr("openai"),
+			BillingMultiplier: floatPtr(1.0),
+			Capabilities:      []string{"chat", "code"},
+		},
+		{
+			Id:                "gemini-2.0-flash",
+			Name:              "Gemini 2.0 Flash",
+			Provider:          strPtr("google"),
+			BillingMultiplier: floatPtr(0.33),
+			Capabilities:      []string{"chat", "vision", "code"},
+		},
+	}
 }

@@ -43,6 +43,8 @@ type ClientMessage struct {
 	//	*ClientMessage_ListGithubRepos
 	//	*ClientMessage_GitStatus
 	//	*ClientMessage_GitDiff
+	//	*ClientMessage_ListModels
+	//	*ClientMessage_GetCopilotStatus
 	Message       isClientMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -229,6 +231,24 @@ func (x *ClientMessage) GetGitDiff() *GitDiffRequest {
 	return nil
 }
 
+func (x *ClientMessage) GetListModels() *ListModelsRequest {
+	if x != nil {
+		if x, ok := x.Message.(*ClientMessage_ListModels); ok {
+			return x.ListModels
+		}
+	}
+	return nil
+}
+
+func (x *ClientMessage) GetGetCopilotStatus() *GetCopilotStatusRequest {
+	if x != nil {
+		if x, ok := x.Message.(*ClientMessage_GetCopilotStatus); ok {
+			return x.GetCopilotStatus
+		}
+	}
+	return nil
+}
+
 type isClientMessage_Message interface {
 	isClientMessage_Message()
 }
@@ -297,6 +317,14 @@ type ClientMessage_GitDiff struct {
 	GitDiff *GitDiffRequest `protobuf:"bytes,16,opt,name=git_diff,json=gitDiff,proto3,oneof"`
 }
 
+type ClientMessage_ListModels struct {
+	ListModels *ListModelsRequest `protobuf:"bytes,17,opt,name=list_models,json=listModels,proto3,oneof"`
+}
+
+type ClientMessage_GetCopilotStatus struct {
+	GetCopilotStatus *GetCopilotStatusRequest `protobuf:"bytes,18,opt,name=get_copilot_status,json=getCopilotStatus,proto3,oneof"`
+}
+
 func (*ClientMessage_CreateSession) isClientMessage_Message() {}
 
 func (*ClientMessage_ListSessions) isClientMessage_Message() {}
@@ -329,6 +357,10 @@ func (*ClientMessage_GitStatus) isClientMessage_Message() {}
 
 func (*ClientMessage_GitDiff) isClientMessage_Message() {}
 
+func (*ClientMessage_ListModels) isClientMessage_Message() {}
+
+func (*ClientMessage_GetCopilotStatus) isClientMessage_Message() {}
+
 // ServerMessage is the union of all server-to-client messages.
 type ServerMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -351,6 +383,8 @@ type ServerMessage struct {
 	//	*ServerMessage_GitStatus
 	//	*ServerMessage_GitDiff
 	//	*ServerMessage_Error
+	//	*ServerMessage_Models
+	//	*ServerMessage_CopilotStatus
 	Message       isServerMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -546,6 +580,24 @@ func (x *ServerMessage) GetError() *ErrorResponse {
 	return nil
 }
 
+func (x *ServerMessage) GetModels() *ModelsResponse {
+	if x != nil {
+		if x, ok := x.Message.(*ServerMessage_Models); ok {
+			return x.Models
+		}
+	}
+	return nil
+}
+
+func (x *ServerMessage) GetCopilotStatus() *CopilotStatusResponse {
+	if x != nil {
+		if x, ok := x.Message.(*ServerMessage_CopilotStatus); ok {
+			return x.CopilotStatus
+		}
+	}
+	return nil
+}
+
 type isServerMessage_Message interface {
 	isServerMessage_Message()
 }
@@ -618,6 +670,14 @@ type ServerMessage_Error struct {
 	Error *ErrorResponse `protobuf:"bytes,17,opt,name=error,proto3,oneof"`
 }
 
+type ServerMessage_Models struct {
+	Models *ModelsResponse `protobuf:"bytes,18,opt,name=models,proto3,oneof"`
+}
+
+type ServerMessage_CopilotStatus struct {
+	CopilotStatus *CopilotStatusResponse `protobuf:"bytes,19,opt,name=copilot_status,json=copilotStatus,proto3,oneof"`
+}
+
 func (*ServerMessage_SessionCreated) isServerMessage_Message() {}
 
 func (*ServerMessage_SessionUpdated) isServerMessage_Message() {}
@@ -652,17 +712,22 @@ func (*ServerMessage_GitDiff) isServerMessage_Message() {}
 
 func (*ServerMessage_Error) isServerMessage_Message() {}
 
+func (*ServerMessage_Models) isServerMessage_Message() {}
+
+func (*ServerMessage_CopilotStatus) isServerMessage_Message() {}
+
 type CreateSessionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`                                 // Client-generated ID for request correlation
-	Name          *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`                                                            // Initial session name
-	Repo          *string                `protobuf:"bytes,3,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                            // GitHub repository to clone (e.g., "owner/repo")
-	RepoAccess    *RepoAccess            `protobuf:"varint,4,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"` // Permission level for repository
-	InitialPrompt *string                `protobuf:"bytes,5,opt,name=initial_prompt,json=initialPrompt,proto3,oneof" json:"initial_prompt,omitempty"`                     // Optional prompt to send immediately after creation
-	SdkType       *SdkType               `protobuf:"varint,6,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`             // SDK to use (defaults to CLAUDE)
-	Model         *string                `protobuf:"bytes,7,opt,name=model,proto3,oneof" json:"model,omitempty"`                                                          // Model ID for OpenCode (e.g., "claude-sonnet-4-0")
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	RequestId      *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`                                                 // Client-generated ID for request correlation
+	Name           *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`                                                                            // Initial session name
+	Repo           *string                `protobuf:"bytes,3,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                                            // GitHub repository to clone (e.g., "owner/repo")
+	RepoAccess     *RepoAccess            `protobuf:"varint,4,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"`                 // Permission level for repository
+	InitialPrompt  *string                `protobuf:"bytes,5,opt,name=initial_prompt,json=initialPrompt,proto3,oneof" json:"initial_prompt,omitempty"`                                     // Optional prompt to send immediately after creation
+	SdkType        *SdkType               `protobuf:"varint,6,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`                             // SDK to use (defaults to CLAUDE)
+	Model          *string                `protobuf:"bytes,7,opt,name=model,proto3,oneof" json:"model,omitempty"`                                                                          // Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
+	CopilotBackend *CopilotBackend        `protobuf:"varint,8,opt,name=copilot_backend,json=copilotBackend,proto3,enum=netclode.v1.CopilotBackend,oneof" json:"copilot_backend,omitempty"` // Backend for Copilot SDK (GitHub or Anthropic)
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CreateSessionRequest) Reset() {
@@ -742,6 +807,13 @@ func (x *CreateSessionRequest) GetModel() string {
 		return *x.Model
 	}
 	return ""
+}
+
+func (x *CreateSessionRequest) GetCopilotBackend() CopilotBackend {
+	if x != nil && x.CopilotBackend != nil {
+		return *x.CopilotBackend
+	}
+	return CopilotBackend_COPILOT_BACKEND_UNSPECIFIED
 }
 
 type ListSessionsRequest struct {
@@ -1556,6 +1628,110 @@ func (x *GitDiffRequest) GetFile() string {
 	return ""
 }
 
+type ListModelsRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	RequestId      *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SdkType        SdkType                `protobuf:"varint,2,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType" json:"sdk_type,omitempty"`                                   // Which SDK to list models for
+	CopilotBackend *CopilotBackend        `protobuf:"varint,3,opt,name=copilot_backend,json=copilotBackend,proto3,enum=netclode.v1.CopilotBackend,oneof" json:"copilot_backend,omitempty"` // For Copilot: which backend's models to list
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListModelsRequest) Reset() {
+	*x = ListModelsRequest{}
+	mi := &file_netclode_v1_client_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListModelsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListModelsRequest) ProtoMessage() {}
+
+func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_client_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListModelsRequest.ProtoReflect.Descriptor instead.
+func (*ListModelsRequest) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListModelsRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
+func (x *ListModelsRequest) GetSdkType() SdkType {
+	if x != nil {
+		return x.SdkType
+	}
+	return SdkType_SDK_TYPE_UNSPECIFIED
+}
+
+func (x *ListModelsRequest) GetCopilotBackend() CopilotBackend {
+	if x != nil && x.CopilotBackend != nil {
+		return *x.CopilotBackend
+	}
+	return CopilotBackend_COPILOT_BACKEND_UNSPECIFIED
+}
+
+type GetCopilotStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCopilotStatusRequest) Reset() {
+	*x = GetCopilotStatusRequest{}
+	mi := &file_netclode_v1_client_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCopilotStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCopilotStatusRequest) ProtoMessage() {}
+
+func (x *GetCopilotStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_client_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCopilotStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetCopilotStatusRequest) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetCopilotStatusRequest) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 type SessionCreatedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
@@ -1566,7 +1742,7 @@ type SessionCreatedResponse struct {
 
 func (x *SessionCreatedResponse) Reset() {
 	*x = SessionCreatedResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[18]
+	mi := &file_netclode_v1_client_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1578,7 +1754,7 @@ func (x *SessionCreatedResponse) String() string {
 func (*SessionCreatedResponse) ProtoMessage() {}
 
 func (x *SessionCreatedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[18]
+	mi := &file_netclode_v1_client_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1591,7 +1767,7 @@ func (x *SessionCreatedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionCreatedResponse.ProtoReflect.Descriptor instead.
 func (*SessionCreatedResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{18}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *SessionCreatedResponse) GetSession() *Session {
@@ -1617,7 +1793,7 @@ type SessionUpdatedResponse struct {
 
 func (x *SessionUpdatedResponse) Reset() {
 	*x = SessionUpdatedResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[19]
+	mi := &file_netclode_v1_client_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1629,7 +1805,7 @@ func (x *SessionUpdatedResponse) String() string {
 func (*SessionUpdatedResponse) ProtoMessage() {}
 
 func (x *SessionUpdatedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[19]
+	mi := &file_netclode_v1_client_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1642,7 +1818,7 @@ func (x *SessionUpdatedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionUpdatedResponse.ProtoReflect.Descriptor instead.
 func (*SessionUpdatedResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{19}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *SessionUpdatedResponse) GetSession() *Session {
@@ -1662,7 +1838,7 @@ type SessionDeletedResponse struct {
 
 func (x *SessionDeletedResponse) Reset() {
 	*x = SessionDeletedResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[20]
+	mi := &file_netclode_v1_client_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1674,7 +1850,7 @@ func (x *SessionDeletedResponse) String() string {
 func (*SessionDeletedResponse) ProtoMessage() {}
 
 func (x *SessionDeletedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[20]
+	mi := &file_netclode_v1_client_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1687,7 +1863,7 @@ func (x *SessionDeletedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionDeletedResponse.ProtoReflect.Descriptor instead.
 func (*SessionDeletedResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{20}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SessionDeletedResponse) GetSessionId() string {
@@ -1714,7 +1890,7 @@ type SessionsDeletedAllResponse struct {
 
 func (x *SessionsDeletedAllResponse) Reset() {
 	*x = SessionsDeletedAllResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[21]
+	mi := &file_netclode_v1_client_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1726,7 +1902,7 @@ func (x *SessionsDeletedAllResponse) String() string {
 func (*SessionsDeletedAllResponse) ProtoMessage() {}
 
 func (x *SessionsDeletedAllResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[21]
+	mi := &file_netclode_v1_client_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1739,7 +1915,7 @@ func (x *SessionsDeletedAllResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionsDeletedAllResponse.ProtoReflect.Descriptor instead.
 func (*SessionsDeletedAllResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{21}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *SessionsDeletedAllResponse) GetDeletedIds() []string {
@@ -1766,7 +1942,7 @@ type SessionListResponse struct {
 
 func (x *SessionListResponse) Reset() {
 	*x = SessionListResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[22]
+	mi := &file_netclode_v1_client_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1778,7 +1954,7 @@ func (x *SessionListResponse) String() string {
 func (*SessionListResponse) ProtoMessage() {}
 
 func (x *SessionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[22]
+	mi := &file_netclode_v1_client_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1791,7 +1967,7 @@ func (x *SessionListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionListResponse.ProtoReflect.Descriptor instead.
 func (*SessionListResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{22}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *SessionListResponse) GetSessions() []*Session {
@@ -1822,7 +1998,7 @@ type SessionStateResponse struct {
 
 func (x *SessionStateResponse) Reset() {
 	*x = SessionStateResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[23]
+	mi := &file_netclode_v1_client_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1834,7 +2010,7 @@ func (x *SessionStateResponse) String() string {
 func (*SessionStateResponse) ProtoMessage() {}
 
 func (x *SessionStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[23]
+	mi := &file_netclode_v1_client_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1847,7 +2023,7 @@ func (x *SessionStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionStateResponse.ProtoReflect.Descriptor instead.
 func (*SessionStateResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{23}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *SessionStateResponse) GetSession() *Session {
@@ -1903,7 +2079,7 @@ type SyncResponse struct {
 
 func (x *SyncResponse) Reset() {
 	*x = SyncResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[24]
+	mi := &file_netclode_v1_client_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1915,7 +2091,7 @@ func (x *SyncResponse) String() string {
 func (*SyncResponse) ProtoMessage() {}
 
 func (x *SyncResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[24]
+	mi := &file_netclode_v1_client_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1928,7 +2104,7 @@ func (x *SyncResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncResponse.ProtoReflect.Descriptor instead.
 func (*SyncResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{24}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *SyncResponse) GetSessions() []*SessionSummary {
@@ -1962,7 +2138,7 @@ type AgentEventResponse struct {
 
 func (x *AgentEventResponse) Reset() {
 	*x = AgentEventResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[25]
+	mi := &file_netclode_v1_client_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1974,7 +2150,7 @@ func (x *AgentEventResponse) String() string {
 func (*AgentEventResponse) ProtoMessage() {}
 
 func (x *AgentEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[25]
+	mi := &file_netclode_v1_client_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1987,7 +2163,7 @@ func (x *AgentEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentEventResponse.ProtoReflect.Descriptor instead.
 func (*AgentEventResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{25}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AgentEventResponse) GetSessionId() string {
@@ -2016,7 +2192,7 @@ type AgentMessageResponse struct {
 
 func (x *AgentMessageResponse) Reset() {
 	*x = AgentMessageResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[26]
+	mi := &file_netclode_v1_client_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2028,7 +2204,7 @@ func (x *AgentMessageResponse) String() string {
 func (*AgentMessageResponse) ProtoMessage() {}
 
 func (x *AgentMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[26]
+	mi := &file_netclode_v1_client_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2041,7 +2217,7 @@ func (x *AgentMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentMessageResponse.ProtoReflect.Descriptor instead.
 func (*AgentMessageResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{26}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AgentMessageResponse) GetSessionId() string {
@@ -2081,7 +2257,7 @@ type AgentDoneResponse struct {
 
 func (x *AgentDoneResponse) Reset() {
 	*x = AgentDoneResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[27]
+	mi := &file_netclode_v1_client_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2093,7 +2269,7 @@ func (x *AgentDoneResponse) String() string {
 func (*AgentDoneResponse) ProtoMessage() {}
 
 func (x *AgentDoneResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[27]
+	mi := &file_netclode_v1_client_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2106,7 +2282,7 @@ func (x *AgentDoneResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentDoneResponse.ProtoReflect.Descriptor instead.
 func (*AgentDoneResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{27}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *AgentDoneResponse) GetSessionId() string {
@@ -2126,7 +2302,7 @@ type UserMessageResponse struct {
 
 func (x *UserMessageResponse) Reset() {
 	*x = UserMessageResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[28]
+	mi := &file_netclode_v1_client_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2138,7 +2314,7 @@ func (x *UserMessageResponse) String() string {
 func (*UserMessageResponse) ProtoMessage() {}
 
 func (x *UserMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[28]
+	mi := &file_netclode_v1_client_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2151,7 +2327,7 @@ func (x *UserMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserMessageResponse.ProtoReflect.Descriptor instead.
 func (*UserMessageResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{28}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *UserMessageResponse) GetSessionId() string {
@@ -2178,7 +2354,7 @@ type TerminalOutputResponse struct {
 
 func (x *TerminalOutputResponse) Reset() {
 	*x = TerminalOutputResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[29]
+	mi := &file_netclode_v1_client_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2190,7 +2366,7 @@ func (x *TerminalOutputResponse) String() string {
 func (*TerminalOutputResponse) ProtoMessage() {}
 
 func (x *TerminalOutputResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[29]
+	mi := &file_netclode_v1_client_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2203,7 +2379,7 @@ func (x *TerminalOutputResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalOutputResponse.ProtoReflect.Descriptor instead.
 func (*TerminalOutputResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{29}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *TerminalOutputResponse) GetSessionId() string {
@@ -2232,7 +2408,7 @@ type PortExposedResponse struct {
 
 func (x *PortExposedResponse) Reset() {
 	*x = PortExposedResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[30]
+	mi := &file_netclode_v1_client_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2244,7 +2420,7 @@ func (x *PortExposedResponse) String() string {
 func (*PortExposedResponse) ProtoMessage() {}
 
 func (x *PortExposedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[30]
+	mi := &file_netclode_v1_client_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2257,7 +2433,7 @@ func (x *PortExposedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PortExposedResponse.ProtoReflect.Descriptor instead.
 func (*PortExposedResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{30}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *PortExposedResponse) GetSessionId() string {
@@ -2298,7 +2474,7 @@ type GitHubReposResponse struct {
 
 func (x *GitHubReposResponse) Reset() {
 	*x = GitHubReposResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[31]
+	mi := &file_netclode_v1_client_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2310,7 +2486,7 @@ func (x *GitHubReposResponse) String() string {
 func (*GitHubReposResponse) ProtoMessage() {}
 
 func (x *GitHubReposResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[31]
+	mi := &file_netclode_v1_client_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2323,7 +2499,7 @@ func (x *GitHubReposResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitHubReposResponse.ProtoReflect.Descriptor instead.
 func (*GitHubReposResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{31}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GitHubReposResponse) GetRepos() []*GitHubRepo {
@@ -2351,7 +2527,7 @@ type GitStatusResponse struct {
 
 func (x *GitStatusResponse) Reset() {
 	*x = GitStatusResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[32]
+	mi := &file_netclode_v1_client_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2363,7 +2539,7 @@ func (x *GitStatusResponse) String() string {
 func (*GitStatusResponse) ProtoMessage() {}
 
 func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[32]
+	mi := &file_netclode_v1_client_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2376,7 +2552,7 @@ func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitStatusResponse.ProtoReflect.Descriptor instead.
 func (*GitStatusResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{32}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GitStatusResponse) GetSessionId() string {
@@ -2411,7 +2587,7 @@ type GitDiffResponse struct {
 
 func (x *GitDiffResponse) Reset() {
 	*x = GitDiffResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[33]
+	mi := &file_netclode_v1_client_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2423,7 +2599,7 @@ func (x *GitDiffResponse) String() string {
 func (*GitDiffResponse) ProtoMessage() {}
 
 func (x *GitDiffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[33]
+	mi := &file_netclode_v1_client_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2436,7 +2612,7 @@ func (x *GitDiffResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitDiffResponse.ProtoReflect.Descriptor instead.
 func (*GitDiffResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{33}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GitDiffResponse) GetSessionId() string {
@@ -2472,7 +2648,7 @@ type ErrorResponse struct {
 
 func (x *ErrorResponse) Reset() {
 	*x = ErrorResponse{}
-	mi := &file_netclode_v1_client_proto_msgTypes[34]
+	mi := &file_netclode_v1_client_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2484,7 +2660,7 @@ func (x *ErrorResponse) String() string {
 func (*ErrorResponse) ProtoMessage() {}
 
 func (x *ErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_client_proto_msgTypes[34]
+	mi := &file_netclode_v1_client_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2497,7 +2673,7 @@ func (x *ErrorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ErrorResponse.ProtoReflect.Descriptor instead.
 func (*ErrorResponse) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_client_proto_rawDescGZIP(), []int{34}
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ErrorResponse) GetError() *Error {
@@ -2514,11 +2690,124 @@ func (x *ErrorResponse) GetRequestId() string {
 	return ""
 }
 
+type ModelsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Models        []*ModelInfo           `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"` // Available models for the requested SDK
+	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelsResponse) Reset() {
+	*x = ModelsResponse{}
+	mi := &file_netclode_v1_client_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelsResponse) ProtoMessage() {}
+
+func (x *ModelsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_client_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelsResponse.ProtoReflect.Descriptor instead.
+func (*ModelsResponse) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ModelsResponse) GetModels() []*ModelInfo {
+	if x != nil {
+		return x.Models
+	}
+	return nil
+}
+
+func (x *ModelsResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
+type CopilotStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Auth          *CopilotAuthStatus     `protobuf:"bytes,1,opt,name=auth,proto3" json:"auth,omitempty"`         // GitHub Copilot authentication status
+	Quota         *CopilotPremiumQuota   `protobuf:"bytes,2,opt,name=quota,proto3,oneof" json:"quota,omitempty"` // Premium request quota (only if authenticated)
+	RequestId     *string                `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CopilotStatusResponse) Reset() {
+	*x = CopilotStatusResponse{}
+	mi := &file_netclode_v1_client_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CopilotStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CopilotStatusResponse) ProtoMessage() {}
+
+func (x *CopilotStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_client_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CopilotStatusResponse.ProtoReflect.Descriptor instead.
+func (*CopilotStatusResponse) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_client_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *CopilotStatusResponse) GetAuth() *CopilotAuthStatus {
+	if x != nil {
+		return x.Auth
+	}
+	return nil
+}
+
+func (x *CopilotStatusResponse) GetQuota() *CopilotPremiumQuota {
+	if x != nil {
+		return x.Quota
+	}
+	return nil
+}
+
+func (x *CopilotStatusResponse) GetRequestId() string {
+	if x != nil && x.RequestId != nil {
+		return *x.RequestId
+	}
+	return ""
+}
+
 var File_netclode_v1_client_proto protoreflect.FileDescriptor
 
 const file_netclode_v1_client_proto_rawDesc = "" +
 	"\n" +
-	"\x18netclode/v1/client.proto\x12\vnetclode.v1\x1a\x18netclode/v1/common.proto\x1a\x18netclode/v1/events.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9f\t\n" +
+	"\x18netclode/v1/client.proto\x12\vnetclode.v1\x1a\x18netclode/v1/common.proto\x1a\x18netclode/v1/events.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\n" +
+	"\n" +
 	"\rClientMessage\x12J\n" +
 	"\x0ecreate_session\x18\x01 \x01(\v2!.netclode.v1.CreateSessionRequestH\x00R\rcreateSession\x12G\n" +
 	"\rlist_sessions\x18\x02 \x01(\v2 .netclode.v1.ListSessionsRequestH\x00R\flistSessions\x12D\n" +
@@ -2539,8 +2828,12 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\x11list_github_repos\x18\x0e \x01(\v2#.netclode.v1.ListGitHubReposRequestH\x00R\x0flistGithubRepos\x12>\n" +
 	"\n" +
 	"git_status\x18\x0f \x01(\v2\x1d.netclode.v1.GitStatusRequestH\x00R\tgitStatus\x128\n" +
-	"\bgit_diff\x18\x10 \x01(\v2\x1b.netclode.v1.GitDiffRequestH\x00R\agitDiffB\t\n" +
-	"\amessage\"\xde\t\n" +
+	"\bgit_diff\x18\x10 \x01(\v2\x1b.netclode.v1.GitDiffRequestH\x00R\agitDiff\x12A\n" +
+	"\vlist_models\x18\x11 \x01(\v2\x1e.netclode.v1.ListModelsRequestH\x00R\n" +
+	"listModels\x12T\n" +
+	"\x12get_copilot_status\x18\x12 \x01(\v2$.netclode.v1.GetCopilotStatusRequestH\x00R\x10getCopilotStatusB\t\n" +
+	"\amessage\"\xe2\n" +
+	"\n" +
 	"\rServerMessage\x12N\n" +
 	"\x0fsession_created\x18\x01 \x01(\v2#.netclode.v1.SessionCreatedResponseH\x00R\x0esessionCreated\x12N\n" +
 	"\x0fsession_updated\x18\x02 \x01(\v2#.netclode.v1.SessionUpdatedResponseH\x00R\x0esessionUpdated\x12N\n" +
@@ -2562,8 +2855,10 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\n" +
 	"git_status\x18\x0f \x01(\v2\x1e.netclode.v1.GitStatusResponseH\x00R\tgitStatus\x129\n" +
 	"\bgit_diff\x18\x10 \x01(\v2\x1c.netclode.v1.GitDiffResponseH\x00R\agitDiff\x122\n" +
-	"\x05error\x18\x11 \x01(\v2\x1a.netclode.v1.ErrorResponseH\x00R\x05errorB\t\n" +
-	"\amessage\"\x83\x03\n" +
+	"\x05error\x18\x11 \x01(\v2\x1a.netclode.v1.ErrorResponseH\x00R\x05error\x125\n" +
+	"\x06models\x18\x12 \x01(\v2\x1b.netclode.v1.ModelsResponseH\x00R\x06models\x12K\n" +
+	"\x0ecopilot_status\x18\x13 \x01(\v2\".netclode.v1.CopilotStatusResponseH\x00R\rcopilotStatusB\t\n" +
+	"\amessage\"\xe2\x03\n" +
 	"\x14CreateSessionRequest\x12\"\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x17\n" +
@@ -2573,14 +2868,16 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"repoAccess\x88\x01\x01\x12*\n" +
 	"\x0einitial_prompt\x18\x05 \x01(\tH\x04R\rinitialPrompt\x88\x01\x01\x124\n" +
 	"\bsdk_type\x18\x06 \x01(\x0e2\x14.netclode.v1.SdkTypeH\x05R\asdkType\x88\x01\x01\x12\x19\n" +
-	"\x05model\x18\a \x01(\tH\x06R\x05model\x88\x01\x01B\r\n" +
+	"\x05model\x18\a \x01(\tH\x06R\x05model\x88\x01\x01\x12I\n" +
+	"\x0fcopilot_backend\x18\b \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\aR\x0ecopilotBackend\x88\x01\x01B\r\n" +
 	"\v_request_idB\a\n" +
 	"\x05_nameB\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\x11\n" +
 	"\x0f_initial_promptB\v\n" +
 	"\t_sdk_typeB\b\n" +
-	"\x06_model\"H\n" +
+	"\x06_modelB\x12\n" +
+	"\x10_copilot_backend\"H\n" +
 	"\x13ListSessionsRequest\x12\"\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
@@ -2673,7 +2970,18 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"session_id\x18\x02 \x01(\tR\tsessionId\x12\x17\n" +
 	"\x04file\x18\x03 \x01(\tH\x01R\x04file\x88\x01\x01B\r\n" +
 	"\v_request_idB\a\n" +
-	"\x05_file\"{\n" +
+	"\x05_file\"\xd6\x01\n" +
+	"\x11ListModelsRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12/\n" +
+	"\bsdk_type\x18\x02 \x01(\x0e2\x14.netclode.v1.SdkTypeR\asdkType\x12I\n" +
+	"\x0fcopilot_backend\x18\x03 \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x01R\x0ecopilotBackend\x88\x01\x01B\r\n" +
+	"\v_request_idB\x12\n" +
+	"\x10_copilot_backend\"L\n" +
+	"\x17GetCopilotStatusRequest\x12\"\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"{\n" +
 	"\x16SessionCreatedResponse\x12.\n" +
 	"\asession\x18\x01 \x01(\v2\x14.netclode.v1.SessionR\asession\x12\"\n" +
 	"\n" +
@@ -2769,6 +3077,18 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\v2\x12.netclode.v1.ErrorR\x05error\x12\"\n" +
 	"\n" +
 	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"s\n" +
+	"\x0eModelsResponse\x12.\n" +
+	"\x06models\x18\x01 \x03(\v2\x16.netclode.v1.ModelInfoR\x06models\x12\"\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
+	"\v_request_id\"\xc5\x01\n" +
+	"\x15CopilotStatusResponse\x122\n" +
+	"\x04auth\x18\x01 \x01(\v2\x1e.netclode.v1.CopilotAuthStatusR\x04auth\x12;\n" +
+	"\x05quota\x18\x02 \x01(\v2 .netclode.v1.CopilotPremiumQuotaH\x00R\x05quota\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tH\x01R\trequestId\x88\x01\x01B\b\n" +
+	"\x06_quotaB\r\n" +
 	"\v_request_id2V\n" +
 	"\rClientService\x12E\n" +
 	"\aConnect\x12\x1a.netclode.v1.ClientMessage\x1a\x1a.netclode.v1.ServerMessage(\x010\x01B\xbc\x01\n" +
@@ -2786,7 +3106,7 @@ func file_netclode_v1_client_proto_rawDescGZIP() []byte {
 	return file_netclode_v1_client_proto_rawDescData
 }
 
-var file_netclode_v1_client_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_netclode_v1_client_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_netclode_v1_client_proto_goTypes = []any{
 	(*ClientMessage)(nil),              // 0: netclode.v1.ClientMessage
 	(*ServerMessage)(nil),              // 1: netclode.v1.ServerMessage
@@ -2806,34 +3126,42 @@ var file_netclode_v1_client_proto_goTypes = []any{
 	(*ListGitHubReposRequest)(nil),     // 15: netclode.v1.ListGitHubReposRequest
 	(*GitStatusRequest)(nil),           // 16: netclode.v1.GitStatusRequest
 	(*GitDiffRequest)(nil),             // 17: netclode.v1.GitDiffRequest
-	(*SessionCreatedResponse)(nil),     // 18: netclode.v1.SessionCreatedResponse
-	(*SessionUpdatedResponse)(nil),     // 19: netclode.v1.SessionUpdatedResponse
-	(*SessionDeletedResponse)(nil),     // 20: netclode.v1.SessionDeletedResponse
-	(*SessionsDeletedAllResponse)(nil), // 21: netclode.v1.SessionsDeletedAllResponse
-	(*SessionListResponse)(nil),        // 22: netclode.v1.SessionListResponse
-	(*SessionStateResponse)(nil),       // 23: netclode.v1.SessionStateResponse
-	(*SyncResponse)(nil),               // 24: netclode.v1.SyncResponse
-	(*AgentEventResponse)(nil),         // 25: netclode.v1.AgentEventResponse
-	(*AgentMessageResponse)(nil),       // 26: netclode.v1.AgentMessageResponse
-	(*AgentDoneResponse)(nil),          // 27: netclode.v1.AgentDoneResponse
-	(*UserMessageResponse)(nil),        // 28: netclode.v1.UserMessageResponse
-	(*TerminalOutputResponse)(nil),     // 29: netclode.v1.TerminalOutputResponse
-	(*PortExposedResponse)(nil),        // 30: netclode.v1.PortExposedResponse
-	(*GitHubReposResponse)(nil),        // 31: netclode.v1.GitHubReposResponse
-	(*GitStatusResponse)(nil),          // 32: netclode.v1.GitStatusResponse
-	(*GitDiffResponse)(nil),            // 33: netclode.v1.GitDiffResponse
-	(*ErrorResponse)(nil),              // 34: netclode.v1.ErrorResponse
-	(RepoAccess)(0),                    // 35: netclode.v1.RepoAccess
-	(SdkType)(0),                       // 36: netclode.v1.SdkType
-	(*Session)(nil),                    // 37: netclode.v1.Session
-	(*Message)(nil),                    // 38: netclode.v1.Message
-	(*Event)(nil),                      // 39: netclode.v1.Event
-	(*SessionSummary)(nil),             // 40: netclode.v1.SessionSummary
-	(*timestamppb.Timestamp)(nil),      // 41: google.protobuf.Timestamp
-	(*AgentEvent)(nil),                 // 42: netclode.v1.AgentEvent
-	(*GitHubRepo)(nil),                 // 43: netclode.v1.GitHubRepo
-	(*GitFileChange)(nil),              // 44: netclode.v1.GitFileChange
-	(*Error)(nil),                      // 45: netclode.v1.Error
+	(*ListModelsRequest)(nil),          // 18: netclode.v1.ListModelsRequest
+	(*GetCopilotStatusRequest)(nil),    // 19: netclode.v1.GetCopilotStatusRequest
+	(*SessionCreatedResponse)(nil),     // 20: netclode.v1.SessionCreatedResponse
+	(*SessionUpdatedResponse)(nil),     // 21: netclode.v1.SessionUpdatedResponse
+	(*SessionDeletedResponse)(nil),     // 22: netclode.v1.SessionDeletedResponse
+	(*SessionsDeletedAllResponse)(nil), // 23: netclode.v1.SessionsDeletedAllResponse
+	(*SessionListResponse)(nil),        // 24: netclode.v1.SessionListResponse
+	(*SessionStateResponse)(nil),       // 25: netclode.v1.SessionStateResponse
+	(*SyncResponse)(nil),               // 26: netclode.v1.SyncResponse
+	(*AgentEventResponse)(nil),         // 27: netclode.v1.AgentEventResponse
+	(*AgentMessageResponse)(nil),       // 28: netclode.v1.AgentMessageResponse
+	(*AgentDoneResponse)(nil),          // 29: netclode.v1.AgentDoneResponse
+	(*UserMessageResponse)(nil),        // 30: netclode.v1.UserMessageResponse
+	(*TerminalOutputResponse)(nil),     // 31: netclode.v1.TerminalOutputResponse
+	(*PortExposedResponse)(nil),        // 32: netclode.v1.PortExposedResponse
+	(*GitHubReposResponse)(nil),        // 33: netclode.v1.GitHubReposResponse
+	(*GitStatusResponse)(nil),          // 34: netclode.v1.GitStatusResponse
+	(*GitDiffResponse)(nil),            // 35: netclode.v1.GitDiffResponse
+	(*ErrorResponse)(nil),              // 36: netclode.v1.ErrorResponse
+	(*ModelsResponse)(nil),             // 37: netclode.v1.ModelsResponse
+	(*CopilotStatusResponse)(nil),      // 38: netclode.v1.CopilotStatusResponse
+	(RepoAccess)(0),                    // 39: netclode.v1.RepoAccess
+	(SdkType)(0),                       // 40: netclode.v1.SdkType
+	(CopilotBackend)(0),                // 41: netclode.v1.CopilotBackend
+	(*Session)(nil),                    // 42: netclode.v1.Session
+	(*Message)(nil),                    // 43: netclode.v1.Message
+	(*Event)(nil),                      // 44: netclode.v1.Event
+	(*SessionSummary)(nil),             // 45: netclode.v1.SessionSummary
+	(*timestamppb.Timestamp)(nil),      // 46: google.protobuf.Timestamp
+	(*AgentEvent)(nil),                 // 47: netclode.v1.AgentEvent
+	(*GitHubRepo)(nil),                 // 48: netclode.v1.GitHubRepo
+	(*GitFileChange)(nil),              // 49: netclode.v1.GitFileChange
+	(*Error)(nil),                      // 50: netclode.v1.Error
+	(*ModelInfo)(nil),                  // 51: netclode.v1.ModelInfo
+	(*CopilotAuthStatus)(nil),          // 52: netclode.v1.CopilotAuthStatus
+	(*CopilotPremiumQuota)(nil),        // 53: netclode.v1.CopilotPremiumQuota
 }
 var file_netclode_v1_client_proto_depIdxs = []int32{
 	2,  // 0: netclode.v1.ClientMessage.create_session:type_name -> netclode.v1.CreateSessionRequest
@@ -2852,44 +3180,54 @@ var file_netclode_v1_client_proto_depIdxs = []int32{
 	15, // 13: netclode.v1.ClientMessage.list_github_repos:type_name -> netclode.v1.ListGitHubReposRequest
 	16, // 14: netclode.v1.ClientMessage.git_status:type_name -> netclode.v1.GitStatusRequest
 	17, // 15: netclode.v1.ClientMessage.git_diff:type_name -> netclode.v1.GitDiffRequest
-	18, // 16: netclode.v1.ServerMessage.session_created:type_name -> netclode.v1.SessionCreatedResponse
-	19, // 17: netclode.v1.ServerMessage.session_updated:type_name -> netclode.v1.SessionUpdatedResponse
-	20, // 18: netclode.v1.ServerMessage.session_deleted:type_name -> netclode.v1.SessionDeletedResponse
-	21, // 19: netclode.v1.ServerMessage.sessions_deleted_all:type_name -> netclode.v1.SessionsDeletedAllResponse
-	22, // 20: netclode.v1.ServerMessage.session_list:type_name -> netclode.v1.SessionListResponse
-	23, // 21: netclode.v1.ServerMessage.session_state:type_name -> netclode.v1.SessionStateResponse
-	24, // 22: netclode.v1.ServerMessage.sync_response:type_name -> netclode.v1.SyncResponse
-	25, // 23: netclode.v1.ServerMessage.agent_event:type_name -> netclode.v1.AgentEventResponse
-	26, // 24: netclode.v1.ServerMessage.agent_message:type_name -> netclode.v1.AgentMessageResponse
-	27, // 25: netclode.v1.ServerMessage.agent_done:type_name -> netclode.v1.AgentDoneResponse
-	28, // 26: netclode.v1.ServerMessage.user_message:type_name -> netclode.v1.UserMessageResponse
-	29, // 27: netclode.v1.ServerMessage.terminal_output:type_name -> netclode.v1.TerminalOutputResponse
-	30, // 28: netclode.v1.ServerMessage.port_exposed:type_name -> netclode.v1.PortExposedResponse
-	31, // 29: netclode.v1.ServerMessage.github_repos:type_name -> netclode.v1.GitHubReposResponse
-	32, // 30: netclode.v1.ServerMessage.git_status:type_name -> netclode.v1.GitStatusResponse
-	33, // 31: netclode.v1.ServerMessage.git_diff:type_name -> netclode.v1.GitDiffResponse
-	34, // 32: netclode.v1.ServerMessage.error:type_name -> netclode.v1.ErrorResponse
-	35, // 33: netclode.v1.CreateSessionRequest.repo_access:type_name -> netclode.v1.RepoAccess
-	36, // 34: netclode.v1.CreateSessionRequest.sdk_type:type_name -> netclode.v1.SdkType
-	37, // 35: netclode.v1.SessionCreatedResponse.session:type_name -> netclode.v1.Session
-	37, // 36: netclode.v1.SessionUpdatedResponse.session:type_name -> netclode.v1.Session
-	37, // 37: netclode.v1.SessionListResponse.sessions:type_name -> netclode.v1.Session
-	37, // 38: netclode.v1.SessionStateResponse.session:type_name -> netclode.v1.Session
-	38, // 39: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.Message
-	39, // 40: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.Event
-	40, // 41: netclode.v1.SyncResponse.sessions:type_name -> netclode.v1.SessionSummary
-	41, // 42: netclode.v1.SyncResponse.server_time:type_name -> google.protobuf.Timestamp
-	42, // 43: netclode.v1.AgentEventResponse.event:type_name -> netclode.v1.AgentEvent
-	43, // 44: netclode.v1.GitHubReposResponse.repos:type_name -> netclode.v1.GitHubRepo
-	44, // 45: netclode.v1.GitStatusResponse.files:type_name -> netclode.v1.GitFileChange
-	45, // 46: netclode.v1.ErrorResponse.error:type_name -> netclode.v1.Error
-	0,  // 47: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
-	1,  // 48: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
-	48, // [48:49] is the sub-list for method output_type
-	47, // [47:48] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	18, // 16: netclode.v1.ClientMessage.list_models:type_name -> netclode.v1.ListModelsRequest
+	19, // 17: netclode.v1.ClientMessage.get_copilot_status:type_name -> netclode.v1.GetCopilotStatusRequest
+	20, // 18: netclode.v1.ServerMessage.session_created:type_name -> netclode.v1.SessionCreatedResponse
+	21, // 19: netclode.v1.ServerMessage.session_updated:type_name -> netclode.v1.SessionUpdatedResponse
+	22, // 20: netclode.v1.ServerMessage.session_deleted:type_name -> netclode.v1.SessionDeletedResponse
+	23, // 21: netclode.v1.ServerMessage.sessions_deleted_all:type_name -> netclode.v1.SessionsDeletedAllResponse
+	24, // 22: netclode.v1.ServerMessage.session_list:type_name -> netclode.v1.SessionListResponse
+	25, // 23: netclode.v1.ServerMessage.session_state:type_name -> netclode.v1.SessionStateResponse
+	26, // 24: netclode.v1.ServerMessage.sync_response:type_name -> netclode.v1.SyncResponse
+	27, // 25: netclode.v1.ServerMessage.agent_event:type_name -> netclode.v1.AgentEventResponse
+	28, // 26: netclode.v1.ServerMessage.agent_message:type_name -> netclode.v1.AgentMessageResponse
+	29, // 27: netclode.v1.ServerMessage.agent_done:type_name -> netclode.v1.AgentDoneResponse
+	30, // 28: netclode.v1.ServerMessage.user_message:type_name -> netclode.v1.UserMessageResponse
+	31, // 29: netclode.v1.ServerMessage.terminal_output:type_name -> netclode.v1.TerminalOutputResponse
+	32, // 30: netclode.v1.ServerMessage.port_exposed:type_name -> netclode.v1.PortExposedResponse
+	33, // 31: netclode.v1.ServerMessage.github_repos:type_name -> netclode.v1.GitHubReposResponse
+	34, // 32: netclode.v1.ServerMessage.git_status:type_name -> netclode.v1.GitStatusResponse
+	35, // 33: netclode.v1.ServerMessage.git_diff:type_name -> netclode.v1.GitDiffResponse
+	36, // 34: netclode.v1.ServerMessage.error:type_name -> netclode.v1.ErrorResponse
+	37, // 35: netclode.v1.ServerMessage.models:type_name -> netclode.v1.ModelsResponse
+	38, // 36: netclode.v1.ServerMessage.copilot_status:type_name -> netclode.v1.CopilotStatusResponse
+	39, // 37: netclode.v1.CreateSessionRequest.repo_access:type_name -> netclode.v1.RepoAccess
+	40, // 38: netclode.v1.CreateSessionRequest.sdk_type:type_name -> netclode.v1.SdkType
+	41, // 39: netclode.v1.CreateSessionRequest.copilot_backend:type_name -> netclode.v1.CopilotBackend
+	40, // 40: netclode.v1.ListModelsRequest.sdk_type:type_name -> netclode.v1.SdkType
+	41, // 41: netclode.v1.ListModelsRequest.copilot_backend:type_name -> netclode.v1.CopilotBackend
+	42, // 42: netclode.v1.SessionCreatedResponse.session:type_name -> netclode.v1.Session
+	42, // 43: netclode.v1.SessionUpdatedResponse.session:type_name -> netclode.v1.Session
+	42, // 44: netclode.v1.SessionListResponse.sessions:type_name -> netclode.v1.Session
+	42, // 45: netclode.v1.SessionStateResponse.session:type_name -> netclode.v1.Session
+	43, // 46: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.Message
+	44, // 47: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.Event
+	45, // 48: netclode.v1.SyncResponse.sessions:type_name -> netclode.v1.SessionSummary
+	46, // 49: netclode.v1.SyncResponse.server_time:type_name -> google.protobuf.Timestamp
+	47, // 50: netclode.v1.AgentEventResponse.event:type_name -> netclode.v1.AgentEvent
+	48, // 51: netclode.v1.GitHubReposResponse.repos:type_name -> netclode.v1.GitHubRepo
+	49, // 52: netclode.v1.GitStatusResponse.files:type_name -> netclode.v1.GitFileChange
+	50, // 53: netclode.v1.ErrorResponse.error:type_name -> netclode.v1.Error
+	51, // 54: netclode.v1.ModelsResponse.models:type_name -> netclode.v1.ModelInfo
+	52, // 55: netclode.v1.CopilotStatusResponse.auth:type_name -> netclode.v1.CopilotAuthStatus
+	53, // 56: netclode.v1.CopilotStatusResponse.quota:type_name -> netclode.v1.CopilotPremiumQuota
+	0,  // 57: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
+	1,  // 58: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
+	58, // [58:59] is the sub-list for method output_type
+	57, // [57:58] is the sub-list for method input_type
+	57, // [57:57] is the sub-list for extension type_name
+	57, // [57:57] is the sub-list for extension extendee
+	0,  // [0:57] is the sub-list for field type_name
 }
 
 func init() { file_netclode_v1_client_proto_init() }
@@ -2916,6 +3254,8 @@ func file_netclode_v1_client_proto_init() {
 		(*ClientMessage_ListGithubRepos)(nil),
 		(*ClientMessage_GitStatus)(nil),
 		(*ClientMessage_GitDiff)(nil),
+		(*ClientMessage_ListModels)(nil),
+		(*ClientMessage_GetCopilotStatus)(nil),
 	}
 	file_netclode_v1_client_proto_msgTypes[1].OneofWrappers = []any{
 		(*ServerMessage_SessionCreated)(nil),
@@ -2935,6 +3275,8 @@ func file_netclode_v1_client_proto_init() {
 		(*ServerMessage_GitStatus)(nil),
 		(*ServerMessage_GitDiff)(nil),
 		(*ServerMessage_Error)(nil),
+		(*ServerMessage_Models)(nil),
+		(*ServerMessage_CopilotStatus)(nil),
 	}
 	file_netclode_v1_client_proto_msgTypes[2].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[3].OneofWrappers = []any{}
@@ -2953,23 +3295,27 @@ func file_netclode_v1_client_proto_init() {
 	file_netclode_v1_client_proto_msgTypes[16].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[17].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[18].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[19].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[20].OneofWrappers = []any{}
-	file_netclode_v1_client_proto_msgTypes[21].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[22].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[23].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[24].OneofWrappers = []any{}
-	file_netclode_v1_client_proto_msgTypes[30].OneofWrappers = []any{}
-	file_netclode_v1_client_proto_msgTypes[31].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[25].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[26].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[32].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[33].OneofWrappers = []any{}
 	file_netclode_v1_client_proto_msgTypes[34].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[35].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[36].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[37].OneofWrappers = []any{}
+	file_netclode_v1_client_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_netclode_v1_client_proto_rawDesc), len(file_netclode_v1_client_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   35,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

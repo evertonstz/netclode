@@ -114,6 +114,51 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
 
 }
 
+/// CopilotBackend defines which backend to use for Copilot SDK sessions.
+public enum Netclode_V1_CopilotBackend: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+
+  /// Defaults to GITHUB if authenticated, else ANTHROPIC
+  case unspecified // = 0
+
+  /// GitHub Copilot API (requires GitHub authentication)
+  case github // = 1
+
+  /// Anthropic API (BYOK mode, requires ANTHROPIC_API_KEY)
+  case anthropic // = 2
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unspecified
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unspecified
+    case 1: self = .github
+    case 2: self = .anthropic
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unspecified: return 0
+    case .github: return 1
+    case .anthropic: return 2
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Netclode_V1_CopilotBackend] = [
+    .unspecified,
+    .github,
+    .anthropic,
+  ]
+
+}
+
 /// SessionStatus represents the lifecycle state of a session.
 public enum Netclode_V1_SessionStatus: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
@@ -349,7 +394,7 @@ public struct Netclode_V1_Session: Sendable {
   /// Clears the value of `sdkType`. Subsequent reads from it will return its default value.
   public mutating func clearSdkType() {self._sdkType = nil}
 
-  /// Model ID for OpenCode (e.g., "claude-sonnet-4-0")
+  /// Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
   public var model: String {
     get {return _model ?? String()}
     set {_model = newValue}
@@ -358,6 +403,16 @@ public struct Netclode_V1_Session: Sendable {
   public var hasModel: Bool {return self._model != nil}
   /// Clears the value of `model`. Subsequent reads from it will return its default value.
   public mutating func clearModel() {self._model = nil}
+
+  /// Backend for Copilot sessions (ignored for other SDKs)
+  public var copilotBackend: Netclode_V1_CopilotBackend {
+    get {return _copilotBackend ?? .unspecified}
+    set {_copilotBackend = newValue}
+  }
+  /// Returns true if `copilotBackend` has been explicitly set.
+  public var hasCopilotBackend: Bool {return self._copilotBackend != nil}
+  /// Clears the value of `copilotBackend`. Subsequent reads from it will return its default value.
+  public mutating func clearCopilotBackend() {self._copilotBackend = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -369,6 +424,7 @@ public struct Netclode_V1_Session: Sendable {
   fileprivate var _lastActiveAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
   fileprivate var _sdkType: Netclode_V1_SdkType? = nil
   fileprivate var _model: String? = nil
+  fileprivate var _copilotBackend: Netclode_V1_CopilotBackend? = nil
 }
 
 /// SessionSummary includes session data plus metadata for list views.
@@ -479,6 +535,16 @@ public struct Netclode_V1_SessionConfig: Sendable {
   /// Clears the value of `model`. Subsequent reads from it will return its default value.
   public mutating func clearModel() {self._model = nil}
 
+  /// Backend for Copilot sessions
+  public var copilotBackend: Netclode_V1_CopilotBackend {
+    get {return _copilotBackend ?? .unspecified}
+    set {_copilotBackend = newValue}
+  }
+  /// Returns true if `copilotBackend` has been explicitly set.
+  public var hasCopilotBackend: Bool {return self._copilotBackend != nil}
+  /// Clears the value of `copilotBackend`. Subsequent reads from it will return its default value.
+  public mutating func clearCopilotBackend() {self._copilotBackend = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -488,6 +554,7 @@ public struct Netclode_V1_SessionConfig: Sendable {
   fileprivate var _repoAccess: Netclode_V1_RepoAccess? = nil
   fileprivate var _sdkType: Netclode_V1_SdkType? = nil
   fileprivate var _model: String? = nil
+  fileprivate var _copilotBackend: Netclode_V1_CopilotBackend? = nil
 }
 
 /// GitHubRepo represents a GitHub repository from the user's account.
@@ -641,6 +708,118 @@ public struct Netclode_V1_Error: Sendable {
   fileprivate var _sessionID: String? = nil
 }
 
+/// ModelInfo represents an AI model available for use.
+public struct Netclode_V1_ModelInfo: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Model identifier (e.g., "claude-sonnet-4-0", "gpt-4o")
+  public var id: String = String()
+
+  /// Human-readable name (e.g., "Claude Sonnet 4")
+  public var name: String = String()
+
+  /// Provider name (e.g., "anthropic", "openai")
+  public var provider: String {
+    get {return _provider ?? String()}
+    set {_provider = newValue}
+  }
+  /// Returns true if `provider` has been explicitly set.
+  public var hasProvider: Bool {return self._provider != nil}
+  /// Clears the value of `provider`. Subsequent reads from it will return its default value.
+  public mutating func clearProvider() {self._provider = nil}
+
+  /// Cost multiplier for GitHub Copilot (e.g., 0.33, 1.0, 3.0)
+  public var billingMultiplier: Double {
+    get {return _billingMultiplier ?? 0}
+    set {_billingMultiplier = newValue}
+  }
+  /// Returns true if `billingMultiplier` has been explicitly set.
+  public var hasBillingMultiplier: Bool {return self._billingMultiplier != nil}
+  /// Clears the value of `billingMultiplier`. Subsequent reads from it will return its default value.
+  public mutating func clearBillingMultiplier() {self._billingMultiplier = nil}
+
+  /// Model capabilities (e.g., "chat", "vision", "code")
+  public var capabilities: [String] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _provider: String? = nil
+  fileprivate var _billingMultiplier: Double? = nil
+}
+
+/// CopilotAuthStatus represents GitHub Copilot authentication state.
+public struct Netclode_V1_CopilotAuthStatus: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Whether the user is authenticated with GitHub
+  public var isAuthenticated: Bool = false
+
+  /// Auth method: "user", "env", "gh-cli", "token", etc.
+  public var authType: String {
+    get {return _authType ?? String()}
+    set {_authType = newValue}
+  }
+  /// Returns true if `authType` has been explicitly set.
+  public var hasAuthType: Bool {return self._authType != nil}
+  /// Clears the value of `authType`. Subsequent reads from it will return its default value.
+  public mutating func clearAuthType() {self._authType = nil}
+
+  /// GitHub username if authenticated
+  public var login: String {
+    get {return _login ?? String()}
+    set {_login = newValue}
+  }
+  /// Returns true if `login` has been explicitly set.
+  public var hasLogin: Bool {return self._login != nil}
+  /// Clears the value of `login`. Subsequent reads from it will return its default value.
+  public mutating func clearLogin() {self._login = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _authType: String? = nil
+  fileprivate var _login: String? = nil
+}
+
+/// CopilotPremiumQuota represents GitHub Copilot premium request quota.
+public struct Netclode_V1_CopilotPremiumQuota: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Number of premium requests used this period
+  public var used: Int32 = 0
+
+  /// Maximum premium requests allowed
+  public var limit: Int32 = 0
+
+  /// Remaining premium requests
+  public var remaining: Int32 = 0
+
+  /// ISO timestamp when quota resets
+  public var resetAt: String {
+    get {return _resetAt ?? String()}
+    set {_resetAt = newValue}
+  }
+  /// Returns true if `resetAt` has been explicitly set.
+  public var hasResetAt: Bool {return self._resetAt != nil}
+  /// Clears the value of `resetAt`. Subsequent reads from it will return its default value.
+  public mutating func clearResetAt() {self._resetAt = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _resetAt: String? = nil
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "netclode.v1"
@@ -651,6 +830,10 @@ extension Netclode_V1_RepoAccess: SwiftProtobuf._ProtoNameProviding {
 
 extension Netclode_V1_SdkType: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SDK_TYPE_UNSPECIFIED\0\u{1}SDK_TYPE_CLAUDE\0\u{1}SDK_TYPE_OPENCODE\0\u{1}SDK_TYPE_COPILOT\0")
+}
+
+extension Netclode_V1_CopilotBackend: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0COPILOT_BACKEND_UNSPECIFIED\0\u{1}COPILOT_BACKEND_GITHUB\0\u{1}COPILOT_BACKEND_ANTHROPIC\0")
 }
 
 extension Netclode_V1_SessionStatus: SwiftProtobuf._ProtoNameProviding {
@@ -667,7 +850,7 @@ extension Netclode_V1_MessageRole: SwiftProtobuf._ProtoNameProviding {
 
 extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Session"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}status\0\u{1}repo\0\u{3}repo_access\0\u{3}created_at\0\u{3}last_active_at\0\u{3}sdk_type\0\u{1}model\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}status\0\u{1}repo\0\u{3}repo_access\0\u{3}created_at\0\u{3}last_active_at\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -684,6 +867,7 @@ extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
       case 7: try { try decoder.decodeSingularMessageField(value: &self._lastActiveAt) }()
       case 8: try { try decoder.decodeSingularEnumField(value: &self._sdkType) }()
       case 9: try { try decoder.decodeSingularStringField(value: &self._model) }()
+      case 10: try { try decoder.decodeSingularEnumField(value: &self._copilotBackend) }()
       default: break
       }
     }
@@ -721,6 +905,9 @@ extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     try { if let v = self._model {
       try visitor.visitSingularStringField(value: v, fieldNumber: 9)
     } }()
+    try { if let v = self._copilotBackend {
+      try visitor.visitSingularEnumField(value: v, fieldNumber: 10)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -734,6 +921,7 @@ extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     if lhs._lastActiveAt != rhs._lastActiveAt {return false}
     if lhs._sdkType != rhs._sdkType {return false}
     if lhs._model != rhs._model {return false}
+    if lhs._copilotBackend != rhs._copilotBackend {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -785,7 +973,7 @@ extension Netclode_V1_SessionSummary: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionConfig"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repo\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repo\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -801,6 +989,7 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 6: try { try decoder.decodeSingularStringField(value: &self.controlPlaneURL) }()
       case 7: try { try decoder.decodeSingularEnumField(value: &self._sdkType) }()
       case 8: try { try decoder.decodeSingularStringField(value: &self._model) }()
+      case 9: try { try decoder.decodeSingularEnumField(value: &self._copilotBackend) }()
       default: break
       }
     }
@@ -835,6 +1024,9 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
     try { if let v = self._model {
       try visitor.visitSingularStringField(value: v, fieldNumber: 8)
     } }()
+    try { if let v = self._copilotBackend {
+      try visitor.visitSingularEnumField(value: v, fieldNumber: 9)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -847,6 +1039,7 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs.controlPlaneURL != rhs.controlPlaneURL {return false}
     if lhs._sdkType != rhs._sdkType {return false}
     if lhs._model != rhs._model {return false}
+    if lhs._copilotBackend != rhs._copilotBackend {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1083,6 +1276,153 @@ extension Netclode_V1_Error: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
     if lhs.message != rhs.message {return false}
     if lhs._sessionID != rhs._sessionID {return false}
     if lhs.details != rhs.details {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_ModelInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ModelInfo"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}provider\0\u{3}billing_multiplier\0\u{1}capabilities\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._provider) }()
+      case 4: try { try decoder.decodeSingularDoubleField(value: &self._billingMultiplier) }()
+      case 5: try { try decoder.decodeRepeatedStringField(value: &self.capabilities) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
+    }
+    try { if let v = self._provider {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._billingMultiplier {
+      try visitor.visitSingularDoubleField(value: v, fieldNumber: 4)
+    } }()
+    if !self.capabilities.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.capabilities, fieldNumber: 5)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_ModelInfo, rhs: Netclode_V1_ModelInfo) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.name != rhs.name {return false}
+    if lhs._provider != rhs._provider {return false}
+    if lhs._billingMultiplier != rhs._billingMultiplier {return false}
+    if lhs.capabilities != rhs.capabilities {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_CopilotAuthStatus: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CopilotAuthStatus"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}is_authenticated\0\u{3}auth_type\0\u{1}login\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.isAuthenticated) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self._authType) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._login) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.isAuthenticated != false {
+      try visitor.visitSingularBoolField(value: self.isAuthenticated, fieldNumber: 1)
+    }
+    try { if let v = self._authType {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._login {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_CopilotAuthStatus, rhs: Netclode_V1_CopilotAuthStatus) -> Bool {
+    if lhs.isAuthenticated != rhs.isAuthenticated {return false}
+    if lhs._authType != rhs._authType {return false}
+    if lhs._login != rhs._login {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_CopilotPremiumQuota: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CopilotPremiumQuota"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}used\0\u{1}limit\0\u{1}remaining\0\u{3}reset_at\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt32Field(value: &self.used) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self.limit) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self.remaining) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self._resetAt) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.used != 0 {
+      try visitor.visitSingularInt32Field(value: self.used, fieldNumber: 1)
+    }
+    if self.limit != 0 {
+      try visitor.visitSingularInt32Field(value: self.limit, fieldNumber: 2)
+    }
+    if self.remaining != 0 {
+      try visitor.visitSingularInt32Field(value: self.remaining, fieldNumber: 3)
+    }
+    try { if let v = self._resetAt {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_CopilotPremiumQuota, rhs: Netclode_V1_CopilotPremiumQuota) -> Bool {
+    if lhs.used != rhs.used {return false}
+    if lhs.limit != rhs.limit {return false}
+    if lhs.remaining != rhs.remaining {return false}
+    if lhs._resetAt != rhs._resetAt {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

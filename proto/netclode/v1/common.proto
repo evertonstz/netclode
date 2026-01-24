@@ -20,6 +20,13 @@ enum SdkType {
   SDK_TYPE_COPILOT = 3;      // GitHub Copilot SDK
 }
 
+// CopilotBackend defines which backend to use for Copilot SDK sessions.
+enum CopilotBackend {
+  COPILOT_BACKEND_UNSPECIFIED = 0;  // Defaults to GITHUB if authenticated, else ANTHROPIC
+  COPILOT_BACKEND_GITHUB = 1;       // GitHub Copilot API (requires GitHub authentication)
+  COPILOT_BACKEND_ANTHROPIC = 2;    // Anthropic API (BYOK mode, requires ANTHROPIC_API_KEY)
+}
+
 // Session represents a coding session with an AI agent.
 message Session {
   string id = 1;
@@ -30,7 +37,8 @@ message Session {
   google.protobuf.Timestamp created_at = 6;
   google.protobuf.Timestamp last_active_at = 7;
   optional SdkType sdk_type = 8;             // SDK to use (defaults to CLAUDE)
-  optional string model = 9;                  // Model ID for OpenCode (e.g., "claude-sonnet-4-0")
+  optional string model = 9;                 // Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
+  optional CopilotBackend copilot_backend = 10;  // Backend for Copilot sessions (ignored for other SDKs)
 }
 
 // SessionStatus represents the lifecycle state of a session.
@@ -61,7 +69,8 @@ message SessionConfig {
   optional RepoAccess repo_access = 5;   // Permission level for repository operations
   string control_plane_url = 6;          // URL of control plane for callbacks
   optional SdkType sdk_type = 7;         // SDK type for agent to use
-  optional string model = 8;              // Model ID (e.g., "anthropic/claude-sonnet-4-0")
+  optional string model = 8;             // Model ID (e.g., "anthropic/claude-sonnet-4-0")
+  optional CopilotBackend copilot_backend = 9;  // Backend for Copilot sessions
 }
 
 // GitHubRepo represents a GitHub repository from the user's account.
@@ -122,4 +131,28 @@ message Error {
   string message = 2;                    // Human-readable error message
   optional string session_id = 3;        // Associated session ID, if applicable
   map<string, string> details = 4;       // Additional error context
+}
+
+// ModelInfo represents an AI model available for use.
+message ModelInfo {
+  string id = 1;                         // Model identifier (e.g., "claude-sonnet-4-0", "gpt-4o")
+  string name = 2;                       // Human-readable name (e.g., "Claude Sonnet 4")
+  optional string provider = 3;          // Provider name (e.g., "anthropic", "openai")
+  optional double billing_multiplier = 4;  // Cost multiplier for GitHub Copilot (e.g., 0.33, 1.0, 3.0)
+  repeated string capabilities = 5;      // Model capabilities (e.g., "chat", "vision", "code")
+}
+
+// CopilotAuthStatus represents GitHub Copilot authentication state.
+message CopilotAuthStatus {
+  bool is_authenticated = 1;             // Whether the user is authenticated with GitHub
+  optional string auth_type = 2;         // Auth method: "user", "env", "gh-cli", "token", etc.
+  optional string login = 3;             // GitHub username if authenticated
+}
+
+// CopilotPremiumQuota represents GitHub Copilot premium request quota.
+message CopilotPremiumQuota {
+  int32 used = 1;                        // Number of premium requests used this period
+  int32 limit = 2;                       // Maximum premium requests allowed
+  int32 remaining = 3;                   // Remaining premium requests
+  optional string reset_at = 4;          // ISO timestamp when quota resets
 }

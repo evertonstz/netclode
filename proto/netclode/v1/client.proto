@@ -32,6 +32,8 @@ message ClientMessage {
     ListGitHubReposRequest list_github_repos = 14;
     GitStatusRequest git_status = 15;
     GitDiffRequest git_diff = 16;
+    ListModelsRequest list_models = 17;
+    GetCopilotStatusRequest get_copilot_status = 18;
   }
 }
 
@@ -55,6 +57,8 @@ message ServerMessage {
     GitStatusResponse git_status = 15;
     GitDiffResponse git_diff = 16;
     ErrorResponse error = 17;
+    ModelsResponse models = 18;
+    CopilotStatusResponse copilot_status = 19;
   }
 }
 
@@ -69,7 +73,8 @@ message CreateSessionRequest {
   optional RepoAccess repo_access = 4;       // Permission level for repository
   optional string initial_prompt = 5;        // Optional prompt to send immediately after creation
   optional SdkType sdk_type = 6;             // SDK to use (defaults to CLAUDE)
-  optional string model = 7;                  // Model ID for OpenCode (e.g., "claude-sonnet-4-0")
+  optional string model = 7;                 // Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
+  optional CopilotBackend copilot_backend = 8;  // Backend for Copilot SDK (GitHub or Anthropic)
 }
 
 message ListSessionsRequest {
@@ -149,6 +154,16 @@ message GitDiffRequest {
   optional string request_id = 1;
   string session_id = 2;
   optional string file = 3;                  // Specific file path, or all files if empty
+}
+
+message ListModelsRequest {
+  optional string request_id = 1;
+  SdkType sdk_type = 2;                      // Which SDK to list models for
+  optional CopilotBackend copilot_backend = 3;  // For Copilot: which backend's models to list
+}
+
+message GetCopilotStatusRequest {
+  optional string request_id = 1;
 }
 
 // ============================================================================
@@ -249,4 +264,15 @@ message GitDiffResponse {
 message ErrorResponse {
   Error error = 1;                           // Structured error details
   optional string request_id = 2;            // Echoed from request for correlation
+}
+
+message ModelsResponse {
+  repeated ModelInfo models = 1;             // Available models for the requested SDK
+  optional string request_id = 2;
+}
+
+message CopilotStatusResponse {
+  CopilotAuthStatus auth = 1;                // GitHub Copilot authentication status
+  optional CopilotPremiumQuota quota = 2;    // Premium request quota (only if authenticated)
+  optional string request_id = 3;
 }
