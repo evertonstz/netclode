@@ -6,7 +6,7 @@
 
 ## Deployment
 
-Server is configured in `.env` as `DEPLOY_HOST`.
+Server is configured in `.env` as `DEPLOY_HOST` (Tailscale hostname or IP).
 
 ### Infrastructure Provisioning (Ansible)
 

@@ -5,7 +5,7 @@
 # System
 timezone: UTC
 locale: en_US.UTF-8
-netclode_hostname: netclode-host
+netclode_hostname: "{{ lookup('env', 'DEPLOY_HOST') }}"
 
 # SSH authorized keys for root (loaded from /var/secrets/ssh-authorized-keys)
 # Deploy via: ansible-playbook playbooks/secrets.yaml
