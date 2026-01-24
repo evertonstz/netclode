@@ -51,11 +51,13 @@ enum RepoAccess: String, Codable, Sendable {
 enum SdkType: String, Codable, CaseIterable, Sendable {
     case claude
     case opencode
+    case copilot
 
     var displayName: String {
         switch self {
         case .claude: "Claude Code"
         case .opencode: "OpenCode"
+        case .copilot: "GitHub Copilot"
         }
     }
 
@@ -63,6 +65,7 @@ enum SdkType: String, Codable, CaseIterable, Sendable {
         switch self {
         case .claude: "Direct Claude integration"
         case .opencode: "Multi-provider support"
+        case .copilot: "GitHub Copilot"
         }
     }
 }

@@ -445,6 +445,7 @@ final class ConnectService {
         switch proto {
         case .claude: return .claude
         case .opencode: return .opencode
+        case .copilot: return .copilot
         case .unspecified, .UNRECOGNIZED: return .claude
         }
     }
@@ -468,6 +469,7 @@ final class ConnectService {
         switch sdkType {
         case .claude: return .claude
         case .opencode: return .opencode
+        case .copilot: return .copilot
         }
     }
     

@@ -21,6 +21,19 @@ try {
 }
 
 /**
+ * Session config response from control plane.
+ * Field names match Go struct's default JSON marshaling (PascalCase).
+ */
+interface SessionConfigResponse {
+  SessionID: string;
+  AnthropicAPIKey: string;
+  GitHubToken: string;
+  Repo: string;
+  SdkType: number;
+  Model: string;
+}
+
+/**
  * Fetch session config from control plane (for warm pool mode)
  */
 async function fetchSessionConfig(): Promise<{ sessionId: string } | null> {
@@ -31,9 +44,9 @@ async function fetchSessionConfig(): Promise<{ sessionId: string } | null> {
   try {
     const response = await fetch(`${controlPlaneUrl}/internal/session-config?pod=${podName}`);
     if (response.ok) {
-      const config = await response.json() as Record<string, string>;
-      if (config.SESSION_ID) {
-        return { sessionId: config.SESSION_ID };
+      const config = (await response.json()) as SessionConfigResponse;
+      if (config.SessionID) {
+        return { sessionId: config.SessionID };
       }
     }
   } catch (error) {
