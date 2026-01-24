@@ -73,11 +73,12 @@ export class OpenCodeAdapter implements SDKAdapter {
     });
 
     // Wait for server to be ready - use polling only, stdout detection can be unreliable
+    // First request triggers @opencode-ai/plugin download from npm (no cache in sandbox)
     const url = await new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
         proc.kill();
         reject(new Error("Timeout waiting for opencode server to start"));
-      }, 30000);
+      }, 60000);
 
       let stdout = "";
       let stderr = "";
