@@ -84,10 +84,12 @@ export class OpenCodeAdapter implements SDKAdapter {
         stdout += chunk.toString();
         console.log("[opencode-adapter] stdout:", chunk.toString().trim());
 
-        // Look for server ready message
+        // Look for server ready message - must be the actual "listening" message
+        // NOT the warning about OPENCODE_SERVER_PASSWORD which contains "server"
         const lines = stdout.split("\n");
         for (const line of lines) {
-          if (line.includes("listening") || line.includes("server") || line.includes("started")) {
+          // Match: "opencode server listening on http://..."
+          if (line.includes("listening on http")) {
             clearTimeout(timeout);
             resolve(`http://${OPENCODE_HOST}:${OPENCODE_PORT}`);
             return;
@@ -110,13 +112,17 @@ export class OpenCodeAdapter implements SDKAdapter {
         reject(error);
       });
 
-      // Also try polling the server
+      // Poll the server until it's ready - this is the reliable method
+      let resolved = false;
       const pollInterval = setInterval(async () => {
+        if (resolved) return;
         try {
-          const res = await fetch(`http://${OPENCODE_HOST}:${OPENCODE_PORT}/health`, {
+          const res = await fetch(`http://${OPENCODE_HOST}:${OPENCODE_PORT}/session`, {
+            method: "GET",
             signal: AbortSignal.timeout(1000),
           });
           if (res.ok) {
+            resolved = true;
             clearInterval(pollInterval);
             clearTimeout(timeout);
             resolve(`http://${OPENCODE_HOST}:${OPENCODE_PORT}`);
@@ -124,7 +130,7 @@ export class OpenCodeAdapter implements SDKAdapter {
         } catch {
           // Server not ready yet, keep polling
         }
-      }, 500);
+      }, 200);
     });
 
     this.server = { url, process: proc };
