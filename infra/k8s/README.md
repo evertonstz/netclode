@@ -248,6 +248,18 @@ stringData:
   secret-key: <secret-key>
 ```
 
+#### JuiceFS cache size
+
+JuiceFS mounts use the upstream defaults unless we override them. The client read cache size defaults to `--cache-size=102400` (MiB, ~100 GiB) and also respects `--free-space-ratio=0.1`, so cache will shrink if disk space is tight. To change it for all PVCs, add `mountOptions` in the CSI driver ConfigMap (`infra/k8s/juicefs-config.yaml`) and restart the CSI controller so new mount pods pick it up:
+
+```yaml
+data:
+  config.yaml: |
+    mountOptions:
+      - cache-size=204800
+      - free-space-ratio=0.1
+```
+
 ### Kata Containers
 
 The sandbox pods use `runtimeClassName: kata-clh` for VM-level isolation.
