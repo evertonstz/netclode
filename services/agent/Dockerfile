@@ -93,11 +93,13 @@ RUN mkdir -p /opt/mise/bin /opt/mise/shims && \
     cp -r /root/.local/share/mise /opt/mise/share
 COPY --from=builder /root/.local/share/mise/installs/node/24 /opt/node
 
-# Install bun (single binary, download directly)
-RUN curl -fsSL https://bun.sh/install | bash && \
-    mv /root/.bun/bin/bun /opt/bun && \
+# Install bun (download binary directly)
+RUN apt-get update && apt-get install -y --no-install-recommends unzip && \
+    curl -fsSL "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip" -o /tmp/bun.zip && \
+    unzip /tmp/bun.zip -d /tmp && \
+    mv /tmp/bun-linux-x64/bun /opt/bun && \
     chmod +x /opt/bun && \
-    rm -rf /root/.bun
+    rm -rf /tmp/bun.zip /tmp/bun-linux-x64 /var/lib/apt/lists/*
 
 # Create profile for agent user that sets PATH and mise env vars
 # This ensures any shell spawned (including by Claude Code) has access to mise
