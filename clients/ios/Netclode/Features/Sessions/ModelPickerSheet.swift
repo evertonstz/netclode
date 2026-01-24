@@ -5,7 +5,6 @@ struct PickerModel: Identifiable, Hashable {
     let id: String
     let name: String
     let provider: String?
-    let billingMultiplier: Double?
     let supportsVision: Bool
     let supportsReasoning: Bool
     let inputCost: Double?
@@ -17,7 +16,6 @@ struct PickerModel: Identifiable, Hashable {
             id: model.id,
             name: model.name,
             provider: model.provider,
-            billingMultiplier: model.billingMultiplier,
             supportsVision: model.capabilities.contains("vision"),
             supportsReasoning: model.capabilities.contains("reasoning"),
             inputCost: nil,
@@ -31,7 +29,6 @@ struct PickerModel: Identifiable, Hashable {
             id: model.fullModelId,
             name: model.name,
             provider: model.providerName,
-            billingMultiplier: nil,
             supportsVision: false,
             supportsReasoning: model.supportsReasoning,
             inputCost: model.inputCost,
@@ -122,16 +119,6 @@ struct ModelRow: View {
                         .font(.netclodeBody)
                         .foregroundStyle(.primary)
 
-                    // Billing multiplier badge
-                    if let multiplier = model.billingMultiplier, multiplier != 1.0 {
-                        Text(formatMultiplier(multiplier))
-                            .font(.netclodeCaption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(multiplierColor(multiplier).opacity(0.2))
-                            .foregroundStyle(multiplierColor(multiplier))
-                            .clipShape(Capsule())
-                    }
                 }
 
                 // Capabilities and cost row
@@ -166,26 +153,6 @@ struct ModelRow: View {
         }
         .padding(Theme.Spacing.sm)
         .contentShape(Rectangle())
-    }
-
-    private func formatMultiplier(_ multiplier: Double) -> String {
-        if multiplier < 1.0 {
-            return String(format: "%.2fx", multiplier)
-        } else {
-            return String(format: "%.0fx", multiplier)
-        }
-    }
-
-    private func multiplierColor(_ multiplier: Double) -> Color {
-        if multiplier < 1.0 {
-            return .green
-        } else if multiplier <= 1.0 {
-            return .secondary
-        } else if multiplier <= 2.0 {
-            return .orange
-        } else {
-            return .red
-        }
     }
 
     private func formatCost(_ cost: Double) -> String {
@@ -295,15 +262,6 @@ struct InlineModelPicker: View {
 
                                     Spacer()
 
-                                    if let multiplier = model.billingMultiplier, multiplier != 1.0 {
-                                        Text(multiplier < 1.0 ? String(format: "%.2fx", multiplier) : String(format: "%.0fx", multiplier))
-                                            .font(.netclodeCaption)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(multiplierColor(multiplier).opacity(0.2))
-                                            .foregroundStyle(multiplierColor(multiplier))
-                                            .clipShape(Capsule())
-                                    }
                                 }
                                 .padding(.horizontal, Theme.Spacing.sm)
                                 .padding(.vertical, Theme.Spacing.xs)
@@ -323,15 +281,6 @@ struct InlineModelPicker: View {
         }
     }
 
-    private func multiplierColor(_ multiplier: Double) -> Color {
-        if multiplier < 1.0 {
-            return .green
-        } else if multiplier <= 2.0 {
-            return .orange
-        } else {
-            return .red
-        }
-    }
 }
 
 /// A button that shows the selected model and opens the picker
@@ -354,15 +303,6 @@ struct ModelPickerButton: View {
                                 .font(.netclodeBody)
                                 .foregroundStyle(.primary)
 
-                            if let multiplier = model.billingMultiplier, multiplier != 1.0 {
-                                Text(formatMultiplier(multiplier))
-                                    .font(.netclodeCaption)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(multiplierColor(multiplier).opacity(0.2))
-                                    .foregroundStyle(multiplierColor(multiplier))
-                                    .clipShape(Capsule())
-                            }
                         }
 
                         if let provider = model.provider {
@@ -390,35 +330,16 @@ struct ModelPickerButton: View {
         .buttonStyle(.plain)
     }
 
-    private func formatMultiplier(_ multiplier: Double) -> String {
-        if multiplier < 1.0 {
-            return String(format: "%.2fx", multiplier)
-        } else {
-            return String(format: "%.0fx", multiplier)
-        }
-    }
-
-    private func multiplierColor(_ multiplier: Double) -> Color {
-        if multiplier < 1.0 {
-            return .green
-        } else if multiplier <= 1.0 {
-            return .secondary
-        } else if multiplier <= 2.0 {
-            return .orange
-        } else {
-            return .red
-        }
-    }
 }
 
 #Preview("Model Picker Sheet") {
     ModelPickerSheet(
         selectedModelId: .constant("claude-sonnet-4-20250514"),
         models: [
-            PickerModel(id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", provider: "Anthropic", billingMultiplier: nil, supportsVision: true, supportsReasoning: true, inputCost: 3.0, outputCost: 15.0),
-            PickerModel(id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", billingMultiplier: 1.0, supportsVision: true, supportsReasoning: false, inputCost: nil, outputCost: nil),
-            PickerModel(id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", billingMultiplier: 0.25, supportsVision: true, supportsReasoning: false, inputCost: nil, outputCost: nil),
-            PickerModel(id: "o3-mini", name: "o3-mini", provider: "OpenAI", billingMultiplier: 3.0, supportsVision: false, supportsReasoning: true, inputCost: nil, outputCost: nil),
+            PickerModel(id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", provider: "Anthropic", supportsVision: true, supportsReasoning: true, inputCost: 3.0, outputCost: 15.0),
+            PickerModel(id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", supportsVision: true, supportsReasoning: false, inputCost: nil, outputCost: nil),
+            PickerModel(id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", supportsVision: true, supportsReasoning: false, inputCost: nil, outputCost: nil),
+            PickerModel(id: "o3-mini", name: "o3-mini", provider: "OpenAI", supportsVision: false, supportsReasoning: true, inputCost: nil, outputCost: nil),
         ],
         title: "Select Model",
         isLoading: false
@@ -428,14 +349,14 @@ struct ModelPickerButton: View {
 #Preview("Model Picker Button") {
     VStack(spacing: 20) {
         ModelPickerButton(
-            selectedModel: PickerModel(id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "Anthropic", billingMultiplier: nil, supportsVision: true, supportsReasoning: true, inputCost: nil, outputCost: nil),
+            selectedModel: PickerModel(id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "Anthropic", supportsVision: true, supportsReasoning: true, inputCost: nil, outputCost: nil),
             placeholder: "Select a model",
             isLoading: false,
             action: {}
         )
 
         ModelPickerButton(
-            selectedModel: PickerModel(id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", billingMultiplier: 0.25, supportsVision: true, supportsReasoning: false, inputCost: nil, outputCost: nil),
+            selectedModel: PickerModel(id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", supportsVision: true, supportsReasoning: false, inputCost: nil, outputCost: nil),
             placeholder: "Select a model",
             isLoading: false,
             action: {}

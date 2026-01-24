@@ -1441,20 +1441,11 @@ func (m *Manager) doFetchModelsFromModelsDev(provider string) []*pb.ModelInfo {
 			capabilities = append(capabilities, "reasoning")
 		}
 
-		// Calculate billing multiplier from cost (rough approximation)
-		var billingMultiplier *float64
-		if model.Cost.Input > 0 {
-			// Normalize to ~1.0 for standard models ($3/M input)
-			mult := model.Cost.Input / 3.0
-			billingMultiplier = &mult
-		}
-
 		models = append(models, &pb.ModelInfo{
-			Id:                model.ID,
-			Name:              model.Name,
-			Provider:          strPtr(providerData.Name),
-			Capabilities:      capabilities,
-			BillingMultiplier: billingMultiplier,
+			Id:           model.ID,
+			Name:         model.Name,
+			Provider:     strPtr(providerData.Name),
+			Capabilities: capabilities,
 		})
 	}
 
@@ -1544,19 +1535,11 @@ func (m *Manager) fetchCopilotModels() []*pb.ModelInfo {
 				capabilities = append(capabilities, "reasoning")
 			}
 
-			// Calculate billing multiplier from cost
-			var billingMultiplier *float64
-			if model.Cost.Input > 0 {
-				mult := model.Cost.Input / 3.0
-				billingMultiplier = &mult
-			}
-
 			models = append(models, &pb.ModelInfo{
-				Id:                model.ID,
-				Name:              model.Name + " (BYOK)",
-				Provider:          strPtr("Anthropic (BYOK)"),
-				Capabilities:      capabilities,
-				BillingMultiplier: billingMultiplier,
+				Id:           model.ID,
+				Name:         model.Name + " (BYOK)",
+				Provider:     strPtr("Anthropic (BYOK)"),
+				Capabilities: capabilities,
 			})
 		}
 	}

@@ -229,11 +229,6 @@ struct PromptSheet: View {
                 }
             }
             Spacer()
-            if let multiplier = model.billingMultiplier, multiplier != 1.0 {
-                Text(multiplier < 1.0 ? String(format: "%.2fx", multiplier) : String(format: "%.0fx", multiplier))
-                    .font(.netclodeCaption)
-                    .foregroundStyle(multiplier < 1.0 ? .green : (multiplier <= 2.0 ? .orange : .red))
-            }
         }
     }
 

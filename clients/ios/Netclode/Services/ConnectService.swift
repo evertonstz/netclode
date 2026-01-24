@@ -426,7 +426,6 @@ final class ConnectService {
                     id: proto.id,
                     name: proto.name,
                     provider: proto.hasProvider ? proto.provider : nil,
-                    billingMultiplier: proto.hasBillingMultiplier ? proto.billingMultiplier : nil,
                     capabilities: proto.capabilities
                 )
             }

@@ -5,18 +5,8 @@ struct CopilotModel: Identifiable, Hashable, Sendable {
     let id: String
     let name: String
     let provider: String?
-    let billingMultiplier: Double?
     let capabilities: [String]
 
-    /// Display name with multiplier badge
-    var displayNameWithMultiplier: String {
-        if let multiplier = billingMultiplier {
-            let badge = multiplier < 1.0 ? "(\(String(format: "%.2fx", multiplier)))" : 
-                       multiplier > 1.0 ? "(\(String(format: "%.0fx", multiplier)))" : ""
-            return badge.isEmpty ? name : "\(name) \(badge)"
-        }
-        return name
-    }
 }
 
 /// Copilot authentication status
