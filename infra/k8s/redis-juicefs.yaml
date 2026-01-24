@@ -35,6 +35,13 @@ spec:
           image: redis:7-alpine
           ports:
             - containerPort: 6379
+          resources:
+            requests:
+              memory: "384Mi"
+              cpu: "100m"
+            limits:
+              memory: "384Mi"
+              cpu: "500m"
           args:
             - redis-server
             - --appendonly
