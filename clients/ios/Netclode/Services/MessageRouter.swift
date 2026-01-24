@@ -15,8 +15,7 @@ final class MessageRouter {
 
     private var routingTask: Task<Void, Never>?
 
-    /// Track which backend we're waiting for models from
-    private var pendingModelsBackend: CopilotBackend?
+
 
     init(
         connectService: ConnectService,
@@ -38,11 +37,6 @@ final class MessageRouter {
         self.copilotStore = copilotStore
 
         startRouting()
-    }
-
-    /// Set which backend we're fetching models for (used to route the response)
-    func setPendingModelsBackend(_ backend: CopilotBackend?) {
-        pendingModelsBackend = backend
     }
 
     private func startRouting() {
@@ -269,14 +263,7 @@ final class MessageRouter {
         // Copilot messages
         case .modelsResponse(let models):
             print("[MessageRouter] models received: \(models.count) models")
-            // Route to the appropriate backend based on what we were waiting for
-            if let backend = pendingModelsBackend {
-                copilotStore.updateModels(models, for: backend)
-                pendingModelsBackend = nil
-            } else {
-                // Default to anthropic if we don't know
-                copilotStore.updateModels(models, for: .anthropic)
-            }
+            copilotStore.updateModels(models)
 
         case .copilotStatusResponse(let status):
             print("[MessageRouter] copilot status received: authenticated=\(status.auth.isAuthenticated)")

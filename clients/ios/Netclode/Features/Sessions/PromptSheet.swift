@@ -15,8 +15,7 @@ struct PromptSheet: View {
     @State private var selectedSdkType: SdkType = .claude
     @State private var selectedClaudeModelId: String = ModelsStore.defaultModelId
     @State private var selectedOpenCodeModelId: String = ModelsStore.defaultModelId
-    @State private var selectedCopilotBackend: CopilotBackend = .anthropic
-    @State private var selectedCopilotModelId: String = CopilotStore.defaultAnthropicModelId
+    @State private var selectedCopilotModelId: String = CopilotStore.defaultModelId
     @State private var isSubmitting = false
     @State private var canSubmit = false
     @State private var showModelDropdown = false
@@ -28,7 +27,7 @@ struct PromptSheet: View {
         case .claude, .opencode:
             return modelsStore.anthropicModels.map { PickerModel.from($0) }
         case .copilot:
-            return copilotStore.models(for: selectedCopilotBackend).map { PickerModel.from($0) }
+            return copilotStore.models.map { PickerModel.from($0) }
         }
     }
 
@@ -88,31 +87,6 @@ struct PromptSheet: View {
                         }
                     }
                     .pickerStyle(.segmented)
-
-                    // Backend picker (only for Copilot)
-                    if selectedSdkType == .copilot {
-                        HStack(spacing: Theme.Spacing.xs) {
-                            Image(systemName: "server.rack")
-                                .foregroundStyle(.secondary)
-                            Text("Backend")
-                                .font(.netclodeCaption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.top, Theme.Spacing.xs)
-
-                        Picker("Backend", selection: $selectedCopilotBackend) {
-                            ForEach(CopilotBackend.allCases, id: \.self) { backend in
-                                Text(backend.displayName).tag(backend)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .onChange(of: selectedCopilotBackend) { _, newBackend in
-                            // Reset model selection when backend changes
-                            selectedCopilotModelId = copilotStore.defaultModelId(for: newBackend)
-                            // Fetch models for the new backend
-                            fetchCopilotModels(for: newBackend)
-                        }
-                    }
 
                     // Model picker (shown for all SDK types)
                     HStack(spacing: Theme.Spacing.xs) {
@@ -222,13 +196,13 @@ struct PromptSheet: View {
                 isFocused = true
                 // Fetch Copilot models if Copilot SDK is selected
                 if selectedSdkType == .copilot {
-                    fetchCopilotModels(for: selectedCopilotBackend)
+                    fetchCopilotModels()
                 }
             }
             .onChange(of: selectedSdkType) { _, newSdkType in
                 // Fetch models when switching to Copilot
                 if newSdkType == .copilot {
-                    fetchCopilotModels(for: selectedCopilotBackend)
+                    fetchCopilotModels()
                 }
             }
             .onChange(of: promptText) { _, newValue in
@@ -281,21 +255,17 @@ struct PromptSheet: View {
         let repoParam = repo.isEmpty ? nil : repo
         let accessParam = repoParam != nil ? repoAccess : nil
 
-        // SDK, model, and backend params
+        // SDK and model params
         let sdkParam = selectedSdkType
         let modelParam: String?
-        let copilotBackendParam: CopilotBackend?
         
         switch selectedSdkType {
         case .claude:
             modelParam = selectedClaudeModelId
-            copilotBackendParam = nil
         case .opencode:
             modelParam = selectedOpenCodeModelId
-            copilotBackendParam = nil
         case .copilot:
             modelParam = selectedCopilotModelId
-            copilotBackendParam = selectedCopilotBackend
         }
         
         // Create session
@@ -306,15 +276,15 @@ struct PromptSheet: View {
             initialPrompt: text,
             sdkType: sdkParam,
             model: modelParam,
-            copilotBackend: copilotBackendParam
+            copilotBackend: nil
         ))
 
         dismiss()
     }
 
-    private func fetchCopilotModels(for backend: CopilotBackend) {
+    private func fetchCopilotModels() {
         copilotStore.setLoadingModels(true)
-        connectService.send(.listModels(sdkType: .copilot, copilotBackend: backend))
+        connectService.send(.listModels(sdkType: .copilot, copilotBackend: nil))
     }
 }
 
