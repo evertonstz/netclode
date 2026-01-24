@@ -70,6 +70,7 @@ struct ChatView: View {
     @State private var cachedTimeline: [TimelineItem] = []
     @State private var lastContentLength: Int = 0
     @State private var lastThinkingContentLength: Int = 0
+    @State private var lastToolInputContentLength: Int = 0
     @State private var lastProcessingState: Bool = false
     
     // Status pill visibility
@@ -103,6 +104,16 @@ struct ChatView: View {
         events.reduce(0) { sum, event in
             if case .thinking(let e) = event {
                 return sum + e.content.count
+            }
+            return sum
+        }
+    }
+    
+    /// Total content length of tool inputs (to detect streaming tool input updates)
+    private var toolInputContentLength: Int {
+        events.reduce(0) { sum, event in
+            if case .toolStart(let e) = event {
+                return sum + e.input.values.reduce(0) { $0 + $1.description.count }
             }
             return sum
         }
@@ -196,6 +207,12 @@ struct ChatView: View {
                     }
                 }
                 .onChange(of: isProcessing) {
+                    updateTimelineIfNeeded()
+                    withAnimation(.glassSpring) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                    }
+                }
+                .onChange(of: toolInputContentLength) {
                     updateTimelineIfNeeded()
                     withAnimation(.glassSpring) {
                         proxy.scrollTo("bottom", anchor: .bottom)
@@ -497,6 +514,7 @@ struct ChatView: View {
         // Compute new version based on data state including content length
         let currentContentLength = messages.last?.content.count ?? 0
         let currentThinkingLength = thinkingContentLength
+        let currentToolInputLength = toolInputContentLength
         let currentProcessing = isProcessing
         
         let messageCountChanged = messages.count != cachedTimeline.filter {
@@ -509,15 +527,17 @@ struct ChatView: View {
         }.count
         let contentLengthChanged = currentContentLength != lastContentLength
         let thinkingLengthChanged = currentThinkingLength != lastThinkingContentLength
+        let toolInputLengthChanged = currentToolInputLength != lastToolInputContentLength
         let processingStateChanged = currentProcessing != lastProcessingState
         
         let dataChanged = messageCountChanged || eventCountChanged || contentLengthChanged
-            || thinkingLengthChanged || processingStateChanged
+            || thinkingLengthChanged || toolInputLengthChanged || processingStateChanged
 
         guard dataChanged else { return }
 
         lastContentLength = currentContentLength
         lastThinkingContentLength = currentThinkingLength
+        lastToolInputContentLength = currentToolInputLength
         lastProcessingState = currentProcessing
         cachedTimeline = computeTimeline()
     }
