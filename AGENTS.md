@@ -10,16 +10,13 @@ Server is configured in `.env` as `DEPLOY_HOST` (Tailscale hostname or IP).
 
 ### Infrastructure Provisioning (Ansible)
 
-The server infrastructure is managed with Ansible in `infra/ansible/`.
+The server infrastructure is managed with Ansible in `infra/ansible/`. Secrets are automatically read from `.env` at the repo root.
 
 ```bash
 cd infra/ansible
 
-# Deploy secrets (from .env)
-ENV_FILE=../../.env DEPLOY_HOST=your-server-ip ansible-playbook playbooks/secrets.yaml
-
-# Full infrastructure deployment (with secrets)
-ENV_FILE=../../.env DEPLOY_HOST=your-server-ip ansible-playbook playbooks/site.yaml
+# Full infrastructure deployment
+DEPLOY_HOST=your-server-ip ansible-playbook playbooks/site.yaml
 
 # Fetch kubeconfig for local kubectl access
 DEPLOY_HOST=your-server-ip ansible-playbook playbooks/fetch-kubeconfig.yaml

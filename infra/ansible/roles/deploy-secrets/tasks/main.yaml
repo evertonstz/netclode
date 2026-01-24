@@ -1,45 +1,51 @@
 ---
 # Secrets role - Deploy secrets to host and Kubernetes
-# Reads from ENV_FILE environment variable pointing to .env file
+# Automatically reads .env file from repo root
 
-- name: Check if ENV_FILE is set
+- name: Set .env file path (defaults to repo root)
   ansible.builtin.set_fact:
-    env_file: "{{ lookup('env', 'ENV_FILE') }}"
+    env_file: "{{ (playbook_dir + '/../../..') | realpath }}/.env"
 
-- name: Skip secrets if ENV_FILE not set
+- name: Check if .env file exists
+  ansible.builtin.stat:
+    path: "{{ env_file }}"
+  delegate_to: localhost
+  become: no
+  register: env_file_stat
+
+- name: Skip secrets if .env file not found
   ansible.builtin.debug:
-    msg: "ENV_FILE not set, skipping secrets deployment. Set ENV_FILE=/path/to/.env to deploy secrets."
-  when: env_file | length == 0
+    msg: "No .env file found at {{ env_file }}, skipping secrets deployment."
+  when: not env_file_stat.stat.exists
 
 - name: Read and parse .env file
-  when: env_file | length > 0
+  when: env_file_stat.stat.exists
   block:
-    - name: Read .env file
-      ansible.builtin.slurp:
-        src: "{{ env_file }}"
+    - name: Read .env file content
+      ansible.builtin.set_fact:
+        env_content_raw: "{{ lookup('file', env_file) }}"
       delegate_to: localhost
       become: no
-      register: env_content
 
     - name: Extract secrets from .env
       ansible.builtin.set_fact:
-        ssh_keys: "{{ env_content.content | b64decode | regex_search('(?m)^SSH_AUTHORIZED_KEYS=(.*)$', '\\1') | first | default('') }}"
-        ts_oauth_client_id: "{{ env_content.content | b64decode | regex_search('(?m)^TS_OAUTH_CLIENT_ID=(.*)$', '\\1') | first | default('') }}"
-        ts_oauth_client_secret: "{{ env_content.content | b64decode | regex_search('(?m)^TS_OAUTH_CLIENT_SECRET=(.*)$', '\\1') | first | default('') }}"
-        tailscale_authkey: "{{ env_content.content | b64decode | regex_search('(?m)^TAILSCALE_AUTHKEY=(.*)$', '\\1') | first | default('') }}"
-        anthropic_api_key: "{{ env_content.content | b64decode | regex_search('(?m)^ANTHROPIC_API_KEY=(.*)$', '\\1') | first | default('') }}"
-        do_spaces_access_key: "{{ env_content.content | b64decode | regex_search('(?m)^DO_SPACES_ACCESS_KEY=(.*)$', '\\1') | first | default('') }}"
-        do_spaces_secret_key: "{{ env_content.content | b64decode | regex_search('(?m)^DO_SPACES_SECRET_KEY=(.*)$', '\\1') | first | default('') }}"
-        juicefs_bucket: "{{ env_content.content | b64decode | regex_search('(?m)^JUICEFS_BUCKET=(.*)$', '\\1') | first | default('') }}"
-        juicefs_meta_url: "{{ env_content.content | b64decode | regex_search('(?m)^JUICEFS_META_URL=(.*)$', '\\1') | first | default('') }}"
-        github_app_id: "{{ env_content.content | b64decode | regex_search('(?m)^GITHUB_APP_ID=(.*)$', '\\1') | first | default('') }}"
-        github_app_private_key_b64: "{{ env_content.content | b64decode | regex_search('(?m)^GITHUB_APP_PRIVATE_KEY_B64=(.*)$', '\\1') | first | default('') }}"
-        github_installation_id: "{{ env_content.content | b64decode | regex_search('(?m)^GITHUB_INSTALLATION_ID=(.*)$', '\\1') | first | default('') }}"
+        ssh_keys: "{{ env_content_raw | regex_search('(?m)^SSH_AUTHORIZED_KEYS=(.*)$', '\\1') | first | default('') }}"
+        ts_oauth_client_id: "{{ env_content_raw | regex_search('(?m)^TS_OAUTH_CLIENT_ID=(.*)$', '\\1') | first | default('') }}"
+        ts_oauth_client_secret: "{{ env_content_raw | regex_search('(?m)^TS_OAUTH_CLIENT_SECRET=(.*)$', '\\1') | first | default('') }}"
+        tailscale_authkey: "{{ env_content_raw | regex_search('(?m)^TAILSCALE_AUTHKEY=(.*)$', '\\1') | first | default('') }}"
+        anthropic_api_key: "{{ env_content_raw | regex_search('(?m)^ANTHROPIC_API_KEY=(.*)$', '\\1') | first | default('') }}"
+        do_spaces_access_key: "{{ env_content_raw | regex_search('(?m)^DO_SPACES_ACCESS_KEY=(.*)$', '\\1') | first | default('') }}"
+        do_spaces_secret_key: "{{ env_content_raw | regex_search('(?m)^DO_SPACES_SECRET_KEY=(.*)$', '\\1') | first | default('') }}"
+        juicefs_bucket: "{{ env_content_raw | regex_search('(?m)^JUICEFS_BUCKET=(.*)$', '\\1') | first | default('') }}"
+        juicefs_meta_url: "{{ env_content_raw | regex_search('(?m)^JUICEFS_META_URL=(.*)$', '\\1') | first | default('') }}"
+        github_app_id: "{{ env_content_raw | regex_search('(?m)^GITHUB_APP_ID=(.*)$', '\\1') | first | default('') }}"
+        github_app_private_key_b64: "{{ env_content_raw | regex_search('(?m)^GITHUB_APP_PRIVATE_KEY_B64=(.*)$', '\\1') | first | default('') }}"
+        github_installation_id: "{{ env_content_raw | regex_search('(?m)^GITHUB_INSTALLATION_ID=(.*)$', '\\1') | first | default('') }}"
 
 # Host secrets - skip if only deploying k8s secrets
 - name: Deploy host secrets
   when:
-    - env_file | length > 0
+    - env_file_stat.stat.exists
     - not (deploy_k8s_secrets | default(false))
   block:
     - name: Create /var/secrets directory
@@ -89,7 +95,7 @@
 # K8s secrets - only after namespace exists
 - name: Deploy Kubernetes secrets
   when:
-    - env_file | length > 0
+    - env_file_stat.stat.exists
     - deploy_k8s_secrets | default(false)
   block:
     - name: Create netclode-secrets Kubernetes secret
