@@ -7,7 +7,7 @@
 
 import type { JsonObject } from "@bufbuild/protobuf";
 
-export type SdkType = "claude" | "opencode";
+export type SdkType = "claude" | "opencode" | "copilot";
 
 /**
  * Configuration for SDK initialization

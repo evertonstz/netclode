@@ -1,6 +1,6 @@
 # Agent
 
-AI coding agent that runs inside Kata Container VMs. Supports multiple SDK backends (Claude Code SDK, OpenCode SDK) to execute coding tasks.
+AI coding agent that runs inside Kata Container VMs. Supports multiple SDK backends (Claude Code SDK, OpenCode SDK, Copilot SDK) to execute coding tasks.
 
 ## What it does
 
@@ -21,7 +21,8 @@ services/agent/
 │   │   ├── types.ts       # SDKAdapter interface, event types
 │   │   ├── factory.ts     # Creates appropriate adapter based on config
 │   │   ├── claude-adapter.ts   # Claude Code SDK implementation
-│   │   └── opencode-adapter.ts # OpenCode SDK implementation
+│   │   ├── opencode-adapter.ts # OpenCode SDK implementation
+│   │   └── copilot-adapter.ts  # GitHub Copilot SDK implementation
 │   └── services/
 │       ├── terminal.ts    # PTY management
 │       └── title.ts       # Title generation
@@ -35,6 +36,7 @@ services/agent/
 | Variable | Description |
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key |
+| `GITHUB_TOKEN` | GitHub token with Copilot scope (required for Copilot SDK) |
 | `CONTROL_PLANE_URL` | Control plane URL (default `http://control-plane.netclode.svc.cluster.local`) |
 | `SESSION_ID` | Session ID (set by control plane, or polled via warm pool) |
 
@@ -141,6 +143,29 @@ const eventSource = new EventSource(`http://localhost:${port}/session/${id}/mess
 
 OpenCode supports multiple model providers (Anthropic, OpenAI, etc.). The model is specified in the session config (e.g., `anthropic/claude-sonnet-4-0`).
 
+### Copilot SDK
+
+Uses the GitHub Copilot CLI via `@github/copilot-sdk`. The agent creates a `CopilotClient` that manages the CLI process and communicates via JSON-RPC.
+
+```typescript
+import { CopilotClient } from "@github/copilot-sdk";
+
+const client = new CopilotClient({ cwd: workspaceDir });
+const session = await client.createSession({
+  model: "claude-sonnet-4-20250514",
+  streaming: true,
+  onPermissionRequest: async () => ({ kind: "approved" }),
+});
+
+session.on((event) => {
+  // assistant.message_delta, tool.execution_start, session.idle, etc.
+});
+
+await session.send({ prompt: text });
+```
+
+**Authentication:** Requires a GitHub token with the `copilot` scope. Create a fine-grained PAT at https://github.com/settings/tokens?type=beta with Account permissions > Copilot > Read-only. Pass it as `GITHUB_TOKEN` environment variable.
+
 ## VM environment
 
 ```
@@ -219,7 +244,7 @@ npm run build
 docker build -t ghcr.io/angristan/netclode-agent:latest -f services/agent/Dockerfile .
 ```
 
-Includes Debian trixie-slim, Node.js via mise, Docker, Git, curl, build-essential, sudo, Claude CLI.
+Includes Debian trixie-slim, Node.js via mise, Docker, Git, curl, build-essential, sudo, Claude CLI, Copilot CLI.
 
 ## Agent Events
 

@@ -79,6 +79,7 @@ const (
 	SdkType_SDK_TYPE_UNSPECIFIED SdkType = 0 // Defaults to Claude Code SDK
 	SdkType_SDK_TYPE_CLAUDE      SdkType = 1 // Anthropic Claude Code SDK (direct integration)
 	SdkType_SDK_TYPE_OPENCODE    SdkType = 2 // OpenCode SDK (multi-provider support)
+	SdkType_SDK_TYPE_COPILOT     SdkType = 3 // GitHub Copilot SDK
 )
 
 // Enum value maps for SdkType.
@@ -87,11 +88,13 @@ var (
 		0: "SDK_TYPE_UNSPECIFIED",
 		1: "SDK_TYPE_CLAUDE",
 		2: "SDK_TYPE_OPENCODE",
+		3: "SDK_TYPE_COPILOT",
 	}
 	SdkType_value = map[string]int32{
 		"SDK_TYPE_UNSPECIFIED": 0,
 		"SDK_TYPE_CLAUDE":      1,
 		"SDK_TYPE_OPENCODE":    2,
+		"SDK_TYPE_COPILOT":     3,
 	}
 )
 
@@ -993,11 +996,12 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"RepoAccess\x12\x1b\n" +
 	"\x17REPO_ACCESS_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10REPO_ACCESS_READ\x10\x01\x12\x15\n" +
-	"\x11REPO_ACCESS_WRITE\x10\x02*O\n" +
+	"\x11REPO_ACCESS_WRITE\x10\x02*e\n" +
 	"\aSdkType\x12\x18\n" +
 	"\x14SDK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fSDK_TYPE_CLAUDE\x10\x01\x12\x15\n" +
-	"\x11SDK_TYPE_OPENCODE\x10\x02*\xf4\x01\n" +
+	"\x11SDK_TYPE_OPENCODE\x10\x02\x12\x14\n" +
+	"\x10SDK_TYPE_COPILOT\x10\x03*\xf4\x01\n" +
 	"\rSessionStatus\x12\x1e\n" +
 	"\x1aSESSION_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17SESSION_STATUS_CREATING\x10\x01\x12\x1b\n" +

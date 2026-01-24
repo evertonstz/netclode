@@ -75,6 +75,9 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
 
   /// OpenCode SDK (multi-provider support)
   case opencode // = 2
+
+  /// GitHub Copilot SDK
+  case copilot // = 3
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -86,6 +89,7 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
     case 0: self = .unspecified
     case 1: self = .claude
     case 2: self = .opencode
+    case 3: self = .copilot
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -95,6 +99,7 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
     case .unspecified: return 0
     case .claude: return 1
     case .opencode: return 2
+    case .copilot: return 3
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -104,6 +109,7 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
     .unspecified,
     .claude,
     .opencode,
+    .copilot,
   ]
 
 }
@@ -644,7 +650,7 @@ extension Netclode_V1_RepoAccess: SwiftProtobuf._ProtoNameProviding {
 }
 
 extension Netclode_V1_SdkType: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SDK_TYPE_UNSPECIFIED\0\u{1}SDK_TYPE_CLAUDE\0\u{1}SDK_TYPE_OPENCODE\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SDK_TYPE_UNSPECIFIED\0\u{1}SDK_TYPE_CLAUDE\0\u{1}SDK_TYPE_OPENCODE\0\u{1}SDK_TYPE_COPILOT\0")
 }
 
 extension Netclode_V1_SessionStatus: SwiftProtobuf._ProtoNameProviding {

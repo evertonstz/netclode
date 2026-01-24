@@ -58,6 +58,10 @@ RUN esbuild src/index.ts --bundle --platform=node --format=esm --packages=extern
 RUN --mount=type=cache,target=/root/.npm \
     npm install -g @anthropic-ai/claude-code
 
+# Copilot CLI
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g @github/copilot
+
 # OpenCode CLI (download Linux x64 binary from GitHub releases)
 RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/latest/download/opencode-linux-x64.tar.gz" -o /tmp/opencode.tar.gz && \
     tar -xzf /tmp/opencode.tar.gz -C /tmp && \

@@ -69,6 +69,8 @@ function parseSdkTypeFromProto(protoSdkType: ProtoSdkType | undefined): SdkType 
   switch (protoSdkType) {
     case ProtoSdkType.OPENCODE:
       return "opencode";
+    case ProtoSdkType.COPILOT:
+      return "copilot";
     case ProtoSdkType.CLAUDE:
     case ProtoSdkType.UNSPECIFIED:
     default:
