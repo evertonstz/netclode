@@ -624,12 +624,17 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 		// Sandbox already running and ready to accept prompts
 		m.mu.Lock()
 		state.ServiceFQDN = status.ServiceFQDN
-		wasAlreadyReady := state.Session.Status == pb.SessionStatus_SESSION_STATUS_READY
-		state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
+		// Preserve RUNNING status if already set (e.g., during warm pool creation)
+		// Only change to READY if we were in a different state (PAUSED, RESUMING, etc.)
+		wasAlreadyActive := state.Session.Status == pb.SessionStatus_SESSION_STATUS_READY ||
+			state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING
+		if !wasAlreadyActive {
+			state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
+		}
 		m.mu.Unlock()
 
 		// Only update storage if status actually changed
-		if !wasAlreadyReady {
+		if !wasAlreadyActive {
 			_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_READY)
 		}
 		return state.Session, nil
@@ -1317,14 +1322,16 @@ func (m *Manager) RegisterAgentConnection(sessionID string, conn AgentConnection
 	var wasInterrupted bool
 	var isRunning bool
 	if state, ok := m.sessions[sessionID]; ok {
-		isRunning = (state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING)
-		// Only grab pending prompt if session is fully running
+		// Session is ready to handle prompts if RUNNING or READY (sandbox available)
+		isRunning = (state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING ||
+			state.Session.Status == pb.SessionStatus_SESSION_STATUS_READY)
+		// Grab pending prompt if session is ready to handle it
 		// During restore, session is RESUMING until restore job completes
 		if isRunning && state.PendingPrompt != "" {
 			pendingPrompt = state.PendingPrompt
 			state.PendingPrompt = "" // Clear it
 		} else if state.PendingPrompt != "" {
-			slog.Warn("Pending prompt exists but session not running", "sessionID", sessionID, "status", state.Session.Status.String(), "pendingPrompt", state.PendingPrompt[:min(50, len(state.PendingPrompt))])
+			slog.Warn("Pending prompt exists but session not ready", "sessionID", sessionID, "status", state.Session.Status.String(), "pendingPrompt", state.PendingPrompt[:min(50, len(state.PendingPrompt))])
 		}
 		wasInterrupted = (state.Session.Status == pb.SessionStatus_SESSION_STATUS_INTERRUPTED)
 	} else {
