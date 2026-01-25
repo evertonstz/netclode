@@ -90,8 +90,9 @@ struct SessionsView: View {
             // Reconnect if needed, then refresh session list
             if !connectService.connectionState.isConnected {
                 connectService.ensureConnected(to: settingsStore.serverURL)
-                // Wait a bit for connection to establish
-                try? await Task.sleep(nanoseconds: 500_000_000)
+                // Wait for connection to actually establish
+                let connected = await connectService.waitForConnection(timeout: 15)
+                guard connected else { return }
             }
             connectService.send(.sessionList)
         }

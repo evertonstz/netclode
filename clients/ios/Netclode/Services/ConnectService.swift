@@ -1027,6 +1027,43 @@ final class ConnectService {
         }
     }
     
+    /// Waits for connection to establish, with timeout.
+    /// Returns true if connected, false if timed out or failed.
+    func waitForConnection(timeout: TimeInterval = 15) async -> Bool {
+        // Already connected
+        if connectionState.isConnected {
+            return true
+        }
+        
+        // Use AsyncStream to wait for state changes
+        return await withTaskGroup(of: Bool.self) { group in
+            // Task 1: Wait for connection state to become connected
+            group.addTask { @MainActor in
+                for await state in self.$connectionState.values {
+                    if state.isConnected {
+                        return true
+                    }
+                    // Give up if we've stopped trying
+                    if state == .disconnected {
+                        return false
+                    }
+                }
+                return false
+            }
+            
+            // Task 2: Timeout
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                return false
+            }
+            
+            // Return first result (either connected or timeout)
+            let result = await group.next() ?? false
+            group.cancelAll()
+            return result
+        }
+    }
+    
     // MARK: - Send Messages
     
     func send(_ message: ClientMessage) {
