@@ -105,10 +105,10 @@ final class MessageRouter {
             }
 
         // Agent messages
-        case .agentMessage(let sessionId, let content, let partial):
-            print("[MessageRouter] agentMessage received: partial=\(partial), contentLength=\(content.count), preview=\"\(String(content.prefix(50)))\"")
+        case .agentMessage(let sessionId, let content, let partial, let messageId):
+            print("[MessageRouter] agentMessage received: partial=\(partial), messageId=\(messageId ?? "nil"), contentLength=\(content.count), preview=\"\(String(content.prefix(50)))\"")
             if partial {
-                chatStore.appendAssistantPartial(sessionId: sessionId, delta: content)
+                chatStore.appendAssistantPartial(sessionId: sessionId, delta: content, messageId: messageId)
             } else {
                 // Final message - only add if we don't already have an assistant message being built
                 // (the content was already accumulated via partials)

@@ -27,20 +27,41 @@ final class ChatStore {
         scheduleSave()
     }
 
-    /// Append partial content to the last assistant message, or create a new one
-    func appendAssistantPartial(sessionId: String, delta: String) {
+    /// Append partial content to an assistant message, creating a new one if messageId changes
+    func appendAssistantPartial(sessionId: String, delta: String, messageId: String? = nil) {
         var messages = messagesBySession[sessionId] ?? []
 
+        // Check if we should append to existing message or create a new one
         if let lastIndex = messages.indices.last,
            messages[lastIndex].role == .assistant {
-            // Append to existing assistant message
-            messages[lastIndex].content += delta
+            let lastMessage = messages[lastIndex]
+            
+            // If messageId is provided and different from current, create a new message
+            if let newMessageId = messageId,
+               let existingMessageId = lastMessage.serverMessageId,
+               newMessageId != existingMessageId {
+                // Different message ID - create a new message
+                messages.append(ChatMessage(
+                    role: .assistant,
+                    content: delta,
+                    timestamp: Date(),
+                    serverMessageId: newMessageId
+                ))
+            } else {
+                // Same message ID (or no ID) - append to existing
+                messages[lastIndex].content += delta
+                // Set the messageId if this is the first time we're seeing it
+                if messages[lastIndex].serverMessageId == nil && messageId != nil {
+                    messages[lastIndex].serverMessageId = messageId
+                }
+            }
         } else {
-            // Create new assistant message
+            // No existing assistant message - create new one
             messages.append(ChatMessage(
                 role: .assistant,
                 content: delta,
-                timestamp: Date()
+                timestamp: Date(),
+                serverMessageId: messageId
             ))
         }
 
@@ -48,15 +69,9 @@ final class ChatStore {
         // Don't save partial messages to disk - wait for finalize
     }
 
-    /// Called when agent.done is received to finalize the message
+    /// Called when agent.done is received to finalize and persist messages
     func finalizeLastMessage(sessionId: String) {
-        // Update the timestamp to now so the message sorts after all events
-        var messages = messagesBySession[sessionId] ?? []
-        if let lastIndex = messages.indices.last,
-           messages[lastIndex].role == .assistant {
-            messages[lastIndex].timestamp = Date()
-            messagesBySession[sessionId] = messages
-        }
+        // Just save - timestamps are already set correctly when messages were created
         scheduleSave()
     }
 

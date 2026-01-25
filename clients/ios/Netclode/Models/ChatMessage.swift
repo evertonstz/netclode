@@ -10,18 +10,20 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
     let role: MessageRole
     var content: String
     var timestamp: Date  // Mutable to allow updating when streaming completes
+    var serverMessageId: String?  // Server-assigned message ID for tracking text blocks
 
-    init(id: UUID = UUID(), role: MessageRole, content: String, timestamp: Date = Date()) {
+    init(id: UUID = UUID(), role: MessageRole, content: String, timestamp: Date = Date(), serverMessageId: String? = nil) {
         self.id = id
         self.role = role
         self.content = content
         self.timestamp = timestamp
+        self.serverMessageId = serverMessageId
     }
 }
 
 extension ChatMessage: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, role, content, timestamp
+        case id, role, content, timestamp, serverMessageId
     }
 }
 

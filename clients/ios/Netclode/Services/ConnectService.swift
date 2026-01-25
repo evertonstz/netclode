@@ -374,7 +374,7 @@ final class ConnectService {
             )
             
         case .agentMessage(let msg):
-            return .agentMessage(sessionId: msg.sessionID, content: msg.content, partial: msg.partial)
+            return .agentMessage(sessionId: msg.sessionID, content: msg.content, partial: msg.partial, messageId: msg.messageID.isEmpty ? nil : msg.messageID)
             
         case .agentEvent(let msg):
             return .agentEvent(sessionId: msg.sessionID, event: convertAgentEvent(msg.event))

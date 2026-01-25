@@ -48,11 +48,34 @@ func (m *Manager) handleTextDelta(ctx context.Context, sessionID string, state *
 	}
 	if messageID == "" {
 		messageID = "msg_" + uuid.NewString()[:12]
-		state.CurrentMessageID = messageID
 	}
 
+	// If message ID changed and we have accumulated content, persist the previous message
+	var msgToPersist *pb.Message
+	if state.CurrentMessageID != "" && state.CurrentMessageID != messageID {
+		previousContent := state.ContentBuilder.String()
+		if previousContent != "" {
+			msgToPersist = &pb.Message{
+				Id:        state.CurrentMessageID,
+				Role:      pb.MessageRole_MESSAGE_ROLE_ASSISTANT,
+				Content:   previousContent,
+				Timestamp: timestamppb.Now(),
+			}
+		}
+		// Reset content builder for new message
+		state.ContentBuilder.Reset()
+	}
+
+	state.CurrentMessageID = messageID
 	state.ContentBuilder.WriteString(delta.Content)
 	m.mu.Unlock()
+
+	// Persist previous message outside the lock
+	if msgToPersist != nil {
+		if err := m.storage.AppendMessage(ctx, sessionID, msgToPersist); err != nil {
+			slog.Warn("Failed to persist assistant message", "sessionID", sessionID, "error", err)
+		}
+	}
 
 	// Emit delta to clients (not accumulated content) - client accumulates
 	m.emitAgentMessage(ctx, sessionID, messageID, delta.Content, delta.Partial)

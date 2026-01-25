@@ -39,7 +39,7 @@ export interface PromptConfig {
  */
 export type PromptEvent =
   | { type: "system"; message: string }
-  | { type: "textDelta"; content: string; partial: boolean }
+  | { type: "textDelta"; content: string; partial: boolean; messageId?: string }
   | { type: "toolStart"; tool: string; toolUseId: string; parentToolUseId?: string; input?: JsonObject }
   | { type: "toolInput"; toolUseId: string; inputDelta: string; parentToolUseId?: string }
   | { type: "toolInputComplete"; toolUseId: string; parentToolUseId?: string; input: JsonObject }

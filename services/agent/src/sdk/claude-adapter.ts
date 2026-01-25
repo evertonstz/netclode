@@ -28,6 +28,9 @@ export class ClaudeSDKAdapter implements SDKAdapter {
   private blockIndexToThinkingId = new Map<string, string>();
   private currentParentToolUseId: string | null = null;
   private thinkingIdCounter = 0;
+  // Track text blocks - each text block becomes a separate message with its own ID
+  private currentTextMessageId: string | null = null;
+  private textMessageIdCounter = 0;
 
   async initialize(config: SDKConfig): Promise<void> {
     this.config = config;
@@ -81,6 +84,7 @@ export class ClaudeSDKAdapter implements SDKAdapter {
     this.blockIndexToToolInput.clear();
     this.blockIndexToThinkingId.clear();
     this.currentParentToolUseId = null;
+    this.currentTextMessageId = null;
     let textWasStreamed = false;
     const streamedThinkingIds = new Set<string>();
 
@@ -204,12 +208,20 @@ export class ClaudeSDKAdapter implements SDKAdapter {
               } else if (contentBlock?.type === "thinking") {
                 const thinkingId = this.generateThinkingId();
                 this.blockIndexToThinkingId.set(String(message.event.index), thinkingId);
+              } else if (contentBlock?.type === "text") {
+                // Each text block becomes a separate message with its own ID
+                this.currentTextMessageId = `msg_${Date.now()}_${++this.textMessageIdCounter}`;
               }
             } else if (message.event.type === "content_block_delta") {
               const delta = message.event.delta;
               if (delta && "text" in delta) {
                 textWasStreamed = true;
-                yield { type: "textDelta", content: delta.text, partial: true };
+                yield {
+                  type: "textDelta",
+                  content: delta.text,
+                  partial: true,
+                  ...(this.currentTextMessageId && { messageId: this.currentTextMessageId }),
+                };
               } else if (delta && "partial_json" in delta) {
                 const toolUseId = this.blockIndexToToolId.get(message.event.index);
                 if (toolUseId) {

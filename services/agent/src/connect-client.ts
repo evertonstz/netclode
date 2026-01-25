@@ -144,7 +144,12 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
     case "textDelta":
       response = {
         case: "textDelta",
-        value: { $typeName: "netclode.v1.AgentTextDelta", content: event.content, partial: event.partial, messageId: "" },
+        value: {
+          $typeName: "netclode.v1.AgentTextDelta",
+          content: event.content,
+          partial: event.partial,
+          messageId: event.messageId || "",
+        },
       };
       break;
 

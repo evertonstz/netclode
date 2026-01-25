@@ -47,7 +47,7 @@ enum ServerMessage: Sendable {
     case sessionList(sessions: [Session])
     case sessionError(id: String?, error: String)
 
-    case agentMessage(sessionId: String, content: String, partial: Bool)
+    case agentMessage(sessionId: String, content: String, partial: Bool, messageId: String?)
     case agentEvent(sessionId: String, event: AgentEvent)
     case agentDone(sessionId: String)
     case agentError(sessionId: String, error: String)
@@ -86,7 +86,7 @@ extension ServerMessage: Decodable {
     private enum CodingKeys: String, CodingKey {
         case type
         case session, sessions, id, error, message
-        case sessionId, content, partial, event, data
+        case sessionId, content, partial, event, data, messageId
         case port, previewUrl
         case serverTime, messages, events, hasMore, lastNotificationId
         case repos
@@ -129,7 +129,8 @@ extension ServerMessage: Decodable {
             let sessionId = try container.decode(String.self, forKey: .sessionId)
             let content = try container.decode(String.self, forKey: .content)
             let partial = try container.decodeIfPresent(Bool.self, forKey: .partial) ?? false
-            self = .agentMessage(sessionId: sessionId, content: content, partial: partial)
+            let messageId = try container.decodeIfPresent(String.self, forKey: .messageId)
+            self = .agentMessage(sessionId: sessionId, content: content, partial: partial, messageId: messageId)
 
         case "agent.event":
             let sessionId = try container.decode(String.self, forKey: .sessionId)
