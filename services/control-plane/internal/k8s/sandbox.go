@@ -421,12 +421,11 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName stri
 								{Name: "agent-home", MountPath: "/agent"},
 							},
 							ReadinessProbe: &Probe{
-								HTTPGet: &HTTPGetAction{
-									Path: "/health",
-									Port: 3002,
+								Exec: &ExecAction{
+									Command: []string{"test", "-f", "/tmp/agent-ready"},
 								},
 								InitialDelaySeconds: 3,
-								PeriodSeconds:       2,
+								PeriodSeconds:       5,
 							},
 						},
 					},

@@ -109,6 +109,7 @@ type SecurityContext struct {
 // Probe defines a health probe
 type Probe struct {
 	HTTPGet             *HTTPGetAction `json:"httpGet,omitempty"`
+	Exec                *ExecAction    `json:"exec,omitempty"`
 	InitialDelaySeconds int            `json:"initialDelaySeconds,omitempty"`
 	PeriodSeconds       int            `json:"periodSeconds,omitempty"`
 }
@@ -117,6 +118,11 @@ type Probe struct {
 type HTTPGetAction struct {
 	Path string `json:"path"`
 	Port int    `json:"port"`
+}
+
+// ExecAction defines an exec probe
+type ExecAction struct {
+	Command []string `json:"command"`
 }
 
 // PVCTemplate defines a PVC template
