@@ -243,15 +243,16 @@ struct ChatView: View {
                 showStatusPill = true
             }
             
-            // Cancel previous hide task and start a new one
-            // This ensures we wait 2s after the LAST status change
+            // Only auto-hide for .ready status - other statuses stay visible
             hideStatusPillTask?.cancel()
-            hideStatusPillTask = Task {
-                try? await Task.sleep(for: .seconds(2))
-                guard !Task.isCancelled else { return }
-                if !isScrollingUp {
-                    withAnimation {
-                        showStatusPill = false
+            if session?.status == .ready {
+                hideStatusPillTask = Task {
+                    try? await Task.sleep(for: .seconds(2))
+                    guard !Task.isCancelled else { return }
+                    if !isScrollingUp {
+                        withAnimation {
+                            showStatusPill = false
+                        }
                     }
                 }
             }
@@ -259,19 +260,21 @@ struct ChatView: View {
         .task(id: sessionId) {
             // Use task(id:) instead of onAppear to ensure it fires on navigation
             lastKnownStatus = session?.status
-            // Show pill briefly on appear for any status
-            if session?.status != nil {
+            // Show pill on appear for any status
+            if let status = session?.status {
                 withAnimation {
                     showStatusPill = true
                 }
-                // Auto-hide after 2 seconds
+                // Only auto-hide for .ready status - other statuses stay visible
                 hideStatusPillTask?.cancel()
-                hideStatusPillTask = Task {
-                    try? await Task.sleep(for: .seconds(2))
-                    guard !Task.isCancelled else { return }
-                    if !isScrollingUp {
-                        withAnimation {
-                            showStatusPill = false
+                if status == .ready {
+                    hideStatusPillTask = Task {
+                        try? await Task.sleep(for: .seconds(2))
+                        guard !Task.isCancelled else { return }
+                        if !isScrollingUp {
+                            withAnimation {
+                                showStatusPill = false
+                            }
                         }
                     }
                 }
@@ -315,8 +318,10 @@ struct ChatView: View {
             let scrollingUp = offset > lastScrollOffset
             if scrollingUp != isScrollingUp {
                 isScrollingUp = scrollingUp
+                // Only hide on scroll for .ready status - other statuses stay visible
+                let shouldShow = scrollingUp || session?.status != .ready
                 withAnimation(.snappy) {
-                    showStatusPill = scrollingUp
+                    showStatusPill = shouldShow
                 }
             }
             lastScrollOffset = offset
