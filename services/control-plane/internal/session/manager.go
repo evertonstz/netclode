@@ -48,9 +48,6 @@ type AgentConnection interface {
 	GetGitDiff(requestID string, file *string) error
 	SendTerminalInput(data string) error
 	ResizeTerminal(cols, rows int) error
-	// Snapshot operations
-	CreateSnapshot(requestID, snapshotID, name string) error
-	RestoreSnapshot(requestID, snapshotID string) error
 }
 
 // Manager handles session lifecycle and agent communication.
@@ -72,10 +69,6 @@ type Manager struct {
 	copilotModelsCacheAt time.Time
 	modelsDevCache       map[string]*modelsDevCacheEntry
 	copilotModelsMu      sync.RWMutex
-
-	// Snapshot operation tracking
-	pendingSnapshotMu       sync.Mutex
-	pendingSnapshotRequests map[string]chan snapshotResult
 }
 
 type modelsDevCacheEntry struct {
@@ -86,13 +79,12 @@ type modelsDevCacheEntry struct {
 // NewManager creates a new session manager.
 func NewManager(store storage.Storage, k8sRuntime k8s.Runtime, cfg *config.Config, githubClient *github.Client) *Manager {
 	return &Manager{
-		storage:                 store,
-		k8s:                     k8sRuntime,
-		config:                  cfg,
-		github:                  githubClient,
-		sessions:                make(map[string]*SessionState),
-		agents:                  make(map[string]AgentConnection),
-		pendingSnapshotRequests: make(map[string]chan snapshotResult),
+		storage:  store,
+		k8s:      k8sRuntime,
+		config:   cfg,
+		github:   githubClient,
+		sessions: make(map[string]*SessionState),
+		agents:   make(map[string]AgentConnection),
 	}
 }
 
@@ -1608,23 +1600,11 @@ func getCopilotModelsFallback() []*pb.ModelInfo {
 // Snapshot Operations
 // ============================================================================
 
-type snapshotResult struct {
-	success   bool
-	sizeBytes int64
-	err       error
-}
-
-// CreateSnapshot creates a snapshot of the session's workspace.
+// CreateSnapshot creates a snapshot of the session's PVC using Kubernetes VolumeSnapshots.
 func (m *Manager) CreateSnapshot(ctx context.Context, sessionID string, name string) (*pb.Snapshot, error) {
 	state := m.getState(sessionID)
 	if state == nil {
 		return nil, fmt.Errorf("session %s not found", sessionID)
-	}
-
-	// Get agent connection
-	agent := m.GetAgentConnection(sessionID)
-	if agent == nil {
-		return nil, fmt.Errorf("no agent connected for session %s", sessionID)
 	}
 
 	// Get message count for the snapshot
@@ -1642,64 +1622,49 @@ func (m *Manager) CreateSnapshot(ctx context.Context, sessionID string, name str
 	// Get current event stream ID for snapshot point
 	eventStreamID, _ := m.storage.GetLastEventStreamID(ctx, sessionID)
 
-	// Generate snapshot ID and request ID
+	// Generate snapshot ID
 	snapshotID := uuid.NewString()[:12]
-	requestID := uuid.NewString()[:12]
 
-	// Register pending request
-	resultCh := make(chan snapshotResult, 1)
-	m.pendingSnapshotMu.Lock()
-	m.pendingSnapshotRequests[requestID] = resultCh
-	m.pendingSnapshotMu.Unlock()
-
-	defer func() {
-		m.pendingSnapshotMu.Lock()
-		delete(m.pendingSnapshotRequests, requestID)
-		m.pendingSnapshotMu.Unlock()
-	}()
-
-	// Send snapshot command to agent
-	if err := agent.CreateSnapshot(requestID, snapshotID, name); err != nil {
-		return nil, fmt.Errorf("failed to send snapshot command: %w", err)
+	// Create K8s VolumeSnapshot
+	if err := m.k8s.CreateVolumeSnapshot(ctx, sessionID, snapshotID); err != nil {
+		return nil, fmt.Errorf("failed to create volume snapshot: %w", err)
 	}
 
-	// Wait for response with timeout
-	select {
-	case result := <-resultCh:
-		if !result.success {
-			return nil, result.err
-		}
-
-		// Create snapshot record
-		snapshot := &pb.Snapshot{
-			Id:            snapshotID,
-			SessionId:     sessionID,
-			Name:          name,
-			CreatedAt:     timestamppb.Now(),
-			SizeBytes:     result.sizeBytes,
-			TurnNumber:    int32(turnNumber),
-			MessageCount:  int32(msgCount),
-			EventStreamId: eventStreamID,
-		}
-
-		// Save to storage
-		if err := m.storage.SaveSnapshot(ctx, snapshot); err != nil {
-			return nil, fmt.Errorf("failed to save snapshot: %w", err)
-		}
-
-		slog.Info("Snapshot created", "sessionID", sessionID, "snapshotID", snapshotID, "name", name)
-		return snapshot, nil
-
-	case <-time.After(60 * time.Second):
-		return nil, fmt.Errorf("snapshot operation timed out")
-
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	// Wait for snapshot to be ready (with timeout)
+	if err := m.k8s.WaitForSnapshotReady(ctx, sessionID, snapshotID, 60*time.Second); err != nil {
+		// Cleanup failed snapshot
+		_ = m.k8s.DeleteVolumeSnapshot(ctx, sessionID, snapshotID)
+		return nil, fmt.Errorf("snapshot not ready: %w", err)
 	}
+
+	// Create snapshot record
+	snapshot := &pb.Snapshot{
+		Id:            snapshotID,
+		SessionId:     sessionID,
+		Name:          name,
+		CreatedAt:     timestamppb.Now(),
+		SizeBytes:     0, // K8s VolumeSnapshots don't report size synchronously
+		TurnNumber:    int32(turnNumber),
+		MessageCount:  int32(msgCount),
+		EventStreamId: eventStreamID,
+	}
+
+	// Save to storage
+	if err := m.storage.SaveSnapshot(ctx, snapshot); err != nil {
+		return nil, fmt.Errorf("failed to save snapshot: %w", err)
+	}
+
+	slog.Info("Snapshot created", "sessionID", sessionID, "snapshotID", snapshotID, "name", name)
+	return snapshot, nil
 }
 
-// RestoreSnapshot restores a session's workspace from a snapshot.
-// Also truncates messages to the snapshot's message count.
+// RestoreSnapshot restores a session from a snapshot.
+// This involves:
+// 1. Setting session status to "restoring"
+// 2. Deleting the sandbox/pod and old PVC
+// 3. Creating new PVC from the VolumeSnapshot
+// 4. Truncating messages/events in Redis
+// 5. Session will be recreated when client reconnects
 func (m *Manager) RestoreSnapshot(ctx context.Context, sessionID, snapshotID string) (int32, error) {
 	state := m.getState(sessionID)
 	if state == nil {
@@ -1717,84 +1682,61 @@ func (m *Manager) RestoreSnapshot(ctx context.Context, sessionID, snapshotID str
 		return 0, fmt.Errorf("snapshot not found: %w", err)
 	}
 
-	// Get agent connection
-	agent := m.GetAgentConnection(sessionID)
-	if agent == nil {
-		return 0, fmt.Errorf("no agent connected for session %s", sessionID)
+	slog.Info("Starting restore from snapshot", "sessionID", sessionID, "snapshotID", snapshotID)
+
+	// Update session status to indicate restore in progress
+	state.Session.Status = pb.SessionStatus_SESSION_STATUS_PAUSED
+	_ = m.storage.UpdateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_PAUSED)
+
+	// Disconnect the agent (if connected)
+	m.mu.Lock()
+	if _, ok := m.agents[sessionID]; ok {
+		delete(m.agents, sessionID)
+		// The agent connection will be closed when the pod is deleted
+	}
+	m.mu.Unlock()
+
+	// Perform the K8s restore (deletes pod, creates new PVC from snapshot)
+	if err := m.k8s.RestoreFromSnapshot(ctx, sessionID, snapshotID); err != nil {
+		// Restore failed - try to recover
+		slog.Error("Restore failed", "sessionID", sessionID, "snapshotID", snapshotID, "error", err)
+		state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
+		_ = m.storage.UpdateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_READY)
+		return 0, fmt.Errorf("restore failed: %w", err)
 	}
 
-	// Register pending request
-	requestID := uuid.NewString()[:12]
-	resultCh := make(chan snapshotResult, 1)
-	m.pendingSnapshotMu.Lock()
-	m.pendingSnapshotRequests[requestID] = resultCh
-	m.pendingSnapshotMu.Unlock()
-
-	defer func() {
-		m.pendingSnapshotMu.Lock()
-		delete(m.pendingSnapshotRequests, requestID)
-		m.pendingSnapshotMu.Unlock()
-	}()
-
-	// Send restore command to agent
-	if err := agent.RestoreSnapshot(requestID, snapshotID); err != nil {
-		return 0, fmt.Errorf("failed to send restore command: %w", err)
+	// Truncate messages to snapshot point
+	if err := m.storage.TruncateMessages(ctx, sessionID, int(snapshot.MessageCount)); err != nil {
+		slog.Warn("Failed to truncate messages", "sessionID", sessionID, "error", err)
 	}
 
-	// Wait for response with timeout
-	select {
-	case result := <-resultCh:
-		if !result.success {
-			return 0, result.err
-		}
-
-		// Truncate messages to snapshot point
-		if err := m.storage.TruncateMessages(ctx, sessionID, int(snapshot.MessageCount)); err != nil {
-			slog.Warn("Failed to truncate messages", "sessionID", sessionID, "error", err)
-		}
-
-		// Truncate events to snapshot point
-		if err := m.storage.TruncateEventsAfter(ctx, sessionID, snapshot.EventStreamId); err != nil {
-			slog.Warn("Failed to truncate events", "sessionID", sessionID, "error", err)
-		}
-
-		// Delete snapshots newer than the restored one (destructive restore)
-		m.deleteSnapshotsAfter(ctx, sessionID, snapshot)
-
-		slog.Info("Snapshot restored", "sessionID", sessionID, "snapshotID", snapshotID, "messagesRestored", snapshot.MessageCount)
-		return snapshot.MessageCount, nil
-
-	case <-time.After(60 * time.Second):
-		return 0, fmt.Errorf("restore operation timed out")
-
-	case <-ctx.Done():
-		return 0, ctx.Err()
+	// Truncate events to snapshot point
+	if err := m.storage.TruncateEventsAfter(ctx, sessionID, snapshot.EventStreamId); err != nil {
+		slog.Warn("Failed to truncate events", "sessionID", sessionID, "error", err)
 	}
+
+	// Truncate notifications after snapshot point
+	if err := m.storage.TruncateNotificationsAfter(ctx, sessionID, snapshot.EventStreamId); err != nil {
+		slog.Warn("Failed to truncate notifications", "sessionID", sessionID, "error", err)
+	}
+
+	// Delete snapshots newer than the restored one (destructive restore)
+	m.deleteSnapshotsAfter(ctx, sessionID, snapshot)
+
+	// Delete the K8s VolumeSnapshots that are newer than the restored one
+	m.deleteK8sSnapshotsAfter(ctx, sessionID, snapshot)
+
+	// Update session status - ready for the sandbox to be recreated
+	state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
+	_ = m.storage.UpdateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_READY)
+
+	slog.Info("Snapshot restored", "sessionID", sessionID, "snapshotID", snapshotID, "messagesRestored", snapshot.MessageCount)
+	return snapshot.MessageCount, nil
 }
 
 // ListSnapshots returns all snapshots for a session.
 func (m *Manager) ListSnapshots(ctx context.Context, sessionID string) ([]*pb.Snapshot, error) {
 	return m.storage.ListSnapshots(ctx, sessionID)
-}
-
-// HandleSnapshotResult processes snapshot operation results from agent.
-func (m *Manager) HandleSnapshotResult(ctx context.Context, sessionID string, result *pb.AgentSnapshotResult) error {
-	m.pendingSnapshotMu.Lock()
-	ch, ok := m.pendingSnapshotRequests[result.RequestId]
-	m.pendingSnapshotMu.Unlock()
-
-	if !ok {
-		slog.Warn("No pending snapshot request found", "requestID", result.RequestId)
-		return nil
-	}
-
-	if result.Success {
-		ch <- snapshotResult{success: true, sizeBytes: result.GetSizeBytes()}
-	} else {
-		ch <- snapshotResult{success: false, err: fmt.Errorf("%s", result.GetError())}
-	}
-
-	return nil
 }
 
 // AutoSnapshot creates an auto-snapshot after an agent turn completes.
@@ -1866,6 +1808,27 @@ func (m *Manager) deleteSnapshotsAfter(ctx context.Context, sessionID string, re
 		slog.Info("Deleted snapshots after restore point", "sessionID", sessionID, "count", deleted)
 		// Emit updated snapshot list to clients
 		m.emitSnapshotList(ctx, sessionID)
+	}
+}
+
+// deleteK8sSnapshotsAfter deletes K8s VolumeSnapshots created after the restored snapshot.
+func (m *Manager) deleteK8sSnapshotsAfter(ctx context.Context, sessionID string, restoredSnapshot *pb.Snapshot) {
+	snapshots, err := m.storage.ListSnapshots(ctx, sessionID)
+	if err != nil {
+		slog.Warn("Failed to list snapshots for K8s cleanup", "sessionID", sessionID, "error", err)
+		return
+	}
+
+	restoredTime := restoredSnapshot.CreatedAt.AsTime()
+
+	for _, s := range snapshots {
+		if s.CreatedAt.AsTime().After(restoredTime) {
+			if err := m.k8s.DeleteVolumeSnapshot(ctx, sessionID, s.Id); err != nil {
+				slog.Warn("Failed to delete K8s VolumeSnapshot", "sessionID", sessionID, "snapshotID", s.Id, "error", err)
+			} else {
+				slog.Debug("Deleted K8s VolumeSnapshot", "sessionID", sessionID, "snapshotID", s.Id)
+			}
+		}
 	}
 }
 

@@ -33,6 +33,14 @@ type Runtime interface {
 	DeleteSandboxService(ctx context.Context, sessionID string) error
 	ExposePort(ctx context.Context, sessionID string, port int) error
 
+	// VolumeSnapshot operations (for session snapshots)
+	CreateVolumeSnapshot(ctx context.Context, sessionID, snapshotID string) error
+	WaitForSnapshotReady(ctx context.Context, sessionID, snapshotID string, timeout time.Duration) error
+	DeleteVolumeSnapshot(ctx context.Context, sessionID, snapshotID string) error
+	ListVolumeSnapshots(ctx context.Context, sessionID string) ([]VolumeSnapshotInfo, error)
+	RestoreFromSnapshot(ctx context.Context, sessionID, snapshotID string) error
+	GetPVCName(ctx context.Context, sessionID string) (string, error)
+
 	Close()
 }
 

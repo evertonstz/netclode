@@ -582,6 +582,35 @@ func (r *RedisStorage) TruncateEventsAfter(ctx context.Context, sessionID string
 	return r.client.XDel(ctx, streamKey, ids...).Err()
 }
 
+// TruncateNotificationsAfter deletes all notifications after the given stream ID.
+// If afterID is empty, all notifications are deleted.
+func (r *RedisStorage) TruncateNotificationsAfter(ctx context.Context, sessionID string, afterID string) error {
+	streamKey := NotificationsStreamKey(sessionID)
+
+	if afterID == "" {
+		// Delete entire stream
+		return r.client.Del(ctx, streamKey).Err()
+	}
+
+	// Get all notification IDs after the given ID
+	messages, err := r.client.XRange(ctx, streamKey, "("+afterID, "+").Result()
+	if err != nil {
+		return err
+	}
+
+	if len(messages) == 0 {
+		return nil
+	}
+
+	// Delete each notification after the snapshot point
+	ids := make([]string, len(messages))
+	for i, msg := range messages {
+		ids[i] = msg.ID
+	}
+
+	return r.client.XDel(ctx, streamKey, ids...).Err()
+}
+
 // ============================================================================
 // Snapshot Storage
 // ============================================================================

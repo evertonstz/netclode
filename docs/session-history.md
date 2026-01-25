@@ -5,14 +5,15 @@ Netclode automatically creates snapshots after each agent turn, allowing you to 
 ## Overview
 
 When the agent completes a turn:
-1. A snapshot of `/agent/workspace` is created using JuiceFS copy-on-write clones
-2. The current message count is recorded with the snapshot
+1. The control plane creates a Kubernetes VolumeSnapshot of the agent's PVC
+2. The current message count and event stream ID are recorded with the snapshot
 3. Up to 10 snapshots are retained per session (oldest auto-deleted)
 
 When you restore a snapshot:
-1. The workspace is restored from the snapshot
-2. Chat messages are truncated to match the snapshot point
-3. You can continue the conversation from that point
+1. The agent pod is deleted
+2. A new PVC is created from the VolumeSnapshot
+3. Chat messages and events are truncated to match the snapshot point
+4. The session becomes "ready" for the sandbox to be recreated
 
 ## How It Works
 
@@ -20,21 +21,17 @@ When you restore a snapshot:
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Client    │     │  Control Plane   │     │     Agent       │
+│   Client    │     │  Control Plane   │     │   Kubernetes    │
 └─────────────┘     └────────┬─────────┘     └────────┬────────┘
                              │                        │
       Agent turn completes   │                        │
       ◄──────────────────────┤                        │
                              │                        │
-                             │  CreateSnapshotCommand │
+                             │ Create VolumeSnapshot  │
                              │───────────────────────►│
                              │                        │
-                             │                        │ juicefs clone
-                             │                        │ /agent/workspace
-                             │                        │ /agent/.snapshots/{id}
-                             │                        │
-                             │   AgentSnapshotResult  │
-                             │◄───────────────────────│
+                             │ Wait for ready         │
+                             │◄──────────────────────►│
                              │                        │
       Save snapshot metadata │                        │
       (Redis)                │                        │
@@ -47,22 +44,21 @@ When you restore a snapshot:
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Client    │     │  Control Plane   │     │     Agent       │
+│   Client    │     │  Control Plane   │     │   Kubernetes    │
 └──────┬──────┘     └────────┬─────────┘     └────────┬────────┘
        │                     │                        │
        │ RestoreSnapshot     │                        │
        │────────────────────►│                        │
        │                     │                        │
-       │                     │ RestoreSnapshotCommand │
+       │                     │ Delete sandbox/pod    │
        │                     │───────────────────────►│
        │                     │                        │
-       │                     │                        │ mv workspace → backup
-       │                     │                        │ juicefs clone
-       │                     │                        │ snapshot → workspace
-       │                     │                        │ rm backup
+       │                     │ Delete old PVC         │
+       │                     │───────────────────────►│
        │                     │                        │
-       │                     │   AgentSnapshotResult  │
-       │                     │◄───────────────────────│
+       │                     │ Create PVC from        │
+       │                     │ VolumeSnapshot         │
+       │                     │───────────────────────►│
        │                     │                        │
        │                     │ Truncate messages      │
        │                     │ Truncate events        │
@@ -71,47 +67,35 @@ When you restore a snapshot:
        │ snapshot.restored   │                        │
        │◄────────────────────│                        │
        │                     │                        │
-       │ Reload chat history │                        │
-       │                     │                        │
+       │ Session ready for   │                        │
+       │ sandbox recreation  │                        │
 ```
 
-### JuiceFS Copy-on-Write
+### Kubernetes VolumeSnapshots
 
-Snapshots use `juicefs clone`, which is a metadata-only operation:
+Snapshots use the Kubernetes VolumeSnapshot API with the JuiceFS CSI driver:
 
-- **Instant**: No data is copied, only metadata pointers
-- **Space-efficient**: Storage only grows when files diverge
-- **Atomic**: Clone completes in milliseconds regardless of workspace size
+- **Fast**: VolumeSnapshots are typically metadata-only operations
+- **Space-efficient**: Storage only grows when files diverge (copy-on-write)
+- **Full state**: Captures the entire `/agent` directory including:
+  - `/agent/workspace` - the code/repo
+  - `/agent/.claude` - Claude SDK session data
+  - `/agent/.session-mapping.json` - SDK session mapping
+  - `/agent/.local` - mise/tool data
 
-```bash
-# What the agent runs
-juicefs clone /agent/workspace /agent/.snapshots/{snapshot-id}
+```yaml
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: netclode-{session-id}-{snapshot-id}
+  namespace: netclode
+spec:
+  volumeSnapshotClassName: juicefs-snapclass
+  source:
+    persistentVolumeClaimName: netclode-{session-id}
 ```
-
-If JuiceFS isn't available (local development), the agent falls back to `cp -a`.
 
 ## Storage
-
-### Agent Filesystem
-
-```
-/agent/
-├── workspace/              # Current working directory
-└── .snapshots/
-    ├── {snapshot-id}/      # Cloned workspace state
-    ├── {snapshot-id}.meta.json
-    └── ...
-```
-
-Each snapshot has a metadata file:
-
-```json
-{
-  "id": "abc123def456",
-  "name": "Turn 3: Fix the authentication bug",
-  "createdAt": "2026-01-25T10:30:00Z"
-}
-```
 
 ### Redis
 
@@ -147,7 +131,7 @@ Snapshot metadata is stored in Redis:
   "sessionId": "sess-xyz789",
   "name": "Turn 3: Fix the authentication bug",
   "createdAt": "2026-01-25T10:30:00Z",
-  "sizeBytes": 1048576,
+  "sizeBytes": 0,
   "turnNumber": 3,
   "messageCount": 7,
   "eventStreamId": "1706180400000-0"
@@ -160,7 +144,7 @@ The `eventStreamId` is the Redis Stream ID of the last event at snapshot time. O
 
 - **Maximum snapshots**: 10 per session
 - **Auto-cleanup**: After creating a new snapshot, oldest snapshots beyond the limit are deleted
-- **Session delete**: All snapshots are deleted when a session is deleted
+- **Session delete**: All snapshots (both Redis metadata and K8s VolumeSnapshots) are deleted when a session is deleted
 
 ## iOS App
 
@@ -181,27 +165,32 @@ The UI shows:
 
 - **Destructive restore**: Restoring to a snapshot deletes all data after that point - workspace files, messages, events, and newer snapshots. This is similar to `git reset --hard`.
 - **Running sessions**: Cannot restore while the agent is processing a prompt (session must be in "ready" state)
-- **Workspace only**: Docker containers/images are not snapshot (they persist in `/agent/docker` which is outside workspace)
+- **Pod restart**: Restore requires deleting and recreating the agent pod, which resets terminal state and running processes
 - **No manual snapshots**: Snapshots are only created automatically after turns
 
 ## Troubleshooting
 
 ### Snapshot creation fails
 
-Check agent logs:
+Check control-plane logs:
 
 ```bash
-kubectl --context netclode -n netclode logs <agent-pod> | grep snapshot
+kubectl --context netclode -n netclode logs -l app=control-plane | grep -i snapshot
 ```
 
 Common causes:
-- Disk full (check JuiceFS quota)
-- Permissions issue on `.snapshots` directory
+- VolumeSnapshotClass not configured
+- JuiceFS CSI driver not supporting snapshots
+- Quota exceeded
 
 ### Restore fails
 
 - Ensure session is not running (pause first if needed)
-- Check that the snapshot still exists (may have been auto-cleaned)
+- Check that the VolumeSnapshot still exists:
+  ```bash
+  kubectl --context netclode -n netclode get volumesnapshots -l session-id={session-id}
+  ```
+- Check control-plane logs for restore errors
 
 ### Snapshots not appearing in UI
 

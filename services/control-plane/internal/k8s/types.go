@@ -32,8 +32,8 @@ type Sandbox struct {
 
 // SandboxSpec defines the desired state
 type SandboxSpec struct {
-	PodTemplate          PodTemplateSpec       `json:"podTemplate,omitempty"`
-	VolumeClaimTemplates []PVCTemplate         `json:"volumeClaimTemplates,omitempty"`
+	PodTemplate          PodTemplateSpec `json:"podTemplate,omitempty"`
+	VolumeClaimTemplates []PVCTemplate   `json:"volumeClaimTemplates,omitempty"`
 }
 
 // PodTemplateSpec is a simplified pod template
@@ -50,14 +50,14 @@ type PodSpec struct {
 
 // Container is a simplified container spec
 type Container struct {
-	Name            string        `json:"name"`
-	Image           string        `json:"image"`
-	Ports           []Port        `json:"ports,omitempty"`
-	Env             []EnvVar      `json:"env,omitempty"`
-	EnvFrom         []EnvFromSource `json:"envFrom,omitempty"`
-	VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
+	Name            string           `json:"name"`
+	Image           string           `json:"image"`
+	Ports           []Port           `json:"ports,omitempty"`
+	Env             []EnvVar         `json:"env,omitempty"`
+	EnvFrom         []EnvFromSource  `json:"envFrom,omitempty"`
+	VolumeMounts    []VolumeMount    `json:"volumeMounts,omitempty"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
-	ReadinessProbe  *Probe        `json:"readinessProbe,omitempty"`
+	ReadinessProbe  *Probe           `json:"readinessProbe,omitempty"`
 }
 
 // Port defines a container port
@@ -115,8 +115,8 @@ type PVCTemplate struct {
 
 // PVCSpec defines PVC spec
 type PVCSpec struct {
-	AccessModes      []string          `json:"accessModes,omitempty"`
-	StorageClassName string            `json:"storageClassName,omitempty"`
+	AccessModes      []string             `json:"accessModes,omitempty"`
+	StorageClassName string               `json:"storageClassName,omitempty"`
 	Resources        ResourceRequirements `json:"resources,omitempty"`
 }
 
@@ -127,7 +127,7 @@ type ResourceRequirements struct {
 
 // SandboxStatus defines the observed state
 type SandboxStatus struct {
-	ServiceFQDN string            `json:"serviceFQDN,omitempty"`
+	ServiceFQDN string             `json:"serviceFQDN,omitempty"`
 	Conditions  []SandboxCondition `json:"conditions,omitempty"`
 }
 
@@ -305,4 +305,80 @@ func (c *SandboxClaim) GetError() string {
 		}
 	}
 	return ""
+}
+
+// ============================================================================
+// VolumeSnapshot types (for snapshot/restore functionality)
+// ============================================================================
+
+// VolumeSnapshotGVR is the GroupVersionResource for VolumeSnapshot
+var VolumeSnapshotGVR = schema.GroupVersionResource{
+	Group:    "snapshot.storage.k8s.io",
+	Version:  "v1",
+	Resource: "volumesnapshots",
+}
+
+// VolumeSnapshotClassGVR is the GroupVersionResource for VolumeSnapshotClass
+var VolumeSnapshotClassGVR = schema.GroupVersionResource{
+	Group:    "snapshot.storage.k8s.io",
+	Version:  "v1",
+	Resource: "volumesnapshotclasses",
+}
+
+// VolumeSnapshot represents a K8s VolumeSnapshot
+type VolumeSnapshot struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              VolumeSnapshotSpec    `json:"spec,omitempty"`
+	Status            *VolumeSnapshotStatus `json:"status,omitempty"`
+}
+
+// VolumeSnapshotSpec defines the desired state of a VolumeSnapshot
+type VolumeSnapshotSpec struct {
+	VolumeSnapshotClassName *string              `json:"volumeSnapshotClassName,omitempty"`
+	Source                  VolumeSnapshotSource `json:"source"`
+}
+
+// VolumeSnapshotSource specifies the source for a snapshot
+type VolumeSnapshotSource struct {
+	PersistentVolumeClaimName *string `json:"persistentVolumeClaimName,omitempty"`
+	VolumeSnapshotContentName *string `json:"volumeSnapshotContentName,omitempty"`
+}
+
+// VolumeSnapshotStatus defines the observed state of a VolumeSnapshot
+type VolumeSnapshotStatus struct {
+	BoundVolumeSnapshotContentName *string              `json:"boundVolumeSnapshotContentName,omitempty"`
+	ReadyToUse                     *bool                `json:"readyToUse,omitempty"`
+	CreationTime                   *metav1.Time         `json:"creationTime,omitempty"`
+	RestoreSize                    *string              `json:"restoreSize,omitempty"`
+	Error                          *VolumeSnapshotError `json:"error,omitempty"`
+}
+
+// VolumeSnapshotError describes an error encountered during snapshot operation
+type VolumeSnapshotError struct {
+	Time    *metav1.Time `json:"time,omitempty"`
+	Message *string      `json:"message,omitempty"`
+}
+
+// IsReady returns true if the snapshot is ready to use
+func (vs *VolumeSnapshot) IsReady() bool {
+	return vs.Status != nil && vs.Status.ReadyToUse != nil && *vs.Status.ReadyToUse
+}
+
+// GetError returns the error message if any
+func (vs *VolumeSnapshot) GetError() string {
+	if vs.Status != nil && vs.Status.Error != nil && vs.Status.Error.Message != nil {
+		return *vs.Status.Error.Message
+	}
+	return ""
+}
+
+// VolumeSnapshotInfo contains basic information about a snapshot
+type VolumeSnapshotInfo struct {
+	Name         string
+	SessionID    string
+	SnapshotID   string
+	Ready        bool
+	CreationTime *metav1.Time
+	Error        string
 }

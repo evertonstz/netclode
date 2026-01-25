@@ -54,6 +54,9 @@ type Storage interface {
 	GetLastEventStreamID(ctx context.Context, sessionID string) (string, error)
 	TruncateEventsAfter(ctx context.Context, sessionID string, afterID string) error
 
+	// Notifications truncation (for snapshot restore)
+	TruncateNotificationsAfter(ctx context.Context, sessionID string, afterID string) error
+
 	// Redis client access (for StreamSubscriber)
 	GetRedisClient() *redis.Client
 

@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -1071,6 +1072,320 @@ func (r *k8sRuntime) ListSandboxClaims(ctx context.Context) ([]SandboxClaimInfo,
 	}
 
 	return claims, nil
+}
+
+// ============================================================================
+// VolumeSnapshot operations (for session snapshots)
+// ============================================================================
+
+const volumeSnapshotClassName = "juicefs-snapclass"
+
+func snapshotName(sessionID, snapshotID string) string {
+	return fmt.Sprintf("sess-%s-snap-%s", sessionID, snapshotID)
+}
+
+// CreateVolumeSnapshot creates a VolumeSnapshot from the session's PVC.
+func (r *k8sRuntime) CreateVolumeSnapshot(ctx context.Context, sessionID, snapshotID string) error {
+	// Get the PVC name for this session
+	pvcName, err := r.GetPVCName(ctx, sessionID)
+	if err != nil {
+		return fmt.Errorf("get PVC name: %w", err)
+	}
+
+	name := snapshotName(sessionID, snapshotID)
+	className := volumeSnapshotClassName
+
+	snapshot := &VolumeSnapshot{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "snapshot.storage.k8s.io/v1",
+			Kind:       "VolumeSnapshot",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: r.namespace,
+			Labels: map[string]string{
+				"netclode.io/session":  sessionID,
+				"netclode.io/snapshot": snapshotID,
+			},
+		},
+		Spec: VolumeSnapshotSpec{
+			VolumeSnapshotClassName: &className,
+			Source: VolumeSnapshotSource{
+				PersistentVolumeClaimName: &pvcName,
+			},
+		},
+	}
+
+	data, err := json.Marshal(snapshot)
+	if err != nil {
+		return fmt.Errorf("marshal snapshot: %w", err)
+	}
+
+	var u unstructured.Unstructured
+	if err := json.Unmarshal(data, &u.Object); err != nil {
+		return fmt.Errorf("convert to unstructured: %w", err)
+	}
+
+	_, err = r.dynamicClient.Resource(VolumeSnapshotGVR).Namespace(r.namespace).Create(ctx, &u, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("create volume snapshot: %w", err)
+	}
+
+	slog.Info("VolumeSnapshot created", "sessionID", sessionID, "snapshotID", snapshotID, "name", name, "pvc", pvcName)
+	return nil
+}
+
+// WaitForSnapshotReady waits for a VolumeSnapshot to be ready.
+func (r *k8sRuntime) WaitForSnapshotReady(ctx context.Context, sessionID, snapshotID string, timeout time.Duration) error {
+	name := snapshotName(sessionID, snapshotID)
+	deadline := time.Now().Add(timeout)
+
+	for time.Now().Before(deadline) {
+		u, err := r.dynamicClient.Resource(VolumeSnapshotGVR).Namespace(r.namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("get snapshot: %w", err)
+		}
+
+		data, err := u.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("marshal snapshot: %w", err)
+		}
+
+		var snapshot VolumeSnapshot
+		if err := json.Unmarshal(data, &snapshot); err != nil {
+			return fmt.Errorf("unmarshal snapshot: %w", err)
+		}
+
+		if snapshot.IsReady() {
+			slog.Info("VolumeSnapshot ready", "sessionID", sessionID, "snapshotID", snapshotID)
+			return nil
+		}
+
+		if errMsg := snapshot.GetError(); errMsg != "" {
+			return fmt.Errorf("snapshot error: %s", errMsg)
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(2 * time.Second):
+			// Poll again
+		}
+	}
+
+	return fmt.Errorf("timeout waiting for snapshot %s to be ready", name)
+}
+
+// DeleteVolumeSnapshot deletes a VolumeSnapshot.
+func (r *k8sRuntime) DeleteVolumeSnapshot(ctx context.Context, sessionID, snapshotID string) error {
+	name := snapshotName(sessionID, snapshotID)
+
+	err := r.dynamicClient.Resource(VolumeSnapshotGVR).Namespace(r.namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("delete snapshot: %w", err)
+	}
+
+	slog.Info("VolumeSnapshot deleted", "sessionID", sessionID, "snapshotID", snapshotID)
+	return nil
+}
+
+// ListVolumeSnapshots lists all VolumeSnapshots for a session.
+func (r *k8sRuntime) ListVolumeSnapshots(ctx context.Context, sessionID string) ([]VolumeSnapshotInfo, error) {
+	list, err := r.dynamicClient.Resource(VolumeSnapshotGVR).Namespace(r.namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("netclode.io/session=%s", sessionID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list snapshots: %w", err)
+	}
+
+	snapshots := make([]VolumeSnapshotInfo, 0, len(list.Items))
+	for _, item := range list.Items {
+		data, err := item.MarshalJSON()
+		if err != nil {
+			continue
+		}
+
+		var snapshot VolumeSnapshot
+		if err := json.Unmarshal(data, &snapshot); err != nil {
+			continue
+		}
+
+		snapshotID := snapshot.Labels["netclode.io/snapshot"]
+		info := VolumeSnapshotInfo{
+			Name:       snapshot.Name,
+			SessionID:  sessionID,
+			SnapshotID: snapshotID,
+			Ready:      snapshot.IsReady(),
+			Error:      snapshot.GetError(),
+		}
+		if snapshot.Status != nil {
+			info.CreationTime = snapshot.Status.CreationTime
+		}
+		snapshots = append(snapshots, info)
+	}
+
+	return snapshots, nil
+}
+
+// RestoreFromSnapshot restores a session from a snapshot.
+// This involves:
+// 1. Deleting the sandbox (which stops the pod)
+// 2. Deleting the old PVC
+// 3. Creating a new PVC from the VolumeSnapshot
+// 4. Recreating the sandbox claim (which will get a new pod with the restored PVC)
+func (r *k8sRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapshotID string) error {
+	snapName := snapshotName(sessionID, snapshotID)
+
+	// Verify snapshot exists and is ready
+	u, err := r.dynamicClient.Resource(VolumeSnapshotGVR).Namespace(r.namespace).Get(ctx, snapName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get snapshot: %w", err)
+	}
+
+	data, err := u.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("marshal snapshot: %w", err)
+	}
+
+	var snapshot VolumeSnapshot
+	if err := json.Unmarshal(data, &snapshot); err != nil {
+		return fmt.Errorf("unmarshal snapshot: %w", err)
+	}
+
+	if !snapshot.IsReady() {
+		return fmt.Errorf("snapshot %s is not ready", snapName)
+	}
+
+	slog.Info("Starting restore from snapshot", "sessionID", sessionID, "snapshotID", snapshotID)
+
+	// 1. Delete the sandbox claim (releases the sandbox back to pool or deletes it)
+	if r.config.UseWarmPool {
+		if err := r.DeleteSandboxClaim(ctx, sessionID); err != nil {
+			slog.Warn("Failed to delete sandbox claim", "sessionID", sessionID, "error", err)
+		}
+	} else {
+		if err := r.DeleteSandbox(ctx, sessionID); err != nil {
+			slog.Warn("Failed to delete sandbox", "sessionID", sessionID, "error", err)
+		}
+	}
+
+	// Wait a bit for the sandbox/pod to terminate
+	time.Sleep(2 * time.Second)
+
+	// 2. Get and delete the old PVC
+	oldPVCName, err := r.GetPVCName(ctx, sessionID)
+	if err != nil {
+		slog.Warn("Could not get old PVC name", "sessionID", sessionID, "error", err)
+	} else {
+		if err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Delete(ctx, oldPVCName, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("delete old PVC: %w", err)
+		}
+		slog.Info("Deleted old PVC", "sessionID", sessionID, "pvc", oldPVCName)
+
+		// Wait for PVC to be fully deleted
+		for i := 0; i < 30; i++ {
+			_, err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Get(ctx, oldPVCName, metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+
+	// 3. Create new PVC from snapshot
+	// The PVC name must match what the sandbox template expects
+	newPVCName := oldPVCName
+	if newPVCName == "" {
+		// Fallback naming
+		newPVCName = fmt.Sprintf("agent-home-sess-%s", sessionID)
+	}
+
+	apiGroup := "snapshot.storage.k8s.io"
+	storageClassName := "juicefs-sc"
+	newPVC := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      newPVCName,
+			Namespace: r.namespace,
+			Labels: map[string]string{
+				"netclode.io/session": sessionID,
+			},
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			StorageClassName: &storageClassName,
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: mustParseQuantity("10Gi"),
+			},
+			DataSource: &corev1.TypedLocalObjectReference{
+				APIGroup: &apiGroup,
+				Kind:     "VolumeSnapshot",
+				Name:     snapName,
+			},
+		},
+	}
+
+	_, err = r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Create(ctx, newPVC, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("create PVC from snapshot: %w", err)
+	}
+	slog.Info("Created PVC from snapshot", "sessionID", sessionID, "pvc", newPVCName, "snapshot", snapName)
+
+	// 4. Recreate sandbox claim - the sandbox controller will create a new pod using the restored PVC
+	// Note: We don't recreate here - the session manager will handle that when the session resumes
+
+	slog.Info("Restore from snapshot complete", "sessionID", sessionID, "snapshotID", snapshotID)
+	return nil
+}
+
+// GetPVCName returns the PVC name for a session.
+// For warm pool mode, we need to look up the actual PVC name from the sandbox.
+func (r *k8sRuntime) GetPVCName(ctx context.Context, sessionID string) (string, error) {
+	// First check the cache
+	r.cacheMu.RLock()
+	sandbox, exists := r.sandboxCache[sessionID]
+	r.cacheMu.RUnlock()
+
+	if !exists {
+		// Try to get the sandbox directly
+		name := sandboxName(sessionID)
+		u, err := r.dynamicClient.Resource(SandboxGVR).Namespace(r.namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			// Try warm pool sandbox name lookup via claim
+			if r.config.UseWarmPool {
+				r.cacheMu.RLock()
+				claim, claimExists := r.claimCache[sessionID]
+				r.cacheMu.RUnlock()
+				if claimExists && claim.IsBound() {
+					sandboxName := claim.GetBoundSandboxName()
+					u, err = r.dynamicClient.Resource(SandboxGVR).Namespace(r.namespace).Get(ctx, sandboxName, metav1.GetOptions{})
+					if err != nil {
+						return "", fmt.Errorf("get sandbox %s: %w", sandboxName, err)
+					}
+				} else {
+					return "", fmt.Errorf("no bound sandbox for session %s", sessionID)
+				}
+			} else {
+				return "", fmt.Errorf("get sandbox: %w", err)
+			}
+		}
+		sandbox = r.unstructuredToSandbox(u)
+		if sandbox == nil {
+			return "", fmt.Errorf("failed to parse sandbox")
+		}
+	}
+
+	// The PVC name follows the pattern: {volumeClaimTemplate.name}-{sandbox.name}
+	// From sandbox-template.yaml, the volume claim template name is "agent-home"
+	return fmt.Sprintf("agent-home-%s", sandbox.Name), nil
+}
+
+// mustParseQuantity parses a resource quantity, panicking on error (for static values)
+func mustParseQuantity(s string) corev1.ResourceList {
+	q, err := resource.ParseQuantity(s)
+	if err != nil {
+		panic(fmt.Sprintf("invalid quantity %q: %v", s, err))
+	}
+	return corev1.ResourceList{corev1.ResourceStorage: q}
 }
 
 // Ensure k8sRuntime implements Runtime
