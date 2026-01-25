@@ -181,7 +181,7 @@ kubectl config use-context netclode
 | `tailscale` | Tailscale daemon + auto-connect |
 | `kata` | Kata Containers static release |
 | `k3s` | k3s single-node server with Kata support |
-| `juicefs-csi` | JuiceFS CSI driver for k8s |
+| `juicefs-csi` | JuiceFS CSI driver with VolumeSnapshot support |
 | `tailscale-operator` | Tailscale K8s Operator via Helm |
 | `k8s-manifests` | Deploy all k8s manifests from infra/k8s/ |
 

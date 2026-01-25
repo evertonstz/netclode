@@ -176,6 +176,7 @@ The snapshot feature requires the following Kubernetes components (deployed via 
 |-----------|-------------|
 | **VolumeSnapshot CRDs** | Custom resource definitions from [external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter) that define VolumeSnapshot, VolumeSnapshotContent, and VolumeSnapshotClass resources |
 | **Snapshot Controller** | Watches VolumeSnapshot objects and triggers the CSI driver to create/delete snapshots |
+| **csi-snapshotter sidecar** | Sidecar container in the JuiceFS CSI controller that handles snapshot operations. The upstream JuiceFS CSI driver doesn't include this by default, so Ansible patches the StatefulSet to add it. |
 | **VolumeSnapshotClass** | Defines the CSI driver (`csi.juicefs.com`) and deletion policy for snapshots |
 | **RBAC** | Control-plane ServiceAccount needs permissions to create/delete VolumeSnapshots |
 
