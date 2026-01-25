@@ -168,6 +168,30 @@ func (m *mockRuntime) ListSandboxClaims(ctx context.Context) ([]k8s.SandboxClaim
 	return nil, nil
 }
 
+func (m *mockRuntime) CreateVolumeSnapshot(ctx context.Context, sessionID, snapshotID string) error {
+	return nil
+}
+
+func (m *mockRuntime) WaitForSnapshotReady(ctx context.Context, sessionID, snapshotID string, timeout time.Duration) error {
+	return nil
+}
+
+func (m *mockRuntime) DeleteVolumeSnapshot(ctx context.Context, sessionID, snapshotID string) error {
+	return nil
+}
+
+func (m *mockRuntime) ListVolumeSnapshots(ctx context.Context, sessionID string) ([]k8s.VolumeSnapshotInfo, error) {
+	return nil, nil
+}
+
+func (m *mockRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapshotID string) error {
+	return nil
+}
+
+func (m *mockRuntime) GetPVCName(ctx context.Context, sessionID string) (string, error) {
+	return "", nil
+}
+
 func (m *mockRuntime) Close() {
 }
 
@@ -295,6 +319,18 @@ func (m *mockStorage) DeleteAllSnapshots(ctx context.Context, sessionID string) 
 }
 
 func (m *mockStorage) TruncateMessages(ctx context.Context, sessionID string, keepCount int) error {
+	return nil
+}
+
+func (m *mockStorage) GetLastEventStreamID(ctx context.Context, sessionID string) (string, error) {
+	return "0-0", nil
+}
+
+func (m *mockStorage) TruncateEventsAfter(ctx context.Context, sessionID string, afterID string) error {
+	return nil
+}
+
+func (m *mockStorage) TruncateNotificationsAfter(ctx context.Context, sessionID string, afterID string) error {
 	return nil
 }
 

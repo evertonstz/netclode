@@ -229,11 +229,17 @@ func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *str
 	}
 }
 
-// createSandboxDirect creates a sandbox directly (legacy mode)
-func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess) {
+// createSandboxDirect creates a sandbox directly (legacy mode).
+// If restoreSnapshotID is provided, the PVC is restored from that snapshot.
+func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, restoreSnapshotID ...string) {
 	env := map[string]string{
 		"SESSION_ID":        sessionID,
 		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
+	}
+
+	// Pass restore snapshot ID if provided
+	if len(restoreSnapshotID) > 0 && restoreSnapshotID[0] != "" {
+		env[k8s.RestoreSnapshotEnvKey] = restoreSnapshotID[0]
 	}
 
 	// Pass GitHub token for Copilot SDK if configured
@@ -593,12 +599,19 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	// No sandbox exists - create new one (resuming from paused state)
 	m.mu.Lock()
 	state.Session.Status = pb.SessionStatus_SESSION_STATUS_RESUMING
+	restoreSnapshotID := state.RestoreSnapshotID
+	state.RestoreSnapshotID = "" // Clear it
 	m.mu.Unlock()
 
 	_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_RESUMING)
 
-	// Start sandbox creation in background
-	go m.createSandbox(context.Background(), id, state.Session.Repo, state.Session.RepoAccess)
+	// If restoring from snapshot, use direct sandbox creation (bypasses warm pool)
+	if restoreSnapshotID != "" {
+		slog.Info("Resuming with snapshot restore", "sessionID", id, "snapshotID", restoreSnapshotID)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, restoreSnapshotID)
+	} else {
+		go m.createSandbox(context.Background(), id, state.Session.Repo, state.Session.RepoAccess)
+	}
 
 	return state.Session, nil
 }
@@ -1696,14 +1709,16 @@ func (m *Manager) RestoreSnapshot(ctx context.Context, sessionID, snapshotID str
 	}
 	m.mu.Unlock()
 
-	// Perform the K8s restore (deletes pod, creates new PVC from snapshot)
+	// Clean up K8s resources (sandbox, PVC)
 	if err := m.k8s.RestoreFromSnapshot(ctx, sessionID, snapshotID); err != nil {
-		// Restore failed - try to recover
-		slog.Error("Restore failed", "sessionID", sessionID, "snapshotID", snapshotID, "error", err)
+		slog.Error("Restore cleanup failed", "sessionID", sessionID, "snapshotID", snapshotID, "error", err)
 		state.Session.Status = pb.SessionStatus_SESSION_STATUS_READY
 		_ = m.storage.UpdateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_READY)
 		return 0, fmt.Errorf("restore failed: %w", err)
 	}
+
+	// Store snapshot ID for next sandbox creation (bypasses warm pool)
+	state.RestoreSnapshotID = snapshotID
 
 	// Truncate messages to snapshot point
 	if err := m.storage.TruncateMessages(ctx, sessionID, int(snapshot.MessageCount)); err != nil {

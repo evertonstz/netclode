@@ -118,6 +118,14 @@ type PVCSpec struct {
 	AccessModes      []string             `json:"accessModes,omitempty"`
 	StorageClassName string               `json:"storageClassName,omitempty"`
 	Resources        ResourceRequirements `json:"resources,omitempty"`
+	DataSource       *DataSource          `json:"dataSource,omitempty"`
+}
+
+// DataSource for restoring PVC from VolumeSnapshot
+type DataSource struct {
+	APIGroup string `json:"apiGroup,omitempty"`
+	Kind     string `json:"kind"`
+	Name     string `json:"name"`
 }
 
 // ResourceRequirements defines resource requests

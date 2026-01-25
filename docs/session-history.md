@@ -50,15 +50,14 @@ When you restore a snapshot:
        │ RestoreSnapshot     │                        │
        │────────────────────►│                        │
        │                     │                        │
-       │                     │ Delete sandbox/pod    │
+       │                     │ Delete sandbox/claim   │
        │                     │───────────────────────►│
        │                     │                        │
        │                     │ Delete old PVC         │
        │                     │───────────────────────►│
        │                     │                        │
-       │                     │ Create PVC from        │
-       │                     │ VolumeSnapshot         │
-       │                     │───────────────────────►│
+       │                     │ Store restore snapshot │
+       │                     │ ID in session state    │
        │                     │                        │
        │                     │ Truncate messages      │
        │                     │ Truncate events        │
@@ -67,9 +66,17 @@ When you restore a snapshot:
        │ snapshot.restored   │                        │
        │◄────────────────────│                        │
        │                     │                        │
-       │ Session ready for   │                        │
-       │ sandbox recreation  │                        │
+       │ Resume session      │                        │
+       │────────────────────►│                        │
+       │                     │                        │
+       │                     │ Create Sandbox with    │
+       │                     │ PVC from snapshot      │
+       │                     │ (dataSource in         │
+       │                     │  VolumeClaimTemplate)  │
+       │                     │───────────────────────►│
 ```
+
+**Note**: When restoring, the warm pool is bypassed. A dedicated sandbox is created with a VolumeClaimTemplate that includes a `dataSource` pointing to the VolumeSnapshot. This ensures the new PVC is populated from the snapshot.
 
 ### Kubernetes VolumeSnapshots
 
@@ -177,6 +184,7 @@ The snapshot feature requires the following Kubernetes components (deployed via 
 - **Destructive restore**: Restoring to a snapshot deletes all data after that point - workspace files, messages, events, and newer snapshots. This is similar to `git reset --hard`.
 - **Running sessions**: Cannot restore while the agent is processing a prompt (session must be in "ready" state)
 - **Pod restart**: Restore requires deleting and recreating the agent pod, which resets terminal state and running processes
+- **Bypasses warm pool**: Restored sessions use a dedicated sandbox (not from the warm pool) to ensure the PVC is created from the snapshot
 - **No manual snapshots**: Snapshots are only created automatically after turns
 
 ## Troubleshooting

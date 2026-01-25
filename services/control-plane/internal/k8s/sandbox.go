@@ -278,14 +278,22 @@ func pvcName(sessionID string) string {
 }
 
 // CreateSandbox creates a new sandbox for a session.
+// RestoreSnapshotEnvKey is a special env key used to pass snapshot ID for restore.
+// It's not passed to the actual container, just used to configure the PVC.
+const RestoreSnapshotEnvKey = "_RESTORE_SNAPSHOT_ID"
+
 func (r *k8sRuntime) CreateSandbox(ctx context.Context, sessionID string, env map[string]string) error {
+	// Extract restore snapshot ID if present (not passed to container)
+	restoreSnapshotID := env[RestoreSnapshotEnvKey]
+	delete(env, RestoreSnapshotEnvKey)
+
 	// First create the environment secret
 	if err := r.createEnvSecret(ctx, sessionID, env); err != nil {
 		return fmt.Errorf("create env secret: %w", err)
 	}
 
 	// Create the Sandbox CRD
-	sandbox := r.buildSandboxManifest(sessionID)
+	sandbox := r.buildSandboxManifest(sessionID, restoreSnapshotID)
 
 	data, err := json.Marshal(sandbox)
 	if err != nil {
@@ -329,8 +337,27 @@ func (r *k8sRuntime) createEnvSecret(ctx context.Context, sessionID string, env 
 	return nil
 }
 
-func (r *k8sRuntime) buildSandboxManifest(sessionID string) *Sandbox {
+func (r *k8sRuntime) buildSandboxManifest(sessionID string, restoreSnapshotID string) *Sandbox {
 	name := sandboxName(sessionID)
+
+	// Build PVC spec, optionally with DataSource for restore
+	pvcSpec := PVCSpec{
+		AccessModes:      []string{"ReadWriteOnce"},
+		StorageClassName: "juicefs-sc",
+		Resources: ResourceRequirements{
+			Requests: map[string]string{
+				"storage": "10Gi",
+			},
+		},
+	}
+	if restoreSnapshotID != "" {
+		pvcSpec.DataSource = &DataSource{
+			APIGroup: "snapshot.storage.k8s.io",
+			Kind:     "VolumeSnapshot",
+			Name:     snapshotName(sessionID, restoreSnapshotID),
+		}
+		slog.Info("Building sandbox with snapshot restore", "sessionID", sessionID, "snapshotID", restoreSnapshotID)
+	}
 
 	return &Sandbox{
 		TypeMeta: metav1.TypeMeta{
@@ -393,15 +420,7 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string) *Sandbox {
 							"netclode.io/session": sessionID,
 						},
 					},
-					Spec: PVCSpec{
-						AccessModes:      []string{"ReadWriteOnce"},
-						StorageClassName: "juicefs-sc",
-						Resources: ResourceRequirements{
-							Requests: map[string]string{
-								"storage": "10Gi",
-							},
-						},
-					},
+					Spec: pvcSpec,
 				},
 			},
 		},
@@ -1227,12 +1246,8 @@ func (r *k8sRuntime) ListVolumeSnapshots(ctx context.Context, sessionID string) 
 	return snapshots, nil
 }
 
-// RestoreFromSnapshot restores a session from a snapshot.
-// This involves:
-// 1. Deleting the sandbox (which stops the pod)
-// 2. Deleting the old PVC
-// 3. Creating a new PVC from the VolumeSnapshot
-// 4. Recreating the sandbox claim (which will get a new pod with the restored PVC)
+// RestoreFromSnapshot prepares a session for restore by cleaning up existing resources.
+// The actual PVC restore happens when CreateSandbox is called with RestoreSnapshotEnvKey.
 func (r *k8sRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapshotID string) error {
 	snapName := snapshotName(sessionID, snapshotID)
 
@@ -1256,84 +1271,41 @@ func (r *k8sRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapsho
 		return fmt.Errorf("snapshot %s is not ready", snapName)
 	}
 
-	slog.Info("Starting restore from snapshot", "sessionID", sessionID, "snapshotID", snapshotID)
+	slog.Info("Preparing restore from snapshot", "sessionID", sessionID, "snapshotID", snapshotID)
 
-	// 1. Delete the sandbox claim (releases the sandbox back to pool or deletes it)
+	// Delete sandbox claim if using warm pool
 	if r.config.UseWarmPool {
 		if err := r.DeleteSandboxClaim(ctx, sessionID); err != nil {
 			slog.Warn("Failed to delete sandbox claim", "sessionID", sessionID, "error", err)
 		}
-	} else {
-		if err := r.DeleteSandbox(ctx, sessionID); err != nil {
-			slog.Warn("Failed to delete sandbox", "sessionID", sessionID, "error", err)
-		}
+	}
+	// Also try to delete direct sandbox
+	if err := r.DeleteSandbox(ctx, sessionID); err != nil && !errors.IsNotFound(err) {
+		slog.Warn("Failed to delete sandbox", "sessionID", sessionID, "error", err)
 	}
 
-	// Wait a bit for the sandbox/pod to terminate
+	// Wait for sandbox/pod to terminate
 	time.Sleep(2 * time.Second)
 
-	// 2. Get and delete the old PVC
+	// Delete the old PVC so a new one can be created from snapshot
 	oldPVCName, err := r.GetPVCName(ctx, sessionID)
-	if err != nil {
-		slog.Warn("Could not get old PVC name", "sessionID", sessionID, "error", err)
-	} else {
+	if err == nil && oldPVCName != "" {
 		if err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Delete(ctx, oldPVCName, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
-			return fmt.Errorf("delete old PVC: %w", err)
-		}
-		slog.Info("Deleted old PVC", "sessionID", sessionID, "pvc", oldPVCName)
-
-		// Wait for PVC to be fully deleted
-		for i := 0; i < 30; i++ {
-			_, err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Get(ctx, oldPVCName, metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				break
+			slog.Warn("Failed to delete old PVC", "sessionID", sessionID, "pvc", oldPVCName, "error", err)
+		} else {
+			slog.Info("Deleted old PVC", "sessionID", sessionID, "pvc", oldPVCName)
+			// Wait for PVC deletion
+			for i := 0; i < 30; i++ {
+				_, err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Get(ctx, oldPVCName, metav1.GetOptions{})
+				if errors.IsNotFound(err) {
+					break
+				}
+				time.Sleep(1 * time.Second)
 			}
-			time.Sleep(1 * time.Second)
 		}
 	}
 
-	// 3. Create new PVC from snapshot
-	// The PVC name must match what the sandbox template expects
-	newPVCName := oldPVCName
-	if newPVCName == "" {
-		// Fallback naming
-		newPVCName = fmt.Sprintf("agent-home-sess-%s", sessionID)
-	}
-
-	apiGroup := "snapshot.storage.k8s.io"
-	storageClassName := "juicefs-sc"
-	newPVC := &corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      newPVCName,
-			Namespace: r.namespace,
-			Labels: map[string]string{
-				"netclode.io/session": sessionID,
-			},
-		},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			StorageClassName: &storageClassName,
-			Resources: corev1.VolumeResourceRequirements{
-				Requests: mustParseQuantity("10Gi"),
-			},
-			DataSource: &corev1.TypedLocalObjectReference{
-				APIGroup: &apiGroup,
-				Kind:     "VolumeSnapshot",
-				Name:     snapName,
-			},
-		},
-	}
-
-	_, err = r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Create(ctx, newPVC, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("create PVC from snapshot: %w", err)
-	}
-	slog.Info("Created PVC from snapshot", "sessionID", sessionID, "pvc", newPVCName, "snapshot", snapName)
-
-	// 4. Recreate sandbox claim - the sandbox controller will create a new pod using the restored PVC
-	// Note: We don't recreate here - the session manager will handle that when the session resumes
-
-	slog.Info("Restore from snapshot complete", "sessionID", sessionID, "snapshotID", snapshotID)
+	slog.Info("Ready for restore", "sessionID", sessionID, "snapshotID", snapshotID)
 	return nil
 }
 

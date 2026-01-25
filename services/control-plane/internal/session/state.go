@@ -19,6 +19,9 @@ type SessionState struct {
 	TitleGenerated   bool
 	OriginalPrompt   string
 	ThinkingBuffers  map[string]string
+
+	// Restore state - when set, next sandbox creation restores from this snapshot
+	RestoreSnapshotID string
 }
 
 // NewSessionState creates a new session state.
