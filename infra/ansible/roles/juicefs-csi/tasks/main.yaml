@@ -31,6 +31,50 @@
   retries: 30
   delay: 10
 
+# Add csi-snapshotter sidecar to enable VolumeSnapshot support
+- name: Patch JuiceFS CSI controller to add csi-snapshotter sidecar
+  kubernetes.core.k8s_json_patch:
+    api_version: apps/v1
+    kind: StatefulSet
+    name: juicefs-csi-controller
+    namespace: kube-system
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    patch:
+      - op: add
+        path: /spec/template/spec/containers/-
+        value:
+          name: csi-snapshotter
+          image: "registry.k8s.io/sig-storage/csi-snapshotter:v8.2.0"
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--leader-election"
+            - "--leader-election-namespace=kube-system"
+            - "--v=2"
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+  register: snapshotter_patch
+  failed_when: false  # May fail if already patched
+
+- name: Restart JuiceFS CSI controller if patched
+  kubernetes.core.k8s:
+    api_version: apps/v1
+    kind: StatefulSet
+    name: juicefs-csi-controller
+    namespace: kube-system
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    state: present
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+  when: snapshotter_patch.changed | default(false)
+
 # VolumeSnapshot support for session history restore
 - name: Install VolumeSnapshot CRDs
   kubernetes.core.k8s:
