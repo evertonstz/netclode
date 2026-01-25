@@ -236,16 +236,44 @@ func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *str
 }
 
 // createSandboxDirect creates a sandbox directly (legacy mode).
-// If restoreSnapshotID is provided, the PVC is restored from that snapshot.
+// If restoreSnapshotID is provided, the PVC is restored from that snapshot BEFORE creating the sandbox.
 func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, restoreSnapshotID ...string) {
 	env := map[string]string{
 		"SESSION_ID":        sessionID,
 		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
 	}
 
-	// Pass restore snapshot ID if provided
+	// If restoring from snapshot, create the PVC first and wait for restore to complete
+	// BEFORE creating the sandbox. This ensures the restore job finishes before the pod mounts.
 	if len(restoreSnapshotID) > 0 && restoreSnapshotID[0] != "" {
-		env[k8s.RestoreSnapshotEnvKey] = restoreSnapshotID[0]
+		snapID := restoreSnapshotID[0]
+		slog.Info("Creating PVC from snapshot before sandbox", "sessionID", sessionID, "snapshotID", snapID)
+
+		// Create standalone PVC from snapshot
+		pvcName, err := m.k8s.CreatePVCFromSnapshot(ctx, sessionID, snapID)
+		if err != nil {
+			slog.Error("Failed to create PVC from snapshot", "sessionID", sessionID, "error", err)
+			m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+			m.emitSessionError(ctx, sessionID, fmt.Sprintf("failed to create PVC from snapshot: %v", err))
+			return
+		}
+
+		// Wait for JuiceFS restore job to complete BEFORE creating sandbox
+		slog.Info("Waiting for snapshot restore job", "sessionID", sessionID, "snapshotID", snapID)
+		if err := m.k8s.WaitForRestoreJob(ctx, sessionID, snapID, 5*time.Minute); err != nil {
+			slog.Error("Snapshot restore job failed", "sessionID", sessionID, "error", err)
+			// Cleanup: delete the PVC we created
+			if delErr := m.k8s.DeletePVC(ctx, sessionID); delErr != nil {
+				slog.Error("Failed to cleanup PVC after restore failure", "sessionID", sessionID, "error", delErr)
+			}
+			m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+			m.emitSessionError(ctx, sessionID, fmt.Sprintf("snapshot restore failed: %v", err))
+			return
+		}
+		slog.Info("Snapshot restore completed, creating sandbox with existing PVC", "sessionID", sessionID, "pvc", pvcName)
+
+		// Pass the existing PVC name so sandbox uses it instead of creating a new one
+		env[k8s.ExistingPVCEnvKey] = pvcName
 	}
 
 	// Pass GitHub token for Copilot SDK if configured
@@ -295,23 +323,6 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
 		m.emitSessionError(ctx, sessionID, err.Error())
 		return
-	}
-
-	// If restoring from snapshot, wait for JuiceFS restore job to complete
-	// The restore job runs asynchronously after the PVC is created
-	if len(restoreSnapshotID) > 0 && restoreSnapshotID[0] != "" {
-		slog.Info("Waiting for snapshot restore job", "sessionID", sessionID, "snapshotID", restoreSnapshotID[0])
-		if err := m.k8s.WaitForRestoreJob(ctx, sessionID, restoreSnapshotID[0], 5*time.Minute); err != nil {
-			slog.Error("Snapshot restore job failed", "sessionID", sessionID, "error", err)
-			// Cleanup: delete the sandbox
-			if delErr := m.k8s.DeleteSandbox(ctx, sessionID); delErr != nil {
-				slog.Error("Failed to cleanup sandbox after restore failure", "sessionID", sessionID, "error", delErr)
-			}
-			m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
-			m.emitSessionError(ctx, sessionID, fmt.Sprintf("snapshot restore failed: %v", err))
-			return
-		}
-		slog.Info("Snapshot restore completed", "sessionID", sessionID, "snapshotID", restoreSnapshotID[0])
 	}
 
 	// Create Tailscale-exposed service for preview URLs

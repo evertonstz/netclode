@@ -192,6 +192,14 @@ func (m *mockRuntime) GetPVCName(ctx context.Context, sessionID string) (string,
 	return "", nil
 }
 
+func (m *mockRuntime) CreatePVCFromSnapshot(ctx context.Context, sessionID, snapshotID string) (string, error) {
+	return "agent-home-sess-" + sessionID, nil
+}
+
+func (m *mockRuntime) WaitForRestoreJob(ctx context.Context, sessionID, snapshotID string, timeout time.Duration) error {
+	return nil
+}
+
 func (m *mockRuntime) Close() {
 }
 
@@ -331,6 +339,18 @@ func (m *mockStorage) TruncateEventsAfter(ctx context.Context, sessionID string,
 }
 
 func (m *mockStorage) TruncateNotificationsAfter(ctx context.Context, sessionID string, afterID string) error {
+	return nil
+}
+
+func (m *mockStorage) SetRestoreSnapshotID(ctx context.Context, sessionID, snapshotID string) error {
+	return nil
+}
+
+func (m *mockStorage) GetRestoreSnapshotID(ctx context.Context, sessionID string) (string, error) {
+	return "", nil
+}
+
+func (m *mockStorage) ClearRestoreSnapshotID(ctx context.Context, sessionID string) error {
 	return nil
 }
 

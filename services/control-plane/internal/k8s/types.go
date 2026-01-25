@@ -46,6 +46,18 @@ type PodTemplateSpec struct {
 type PodSpec struct {
 	RuntimeClassName string      `json:"runtimeClassName,omitempty"`
 	Containers       []Container `json:"containers,omitempty"`
+	Volumes          []Volume    `json:"volumes,omitempty"`
+}
+
+// Volume defines a pod volume
+type Volume struct {
+	Name                  string                             `json:"name"`
+	PersistentVolumeClaim *PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
+}
+
+// PersistentVolumeClaimVolumeSource references an existing PVC
+type PersistentVolumeClaimVolumeSource struct {
+	ClaimName string `json:"claimName"`
 }
 
 // Container is a simplified container spec

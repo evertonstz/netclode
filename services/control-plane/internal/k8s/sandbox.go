@@ -278,14 +278,15 @@ func pvcName(sessionID string) string {
 }
 
 // CreateSandbox creates a new sandbox for a session.
-// RestoreSnapshotEnvKey is a special env key used to pass snapshot ID for restore.
-// It's not passed to the actual container, just used to configure the PVC.
-const RestoreSnapshotEnvKey = "_RESTORE_SNAPSHOT_ID"
+// ExistingPVCEnvKey is a special env key used to pass an existing PVC name.
+// This is used for snapshot restore where the PVC is created separately before the sandbox.
+// It's not passed to the actual container, just used to configure the sandbox.
+const ExistingPVCEnvKey = "_EXISTING_PVC_NAME"
 
 func (r *k8sRuntime) CreateSandbox(ctx context.Context, sessionID string, env map[string]string) error {
-	// Extract restore snapshot ID if present (not passed to container)
-	restoreSnapshotID := env[RestoreSnapshotEnvKey]
-	delete(env, RestoreSnapshotEnvKey)
+	// Extract existing PVC name if present (not passed to container)
+	existingPVCName := env[ExistingPVCEnvKey]
+	delete(env, ExistingPVCEnvKey)
 
 	// First create the environment secret
 	if err := r.createEnvSecret(ctx, sessionID, env); err != nil {
@@ -293,7 +294,7 @@ func (r *k8sRuntime) CreateSandbox(ctx context.Context, sessionID string, env ma
 	}
 
 	// Create the Sandbox CRD
-	sandbox := r.buildSandboxManifest(sessionID, restoreSnapshotID)
+	sandbox := r.buildSandboxManifest(sessionID, existingPVCName)
 
 	data, err := json.Marshal(sandbox)
 	if err != nil {
@@ -337,26 +338,45 @@ func (r *k8sRuntime) createEnvSecret(ctx context.Context, sessionID string, env 
 	return nil
 }
 
-func (r *k8sRuntime) buildSandboxManifest(sessionID string, restoreSnapshotID string) *Sandbox {
+func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName string) *Sandbox {
 	name := sandboxName(sessionID)
 
-	// Build PVC spec, optionally with DataSource for restore
-	pvcSpec := PVCSpec{
-		AccessModes:      []string{"ReadWriteOnce"},
-		StorageClassName: "juicefs-sc",
-		Resources: ResourceRequirements{
-			Requests: map[string]string{
-				"storage": "10Gi",
+	// If we have an existing PVC (from restore), use Volumes instead of VolumeClaimTemplates
+	var volumeClaimTemplates []PVCTemplate
+	var volumes []Volume
+
+	if existingPVCName != "" {
+		// Use existing PVC that was pre-created with restored data
+		slog.Info("Building sandbox with existing PVC", "sessionID", sessionID, "pvc", existingPVCName)
+		volumes = []Volume{
+			{
+				Name: "agent-home",
+				PersistentVolumeClaim: &PersistentVolumeClaimVolumeSource{
+					ClaimName: existingPVCName,
+				},
 			},
-		},
-	}
-	if restoreSnapshotID != "" {
-		pvcSpec.DataSource = &DataSource{
-			APIGroup: "snapshot.storage.k8s.io",
-			Kind:     "VolumeSnapshot",
-			Name:     snapshotName(sessionID, restoreSnapshotID),
 		}
-		slog.Info("Building sandbox with snapshot restore", "sessionID", sessionID, "snapshotID", restoreSnapshotID)
+	} else {
+		// Create new PVC via volumeClaimTemplate
+		volumeClaimTemplates = []PVCTemplate{
+			{
+				Metadata: metav1.ObjectMeta{
+					Name: "agent-home",
+					Labels: map[string]string{
+						"netclode.io/session": sessionID,
+					},
+				},
+				Spec: PVCSpec{
+					AccessModes:      []string{"ReadWriteOnce"},
+					StorageClassName: "juicefs-sc",
+					Resources: ResourceRequirements{
+						Requests: map[string]string{
+							"storage": "10Gi",
+						},
+					},
+				},
+			},
+		}
 	}
 
 	return &Sandbox{
@@ -410,19 +430,10 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string, restoreSnapshotID st
 							},
 						},
 					},
+					Volumes: volumes,
 				},
 			},
-			VolumeClaimTemplates: []PVCTemplate{
-				{
-					Metadata: metav1.ObjectMeta{
-						Name: "agent-home",
-						Labels: map[string]string{
-							"netclode.io/session": sessionID,
-						},
-					},
-					Spec: pvcSpec,
-				},
-			},
+			VolumeClaimTemplates: volumeClaimTemplates,
 		},
 	}
 }
@@ -1305,6 +1316,51 @@ func (r *k8sRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapsho
 
 	slog.Info("Ready for restore", "sessionID", sessionID, "snapshotID", snapshotID)
 	return nil
+}
+
+// CreatePVCFromSnapshot creates a standalone PVC from a VolumeSnapshot.
+// This must be done BEFORE creating the sandbox so the restore job can complete
+// before the pod tries to mount the volume.
+func (r *k8sRuntime) CreatePVCFromSnapshot(ctx context.Context, sessionID, snapshotID string) (string, error) {
+	pvcName := fmt.Sprintf("agent-home-sess-%s", sessionID)
+	snapName := snapshotName(sessionID, snapshotID)
+
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pvcName,
+			Namespace: r.namespace,
+			Labels: map[string]string{
+				"netclode.io/session": sessionID,
+			},
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			StorageClassName: strPtr("juicefs-sc"),
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("10Gi"),
+				},
+			},
+			DataSource: &corev1.TypedLocalObjectReference{
+				APIGroup: strPtr("snapshot.storage.k8s.io"),
+				Kind:     "VolumeSnapshot",
+				Name:     snapName,
+			},
+		},
+	}
+
+	_, err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Create(ctx, pvc, metav1.CreateOptions{})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return "", fmt.Errorf("create PVC from snapshot: %w", err)
+	}
+
+	slog.Info("Created PVC from snapshot", "sessionID", sessionID, "pvc", pvcName, "snapshot", snapName)
+	return pvcName, nil
+}
+
+// strPtr returns a pointer to a string
+func strPtr(s string) *string {
+	return &s
 }
 
 // WaitForRestoreJob waits for the JuiceFS restore job to complete.
