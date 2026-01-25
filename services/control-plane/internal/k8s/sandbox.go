@@ -1273,6 +1273,22 @@ func (r *k8sRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapsho
 
 	slog.Info("Preparing restore from snapshot", "sessionID", sessionID, "snapshotID", snapshotID)
 
+	// IMPORTANT: Get PVC name and remove ownerReferences BEFORE deleting sandbox.
+	// JuiceFS snapshots reference the source subvolume data. When the sandbox is
+	// deleted, it cascade-deletes its PVC, which would delete the snapshot's source data.
+	// By removing ownerReferences, we orphan the PVC so it survives sandbox deletion.
+	oldPVCName, _ := r.GetPVCName(ctx, sessionID)
+	if oldPVCName != "" {
+		// Patch PVC to remove ownerReferences
+		patch := []byte(`[{"op": "remove", "path": "/metadata/ownerReferences"}]`)
+		_, err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Patch(ctx, oldPVCName, types.JSONPatchType, patch, metav1.PatchOptions{})
+		if err != nil && !errors.IsNotFound(err) {
+			slog.Warn("Failed to remove PVC ownerReferences", "sessionID", sessionID, "pvc", oldPVCName, "error", err)
+		} else if err == nil {
+			slog.Info("Removed ownerReferences from PVC for snapshot restore", "sessionID", sessionID, "pvc", oldPVCName)
+		}
+	}
+
 	// Delete sandbox claim if using warm pool
 	if r.config.UseWarmPool {
 		if err := r.DeleteSandboxClaim(ctx, sessionID); err != nil {
@@ -1286,16 +1302,6 @@ func (r *k8sRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapsho
 
 	// Wait for sandbox/pod to terminate
 	time.Sleep(2 * time.Second)
-
-	// NOTE: We intentionally do NOT delete the old PVC here.
-	// JuiceFS snapshots reference the source subvolume data, and deleting the
-	// source PVC would delete that data, making the snapshot unusable for restore.
-	// The old PVC will be orphaned but the new sandbox uses a different PVC name.
-	// Old PVCs should be cleaned up separately after the restore job completes.
-	oldPVCName, _ := r.GetPVCName(ctx, sessionID)
-	if oldPVCName != "" {
-		slog.Info("Keeping old PVC for snapshot restore", "sessionID", sessionID, "pvc", oldPVCName)
-	}
 
 	slog.Info("Ready for restore", "sessionID", sessionID, "snapshotID", snapshotID)
 	return nil
