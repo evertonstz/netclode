@@ -75,9 +75,10 @@ struct SnapshotListSheet: View {
     }
     
     private var snapshotList: some View {
-        List {
+        let currentSnapshotId = snapshots.first?.id
+        return List {
             ForEach(snapshots) { snapshot in
-                SnapshotRow(snapshot: snapshot, isRestoring: isRestoring) {
+                SnapshotRow(snapshot: snapshot, isCurrent: snapshot.id == currentSnapshotId, isRestoring: isRestoring) {
                     if settingsStore.hapticFeedbackEnabled {
                         HapticFeedback.warning()
                     }
@@ -101,15 +102,27 @@ struct SnapshotListSheet: View {
 /// Row displaying a single snapshot
 struct SnapshotRow: View {
     let snapshot: Snapshot
+    let isCurrent: Bool
     let isRestoring: Bool
     let onRestore: () -> Void
     
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(snapshot.name)
-                    .font(.body)
-                    .lineLimit(2)
+                HStack(spacing: 6) {
+                    Text(snapshot.name)
+                        .font(.body)
+                        .lineLimit(2)
+                    
+                    if isCurrent {
+                        Text("Current")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.secondary.opacity(0.2), in: Capsule())
+                    }
+                }
                 
                 HStack(spacing: 8) {
                     Text(snapshot.createdAt, style: .relative)
@@ -124,15 +137,17 @@ struct SnapshotRow: View {
             
             Spacer()
             
-            Button {
-                onRestore()
-            } label: {
-                Text("Restore")
-                    .font(.subheadline.weight(.medium))
+            if !isCurrent {
+                Button {
+                    onRestore()
+                } label: {
+                    Text("Restore")
+                        .font(.subheadline.weight(.medium))
+                }
+                .buttonStyle(.bordered)
+                .tint(.orange)
+                .disabled(isRestoring)
             }
-            .buttonStyle(.bordered)
-            .tint(.orange)
-            .disabled(isRestoring)
         }
         .padding(.vertical, 4)
     }
