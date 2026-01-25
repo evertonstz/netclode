@@ -273,17 +273,22 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		slog.Info("Snapshot restore completed, creating sandbox with existing PVC", "sessionID", sessionID, "pvc", pvcName)
 
 		// Delete the old orphaned PVC in background (non-blocking)
-		go func(sessionID string) {
+		// Only if it's different from the new PVC (avoids deleting the newly created one)
+		go func(sessionID, newPVCName string) {
 			bgCtx := context.Background()
 			if oldPVCName, err := m.storage.GetOldPVCName(bgCtx, sessionID); err == nil && oldPVCName != "" {
-				if err := m.k8s.DeletePVCByName(bgCtx, oldPVCName); err != nil {
-					slog.Warn("Failed to delete old PVC after restore", "sessionID", sessionID, "pvc", oldPVCName, "error", err)
+				if oldPVCName == newPVCName {
+					slog.Info("Skipping old PVC deletion (same as new PVC)", "sessionID", sessionID, "pvc", oldPVCName)
 				} else {
-					slog.Info("Deleted old PVC after restore", "sessionID", sessionID, "pvc", oldPVCName)
+					if err := m.k8s.DeletePVCByName(bgCtx, oldPVCName); err != nil {
+						slog.Warn("Failed to delete old PVC after restore", "sessionID", sessionID, "pvc", oldPVCName, "error", err)
+					} else {
+						slog.Info("Deleted old PVC after restore", "sessionID", sessionID, "pvc", oldPVCName)
+					}
 				}
 				_ = m.storage.ClearOldPVCName(bgCtx, sessionID)
 			}
-		}(sessionID)
+		}(sessionID, pvcName)
 
 		// Pass the existing PVC name so sandbox uses it instead of creating a new one
 		env[k8s.ExistingPVCEnvKey] = pvcName
