@@ -179,6 +179,7 @@ The UI shows:
 
 ## Limitations
 
+- **Destructive restore**: Restoring to a snapshot deletes all data after that point - workspace files, messages, events, and newer snapshots. This is similar to `git reset --hard`.
 - **Running sessions**: Cannot restore while the agent is processing a prompt (session must be in "ready" state)
 - **Workspace only**: Docker containers/images are not snapshot (they persist in `/agent/docker` which is outside workspace)
 - **No manual snapshots**: Snapshots are only created automatically after turns
