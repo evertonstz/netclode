@@ -74,7 +74,7 @@ extension SdkType {
     /// Short display name for compact UI
     var shortName: String {
         switch self {
-        case .claude: return "Claude"
+        case .claude: return "Claude Code"
         case .opencode: return "OpenCode"
         case .copilot: return "Copilot"
         }
