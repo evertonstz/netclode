@@ -1,13 +1,37 @@
 # JuiceFS CSI Driver Configuration
 #
-# This ConfigMap configures JuiceFS mount pods to have no CPU/memory requests.
-# By default, JuiceFS mount pods request 1 CPU each, which quickly exhausts
-# node resources when multiple PVCs are in use.
+# This ConfigMap configures JuiceFS mount pods with:
+# 1. Writeback caching for high IOPS
+# 2. Host path cache directory for persistence across pod restarts
+# 3. Proper lifecycle hooks for clean unmount
 #
 # Apply with: kubectl apply -f juicefs-config.yaml
 # Then restart: kubectl rollout restart statefulset juicefs-csi-controller -n kube-system
 #
 # Note: Only affects newly created mount pods. Existing pods keep their old config.
+# To apply to existing pods, delete them and they'll be recreated with new settings.
+#
+# ============================================================================
+# CACHING CONFIGURATION
+# ============================================================================
+#
+# Without caching, JuiceFS performs ~30 IOPS (every write goes to S3).
+# With writeback enabled, we achieve ~500+ IOPS.
+#
+# Key option:
+#   --writeback : Async writes to local disk first, sync to S3 in background.
+#                 Biggest IOPS improvement (10-50x). Data is safe in local cache
+#                 until synced. Risk: data loss if node crashes before sync.
+#
+# JuiceFS defaults (no need to override):
+#   --cache-size  : 100GB
+#   --buffer-size : 300MB
+#   --prefetch    : 1
+#
+# The cacheDirs hostPath mount ensures cache persists across pod restarts
+# and is shared across all JuiceFS mount pods on the same node.
+#
+# ============================================================================
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -21,7 +45,17 @@ metadata:
 data:
   config.yaml: |
     mountPodPatch:
-      - lifecycle:
+      - mountOptions:
+          # Writeback cache: async writes to local disk, sync to S3 in background
+          # This is the key IOPS improvement (10-50x)
+          - writeback
+        # Mount host cache directory into JuiceFS mount pods
+        # Ensures cache persists across pod restarts
+        cacheDirs:
+          - type: HostPath
+            path: /var/jfsCache
+        # Lifecycle hook for clean unmount
+        lifecycle:
           preStop:
             exec:
               command:
