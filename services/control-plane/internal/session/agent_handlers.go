@@ -133,7 +133,16 @@ func (m *Manager) handleAgentResult(ctx context.Context, sessionID string, state
 
 	// Create auto-snapshot after each turn (async with timeout)
 	if originalPrompt != "" {
-		turnNumber := int(result.TotalTurns)
+		// Count assistant messages to get turn number (SDK's TotalTurns persists across sessions)
+		assistantCount := 0
+		if messages, err := m.storage.GetMessages(ctx, sessionID, nil); err == nil {
+			for _, msg := range messages {
+				if msg.Role == pb.MessageRole_MESSAGE_ROLE_ASSISTANT {
+					assistantCount++
+				}
+			}
+		}
+		turnNumber := assistantCount
 		go func() {
 			snapshotCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 			defer cancel()
