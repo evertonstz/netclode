@@ -23,6 +23,7 @@ export function buildSystemPrompt(config: SystemPromptConfig): {
     `- Working directory: ${WORKSPACE_DIR}`,
     "- Everything persists across sessions: files, Docker images, installed tools, caches",
     "- You have full shell, network, and Docker access",
+    "- You have sudo access (passwordless) for system administration tasks",
     "- It is safe to run any commands - the sandbox is isolated",
     "",
     "## Tools",
