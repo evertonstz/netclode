@@ -282,3 +282,64 @@ func (c *Client) TailEvents(ctx context.Context, sessionID string, onEvent Event
 func (c *Client) Stream(ctx context.Context) *connect.BidiStreamForClient[pb.ClientMessage, pb.ServerMessage] {
 	return c.client.Connect(ctx)
 }
+
+// ListSnapshots returns all snapshots for a session.
+func (c *Client) ListSnapshots(ctx context.Context, sessionID string) ([]*pb.Snapshot, error) {
+	stream := c.client.Connect(ctx)
+	defer func() { _ = stream.CloseRequest() }()
+
+	if err := stream.Send(&pb.ClientMessage{
+		Message: &pb.ClientMessage_ListSnapshots{
+			ListSnapshots: &pb.ListSnapshotsRequest{
+				SessionId: sessionID,
+			},
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+
+	msg, err := stream.Receive()
+	if err != nil {
+		return nil, fmt.Errorf("receive response: %w", err)
+	}
+
+	if resp := msg.GetSnapshotList(); resp != nil {
+		return resp.Snapshots, nil
+	}
+	if errResp := msg.GetError(); errResp != nil {
+		return nil, fmt.Errorf("%s: %s", errResp.Error.Code, errResp.Error.Message)
+	}
+
+	return nil, fmt.Errorf("unexpected response type: %T", msg.GetMessage())
+}
+
+// RestoreSnapshot restores a session to a snapshot.
+func (c *Client) RestoreSnapshot(ctx context.Context, sessionID, snapshotID string) error {
+	stream := c.client.Connect(ctx)
+	defer func() { _ = stream.CloseRequest() }()
+
+	if err := stream.Send(&pb.ClientMessage{
+		Message: &pb.ClientMessage_RestoreSnapshot{
+			RestoreSnapshot: &pb.RestoreSnapshotRequest{
+				SessionId:  sessionID,
+				SnapshotId: snapshotID,
+			},
+		},
+	}); err != nil {
+		return fmt.Errorf("send request: %w", err)
+	}
+
+	msg, err := stream.Receive()
+	if err != nil {
+		return fmt.Errorf("receive response: %w", err)
+	}
+
+	if msg.GetSnapshotRestored() != nil {
+		return nil
+	}
+	if errResp := msg.GetError(); errResp != nil {
+		return fmt.Errorf("%s: %s", errResp.Error.Code, errResp.Error.Message)
+	}
+
+	return fmt.Errorf("unexpected response type: %T", msg.GetMessage())
+}

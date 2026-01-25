@@ -117,3 +117,6 @@
         name: juicefs-snapclass
       driver: csi.juicefs.com
       deletionPolicy: Delete
+      parameters:
+        csi.storage.k8s.io/snapshotter-secret-name: juicefs-secret
+        csi.storage.k8s.io/snapshotter-secret-namespace: netclode

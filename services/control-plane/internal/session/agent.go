@@ -18,10 +18,19 @@ const (
 
 // SendPrompt sends a prompt to the agent and streams the response.
 // If the sandbox isn't ready yet, queues the prompt to be sent when ready.
+// If the session is paused, automatically resumes it first.
 func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error {
 	state := m.getState(sessionID)
 	if state == nil {
 		return fmt.Errorf("session %s not found", sessionID)
+	}
+
+	// Auto-resume if session is paused
+	if state.Session.Status == pb.SessionStatus_SESSION_STATUS_PAUSED {
+		slog.Info("Auto-resuming paused session for prompt", "sessionID", sessionID)
+		if _, err := m.Resume(ctx, sessionID); err != nil {
+			return fmt.Errorf("failed to resume session: %w", err)
+		}
 	}
 
 	// Check if agent is connected
