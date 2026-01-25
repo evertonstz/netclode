@@ -55,6 +55,21 @@ final class GitStore: @unchecked Sendable {
     func setFiles(_ files: [GitFileChange], for sessionId: String) {
         filesBySession[sessionId] = files
         errorBySession[sessionId] = nil
+        
+        // If there was a selected file, check if it's still in the new files list
+        // and clear the diff to trigger a re-fetch (diff might be stale after refresh)
+        if let selectedPath = selectedFileBySession[sessionId] {
+            let fileStillExists = files.contains { $0.path == selectedPath }
+            if fileStillExists {
+                // Clear diff to trigger re-fetch with fresh content
+                diffBySession[sessionId] = nil
+                isLoadingDiff[sessionId] = true
+            } else {
+                // File no longer exists, clear selection
+                selectedFileBySession[sessionId] = nil
+                diffBySession[sessionId] = nil
+            }
+        }
     }
     
     @MainActor

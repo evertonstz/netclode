@@ -117,6 +117,13 @@ struct ChangesView: View {
         .onAppear {
             requestGitStatus()
         }
+        .onChange(of: isLoadingDiff) { _, isLoading in
+            // When isLoadingDiff becomes true and we have a selected file but no diff,
+            // this means the files were refreshed and we need to re-fetch the diff
+            if isLoading, let selectedPath = expandedFile, diffContent == nil {
+                connectService.send(.gitDiff(sessionId: sessionId, file: selectedPath))
+            }
+        }
     }
     
     // MARK: - Actions
