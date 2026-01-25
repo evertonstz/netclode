@@ -154,6 +154,32 @@ export class OpenCodeAdapter implements SDKAdapter {
     console.log("[opencode-adapter] Server started at:", url);
   }
 
+  /**
+   * Abort a running OpenCode session
+   */
+  private async abortSession(sessionId: string | undefined): Promise<void> {
+    if (!this.server || !sessionId) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${this.server.url}/session/${sessionId}/abort`, {
+        method: "POST",
+        headers: {
+          "x-opencode-directory": WORKSPACE_DIR,
+        },
+      });
+
+      if (response.ok) {
+        console.log(`[opencode-adapter] Session ${sessionId} aborted`);
+      } else {
+        console.warn(`[opencode-adapter] Failed to abort session: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("[opencode-adapter] Error aborting session:", error);
+    }
+  }
+
   async *executePrompt(sessionId: string, text: string, promptConfig?: PromptConfig): AsyncGenerator<PromptEvent> {
     if (!this.server) {
       throw new Error("OpenCode server not initialized");
@@ -345,6 +371,8 @@ export class OpenCodeAdapter implements SDKAdapter {
     // Yield events from queue
     while (!completed || eventQueue.length > 0) {
       if (this.interruptSignal) {
+        // Abort the OpenCode session to stop processing
+        await this.abortSession(ocSessionId);
         yield { type: "system", message: "interrupted" };
         return;
       }

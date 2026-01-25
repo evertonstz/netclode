@@ -16,6 +16,7 @@ const WORKSPACE_DIR = "/agent/workspace";
 export class ClaudeSDKAdapter implements SDKAdapter {
   private config: SDKConfig | null = null;
   private interruptSignal = false;
+  private abortController: AbortController | null = null;
   private currentGitRepo: string | null = null;
   private currentGithubToken: string | null = null;
 
@@ -90,6 +91,9 @@ export class ClaudeSDKAdapter implements SDKAdapter {
     // Clear any previous interrupt signal at start
     this.clearInterruptSignal();
 
+    // Create an AbortController for this query
+    this.abortController = new AbortController();
+
     try {
       const q = query({
         prompt: text,
@@ -102,6 +106,7 @@ export class ClaudeSDKAdapter implements SDKAdapter {
           includePartialMessages: true,
           maxThinkingTokens: 10000,
           systemPrompt: buildSystemPrompt({ currentGitRepo: this.currentGitRepo }),
+          abortController: this.abortController,
           ...(sdkSessionId && { resume: sdkSessionId }),
         },
       });
@@ -272,11 +277,18 @@ export class ClaudeSDKAdapter implements SDKAdapter {
 
   setInterruptSignal(): void {
     this.interruptSignal = true;
-    console.log("[claude-adapter] Interrupt signal set");
+    // Abort the query to cancel in-flight API calls and tool executions
+    if (this.abortController) {
+      this.abortController.abort();
+      console.log("[claude-adapter] Interrupt signal set and query aborted");
+    } else {
+      console.log("[claude-adapter] Interrupt signal set");
+    }
   }
 
   clearInterruptSignal(): void {
     this.interruptSignal = false;
+    this.abortController = null;
   }
 
   isInterrupted(): boolean {
