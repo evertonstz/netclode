@@ -239,6 +239,21 @@ func (r *RedisStorage) UpdateSessionField(ctx context.Context, id, field, value 
 	return r.client.HSet(ctx, sessionKey(id), field, value).Err()
 }
 
+// SetRestoreSnapshotID stores the snapshot ID to restore from (persisted for crash recovery).
+func (r *RedisStorage) SetRestoreSnapshotID(ctx context.Context, sessionID, snapshotID string) error {
+	return r.client.HSet(ctx, sessionKey(sessionID), "restoreSnapshotID", snapshotID).Err()
+}
+
+// GetRestoreSnapshotID retrieves the pending restore snapshot ID.
+func (r *RedisStorage) GetRestoreSnapshotID(ctx context.Context, sessionID string) (string, error) {
+	return r.client.HGet(ctx, sessionKey(sessionID), "restoreSnapshotID").Result()
+}
+
+// ClearRestoreSnapshotID removes the restore snapshot ID after use.
+func (r *RedisStorage) ClearRestoreSnapshotID(ctx context.Context, sessionID string) error {
+	return r.client.HDel(ctx, sessionKey(sessionID), "restoreSnapshotID").Err()
+}
+
 // DeleteSession removes a session and all related data from Redis.
 func (r *RedisStorage) DeleteSession(ctx context.Context, id string) error {
 	// First delete all snapshots

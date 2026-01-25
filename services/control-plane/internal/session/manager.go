@@ -108,7 +108,13 @@ func (m *Manager) Initialize(ctx context.Context) error {
 
 	// Load into memory with channel-based state
 	for _, s := range sessions {
-		m.sessions[s.Id] = NewSessionState(s)
+		state := NewSessionState(s)
+		// Load persisted restore snapshot ID if any
+		if restoreID, err := m.storage.GetRestoreSnapshotID(ctx, s.Id); err == nil && restoreID != "" {
+			state.RestoreSnapshotID = restoreID
+			slog.Info("Loaded restore snapshot ID", "sessionID", s.Id, "snapshotID", restoreID)
+		}
+		m.sessions[s.Id] = state
 	}
 
 	// Reconcile with K8s
@@ -600,7 +606,7 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	m.mu.Lock()
 	state.Session.Status = pb.SessionStatus_SESSION_STATUS_RESUMING
 	restoreSnapshotID := state.RestoreSnapshotID
-	state.RestoreSnapshotID = "" // Clear it
+	state.RestoreSnapshotID = "" // Clear it in memory
 	m.mu.Unlock()
 
 	_ = m.storage.UpdateSessionStatus(ctx, id, pb.SessionStatus_SESSION_STATUS_RESUMING)
@@ -608,6 +614,7 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	// If restoring from snapshot, use direct sandbox creation (bypasses warm pool)
 	if restoreSnapshotID != "" {
 		slog.Info("Resuming with snapshot restore", "sessionID", id, "snapshotID", restoreSnapshotID)
+		_ = m.storage.ClearRestoreSnapshotID(ctx, id) // Clear from storage
 		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, restoreSnapshotID)
 	} else {
 		go m.createSandbox(context.Background(), id, state.Session.Repo, state.Session.RepoAccess)
@@ -1719,6 +1726,9 @@ func (m *Manager) RestoreSnapshot(ctx context.Context, sessionID, snapshotID str
 
 	// Store snapshot ID for next sandbox creation (bypasses warm pool)
 	state.RestoreSnapshotID = snapshotID
+	if err := m.storage.SetRestoreSnapshotID(ctx, sessionID, snapshotID); err != nil {
+		slog.Warn("Failed to persist restore snapshot ID", "sessionID", sessionID, "error", err)
+	}
 
 	// Truncate messages to snapshot point
 	if err := m.storage.TruncateMessages(ctx, sessionID, int(snapshot.MessageCount)); err != nil {

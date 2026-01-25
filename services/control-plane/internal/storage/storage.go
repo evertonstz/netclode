@@ -57,6 +57,11 @@ type Storage interface {
 	// Notifications truncation (for snapshot restore)
 	TruncateNotificationsAfter(ctx context.Context, sessionID string, afterID string) error
 
+	// Restore snapshot ID (persisted for crash recovery)
+	SetRestoreSnapshotID(ctx context.Context, sessionID, snapshotID string) error
+	GetRestoreSnapshotID(ctx context.Context, sessionID string) (string, error)
+	ClearRestoreSnapshotID(ctx context.Context, sessionID string) error
+
 	// Redis client access (for StreamSubscriber)
 	GetRedisClient() *redis.Client
 
