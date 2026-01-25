@@ -20,9 +20,7 @@ func setupTestRedis(t *testing.T) (*miniredis.Miniredis, *RedisStorage) {
 	}
 
 	cfg := &config.Config{
-		RedisURL:              "redis://" + mr.Addr(),
-		MaxMessagesPerSession: 100,
-		MaxEventsPerSession:   100,
+		RedisURL: "redis://" + mr.Addr(),
 	}
 
 	client := redis.NewClient(&redis.Options{

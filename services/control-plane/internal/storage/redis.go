@@ -268,15 +268,7 @@ func (r *RedisStorage) AppendMessage(ctx context.Context, sessionID string, msg 
 		return err
 	}
 
-	pipe := r.client.TxPipeline()
-	pipe.RPush(ctx, messagesKey(sessionID), string(data))
-
-	// Trim to keep only the last N messages
-	maxMessages := int64(r.config.MaxMessagesPerSession)
-	pipe.LTrim(ctx, messagesKey(sessionID), -maxMessages, -1)
-
-	_, err = pipe.Exec(ctx)
-	return err
+	return r.client.RPush(ctx, messagesKey(sessionID), string(data)).Err()
 }
 
 // GetMessages retrieves messages for a session, optionally after a specific message ID.
@@ -460,10 +452,6 @@ func (r *RedisStorage) PublishNotification(ctx context.Context, sessionID string
 		Values: map[string]interface{}{
 			"data": string(data),
 		},
-		// Use MAXLEN ~ to approximately limit stream size
-		// Use a larger limit than events since this includes all updates
-		MaxLen: int64(r.config.MaxMessagesPerSession + r.config.MaxEventsPerSession),
-		Approx: true,
 	}).Result()
 
 	return id, err

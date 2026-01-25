@@ -7,19 +7,17 @@ import (
 )
 
 type Config struct {
-	Port                  int
-	AnthropicAPIKey       string
-	GitHubToken           string // GitHub PAT with copilot scope (for Copilot SDK)
-	K8sNamespace          string
-	AgentImage            string
-	SandboxTemplate       string
-	DefaultCPUs           int
-	DefaultMemoryMB       int
-	RedisURL              string
-	MaxMessagesPerSession int
-	MaxEventsPerSession   int
-	UseWarmPool           bool
-	MaxActiveSessions     int
+	Port              int
+	AnthropicAPIKey   string
+	GitHubToken       string // GitHub PAT with copilot scope (for Copilot SDK)
+	K8sNamespace      string
+	AgentImage        string
+	SandboxTemplate   string
+	DefaultCPUs       int
+	DefaultMemoryMB   int
+	RedisURL          string
+	UseWarmPool       bool
+	MaxActiveSessions int
 
 	// GitHub App integration
 	GitHubAppID          int64
@@ -29,19 +27,17 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		Port:                  getEnvInt("PORT", 3000),
-		AnthropicAPIKey:       getEnv("ANTHROPIC_API_KEY", ""),
-		GitHubToken:           getEnv("GITHUB_TOKEN", ""),
-		K8sNamespace:          getEnv("K8S_NAMESPACE", "netclode"),
-		AgentImage:            getEnv("AGENT_IMAGE", "ghcr.io/angristan/netclode-agent:latest"),
-		SandboxTemplate:       getEnv("SANDBOX_TEMPLATE", "netclode-agent"),
-		DefaultCPUs:           getEnvInt("DEFAULT_CPUS", 2),
-		DefaultMemoryMB:       getEnvInt("DEFAULT_MEMORY_MB", 2048),
-		RedisURL:              getEnv("REDIS_URL", "redis://redis-sessions.netclode.svc.cluster.local:6379"),
-		MaxMessagesPerSession: getEnvInt("MAX_MESSAGES_PER_SESSION", 1000),
-		MaxEventsPerSession:   getEnvInt("MAX_EVENTS_PER_SESSION", 0), // 0 = no limit
-		UseWarmPool:           getEnvBool("WARM_POOL_ENABLED", true),
-		MaxActiveSessions:     getEnvInt("MAX_ACTIVE_SESSIONS", 5),
+		Port:              getEnvInt("PORT", 3000),
+		AnthropicAPIKey:   getEnv("ANTHROPIC_API_KEY", ""),
+		GitHubToken:       getEnv("GITHUB_TOKEN", ""),
+		K8sNamespace:      getEnv("K8S_NAMESPACE", "netclode"),
+		AgentImage:        getEnv("AGENT_IMAGE", "ghcr.io/angristan/netclode-agent:latest"),
+		SandboxTemplate:   getEnv("SANDBOX_TEMPLATE", "netclode-agent"),
+		DefaultCPUs:       getEnvInt("DEFAULT_CPUS", 2),
+		DefaultMemoryMB:   getEnvInt("DEFAULT_MEMORY_MB", 2048),
+		RedisURL:          getEnv("REDIS_URL", "redis://redis-sessions.netclode.svc.cluster.local:6379"),
+		UseWarmPool:       getEnvBool("WARM_POOL_ENABLED", true),
+		MaxActiveSessions: getEnvInt("MAX_ACTIVE_SESSIONS", 5),
 
 		// GitHub App integration
 		GitHubAppID:          getEnvInt64("GITHUB_APP_ID", 0),

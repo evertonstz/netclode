@@ -397,7 +397,7 @@ func (c *ConnectConnection) handleSessionOpen(ctx context.Context, req *pb.OpenS
 	}
 	_ = lastMsgID // unused for now
 
-	sess, messages, events, hasMore, currentNotificationID, err := c.manager.GetWithHistory(ctx, req.SessionId, 100)
+	sess, messages, events, hasMore, currentNotificationID, err := c.manager.GetWithHistory(ctx, req.SessionId)
 	if err != nil {
 		return err
 	}

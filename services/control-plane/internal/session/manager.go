@@ -796,7 +796,7 @@ func (m *Manager) Get(ctx context.Context, id string) (*pb.Session, error) {
 
 // GetWithHistory returns a session with its message and event history.
 // Also returns the lastNotificationID for cursor-based subscription.
-func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit int) (*pb.Session, []pb.Message, []pb.Event, bool, string, error) {
+func (m *Manager) GetWithHistory(ctx context.Context, id string) (*pb.Session, []pb.Message, []pb.Event, bool, string, error) {
 	session, err := m.Get(ctx, id)
 	if err != nil {
 		return nil, nil, nil, false, "", err
@@ -807,7 +807,7 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit in
 		return nil, nil, nil, false, "", fmt.Errorf("get messages: %w", err)
 	}
 
-	events, err := m.storage.GetEvents(ctx, id, m.config.MaxEventsPerSession)
+	events, err := m.storage.GetEvents(ctx, id, 0) // 0 = no limit
 	if err != nil {
 		return nil, nil, nil, false, "", fmt.Errorf("get events: %w", err)
 	}
@@ -831,9 +831,7 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, messageLimit in
 		evtSlice[i] = *e
 	}
 
-	hasMore := len(messages) >= messageLimit
-
-	return session, msgSlice, evtSlice, hasMore, lastNotificationID, nil
+	return session, msgSlice, evtSlice, false, lastNotificationID, nil
 }
 
 // GetAllWithMeta returns all sessions with metadata.
