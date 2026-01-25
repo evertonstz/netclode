@@ -258,11 +258,21 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 			return
 		}
 
-		// NOTE: We skip waiting for the JuiceFS restore job here.
-		// The JuiceFS CSI driver handles this automatically - when the pod tries to mount,
-		// the NodePublishVolume call will wait for the restore job to complete.
-		// This saves ~10 seconds of sequential waiting.
-		slog.Info("PVC created from snapshot, proceeding with sandbox creation", "sessionID", sessionID, "pvc", pvcName)
+		// Wait for JuiceFS restore job to complete BEFORE creating sandbox.
+		// We must wait because the pod will fail with I/O errors if it tries to access
+		// the filesystem before the restore completes.
+		slog.Info("Waiting for snapshot restore job", "sessionID", sessionID, "snapshotID", snapID)
+		if err := m.k8s.WaitForRestoreJob(ctx, sessionID, snapID, 5*time.Minute); err != nil {
+			slog.Error("Snapshot restore job failed", "sessionID", sessionID, "error", err)
+			// Cleanup: delete the PVC we created
+			if delErr := m.k8s.DeletePVC(ctx, sessionID); delErr != nil {
+				slog.Error("Failed to cleanup PVC after restore failure", "sessionID", sessionID, "error", delErr)
+			}
+			m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
+			m.emitSessionError(ctx, sessionID, fmt.Sprintf("snapshot restore failed: %v", err))
+			return
+		}
+		slog.Info("Snapshot restore completed, creating sandbox with existing PVC", "sessionID", sessionID, "pvc", pvcName)
 
 		// Delete the old orphaned PVC in background (non-blocking)
 		// Only if it's different from the new PVC (avoids deleting the newly created one)
