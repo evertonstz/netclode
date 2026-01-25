@@ -30,3 +30,46 @@
   until: (juicefs_csi_status.resources[0].status.readyReplicas | default(0)) >= 1
   retries: 30
   delay: 10
+
+# VolumeSnapshot support for session history restore
+- name: Install VolumeSnapshot CRDs
+  kubernetes.core.k8s:
+    state: present
+    src: "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{{ snapshot_controller_version }}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Install VolumeSnapshotContent CRD
+  kubernetes.core.k8s:
+    state: present
+    src: "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{{ snapshot_controller_version }}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Install VolumeSnapshot CRD
+  kubernetes.core.k8s:
+    state: present
+    src: "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{{ snapshot_controller_version }}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Install snapshot-controller RBAC
+  kubernetes.core.k8s:
+    state: present
+    src: "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{{ snapshot_controller_version }}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Install snapshot-controller deployment
+  kubernetes.core.k8s:
+    state: present
+    src: "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{{ snapshot_controller_version }}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Create JuiceFS VolumeSnapshotClass
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    definition:
+      apiVersion: snapshot.storage.k8s.io/v1
+      kind: VolumeSnapshotClass
+      metadata:
+        name: juicefs-snapclass
+      driver: csi.juicefs.com
+      deletionPolicy: Delete

@@ -1374,9 +1374,14 @@ func (r *k8sRuntime) GetPVCName(ctx context.Context, sessionID string) (string, 
 		}
 	}
 
-	// The PVC name follows the pattern: {volumeClaimTemplate.name}-{sandbox.name}
+	// The PVC name follows the pattern: {volumeClaimTemplate.name}-{pod.name}
 	// From sandbox-template.yaml, the volume claim template name is "agent-home"
-	return fmt.Sprintf("agent-home-%s", sandbox.Name), nil
+	// For warm pool mode, the pod name comes from the pool and is stored in annotations
+	podName := sandbox.Name
+	if annotatedPodName, ok := sandbox.Annotations["agents.x-k8s.io/pod-name"]; ok && annotatedPodName != "" {
+		podName = annotatedPodName
+	}
+	return fmt.Sprintf("agent-home-%s", podName), nil
 }
 
 // mustParseQuantity parses a resource quantity, panicking on error (for static values)

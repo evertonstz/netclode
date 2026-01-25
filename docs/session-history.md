@@ -161,6 +161,17 @@ The UI shows:
 - Relative timestamp
 - Message count at that point
 
+## Infrastructure Requirements
+
+The snapshot feature requires the following Kubernetes components (deployed via `infra/ansible/roles/juicefs-csi/`):
+
+| Component | Description |
+|-----------|-------------|
+| **VolumeSnapshot CRDs** | Custom resource definitions from [external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter) that define VolumeSnapshot, VolumeSnapshotContent, and VolumeSnapshotClass resources |
+| **Snapshot Controller** | Watches VolumeSnapshot objects and triggers the CSI driver to create/delete snapshots |
+| **VolumeSnapshotClass** | Defines the CSI driver (`csi.juicefs.com`) and deletion policy for snapshots |
+| **RBAC** | Control-plane ServiceAccount needs permissions to create/delete VolumeSnapshots |
+
 ## Limitations
 
 - **Destructive restore**: Restoring to a snapshot deletes all data after that point - workspace files, messages, events, and newer snapshots. This is similar to `git reset --hard`.
