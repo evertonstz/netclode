@@ -120,3 +120,36 @@
       parameters:
         csi.storage.k8s.io/snapshotter-secret-name: juicefs-secret
         csi.storage.k8s.io/snapshotter-secret-namespace: netclode
+
+# RBAC for JuiceFS CSI to read VolumeSnapshots (needed for restore from snapshot)
+- name: Create JuiceFS CSI snapshot reader ClusterRole
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: juicefs-csi-snapshot-reader
+      rules:
+        - apiGroups: ["snapshot.storage.k8s.io"]
+          resources: ["volumesnapshots", "volumesnapshotcontents"]
+          verbs: ["get", "list", "watch"]
+
+- name: Bind JuiceFS CSI snapshot reader ClusterRole
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: "{{ k3s_kubeconfig }}"
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: juicefs-csi-snapshot-reader
+      subjects:
+        - kind: ServiceAccount
+          name: juicefs-csi-controller-sa
+          namespace: kube-system
+      roleRef:
+        kind: ClusterRole
+        name: juicefs-csi-snapshot-reader
+        apiGroup: rbac.authorization.k8s.io
