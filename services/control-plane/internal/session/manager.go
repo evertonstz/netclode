@@ -1760,6 +1760,9 @@ func (m *Manager) RestoreSnapshot(ctx context.Context, sessionID, snapshotID str
 			slog.Warn("Failed to truncate events", "sessionID", sessionID, "error", err)
 		}
 
+		// Delete snapshots newer than the restored one (destructive restore)
+		m.deleteSnapshotsAfter(ctx, sessionID, snapshot)
+
 		slog.Info("Snapshot restored", "sessionID", sessionID, "snapshotID", snapshotID, "messagesRestored", snapshot.MessageCount)
 		return snapshot.MessageCount, nil
 
@@ -1836,6 +1839,53 @@ func (m *Manager) enforceSnapshotRetention(ctx context.Context, sessionID string
 			slog.Debug("Deleted old snapshot", "sessionID", sessionID, "snapshotID", snapshots[i].Id)
 		}
 	}
+}
+
+// deleteSnapshotsAfter deletes all snapshots created after the given snapshot (destructive restore).
+func (m *Manager) deleteSnapshotsAfter(ctx context.Context, sessionID string, restoredSnapshot *pb.Snapshot) {
+	snapshots, err := m.storage.ListSnapshots(ctx, sessionID)
+	if err != nil {
+		slog.Warn("Failed to list snapshots for cleanup", "sessionID", sessionID, "error", err)
+		return
+	}
+
+	restoredTime := restoredSnapshot.CreatedAt.AsTime()
+	deleted := 0
+
+	// Delete snapshots newer than the restored one (list is newest-first)
+	for _, s := range snapshots {
+		if s.CreatedAt.AsTime().After(restoredTime) {
+			if err := m.storage.DeleteSnapshot(ctx, sessionID, s.Id); err != nil {
+				slog.Warn("Failed to delete newer snapshot", "sessionID", sessionID, "snapshotID", s.Id, "error", err)
+			} else {
+				deleted++
+				slog.Debug("Deleted newer snapshot", "sessionID", sessionID, "snapshotID", s.Id)
+			}
+		}
+	}
+
+	if deleted > 0 {
+		slog.Info("Deleted snapshots after restore point", "sessionID", sessionID, "count", deleted)
+		// Emit updated snapshot list to clients
+		m.emitSnapshotList(ctx, sessionID)
+	}
+}
+
+// emitSnapshotList broadcasts updated snapshot list to clients.
+func (m *Manager) emitSnapshotList(ctx context.Context, sessionID string) {
+	snapshots, err := m.storage.ListSnapshots(ctx, sessionID)
+	if err != nil {
+		return
+	}
+	payload, _ := protoJsonOpts.Marshal(&pb.SnapshotListResponse{
+		SessionId: sessionID,
+		Snapshots: snapshots,
+	})
+	m.publishNotification(ctx, sessionID, &storage.Notification{
+		Type:      "snapshot_list",
+		Payload:   payload,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
 }
 
 // emitSnapshotCreated broadcasts snapshot created event to clients.
