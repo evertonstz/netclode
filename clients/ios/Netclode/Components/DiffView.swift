@@ -2,19 +2,35 @@ import SwiftUI
 
 // MARK: - Diff View (for Edit tool old/new string comparison)
 
-/// A view that displays a diff between two strings with word-level highlighting
+/// A view that displays a diff between two strings with word-level highlighting and optional syntax highlighting
 struct DiffView: View {
     let oldString: String
     let newString: String
-    
+    let language: String?
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    init(oldString: String, newString: String, language: String? = nil) {
+        self.oldString = oldString
+        self.newString = newString
+        self.language = language
+    }
+
+    /// Initialize with a file path for automatic language detection
+    init(oldString: String, newString: String, filePath: String?) {
+        self.oldString = oldString
+        self.newString = newString
+        self.language = filePath.flatMap { LanguageDetector.language(for: $0) }
+    }
+
     private var diffResult: DiffResult {
         DiffEngine.computeDiff(old: oldString, new: newString)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(diffResult.lines) { line in
-                DiffLineView(line: line)
+                DiffLineView(line: line, language: language, colorScheme: colorScheme)
             }
         }
         .font(.system(size: 12, design: .monospaced))
@@ -28,12 +44,21 @@ struct DiffView: View {
 struct DiffLineView: View {
     let line: DiffLine
     let showLineNumbers: Bool
-    
-    init(line: DiffLine, showLineNumbers: Bool = false) {
+    let language: String?
+    let colorScheme: ColorScheme
+
+    init(
+        line: DiffLine,
+        showLineNumbers: Bool = false,
+        language: String? = nil,
+        colorScheme: ColorScheme = .dark
+    ) {
         self.line = line
         self.showLineNumbers = showLineNumbers
+        self.language = language
+        self.colorScheme = colorScheme
     }
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             // Line numbers (optional)
@@ -43,32 +68,29 @@ struct DiffLineView: View {
                     .frame(width: 28, alignment: .trailing)
                     .foregroundStyle(DiffColors.lineNumber)
                     .padding(.trailing, 2)
-                
+
                 // New line number
                 Text(line.newLineNumber.map { "\($0)" } ?? "")
                     .frame(width: 28, alignment: .trailing)
                     .foregroundStyle(DiffColors.lineNumber)
                     .padding(.trailing, 6)
             }
-            
+
             // Prefix (+/-/space)
             Text(line.type.prefix)
                 .foregroundStyle(prefixColor)
                 .frame(width: 14)
-            
-            // Content with word highlights
-            if !line.wordHighlights.isEmpty {
-                HighlightedTextView(
-                    text: line.content,
-                    highlights: line.wordHighlights,
-                    baseColor: textColor,
-                    highlightColor: wordHighlightColor
-                )
-            } else {
-                Text(line.content)
-                    .foregroundStyle(textColor)
-            }
-            
+
+            // Content with syntax highlighting and word highlights
+            SyntaxHighlightedDiffText(
+                text: line.content,
+                language: language,
+                colorScheme: colorScheme,
+                wordHighlights: line.wordHighlights,
+                fallbackColor: textColor,
+                highlightColor: wordHighlightColor
+            )
+
             Spacer(minLength: 0)
         }
         .font(.system(size: 11, design: .monospaced))
@@ -76,7 +98,7 @@ struct DiffLineView: View {
         .padding(.vertical, 1)
         .background(backgroundColor)
     }
-    
+
     private var backgroundColor: Color {
         switch line.type {
         case .context:
@@ -87,7 +109,7 @@ struct DiffLineView: View {
             return DiffColors.additionBackground
         }
     }
-    
+
     private var textColor: Color {
         switch line.type {
         case .context:
@@ -98,7 +120,7 @@ struct DiffLineView: View {
             return DiffColors.additionText
         }
     }
-    
+
     private var prefixColor: Color {
         switch line.type {
         case .context:
@@ -109,7 +131,7 @@ struct DiffLineView: View {
             return DiffColors.additionText
         }
     }
-    
+
     private var wordHighlightColor: Color {
         switch line.type {
         case .context:
@@ -122,33 +144,92 @@ struct DiffLineView: View {
     }
 }
 
-// MARK: - Highlighted Text View
+// MARK: - Syntax Highlighted Diff Text
+
+/// A view that combines syntax highlighting with word-level diff highlights
+struct SyntaxHighlightedDiffText: View {
+    let text: String
+    let language: String?
+    let colorScheme: ColorScheme
+    let wordHighlights: [HighlightRange]
+    let fallbackColor: Color
+    let highlightColor: Color
+
+    var body: some View {
+        Text(buildAttributedString())
+    }
+
+    private func buildAttributedString() -> AttributedString {
+        var result = AttributedString(text)
+
+        // First, apply syntax highlighting colors if language is provided
+        if let language = language, !text.isEmpty {
+            let segments = SyntaxHighlighter.shared.highlightLine(text, language: language, colorScheme: colorScheme)
+
+            // Apply syntax colors to each segment
+            var offset = 0
+            for segment in segments {
+                let segmentLength = segment.text.count
+                guard segmentLength > 0, offset < text.count else { continue }
+
+                let startIndex = text.index(text.startIndex, offsetBy: offset, limitedBy: text.endIndex) ?? text.endIndex
+                let endIndex = text.index(startIndex, offsetBy: segmentLength, limitedBy: text.endIndex) ?? text.endIndex
+
+                if startIndex < endIndex,
+                   let range = Range(NSRange(startIndex..<endIndex, in: text), in: result) {
+                    result[range].foregroundColor = segment.color ?? fallbackColor
+                }
+                offset += segmentLength
+            }
+        } else {
+            // No syntax highlighting, use fallback color
+            result.foregroundColor = fallbackColor
+        }
+
+        // Then, apply word highlights (background color for changed portions)
+        for highlight in wordHighlights {
+            guard highlight.start >= 0, highlight.length > 0 else { continue }
+
+            let startIndex = text.index(text.startIndex, offsetBy: highlight.start, limitedBy: text.endIndex) ?? text.endIndex
+            let endIndex = text.index(startIndex, offsetBy: highlight.length, limitedBy: text.endIndex) ?? text.endIndex
+
+            if startIndex < endIndex,
+               let range = Range(NSRange(startIndex..<endIndex, in: text), in: result) {
+                result[range].backgroundColor = highlightColor
+            }
+        }
+
+        return result
+    }
+}
+
+// MARK: - Highlighted Text View (Legacy, kept for compatibility)
 
 struct HighlightedTextView: View {
     let text: String
     let highlights: [HighlightRange]
     let baseColor: Color
     let highlightColor: Color
-    
+
     var body: some View {
         // Build attributed string with highlights
         Text(buildAttributedString())
     }
-    
+
     private func buildAttributedString() -> AttributedString {
         var result = AttributedString(text)
         result.foregroundColor = baseColor
-        
+
         // Apply highlights
         for highlight in highlights {
             let startIndex = text.index(text.startIndex, offsetBy: highlight.start, limitedBy: text.endIndex) ?? text.endIndex
             let endIndex = text.index(startIndex, offsetBy: highlight.length, limitedBy: text.endIndex) ?? text.endIndex
-            
+
             if let range = Range(NSRange(startIndex..<endIndex, in: text), in: result) {
                 result[range].backgroundColor = highlightColor
             }
         }
-        
+
         return result
     }
 }
@@ -231,7 +312,8 @@ enum DiffColors {
     ScrollView {
         DiffView(
             oldString: "func greet() {\n    print(\"Hello\")\n}",
-            newString: "func greet(name: String) {\n    print(\"Hello, World!\")\n    print(\"Welcome!\")\n}"
+            newString: "func greet(name: String) {\n    print(\"Hello, World!\")\n    print(\"Welcome!\")\n}",
+            language: "swift"
         )
         .padding()
     }

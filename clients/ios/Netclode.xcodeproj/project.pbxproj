@@ -12,6 +12,7 @@
 		D10000000000000000000004 /* Connect in Frameworks */ = {isa = PBXBuildFile; productRef = P20000000000000000000003 /* Connect */; };
 		D10000000000000000000005 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = P20000000000000000000004 /* SwiftProtobuf */; };
 		D10000000000000000000006 /* ConnectNIO in Frameworks */ = {isa = PBXBuildFile; productRef = P20000000000000000000005 /* ConnectNIO */; };
+		D10000000000000000000007 /* Highlightr in Frameworks */ = {isa = PBXBuildFile; productRef = P20000000000000000000006 /* Highlightr */; };
 		T10000000000000000000001 /* EventStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000001 /* EventStoreTests.swift */; };
 		T10000000000000000000002 /* MessageRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* MessageRouterTests.swift */; };
 		A10000000000000000000001 /* NetclodeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* NetclodeApp.swift */; };
@@ -76,6 +77,7 @@
 		A10000000000000000000065 /* events.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000065 /* events.pb.swift */; };
 		A10000000000000000000090 /* SnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000090 /* SnapshotStore.swift */; };
 		A10000000000000000000091 /* SnapshotListSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000091 /* SnapshotListSheet.swift */; };
+		A10000000000000000000100 /* SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000100 /* SyntaxHighlighter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -145,6 +147,7 @@
 		B10000000000000000000065 /* events.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = events.pb.swift; sourceTree = "<group>"; };
 		B10000000000000000000090 /* SnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotStore.swift; sourceTree = "<group>"; };
 		B10000000000000000000091 /* SnapshotListSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotListSheet.swift; sourceTree = "<group>"; };
+		B10000000000000000000100 /* SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighter.swift; sourceTree = "<group>"; };
 		C10000000000000000000001 /* Netclode.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Netclode.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -168,6 +171,7 @@
 				D10000000000000000000004 /* Connect in Frameworks */,
 				D10000000000000000000005 /* SwiftProtobuf in Frameworks */,
 				D10000000000000000000006 /* ConnectNIO in Frameworks */,
+				D10000000000000000000007 /* Highlightr in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,6 +252,7 @@
 				B10000000000000000000008 /* ConnectService.swift */,
 				B10000000000000000000009 /* MessageRouter.swift */,
 				B10000000000000000000040 /* SwiftTermBridge.swift */,
+				B10000000000000000000100 /* SyntaxHighlighter.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -460,6 +465,7 @@
 				P20000000000000000000003 /* Connect */,
 				P20000000000000000000004 /* SwiftProtobuf */,
 				P20000000000000000000005 /* ConnectNIO */,
+				P20000000000000000000006 /* Highlightr */,
 			);
 			productName = Netclode;
 			productReference = C10000000000000000000001 /* Netclode.app */;
@@ -516,6 +522,7 @@
 				P10000000000000000000002 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				P10000000000000000000003 /* XCRemoteSwiftPackageReference "connect-swift" */,
 				P10000000000000000000004 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
+				P10000000000000000000005 /* XCRemoteSwiftPackageReference "Highlightr" */,
 			);
 			productRefGroup = E10000000000000000000099 /* Products */;
 			projectDirPath = "";
@@ -604,6 +611,7 @@
 				A10000000000000000000065 /* events.pb.swift in Sources */,
 				A10000000000000000000090 /* SnapshotStore.swift in Sources */,
 				A10000000000000000000091 /* SnapshotListSheet.swift in Sources */,
+				A10000000000000000000100 /* SyntaxHighlighter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -919,6 +927,14 @@
 				minimumVersion = 1.25.0;
 			};
 		};
+		P10000000000000000000005 /* XCRemoteSwiftPackageReference "Highlightr" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/raspu/Highlightr.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -946,6 +962,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = P10000000000000000000003 /* XCRemoteSwiftPackageReference "connect-swift" */;
 			productName = ConnectNIO;
+		};
+		P20000000000000000000006 /* Highlightr */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = P10000000000000000000005 /* XCRemoteSwiftPackageReference "Highlightr" */;
+			productName = Highlightr;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

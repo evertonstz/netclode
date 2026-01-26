@@ -135,6 +135,8 @@ private enum MarkdownColors {
 private struct NetclodeCodeBlockView: View {
     let configuration: CodeBlockConfiguration
     @State private var copied = false
+    @State private var highlightedText: Text?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -172,13 +174,10 @@ private struct NetclodeCodeBlockView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
 
-            // Code content
+            // Syntax-highlighted code content
             ScrollView(.horizontal, showsIndicators: false) {
-                configuration.label
-                    .markdownTextStyle {
-                        FontFamilyVariant(.monospaced)
-                        FontSize(13)
-                    }
+                highlightedCodeContent
+                    .font(.system(size: 13, design: .monospaced))
                     .padding(.horizontal, 12)
                     .padding(.bottom, 12)
             }
@@ -187,10 +186,94 @@ private struct NetclodeCodeBlockView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .markdownMargin(top: 8, bottom: 12)
         .animation(.easeInOut(duration: 0.2), value: copied)
+        .task {
+            highlightedText = buildHighlightedText()
+        }
+        .onChange(of: colorScheme) { _, _ in
+            highlightedText = buildHighlightedText()
+        }
+    }
+
+    @ViewBuilder
+    private var highlightedCodeContent: some View {
+        if let highlightedText {
+            highlightedText
+        } else {
+            // Fallback while loading
+            Text(configuration.content)
+                .foregroundStyle(MarkdownColors.codeText)
+        }
+    }
+
+    private func buildHighlightedText() -> Text {
+        guard let language = configuration.language,
+              !language.isEmpty,
+              let attributed = SyntaxHighlighter.shared.highlight(
+                configuration.content,
+                language: language,
+                colorScheme: colorScheme
+              )
+        else {
+            // Fallback to plain text
+            return Text(configuration.content)
+                .foregroundColor(MarkdownColors.codeText)
+        }
+
+        // Convert NSAttributedString to SwiftUI Text
+        return convertAttributedStringToText(attributed)
+    }
+
+    /// Convert NSAttributedString to SwiftUI Text by concatenating styled segments
+    private func convertAttributedStringToText(_ attributed: NSAttributedString) -> Text {
+        var result = Text("")
+        let fullRange = NSRange(location: 0, length: attributed.length)
+
+        attributed.enumerateAttributes(in: fullRange, options: []) { attributes, range, _ in
+            let substring = (attributed.string as NSString).substring(with: range)
+            var text = Text(substring)
+
+            #if canImport(UIKit)
+            if let uiColor = attributes[.foregroundColor] as? UIColor {
+                text = text.foregroundColor(Color(uiColor))
+            }
+
+            if let font = attributes[.font] as? UIFont {
+                // Preserve font weight if specified
+                if font.fontDescriptor.symbolicTraits.contains(.traitBold) {
+                    text = text.bold()
+                }
+                if font.fontDescriptor.symbolicTraits.contains(.traitItalic) {
+                    text = text.italic()
+                }
+            }
+            #elseif canImport(AppKit)
+            if let nsColor = attributes[.foregroundColor] as? NSColor {
+                text = text.foregroundColor(Color(nsColor))
+            }
+
+            if let font = attributes[.font] as? NSFont {
+                if font.fontDescriptor.symbolicTraits.contains(.bold) {
+                    text = text.bold()
+                }
+                if font.fontDescriptor.symbolicTraits.contains(.italic) {
+                    text = text.italic()
+                }
+            }
+            #endif
+
+            result = result + text
+        }
+
+        return result
     }
 
     private func copyToClipboard() {
+        #if canImport(UIKit)
         UIPasteboard.general.string = configuration.content
+        #elseif canImport(AppKit)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(configuration.content, forType: .string)
+        #endif
         copied = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             copied = false

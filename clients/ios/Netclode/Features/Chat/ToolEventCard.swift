@@ -379,9 +379,9 @@ private struct EditToolDiffSection: View {
                 }
             }
             
-            // Diff view
+            // Diff view with syntax highlighting based on file extension
             if let oldString = oldString, let newString = newString {
-                DiffView(oldString: oldString, newString: newString)
+                DiffView(oldString: oldString, newString: newString, filePath: filePath)
             } else if let oldString = oldString {
                 // Only old string (deletion)
                 VStack(alignment: .leading, spacing: 0) {

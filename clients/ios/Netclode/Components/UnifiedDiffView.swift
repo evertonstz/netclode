@@ -49,7 +49,13 @@ struct FileDiffSection: View {
     let file: UnifiedDiffFile
     var showHeader: Bool = true
     @State private var isExpanded = true
-    
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Detect language from file path
+    private var detectedLanguage: String? {
+        LanguageDetector.language(for: file.newPath)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // File header (optional)
@@ -65,19 +71,19 @@ struct FileDiffSection: View {
                             .font(.system(size: TypeScale.micro, weight: .semibold))
                             .foregroundStyle(.tertiary)
                             .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        
+
                         // Status badge
                         FileStatusBadge(status: file.status)
-                        
+
                         // File path
                         Text(file.newPath)
                             .font(.netclodeMonospacedSmall)
                             .foregroundStyle(.primary)
                             .lineLimit(1)
                             .truncationMode(.middle)
-                        
+
                         Spacer()
-                        
+
                         // Stats
                         HStack(spacing: Theme.Spacing.xxs) {
                             if stats.additions > 0 {
@@ -97,12 +103,12 @@ struct FileDiffSection: View {
                 }
                 .buttonStyle(.plain)
             }
-            
+
             // Hunks (always expanded if header is hidden)
             if isExpanded || !showHeader {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(file.hunks) { hunk in
-                        HunkSection(hunk: hunk)
+                        HunkSection(hunk: hunk, language: detectedLanguage, colorScheme: colorScheme)
                     }
                 }
                 .background(DiffColors.background)
@@ -114,7 +120,7 @@ struct FileDiffSection: View {
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
-    
+
     private var stats: (additions: Int, deletions: Int) {
         var additions = 0
         var deletions = 0
@@ -171,7 +177,15 @@ extension DiffFileStatus {
 
 struct HunkSection: View {
     let hunk: DiffHunk
-    
+    let language: String?
+    let colorScheme: ColorScheme
+
+    init(hunk: DiffHunk, language: String? = nil, colorScheme: ColorScheme = .dark) {
+        self.hunk = hunk
+        self.language = language
+        self.colorScheme = colorScheme
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Hunk header
@@ -179,23 +193,23 @@ struct HunkSection: View {
                 Text(hunk.header)
                     .font(.system(size: TypeScale.tiny, weight: .medium, design: .monospaced))
                     .foregroundStyle(DiffColors.hunkHeaderText)
-                
+
                 if let context = hunk.contextLabel, !context.isEmpty {
                     Text(" ")
                     Text(context)
                         .font(.system(size: TypeScale.tiny, design: .monospaced))
                         .foregroundStyle(DiffColors.hunkHeaderText.opacity(0.7))
                 }
-                
+
                 Spacer()
             }
             .padding(.horizontal, Theme.Spacing.sm)
             .padding(.vertical, Theme.Spacing.xxs)
             .background(DiffColors.hunkHeader.opacity(0.5))
-            
-            // Lines
+
+            // Lines with syntax highlighting
             ForEach(hunk.lines) { line in
-                DiffLineView(line: line, showLineNumbers: true)
+                DiffLineView(line: line, showLineNumbers: true, language: language, colorScheme: colorScheme)
             }
         }
     }
