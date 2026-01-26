@@ -77,8 +77,7 @@ func (c *Client) CreateSession(ctx context.Context, opts CreateSessionOptions) (
 		if errResp := msg.GetError(); errResp != nil {
 			return nil, fmt.Errorf("%s: %s", errResp.Error.Code, errResp.Error.Message)
 		}
-
-		return nil, fmt.Errorf("unexpected response type: %T", msg.GetMessage())
+		// Skip other message types (e.g., notifications) and wait for session response
 	}
 }
 
