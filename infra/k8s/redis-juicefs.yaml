@@ -37,10 +37,10 @@ spec:
             - containerPort: 6379
           resources:
             requests:
-              memory: "640Mi"
+              memory: "512Mi"
               cpu: "100m"
             limits:
-              memory: "640Mi"
+              memory: "1Gi"
               cpu: "500m"
           args:
             - redis-server
@@ -49,7 +49,7 @@ spec:
             - --appendfsync
             - everysec
             - --maxmemory
-            - 512mb
+            - 768mb
             - --maxmemory-policy
             - noeviction
           volumeMounts:

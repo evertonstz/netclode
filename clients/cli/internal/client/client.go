@@ -313,6 +313,66 @@ func (c *Client) ListSnapshots(ctx context.Context, sessionID string) ([]*pb.Sna
 	return nil, fmt.Errorf("unexpected response type: %T", msg.GetMessage())
 }
 
+// PauseSession pauses a session.
+func (c *Client) PauseSession(ctx context.Context, sessionID string) (*pb.Session, error) {
+	stream := c.client.Connect(ctx)
+	defer func() { _ = stream.CloseRequest() }()
+
+	if err := stream.Send(&pb.ClientMessage{
+		Message: &pb.ClientMessage_PauseSession{
+			PauseSession: &pb.PauseSessionRequest{
+				SessionId: sessionID,
+			},
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+
+	msg, err := stream.Receive()
+	if err != nil {
+		return nil, fmt.Errorf("receive response: %w", err)
+	}
+
+	if resp := msg.GetSessionUpdated(); resp != nil {
+		return resp.Session, nil
+	}
+	if errResp := msg.GetError(); errResp != nil {
+		return nil, fmt.Errorf("%s: %s", errResp.Error.Code, errResp.Error.Message)
+	}
+
+	return nil, fmt.Errorf("unexpected response type: %T", msg.GetMessage())
+}
+
+// ResumeSession resumes a paused session.
+func (c *Client) ResumeSession(ctx context.Context, sessionID string) (*pb.Session, error) {
+	stream := c.client.Connect(ctx)
+	defer func() { _ = stream.CloseRequest() }()
+
+	if err := stream.Send(&pb.ClientMessage{
+		Message: &pb.ClientMessage_ResumeSession{
+			ResumeSession: &pb.ResumeSessionRequest{
+				SessionId: sessionID,
+			},
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+
+	msg, err := stream.Receive()
+	if err != nil {
+		return nil, fmt.Errorf("receive response: %w", err)
+	}
+
+	if resp := msg.GetSessionUpdated(); resp != nil {
+		return resp.Session, nil
+	}
+	if errResp := msg.GetError(); errResp != nil {
+		return nil, fmt.Errorf("%s: %s", errResp.Error.Code, errResp.Error.Message)
+	}
+
+	return nil, fmt.Errorf("unexpected response type: %T", msg.GetMessage())
+}
+
 // RestoreSnapshot restores a session to a snapshot.
 func (c *Client) RestoreSnapshot(ctx context.Context, sessionID, snapshotID string) error {
 	stream := c.client.Connect(ctx)

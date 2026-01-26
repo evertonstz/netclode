@@ -45,6 +45,20 @@ var sessionsCreateCmd = &cobra.Command{
 	RunE:  runSessionsCreate,
 }
 
+var sessionsPauseCmd = &cobra.Command{
+	Use:   "pause <session-id>",
+	Short: "Pause a session",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runSessionsPause,
+}
+
+var sessionsResumeCmd = &cobra.Command{
+	Use:   "resume <session-id>",
+	Short: "Resume a paused session",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runSessionsResume,
+}
+
 var (
 	createName    string
 	createRepo    string
@@ -58,6 +72,8 @@ func init() {
 	sessionsCmd.AddCommand(sessionsGetCmd)
 	sessionsCmd.AddCommand(sessionsDeleteCmd)
 	sessionsCmd.AddCommand(sessionsCreateCmd)
+	sessionsCmd.AddCommand(sessionsPauseCmd)
+	sessionsCmd.AddCommand(sessionsResumeCmd)
 
 	sessionsCreateCmd.Flags().StringVar(&createName, "name", "", "Session name")
 	sessionsCreateCmd.Flags().StringVar(&createRepo, "repo", "", "GitHub repository (owner/repo)")
@@ -270,4 +286,42 @@ func formatSdkType(sdkType pb.SdkType) string {
 	default:
 		return "unknown"
 	}
+}
+
+func runSessionsPause(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	c := client.New(getServerURL())
+	sessionID := args[0]
+
+	session, err := c.PauseSession(ctx, sessionID)
+	if err != nil {
+		return fmt.Errorf("pause session: %w", err)
+	}
+
+	if isJSONOutput() {
+		return output.JSON(session)
+	}
+
+	_, _ = output.SuccessColor.Printf("Paused session %s\n", sessionID)
+	fmt.Printf("  Status: %s\n", formatStatus(session.Status.String()))
+	return nil
+}
+
+func runSessionsResume(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	c := client.New(getServerURL())
+	sessionID := args[0]
+
+	session, err := c.ResumeSession(ctx, sessionID)
+	if err != nil {
+		return fmt.Errorf("resume session: %w", err)
+	}
+
+	if isJSONOutput() {
+		return output.JSON(session)
+	}
+
+	_, _ = output.SuccessColor.Printf("Resumed session %s\n", sessionID)
+	fmt.Printf("  Status: %s\n", formatStatus(session.Status.String()))
+	return nil
 }
