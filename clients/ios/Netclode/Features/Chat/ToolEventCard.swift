@@ -45,6 +45,27 @@ struct ToolEventCard: View {
     private var hasChildren: Bool {
         !children.isEmpty
     }
+    
+    /// For Bash tools, returns the description if available
+    private var bashDescription: String? {
+        guard toolName.lowercased() == "bash", let input = toolInput else { return nil }
+        return input["description"]?.stringValue
+    }
+    
+    /// For Bash tools, returns a truncated command preview
+    private var bashCommandPreview: String? {
+        guard toolName.lowercased() == "bash", let input = toolInput else { return nil }
+        guard let cmd = input["command"]?.stringValue else { return nil }
+        if cmd.count <= 50 {
+            return cmd
+        }
+        return String(cmd.prefix(47)) + "..."
+    }
+    
+    /// Whether to use two-line layout (has both description and command)
+    private var usesTwoLineLayout: Bool {
+        bashDescription != nil && bashCommandPreview != nil
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -54,45 +75,62 @@ struct ToolEventCard: View {
                     isExpanded.toggle()
                 }
             } label: {
-                HStack(spacing: Theme.Spacing.sm) {
-                    // Tool badge
-                    toolBadge
+                VStack(alignment: .leading, spacing: usesTwoLineLayout ? 4 : 0) {
+                    HStack(spacing: Theme.Spacing.sm) {
+                        // Tool badge
+                        toolBadge
 
-                    // Summary
-                    Text(summaryText)
-                        .font(.netclodeMonospacedSmall)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                        // Summary (description for Bash, or standard summary)
+                        if let description = bashDescription {
+                            Text(description)
+                                .font(.netclodeMonospacedSmall)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            Text(summaryText)
+                                .font(.netclodeMonospacedSmall)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        // Child count badge (for Task tools with nested operations)
+                        if hasChildren {
+                            Text("\(children.count)")
+                                .font(.system(size: TypeScale.tiny, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.secondary.opacity(0.15))
+                                .clipShape(Capsule())
+                        }
 
-                    Spacer()
-                    
-                    // Child count badge (for Task tools with nested operations)
-                    if hasChildren {
-                        Text("\(children.count)")
-                            .font(.system(size: TypeScale.tiny, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15))
-                            .clipShape(Capsule())
-                    }
+                        // Duration (if completed)
+                        if let duration = durationText {
+                            Text(duration)
+                                .font(.system(size: TypeScale.micro, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                        }
 
-                    // Duration (if completed)
-                    if let duration = durationText {
-                        Text(duration)
-                            .font(.system(size: TypeScale.micro, weight: .medium, design: .monospaced))
+                        // Status indicator
+                        statusIndicator
+
+                        // Expand chevron
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: TypeScale.micro, weight: .semibold))
                             .foregroundStyle(.tertiary)
+                            .rotationEffect(.degrees(isExpanded ? 90 : 0))
                     }
-
-                    // Status indicator
-                    statusIndicator
-
-                    // Expand chevron
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: TypeScale.micro, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    
+                    // Second line: command preview for Bash tools with description
+                    if let commandPreview = bashCommandPreview, bashDescription != nil {
+                        Text("$ " + commandPreview)
+                            .font(.system(size: TypeScale.tiny, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .padding(.horizontal, Theme.Spacing.sm)
                 .padding(.vertical, Theme.Spacing.xs)
@@ -648,6 +686,20 @@ private struct ChildToolEventRow: View {
         }
     }
     
+    private var toolInput: [String: AnyCodableValue]? {
+        guard case .toolStart(let e) = grouped.event else { return nil }
+        return e.input
+    }
+    
+    /// For Bash tools, returns the description if available
+    private var bashDescription: String? {
+        guard toolName.lowercased() == "bash", let input = toolInput else { return nil }
+        if case .string(let desc) = input["description"] {
+            return desc
+        }
+        return nil
+    }
+    
     private var summaryText: String {
         guard case .toolStart(let e) = grouped.event else { return "" }
         let input = e.input
@@ -662,6 +714,10 @@ private struct ChildToolEventRow: View {
                 return formatPath(path)
             }
         case "bash":
+            // Prefer description over raw command
+            if let desc = bashDescription {
+                return desc
+            }
             if let cmd = input["command"]?.description {
                 return String(cmd.prefix(40)) + (cmd.count > 40 ? "..." : "")
             }
