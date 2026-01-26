@@ -141,6 +141,7 @@ struct ToolEventCard: View {
         case "webfetch": return "globe"
         case "websearch": return "magnifyingglass.circle"
         case "todowrite": return "checklist"
+        case "todoread": return "list.bullet.clipboard"
         default: return "wrench"
         }
     }
@@ -155,6 +156,7 @@ struct ToolEventCard: View {
         case "bash": return .green
         case "task": return .purple
         case "webfetch", "websearch": return .cyan
+        case "todowrite", "todoread": return .yellow
         default: return Theme.Colors.brand
         }
     }
@@ -222,6 +224,23 @@ struct ToolEventCard: View {
             if let desc = input["description"]?.description {
                 return desc
             }
+        case "todowrite":
+            if case .array(let todos) = input["todos"] {
+                let pendingCount = todos.filter { todo in
+                    if case .dictionary(let dict) = todo,
+                       case .string(let status) = dict["status"] {
+                        return status == "pending" || status == "in_progress"
+                    }
+                    return false
+                }.count
+                let completedCount = todos.count - pendingCount
+                if completedCount > 0 {
+                    return "\(todos.count) tasks (\(completedCount) done)"
+                }
+                return "\(todos.count) tasks"
+            }
+        case "todoread":
+            return "Reading task list"
         default:
             break
         }
@@ -259,6 +278,9 @@ struct ToolEventCard: View {
             } else if toolName.lowercased() == "write", let input = toolInput {
                 // Special handling for Write tool - show file content with syntax highlighting
                 WriteToolContentSection(input: input)
+            } else if toolName.lowercased() == "todowrite", let input = toolInput {
+                // Special handling for TodoWrite tool - show task list with status
+                TodoToolSection(input: input)
             } else if let input = toolInput, !input.isEmpty {
                 // Generic input section for other tools
                 ExpandableSection(title: "INPUT") {
@@ -516,6 +538,90 @@ private struct WriteToolContentSection: View {
     }
 }
 
+/// Specialized view for TodoWrite tool that displays tasks with their status
+private struct TodoToolSection: View {
+    let input: [String: AnyCodableValue]
+
+    private var todos: [TodoItem] {
+        guard case .array(let items) = input["todos"] else { return [] }
+        return items.compactMap { item -> TodoItem? in
+            guard case .dictionary(let dict) = item else { return nil }
+            let content = dict["content"]?.stringValue ?? ""
+            let status = dict["status"]?.stringValue ?? "pending"
+            let priority = dict["priority"]?.stringValue ?? "medium"
+            let id = dict["id"]?.stringValue ?? UUID().uuidString
+            return TodoItem(id: id, content: content, status: status, priority: priority)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
+            ForEach(todos, id: \.id) { todo in
+                HStack(alignment: .top, spacing: Theme.Spacing.xs) {
+                    // Status icon
+                    Image(systemName: todo.statusIcon)
+                        .font(.system(size: TypeScale.small))
+                        .foregroundStyle(todo.statusColor)
+                        .frame(width: 18)
+
+                    // Content
+                    Text(todo.content)
+                        .font(.netclodeMonospacedSmall)
+                        .foregroundStyle(todo.status == "completed" ? .secondary : .primary)
+                        .strikethrough(todo.status == "completed", color: .secondary)
+
+                    Spacer()
+
+                    // Priority badge (only for non-medium)
+                    if todo.priority != "medium" {
+                        Text(todo.priority)
+                            .font(.system(size: TypeScale.micro, weight: .medium, design: .monospaced))
+                            .foregroundStyle(todo.priorityColor)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(todo.priorityColor.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    private struct TodoItem {
+        let id: String
+        let content: String
+        let status: String
+        let priority: String
+
+        var statusIcon: String {
+            switch status {
+            case "completed": return "checkmark.circle.fill"
+            case "in_progress": return "circle.dotted"
+            case "cancelled": return "xmark.circle"
+            default: return "circle"
+            }
+        }
+
+        var statusColor: Color {
+            switch status {
+            case "completed": return Theme.Colors.success
+            case "in_progress": return .yellow
+            case "cancelled": return .secondary
+            default: return .secondary
+            }
+        }
+
+        var priorityColor: Color {
+            switch priority {
+            case "high": return Theme.Colors.error
+            case "low": return .secondary
+            default: return .primary
+            }
+        }
+    }
+}
+
 // MARK: - AnyCodableValue Extension
 
 private extension AnyCodableValue {
@@ -607,6 +713,7 @@ private struct ChildToolEventRow: View {
         case "bash": return .green
         case "task": return .purple
         case "webfetch", "websearch": return .cyan
+        case "todowrite", "todoread": return .yellow
         default: return Theme.Colors.brand
         }
     }
@@ -622,6 +729,8 @@ private struct ChildToolEventRow: View {
         case "task": return "arrow.triangle.branch"
         case "webfetch": return "globe"
         case "websearch": return "magnifyingglass.circle"
+        case "todowrite": return "checklist"
+        case "todoread": return "list.bullet.clipboard"
         default: return "wrench"
         }
     }
