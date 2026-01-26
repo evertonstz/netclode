@@ -113,12 +113,12 @@ Snapshots use the Kubernetes VolumeSnapshot API with the JuiceFS CSI driver:
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshot
 metadata:
-  name: netclode-{session-id}-{snapshot-id}
+  name: sess-{session-id}-snap-{snapshot-id}
   namespace: netclode
 spec:
   volumeSnapshotClassName: juicefs-snapclass
   source:
-    persistentVolumeClaimName: netclode-{session-id}
+    persistentVolumeClaimName: workspace-sess-{session-id}
 ```
 
 ## Storage
@@ -227,7 +227,7 @@ Common causes:
 - Ensure session is not running (pause first if needed)
 - Check that the VolumeSnapshot still exists:
   ```bash
-  kubectl --context netclode -n netclode get volumesnapshots -l session-id={session-id}
+  kubectl --context netclode -n netclode get volumesnapshots -l netclode.io/session={session-id}
   ```
 - Check control-plane logs for restore errors
 
