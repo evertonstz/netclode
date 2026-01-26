@@ -256,6 +256,9 @@ struct ToolEventCard: View {
             // Special handling for Edit tool - show diff view
             if toolName.lowercased() == "edit", let input = toolInput {
                 EditToolDiffSection(input: input)
+            } else if toolName.lowercased() == "write", let input = toolInput {
+                // Special handling for Write tool - show file content with syntax highlighting
+                WriteToolContentSection(input: input)
             } else if let input = toolInput, !input.isEmpty {
                 // Generic input section for other tools
                 ExpandableSection(title: "INPUT") {
@@ -436,6 +439,83 @@ private struct EditToolDiffSection: View {
     }
 }
 
+/// Specialized view for Write tool that shows file content with syntax highlighting
+private struct WriteToolContentSection: View {
+    let input: [String: AnyCodableValue]
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var filePath: String? {
+        input["file_path"]?.stringValue
+    }
+
+    private var content: String? {
+        input["content"]?.stringValue
+    }
+
+    private var detectedLanguage: String? {
+        filePath.flatMap { LanguageDetector.language(for: $0) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            // File path
+            if let path = filePath {
+                HStack(spacing: Theme.Spacing.xxs) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: TypeScale.tiny))
+                        .foregroundStyle(.secondary)
+                    Text(path)
+                        .font(.netclodeMonospacedSmall)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+
+            // File content with syntax highlighting
+            if let content = content {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(content.components(separatedBy: "\n").enumerated()), id: \.offset) { index, line in
+                            HStack(spacing: 0) {
+                                // Line number
+                                Text("\(index + 1)")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(DiffColors.lineNumber)
+                                    .frame(width: 28, alignment: .trailing)
+                                    .padding(.trailing, 8)
+
+                                // Line content with syntax highlighting
+                                Text("+")
+                                    .foregroundStyle(DiffColors.additionText)
+                                    .frame(width: 14)
+
+                                SyntaxHighlightedDiffText(
+                                    text: line,
+                                    language: detectedLanguage,
+                                    colorScheme: colorScheme,
+                                    wordHighlights: [],
+                                    fallbackColor: DiffColors.additionText,
+                                    highlightColor: .clear
+                                )
+
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(DiffColors.additionBackground)
+                        }
+                    }
+                }
+                .font(.system(size: 11, design: .monospaced))
+                .background(DiffColors.background)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+        }
+    }
+}
+
 // MARK: - AnyCodableValue Extension
 
 private extension AnyCodableValue {
@@ -443,7 +523,7 @@ private extension AnyCodableValue {
         if case .string(let s) = self { return s }
         return nil
     }
-    
+
     var boolValue: Bool? {
         if case .bool(let b) = self { return b }
         return nil
