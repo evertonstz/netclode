@@ -81,18 +81,22 @@ struct ToolEventCard: View {
                     toolBadge
 
                     // Summary (description for Bash, or standard summary)
+                    // Hide file path summary when expanded for Read/Write/Edit to avoid repetition
+                    let hideWhenExpanded = ["read", "write", "edit"].contains(toolName.lowercased())
                     if let description = bashDescription {
                         Text(description)
                             .font(.netclodeMonospacedSmall)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
+                    } else if !isExpanded || !hideWhenExpanded {
                         Text(summaryText)
                             .font(.netclodeMonospacedSmall)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Spacer()
                     }
                     
                     // Child count badge (for Task tools with nested operations)
