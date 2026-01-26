@@ -2,3 +2,7 @@
 # Kata Containers defaults
 kata_version: "3.24.0"
 kata_dir: /opt/kata
+
+# VM resource defaults (can be overridden via .env)
+kata_vm_cpus: 4
+kata_vm_memory_mb: 4096

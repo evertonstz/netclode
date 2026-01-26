@@ -79,13 +79,13 @@
   ansible.builtin.lineinfile:
     path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
     regexp: '^default_memory\s*='
-    line: 'default_memory = 4096'
+    line: 'default_memory = {{ kata_vm_memory_mb }}'
 
 - name: Configure Kata VM CPUs
   ansible.builtin.lineinfile:
     path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
     regexp: '^default_vcpus\s*='
-    line: 'default_vcpus = 4'
+    line: 'default_vcpus = {{ kata_vm_cpus }}'
 
 # virtiofs cache mode - "always" caches metadata, data, and pathname lookup
 # in guest permanently, improving IOPS by ~60% compared to "auto"

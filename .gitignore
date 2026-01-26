@@ -47,7 +47,9 @@ coverage/
 *.xcuserdata
 Pods/
 
-# Secrets (never commit)
+# Secrets
 *.pem
 *.key
 secrets/
+
+.opencode/plans/

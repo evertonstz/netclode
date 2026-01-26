@@ -41,6 +41,8 @@
         github_app_id: "{{ env_content_raw | regex_search('(?m)^GITHUB_APP_ID=(.*)$', '\\1') | first | default('') }}"
         github_app_private_key_b64: "{{ env_content_raw | regex_search('(?m)^GITHUB_APP_PRIVATE_KEY_B64=(.*)$', '\\1') | first | default('') }}"
         github_installation_id: "{{ env_content_raw | regex_search('(?m)^GITHUB_INSTALLATION_ID=(.*)$', '\\1') | first | default('') }}"
+        kata_vm_cpus: "{{ env_content_raw | regex_search('(?m)^KATA_VM_CPUS=(.*)$', '\\1') | first | default('4') }}"
+        kata_vm_memory_mb: "{{ env_content_raw | regex_search('(?m)^KATA_VM_MEMORY_MB=(.*)$', '\\1') | first | default('4096') }}"
 
 # Host secrets - skip if only deploying k8s secrets
 - name: Deploy host secrets

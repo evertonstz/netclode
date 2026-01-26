@@ -77,6 +77,10 @@ JUICEFS_META_URL=redis://redis-juicefs.netclode.svc.cluster.local:6379/0
 GITHUB_APP_ID=123456
 GITHUB_APP_PRIVATE_KEY_B64=base64-encoded-pem-private-key
 GITHUB_INSTALLATION_ID=12345678
+
+# Kata VM Resources (optional - defaults shown)
+KATA_VM_CPUS=4
+KATA_VM_MEMORY_MB=4096
 ```
 
 Deploy secrets:
@@ -160,7 +164,7 @@ kubectl config use-context netclode
 | `nftables` | Firewall configuration |
 | `secrets` | Deploy secrets (host + k8s) |
 | `tailscale` | Tailscale daemon |
-| `kata` | Kata Containers runtime |
+| `kata` | Kata Containers runtime (use with `secrets` tag to read .env) |
 | `k3s` | k3s Kubernetes server |
 | `juicefs-csi` | JuiceFS CSI driver |
 | `tailscale-operator` | Tailscale K8s Operator |
