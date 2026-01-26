@@ -114,6 +114,249 @@ struct MarkdownView: View {
     }
 }
 
+// MARK: - ThinkingMarkdownView
+
+/// A muted variant of MarkdownView for thinking/reasoning content
+/// Uses smaller fonts and secondary colors to maintain a subtle appearance
+struct ThinkingMarkdownView: View {
+    let content: String
+
+    private var markdownContent: MarkdownContent {
+        MarkdownContent(content)
+    }
+
+    var body: some View {
+        Markdown(markdownContent)
+            .markdownTheme(
+                .gitHub
+                    .text {
+                        ForegroundColor(.secondary)
+                        BackgroundColor(nil)
+                        FontSize(13)
+                    }
+                    .heading1 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 8, bottom: 4)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(15)
+                                ForegroundColor(.secondary)
+                            }
+                    }
+                    .heading2 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 6, bottom: 4)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(14)
+                                ForegroundColor(.secondary)
+                            }
+                    }
+                    .heading3 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 4, bottom: 2)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(13)
+                                ForegroundColor(.secondary)
+                            }
+                    }
+                    .heading4 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 4, bottom: 2)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(13)
+                                ForegroundColor(.secondary)
+                            }
+                    }
+                    .heading5 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 4, bottom: 2)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(13)
+                                ForegroundColor(.secondary)
+                            }
+                    }
+                    .heading6 { configuration in
+                        configuration.label
+                            .markdownMargin(top: 4, bottom: 2)
+                            .markdownTextStyle {
+                                FontWeight(.semibold)
+                                FontSize(13)
+                                ForegroundColor(.secondary)
+                            }
+                    }
+                    .paragraph { configuration in
+                        configuration.label
+                            .markdownMargin(top: 0, bottom: 4)
+                    }
+                    .listItem { configuration in
+                        configuration.label
+                            .markdownMargin(top: 1, bottom: 1)
+                    }
+            )
+            .markdownBlockStyle(\.codeBlock) { configuration in
+                ThinkingCodeBlockView(configuration: configuration)
+            }
+            .markdownTextStyle(\.code) {
+                FontFamilyVariant(.monospaced)
+                FontSize(12)
+                BackgroundColor(ThinkingMarkdownColors.codeBackground)
+                ForegroundColor(ThinkingMarkdownColors.codeText)
+            }
+            .markdownTextStyle(\.link) {
+                ForegroundColor(ThinkingMarkdownColors.brand)
+                UnderlineStyle(.single)
+            }
+            .markdownBlockStyle(\.blockquote) { configuration in
+                configuration.label
+                    .markdownTextStyle {
+                        ForegroundColor(.secondary.opacity(0.8))
+                    }
+                    .padding(.leading, 8)
+                    .padding(.vertical, 2)
+                    .overlay(alignment: .leading) {
+                        Rectangle()
+                            .fill(ThinkingMarkdownColors.brand.opacity(0.5))
+                            .frame(width: 2)
+                    }
+            }
+            .markdownTableBorderStyle(
+                .init(color: .secondary.opacity(0.3), width: 1)
+            )
+            .markdownTableBackgroundStyle(
+                .alternatingRows(Color.clear, ThinkingMarkdownColors.codeBackground.opacity(0.2))
+            )
+            .textSelection(.enabled)
+    }
+}
+
+// MARK: - Thinking Theme Colors
+
+private enum ThinkingMarkdownColors {
+    static let codeBackground = Color.adaptive(
+        light: Color(red: 0.93, green: 0.93, blue: 0.95),
+        dark: Color(red: 0.15, green: 0.15, blue: 0.17)
+    )
+
+    static let codeText = Color.adaptive(
+        light: Color(red: 0.35, green: 0.35, blue: 0.4),
+        dark: Color(red: 0.75, green: 0.75, blue: 0.78)
+    )
+
+    static let brand = Color(red: 0.6, green: 0.5, blue: 0.7)
+}
+
+// MARK: - Thinking Code Block View
+
+/// A simplified code block for thinking content - no copy button, more compact
+private struct ThinkingCodeBlockView: View {
+    let configuration: CodeBlockConfiguration
+    @State private var highlightedText: Text?
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Compact header with language only
+            if let language = configuration.language, !language.isEmpty {
+                Text(language.lowercased())
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary.opacity(0.7))
+                    .padding(.horizontal, 8)
+                    .padding(.top, 6)
+            }
+
+            // Code content
+            ScrollView(.horizontal, showsIndicators: false) {
+                highlightedCodeContent
+                    .font(.system(size: 11, design: .monospaced))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+            }
+        }
+        .background(ThinkingMarkdownColors.codeBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .markdownMargin(top: 4, bottom: 6)
+        .task {
+            highlightedText = buildHighlightedText()
+        }
+        .onChange(of: colorScheme) { _, _ in
+            highlightedText = buildHighlightedText()
+        }
+    }
+
+    @ViewBuilder
+    private var highlightedCodeContent: some View {
+        if let highlightedText {
+            highlightedText
+        } else {
+            Text(configuration.content)
+                .foregroundStyle(ThinkingMarkdownColors.codeText)
+        }
+    }
+
+    private func buildHighlightedText() -> Text {
+        guard let language = configuration.language,
+              !language.isEmpty,
+              let attributed = SyntaxHighlighter.shared.highlight(
+                configuration.content,
+                language: language,
+                colorScheme: colorScheme
+              )
+        else {
+            return Text(configuration.content)
+                .foregroundColor(ThinkingMarkdownColors.codeText)
+        }
+
+        return convertAttributedStringToText(attributed)
+    }
+
+    private func convertAttributedStringToText(_ attributed: NSAttributedString) -> Text {
+        var result = Text("")
+        let fullRange = NSRange(location: 0, length: attributed.length)
+
+        attributed.enumerateAttributes(in: fullRange, options: []) { attributes, range, _ in
+            let substring = (attributed.string as NSString).substring(with: range)
+            var text = Text(substring)
+
+            #if canImport(UIKit)
+            if let uiColor = attributes[.foregroundColor] as? UIColor {
+                // Mute the colors slightly for thinking blocks
+                text = text.foregroundColor(Color(uiColor).opacity(0.85))
+            }
+
+            if let font = attributes[.font] as? UIFont {
+                if font.fontDescriptor.symbolicTraits.contains(.traitBold) {
+                    text = text.bold()
+                }
+                if font.fontDescriptor.symbolicTraits.contains(.traitItalic) {
+                    text = text.italic()
+                }
+            }
+            #elseif canImport(AppKit)
+            if let nsColor = attributes[.foregroundColor] as? NSColor {
+                text = text.foregroundColor(Color(nsColor).opacity(0.85))
+            }
+
+            if let font = attributes[.font] as? NSFont {
+                if font.fontDescriptor.symbolicTraits.contains(.bold) {
+                    text = text.bold()
+                }
+                if font.fontDescriptor.symbolicTraits.contains(.italic) {
+                    text = text.italic()
+                }
+            }
+            #endif
+
+            result = result + text
+        }
+
+        return result
+    }
+}
+
 // MARK: - Theme Colors
 
 private enum MarkdownColors {

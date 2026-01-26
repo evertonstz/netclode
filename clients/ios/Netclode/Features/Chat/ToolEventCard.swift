@@ -935,11 +935,8 @@ struct ThinkingCard: View {
                 Spacer()
             }
 
-            // Content
-            Text(event.content)
-                .font(.netclodeSmall)
-                .foregroundStyle(.secondary)
-                .italic()
+            // Content with markdown rendering
+            ThinkingMarkdownView(content: event.content)
                 .animation(.easeInOut(duration: 0.2), value: event.content)
         }
         .padding(.horizontal, Theme.Spacing.sm)
