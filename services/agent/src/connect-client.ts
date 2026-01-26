@@ -602,6 +602,8 @@ async function handleGetGitStatus(
                 path: f.path,
                 status: convertGitStatus(f.status),
                 staged: f.staged,
+                linesAdded: f.linesAdded,
+                linesRemoved: f.linesRemoved,
               })
             ),
           }),
