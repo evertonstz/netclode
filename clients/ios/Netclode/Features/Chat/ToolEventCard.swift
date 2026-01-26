@@ -62,25 +62,10 @@ struct ToolEventCard: View {
         !children.isEmpty
     }
     
-    /// For Bash tools, returns the description if available
+    /// For Bash tools, returns the description if available (used in summaryText)
     private var bashDescription: String? {
         guard toolName.lowercased() == "bash", let input = toolInput else { return nil }
         return input["description"]?.stringValue
-    }
-    
-    /// For Bash tools, returns a truncated command preview
-    private var bashCommandPreview: String? {
-        guard toolName.lowercased() == "bash", let input = toolInput else { return nil }
-        guard let cmd = input["command"]?.stringValue else { return nil }
-        if cmd.count <= 50 {
-            return cmd
-        }
-        return String(cmd.prefix(47)) + "..."
-    }
-    
-    /// Whether to use two-line layout (has both description and command)
-    private var usesTwoLineLayout: Bool {
-        bashDescription != nil && bashCommandPreview != nil
     }
 
     var body: some View {
@@ -91,62 +76,51 @@ struct ToolEventCard: View {
                     isExpanded.toggle()
                 }
             } label: {
-                VStack(alignment: .leading, spacing: usesTwoLineLayout ? 4 : 0) {
-                    HStack(spacing: Theme.Spacing.sm) {
-                        // Tool badge
-                        toolBadge
+                HStack(spacing: Theme.Spacing.sm) {
+                    // Tool badge
+                    toolBadge
 
-                        // Summary (description for Bash, or standard summary)
-                        if let description = bashDescription {
-                            Text(description)
-                                .font(.netclodeMonospacedSmall)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        } else {
-                            Text(summaryText)
-                                .font(.netclodeMonospacedSmall)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        
-                        // Child count badge (for Task tools with nested operations)
-                        if hasChildren {
-                            Text("\(children.count)")
-                                .font(.system(size: TypeScale.tiny, weight: .semibold, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15))
-                                .clipShape(Capsule())
-                        }
-
-                        // Duration (if completed)
-                        if let duration = durationText {
-                            Text(duration)
-                                .font(.system(size: TypeScale.micro, weight: .medium, design: .monospaced))
-                                .foregroundStyle(.tertiary)
-                        }
-
-                        // Status indicator
-                        statusIndicator
-
-                        // Expand chevron
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: TypeScale.micro, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                            .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                    }
-                    
-                    // Second line: command preview for Bash tools with description
-                    if let commandPreview = bashCommandPreview, bashDescription != nil {
-                        Text("$ " + commandPreview)
-                            .font(.system(size: TypeScale.tiny, design: .monospaced))
-                            .foregroundStyle(.tertiary)
+                    // Summary (description for Bash, or standard summary)
+                    if let description = bashDescription {
+                        Text(description)
+                            .font(.netclodeMonospacedSmall)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Text(summaryText)
+                            .font(.netclodeMonospacedSmall)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    
+                    // Child count badge (for Task tools with nested operations)
+                    if hasChildren {
+                        Text("\(children.count)")
+                            .font(.system(size: TypeScale.tiny, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+
+                    // Duration (if completed)
+                    if let duration = durationText {
+                        Text(duration)
+                            .font(.system(size: TypeScale.micro, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    // Status indicator
+                    statusIndicator
+
+                    // Expand chevron
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: TypeScale.micro, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
                 .padding(.horizontal, Theme.Spacing.sm)
                 .padding(.vertical, Theme.Spacing.xs)
@@ -332,6 +306,9 @@ struct ToolEventCard: View {
             } else if toolName.lowercased() == "write", let input = toolInput {
                 // Special handling for Write tool - show file content with syntax highlighting
                 WriteToolContentSection(input: input)
+            } else if toolName.lowercased() == "read", let input = toolInput {
+                // Special handling for Read tool - show file content
+                ReadToolContentSection(input: input, result: endEvent?.result)
             } else if toolName.lowercased() == "todowrite", let input = toolInput {
                 // Special handling for TodoWrite tool - show task list with status
                 TodoToolSection(input: input)
@@ -358,10 +335,11 @@ struct ToolEventCard: View {
                 }
             }
 
-            // Output/Result section
+            // Output/Result section (skip for Edit/Write/Read - content already shown above)
             if let end = endEvent {
-                if let result = end.result, !result.isEmpty {
-                    let showOutputByDefault = ["write", "edit", "bash"].contains(toolName.lowercased())
+                let skipOutput = ["write", "edit", "read"].contains(toolName.lowercased())
+                if let result = end.result, !result.isEmpty, !skipOutput {
+                    let showOutputByDefault = toolName.lowercased() == "bash"
                     ExpandableSection(title: "OUTPUT", defaultExpanded: showOutputByDefault) {
                         TruncatedOutputView(text: result, maxLines: 20)
                     }
@@ -442,7 +420,7 @@ private struct EditToolDiffSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            // File path
+            // File path header
             if let path = filePath {
                 HStack(spacing: Theme.Spacing.xxs) {
                     Image(systemName: "doc.text")
@@ -550,7 +528,7 @@ private struct WriteToolContentSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            // File path
+            // File path header
             if let path = filePath {
                 HStack(spacing: Theme.Spacing.xxs) {
                     Image(systemName: "doc.text")
@@ -563,7 +541,7 @@ private struct WriteToolContentSection: View {
                         .truncationMode(.middle)
                 }
             }
-
+            
             // File content with syntax highlighting
             if content != nil {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -596,6 +574,114 @@ private struct WriteToolContentSection: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 1)
                             .background(DiffColors.additionBackground)
+                        }
+                    }
+                }
+                .font(.system(size: 11, design: .monospaced))
+                .background(DiffColors.background)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                
+                // Show more button
+                if isTruncated {
+                    Button {
+                        withAnimation(.snappy(duration: 0.2)) {
+                            isFullyExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(isFullyExpanded ? "Show less" : "Show all \(allLines.count) lines")
+                                .font(.system(size: TypeScale.caption, weight: .medium))
+                            Image(systemName: isFullyExpanded ? "chevron.up" : "chevron.down")
+                                .font(.system(size: TypeScale.tiny))
+                        }
+                        .foregroundStyle(Theme.Colors.brand)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
+/// Specialized view for Read tool that displays file content
+private struct ReadToolContentSection: View {
+    let input: [String: AnyCodableValue]
+    let result: String?
+    let maxLines: Int = 20
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isFullyExpanded = false
+
+    private var filePath: String? {
+        input["file_path"]?.stringValue ?? input["filePath"]?.stringValue
+    }
+
+    private var content: String? {
+        result
+    }
+
+    private var detectedLanguage: String? {
+        filePath.flatMap { LanguageDetector.language(for: $0) }
+    }
+    
+    private var allLines: [String] {
+        content?.components(separatedBy: "\n") ?? []
+    }
+    
+    private var isTruncated: Bool {
+        allLines.count > maxLines
+    }
+    
+    private var displayedLines: ArraySlice<String> {
+        if isFullyExpanded || !isTruncated {
+            return allLines[...]
+        }
+        return allLines.prefix(maxLines)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            // File path header
+            if let path = filePath {
+                HStack(spacing: Theme.Spacing.xxs) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: TypeScale.tiny))
+                        .foregroundStyle(.secondary)
+                    Text(path)
+                        .font(.netclodeMonospacedSmall)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+            
+            // File content with syntax highlighting
+            if content != nil {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(displayedLines.enumerated()), id: \.offset) { index, line in
+                            HStack(spacing: 0) {
+                                // Line number
+                                Text("\(index + 1)")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(DiffColors.lineNumber)
+                                    .frame(width: 28, alignment: .trailing)
+                                    .padding(.trailing, 8)
+
+                                // Line content with syntax highlighting
+                                SyntaxHighlightedDiffText(
+                                    text: line,
+                                    language: detectedLanguage,
+                                    colorScheme: colorScheme,
+                                    wordHighlights: [],
+                                    fallbackColor: .secondary,
+                                    highlightColor: .clear
+                                )
+
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
                         }
                     }
                 }
