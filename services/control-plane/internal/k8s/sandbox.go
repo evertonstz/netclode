@@ -596,6 +596,111 @@ func (r *k8sRuntime) DeletePVCByName(ctx context.Context, name string) error {
 	return nil
 }
 
+// sessionAnchorName returns the name for a session's anchor ConfigMap.
+func sessionAnchorName(sessionID string) string {
+	return fmt.Sprintf("session-anchor-%s", sessionID)
+}
+
+// EnsureSessionAnchor creates a ConfigMap that acts as an anchor for the session's PVC.
+// This ConfigMap becomes a second owner of the PVC, preventing it from being garbage-collected
+// when the Sandbox is deleted (during pause). The PVC will only be deleted when both
+// the Sandbox AND the ConfigMap are deleted.
+func (r *k8sRuntime) EnsureSessionAnchor(ctx context.Context, sessionID string) error {
+	name := sessionAnchorName(sessionID)
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: r.namespace,
+			Labels: map[string]string{
+				"netclode.io/session":        sessionID,
+				"netclode.io/session-anchor": "true",
+			},
+		},
+		Data: map[string]string{
+			"sessionID": sessionID,
+			"purpose":   "Anchor for session PVC ownership. Do not delete manually.",
+		},
+	}
+
+	_, err := r.clientset.CoreV1().ConfigMaps(r.namespace).Create(ctx, cm, metav1.CreateOptions{})
+	if err != nil {
+		if errors.IsAlreadyExists(err) {
+			slog.Debug("Session anchor already exists", "sessionID", sessionID)
+			return nil
+		}
+		return fmt.Errorf("create session anchor: %w", err)
+	}
+
+	slog.Info("Session anchor created", "sessionID", sessionID, "name", name)
+	return nil
+}
+
+// DeleteSessionAnchor deletes the session's anchor ConfigMap.
+// This should be called when deleting a session, which will allow the PVC to be garbage-collected
+// (assuming the Sandbox is also deleted or doesn't exist).
+func (r *k8sRuntime) DeleteSessionAnchor(ctx context.Context, sessionID string) error {
+	name := sessionAnchorName(sessionID)
+
+	err := r.clientset.CoreV1().ConfigMaps(r.namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("delete session anchor: %w", err)
+	}
+
+	slog.Info("Session anchor deleted", "sessionID", sessionID, "name", name)
+	return nil
+}
+
+// AddSessionAnchorToPVC adds the session's anchor ConfigMap as an owner of the PVC.
+// This ensures the PVC won't be garbage-collected when the Sandbox is deleted.
+// The PVC will only be GC'd when both owners (Sandbox and ConfigMap) are deleted.
+func (r *k8sRuntime) AddSessionAnchorToPVC(ctx context.Context, sessionID, pvcName string) error {
+	anchorName := sessionAnchorName(sessionID)
+
+	// Get the ConfigMap to get its UID
+	cm, err := r.clientset.CoreV1().ConfigMaps(r.namespace).Get(ctx, anchorName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get session anchor: %w", err)
+	}
+
+	// Get the PVC
+	pvc, err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Get(ctx, pvcName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get PVC: %w", err)
+	}
+
+	// Check if ConfigMap is already an owner
+	for _, ref := range pvc.OwnerReferences {
+		if ref.UID == cm.UID {
+			slog.Debug("Session anchor already owns PVC", "sessionID", sessionID, "pvc", pvcName)
+			return nil
+		}
+	}
+
+	// Add ConfigMap as owner (non-controller owner, so it doesn't conflict with Sandbox)
+	pvc.OwnerReferences = append(pvc.OwnerReferences, metav1.OwnerReference{
+		APIVersion:         "v1",
+		Kind:               "ConfigMap",
+		Name:               cm.Name,
+		UID:                cm.UID,
+		Controller:         ptr(false),
+		BlockOwnerDeletion: ptr(true),
+	})
+
+	_, err = r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Update(ctx, pvc, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("update PVC with session anchor owner: %w", err)
+	}
+
+	slog.Info("Added session anchor as PVC owner", "sessionID", sessionID, "pvc", pvcName, "anchor", anchorName)
+	return nil
+}
+
+// ptr returns a pointer to the given value.
+func ptr[T any](v T) *T {
+	return &v
+}
+
 // DeleteSecret deletes the environment secret for a session.
 func (r *k8sRuntime) DeleteSecret(ctx context.Context, sessionID string) error {
 	name := secretName(sessionID)
@@ -1315,21 +1420,11 @@ func (r *k8sRuntime) RestoreFromSnapshot(ctx context.Context, sessionID, snapsho
 
 	slog.Info("Preparing restore from snapshot", "sessionID", sessionID, "snapshotID", snapshotID)
 
-	// IMPORTANT: Get PVC name and remove ownerReferences BEFORE deleting sandbox.
-	// JuiceFS snapshots reference the source subvolume data. When the sandbox is
-	// deleted, it cascade-deletes its PVC, which would delete the snapshot's source data.
-	// By removing ownerReferences, we orphan the PVC so it survives sandbox deletion.
+	// Get old PVC name before deleting sandbox (needed for cleanup after restore).
+	// The PVC survives sandbox deletion because the session anchor ConfigMap is a second owner.
+	// JuiceFS snapshots reference the source subvolume data, so we need the old PVC to stay
+	// alive until the restore completes. It will be explicitly deleted later via DeletePVCByName.
 	oldPVCName, _ := r.GetPVCName(ctx, sessionID)
-	if oldPVCName != "" {
-		// Patch PVC to remove ownerReferences
-		patch := []byte(`[{"op": "remove", "path": "/metadata/ownerReferences"}]`)
-		_, err := r.clientset.CoreV1().PersistentVolumeClaims(r.namespace).Patch(ctx, oldPVCName, types.JSONPatchType, patch, metav1.PatchOptions{})
-		if err != nil && !errors.IsNotFound(err) {
-			slog.Warn("Failed to remove PVC ownerReferences", "sessionID", sessionID, "pvc", oldPVCName, "error", err)
-		} else if err == nil {
-			slog.Info("Removed ownerReferences from PVC for snapshot restore", "sessionID", sessionID, "pvc", oldPVCName)
-		}
-	}
 
 	// Delete sandbox claim if using warm pool
 	if r.config.UseWarmPool {

@@ -275,6 +275,14 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		}
 		slog.Info("Snapshot restore completed, creating sandbox with existing PVC", "sessionID", sessionID, "pvc", pvcName)
 
+		// Ensure the session anchor ConfigMap exists and owns the new PVC.
+		// This prevents the PVC from being garbage-collected if the sandbox fails or is paused.
+		if err := m.k8s.EnsureSessionAnchor(ctx, sessionID); err != nil {
+			slog.Warn("Failed to create session anchor", "sessionID", sessionID, "error", err)
+		} else if err := m.k8s.AddSessionAnchorToPVC(ctx, sessionID, pvcName); err != nil {
+			slog.Warn("Failed to add session anchor to PVC", "sessionID", sessionID, "pvc", pvcName, "error", err)
+		}
+
 		// Delete the old orphaned PVC in background (non-blocking)
 		// Only if it's different from the new PVC (avoids deleting the newly created one)
 		go func(sessionID, newPVCName string) {
@@ -364,6 +372,14 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 			slog.Warn("Failed to store PVC name", "sessionID", sessionID, "pvc", pvcName, "error", err)
 		} else {
 			slog.Info("Stored PVC name", "sessionID", sessionID, "pvc", pvcName)
+		}
+
+		// Ensure the session anchor ConfigMap exists and owns the PVC.
+		// This prevents the PVC from being garbage-collected when the Sandbox is deleted (during pause).
+		if err := m.k8s.EnsureSessionAnchor(ctx, sessionID); err != nil {
+			slog.Warn("Failed to create session anchor", "sessionID", sessionID, "error", err)
+		} else if err := m.k8s.AddSessionAnchorToPVC(ctx, sessionID, pvcName); err != nil {
+			slog.Warn("Failed to add session anchor to PVC", "sessionID", sessionID, "pvc", pvcName, "error", err)
 		}
 	}
 
@@ -503,12 +519,21 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 	}
 
 	// Store PVC name for resume after pause
-	// For warm pool, use sandboxName directly to get the PVC name (agent-home-{sandboxName})
-	warmPoolPVCName := fmt.Sprintf("agent-home-%s", sandboxName)
-	if err := m.storage.SetPVCName(ctx, sessionID, warmPoolPVCName); err != nil {
-		slog.Warn("Failed to store PVC name", "sessionID", sessionID, "pvc", warmPoolPVCName, "error", err)
-	} else {
-		slog.Info("Stored PVC name", "sessionID", sessionID, "pvc", warmPoolPVCName)
+	// Use GetPVCName which handles warm pool correctly (reads pod-name annotation)
+	if pvcName, err := m.k8s.GetPVCName(ctx, sessionID); err == nil {
+		if err := m.storage.SetPVCName(ctx, sessionID, pvcName); err != nil {
+			slog.Warn("Failed to store PVC name", "sessionID", sessionID, "pvc", pvcName, "error", err)
+		} else {
+			slog.Info("Stored PVC name", "sessionID", sessionID, "pvc", pvcName)
+		}
+
+		// Ensure the session anchor ConfigMap exists and owns the PVC.
+		// This prevents the PVC from being garbage-collected when the Sandbox is deleted (during pause).
+		if err := m.k8s.EnsureSessionAnchor(ctx, sessionID); err != nil {
+			slog.Warn("Failed to create session anchor", "sessionID", sessionID, "error", err)
+		} else if err := m.k8s.AddSessionAnchorToPVC(ctx, sessionID, pvcName); err != nil {
+			slog.Warn("Failed to add session anchor to PVC", "sessionID", sessionID, "pvc", pvcName, "error", err)
+		}
 	}
 
 	// Update state and check for pending prompt
@@ -753,7 +778,7 @@ func (m *Manager) Pause(ctx context.Context, id string) (*pb.Session, error) {
 		slog.Warn("Failed to delete sandbox service", "sessionID", id, "error", err)
 	}
 
-	// Delete sandbox (but keep PVC)
+	// Delete sandbox - PVC survives because it has the session anchor ConfigMap as a second owner
 	if err := m.k8s.DeleteSandbox(ctx, id); err != nil {
 		slog.Warn("Failed to delete sandbox", "sessionID", id, "error", err)
 	}
@@ -791,6 +816,7 @@ func (m *Manager) Delete(ctx context.Context, id string) error {
 	_ = m.k8s.DeleteSandboxService(ctx, id)
 	_ = m.k8s.DeleteSandbox(ctx, id)
 	_ = m.k8s.DeleteSecret(ctx, id)
+	_ = m.k8s.DeleteSessionAnchor(ctx, id)
 	_ = m.k8s.DeletePVC(ctx, id)
 
 	// Delete from storage

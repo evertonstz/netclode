@@ -20,6 +20,12 @@ type Runtime interface {
 	DeleteSecret(ctx context.Context, sessionID string) error
 	ListSandboxes(ctx context.Context) ([]SandboxInfo, error)
 
+	// Session anchor ConfigMap - prevents PVC from being garbage-collected when Sandbox is deleted.
+	// The ConfigMap acts as a second owner of the PVC, so the PVC survives pause/resume cycles.
+	EnsureSessionAnchor(ctx context.Context, sessionID string) error
+	DeleteSessionAnchor(ctx context.Context, sessionID string) error
+	AddSessionAnchorToPVC(ctx context.Context, sessionID, pvcName string) error
+
 	// SandboxClaim operations (warm pool mode)
 	CreateSandboxClaim(ctx context.Context, sessionID string) error
 	WaitForClaimBound(ctx context.Context, sessionID string, timeout time.Duration) (sandboxName string, err error)

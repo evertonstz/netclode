@@ -204,6 +204,18 @@ func (m *mockRuntime) WaitForRestoreJob(ctx context.Context, sessionID, snapshot
 	return nil
 }
 
+func (m *mockRuntime) EnsureSessionAnchor(ctx context.Context, sessionID string) error {
+	return nil
+}
+
+func (m *mockRuntime) DeleteSessionAnchor(ctx context.Context, sessionID string) error {
+	return nil
+}
+
+func (m *mockRuntime) AddSessionAnchorToPVC(ctx context.Context, sessionID, pvcName string) error {
+	return nil
+}
+
 func (m *mockRuntime) Close() {
 }
 
