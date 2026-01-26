@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
-import { existsSync, writeFileSync, mkdirSync } from "fs";
-import { dirname } from "path";
+import { existsSync, writeFileSync, mkdirSync, readFileSync } from "fs";
+import { dirname, join } from "path";
 
 const CONTROL_PLANE_URL = process.env.CONTROL_PLANE_URL || "http://control-plane.netclode.svc.cluster.local";
 
@@ -185,17 +185,78 @@ export async function getGitStatus(workspaceDir: string): Promise<GitFileChange[
 }
 
 /**
- * Get the git diff for a workspace or specific file
+ * Get the git diff for a workspace or specific file.
+ * For untracked files, generates a synthetic diff showing all lines as additions.
  */
 export async function getGitDiff(workspaceDir: string, file?: string): Promise<string> {
   console.log(`[git] Getting git diff for: ${file || "all files"}`);
+
+  // First, try regular git diff
   const args = ["diff", "--no-color"];
   if (file) {
     args.push("--", file);
   }
   const result = await runGit(args, workspaceDir);
+
+  // If we got a diff, return it
+  if (result.stdout.length > 0) {
+    console.log(`[git] Git diff: ${result.stdout.length} chars`);
+    return result.stdout;
+  }
+
+  // If no diff and a specific file was requested, check if it's untracked or new
+  if (file) {
+    const statusResult = await runGit(["status", "--porcelain=v1", "--", file], workspaceDir);
+    const statusLine = statusResult.stdout.trim();
+
+    // Check if file is untracked (??) or added (A )
+    if (statusLine.startsWith("??") || statusLine.startsWith("A ")) {
+      console.log(`[git] File is untracked/new, generating synthetic diff for: ${file}`);
+      return generateSyntheticDiff(workspaceDir, file);
+    }
+  }
+
   console.log(`[git] Git diff: ${result.stdout.length} chars`);
   return result.stdout;
+}
+
+/**
+ * Generate a synthetic unified diff for a new/untracked file.
+ * Shows all lines as additions.
+ */
+function generateSyntheticDiff(workspaceDir: string, file: string): string {
+  const filePath = join(workspaceDir, file);
+
+  if (!existsSync(filePath)) {
+    console.log(`[git] File does not exist: ${filePath}`);
+    return "";
+  }
+
+  try {
+    const content = readFileSync(filePath, "utf-8");
+    const lines = content.split("\n");
+
+    // Build unified diff format
+    const diffLines: string[] = [
+      `diff --git a/${file} b/${file}`,
+      `new file mode 100644`,
+      `--- /dev/null`,
+      `+++ b/${file}`,
+      `@@ -0,0 +1,${lines.length} @@`,
+    ];
+
+    // Add all lines as additions
+    for (const line of lines) {
+      diffLines.push(`+${line}`);
+    }
+
+    const diff = diffLines.join("\n");
+    console.log(`[git] Generated synthetic diff: ${diff.length} chars`);
+    return diff;
+  } catch (error) {
+    console.error(`[git] Failed to read file for synthetic diff: ${error}`);
+    return "";
+  }
 }
 
 export async function setupRepository(
