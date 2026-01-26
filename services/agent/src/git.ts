@@ -121,6 +121,8 @@ export interface GitFileChange {
   path: string;
   status: "modified" | "added" | "deleted" | "renamed" | "copied" | "untracked" | "ignored" | "unmerged";
   staged: boolean;
+  linesAdded?: number;
+  linesRemoved?: number;
 }
 
 /**
@@ -174,12 +176,72 @@ export function parseGitStatus(output: string): GitFileChange[] {
 }
 
 /**
- * Get the git status for a workspace
+ * Parse git diff --numstat output to get line counts per file.
+ * Returns a map of file path to { added, removed } counts.
+ */
+export function parseDiffNumstat(output: string): Map<string, { added: number; removed: number }> {
+  const stats = new Map<string, { added: number; removed: number }>();
+  const lines = output.split("\n").filter((line) => line.length > 0);
+
+  for (const line of lines) {
+    // Format: "added<TAB>removed<TAB>path" or "-<TAB>-<TAB>path" for binary
+    const parts = line.split("\t");
+    if (parts.length >= 3) {
+      const added = parts[0] === "-" ? 0 : parseInt(parts[0], 10);
+      const removed = parts[1] === "-" ? 0 : parseInt(parts[1], 10);
+      // Handle renames: "old path => new path" or just path
+      const pathPart = parts.slice(2).join("\t");
+      const path = pathPart.includes(" => ") ? pathPart.split(" => ").pop()! : pathPart;
+      stats.set(path, { added: isNaN(added) ? 0 : added, removed: isNaN(removed) ? 0 : removed });
+    }
+  }
+
+  return stats;
+}
+
+/**
+ * Get the git status for a workspace with diff stats
  */
 export async function getGitStatus(workspaceDir: string): Promise<GitFileChange[]> {
   console.log("[git] Getting git status");
   const result = await runGit(["status", "--porcelain=v1"], workspaceDir);
   const files = parseGitStatus(result.stdout);
+
+  if (files.length === 0) {
+    console.log("[git] Git status: 0 changed files");
+    return files;
+  }
+
+  // Get diff stats for unstaged changes
+  const unstagedResult = await runGit(["diff", "--numstat"], workspaceDir);
+  const unstagedStats = parseDiffNumstat(unstagedResult.stdout);
+
+  // Get diff stats for staged changes
+  const stagedResult = await runGit(["diff", "--numstat", "--cached"], workspaceDir);
+  const stagedStats = parseDiffNumstat(stagedResult.stdout);
+
+  // Merge stats into file changes
+  for (const file of files) {
+    const stats = file.staged ? stagedStats.get(file.path) : unstagedStats.get(file.path);
+    if (stats) {
+      file.linesAdded = stats.added;
+      file.linesRemoved = stats.removed;
+    } else if (file.status === "untracked" || file.status === "added") {
+      // For untracked/new files, count lines in the file
+      try {
+        const filePath = join(workspaceDir, file.path);
+        if (existsSync(filePath)) {
+          const content = readFileSync(filePath, "utf-8");
+          const lineCount = content.split("\n").length;
+          file.linesAdded = lineCount;
+          file.linesRemoved = 0;
+        }
+      } catch {
+        // Ignore errors reading file
+      }
+    }
+  }
+
   console.log(`[git] Git status: ${files.length} changed files`);
   return files;
 }

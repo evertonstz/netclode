@@ -604,9 +604,32 @@ public struct Netclode_V1_GitFileChange: Sendable {
   /// Whether the change is staged for commit
   public var staged: Bool = false
 
+  /// Number of lines added (from git diff --numstat)
+  public var linesAdded: Int32 {
+    get {return _linesAdded ?? 0}
+    set {_linesAdded = newValue}
+  }
+  /// Returns true if `linesAdded` has been explicitly set.
+  public var hasLinesAdded: Bool {return self._linesAdded != nil}
+  /// Clears the value of `linesAdded`. Subsequent reads from it will return its default value.
+  public mutating func clearLinesAdded() {self._linesAdded = nil}
+
+  /// Number of lines removed (from git diff --numstat)
+  public var linesRemoved: Int32 {
+    get {return _linesRemoved ?? 0}
+    set {_linesRemoved = newValue}
+  }
+  /// Returns true if `linesRemoved` has been explicitly set.
+  public var hasLinesRemoved: Bool {return self._linesRemoved != nil}
+  /// Clears the value of `linesRemoved`. Subsequent reads from it will return its default value.
+  public mutating func clearLinesRemoved() {self._linesRemoved = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _linesAdded: Int32? = nil
+  fileprivate var _linesRemoved: Int32? = nil
 }
 
 /// Message represents a chat message in a session.
@@ -1139,7 +1162,7 @@ extension Netclode_V1_GitHubRepo: SwiftProtobuf.Message, SwiftProtobuf._MessageI
 
 extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GitFileChange"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}status\0\u{1}staged\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}status\0\u{1}staged\0\u{3}lines_added\0\u{3}lines_removed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1150,12 +1173,18 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 1: try { try decoder.decodeSingularStringField(value: &self.path) }()
       case 2: try { try decoder.decodeSingularEnumField(value: &self.status) }()
       case 3: try { try decoder.decodeSingularBoolField(value: &self.staged) }()
+      case 4: try { try decoder.decodeSingularInt32Field(value: &self._linesAdded) }()
+      case 5: try { try decoder.decodeSingularInt32Field(value: &self._linesRemoved) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.path.isEmpty {
       try visitor.visitSingularStringField(value: self.path, fieldNumber: 1)
     }
@@ -1165,6 +1194,12 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if self.staged != false {
       try visitor.visitSingularBoolField(value: self.staged, fieldNumber: 3)
     }
+    try { if let v = self._linesAdded {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 4)
+    } }()
+    try { if let v = self._linesRemoved {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 5)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1172,6 +1207,8 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs.path != rhs.path {return false}
     if lhs.status != rhs.status {return false}
     if lhs.staged != rhs.staged {return false}
+    if lhs._linesAdded != rhs._linesAdded {return false}
+    if lhs._linesRemoved != rhs._linesRemoved {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

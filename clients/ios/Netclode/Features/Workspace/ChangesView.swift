@@ -13,6 +13,14 @@ struct ChangesView: View {
         gitStore.files(for: sessionId)
     }
     
+    private var stagedFiles: [GitFileChange] {
+        files.filter { $0.staged }
+    }
+    
+    private var unstagedFiles: [GitFileChange] {
+        files.filter { !$0.staged }
+    }
+    
     private var expandedFile: String? {
         gitStore.selectedFile(for: sessionId)
     }
@@ -35,32 +43,6 @@ struct ChangesView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Changes")
-                    .font(.netclodeHeadline)
-                
-                Spacer()
-                
-                if isLoadingStatus {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                } else {
-                    Button {
-                        requestGitStatus()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: TypeScale.body))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, Theme.Spacing.md)
-            .padding(.vertical, Theme.Spacing.sm)
-            
-            Divider()
-            
             if let error = error {
                 // Error state
                 VStack(spacing: Theme.Spacing.sm) {
@@ -95,17 +77,50 @@ struct ChangesView: View {
                 .padding(Theme.Spacing.lg)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                // File list with inline diffs
+                // File list with sections
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(files) { file in
-                            FileChangeDisclosure(
-                                file: file,
-                                isExpanded: expandedFile == file.path,
-                                isLoadingDiff: isLoadingDiff && expandedFile == file.path,
-                                diffContent: expandedFile == file.path ? diffContent : nil
+                        // Staged section
+                        if !stagedFiles.isEmpty {
+                            SectionHeader(
+                                title: "STAGED",
+                                count: stagedFiles.count,
+                                isLoading: isLoadingStatus
                             ) {
-                                toggleFile(file.path)
+                                requestGitStatus()
+                            }
+                            
+                            ForEach(stagedFiles) { file in
+                                FileChangeRow(
+                                    file: file,
+                                    isExpanded: expandedFile == file.path,
+                                    isLoadingDiff: isLoadingDiff && expandedFile == file.path,
+                                    diffContent: expandedFile == file.path ? diffContent : nil
+                                ) {
+                                    toggleFile(file.path)
+                                }
+                            }
+                        }
+                        
+                        // Unstaged section
+                        if !unstagedFiles.isEmpty {
+                            SectionHeader(
+                                title: "UNSTAGED",
+                                count: unstagedFiles.count,
+                                isLoading: isLoadingStatus && stagedFiles.isEmpty
+                            ) {
+                                requestGitStatus()
+                            }
+                            
+                            ForEach(unstagedFiles) { file in
+                                FileChangeRow(
+                                    file: file,
+                                    isExpanded: expandedFile == file.path,
+                                    isLoadingDiff: isLoadingDiff && expandedFile == file.path,
+                                    diffContent: expandedFile == file.path ? diffContent : nil
+                                ) {
+                                    toggleFile(file.path)
+                                }
                             }
                         }
                     }
@@ -147,9 +162,45 @@ struct ChangesView: View {
     }
 }
 
-// MARK: - File Change Disclosure
+// MARK: - Section Header
 
-private struct FileChangeDisclosure: View {
+private struct SectionHeader: View {
+    let title: String
+    let count: Int
+    let isLoading: Bool
+    let onRefresh: () -> Void
+    
+    var body: some View {
+        HStack {
+            Text("\(title) (\(count))")
+                .font(.system(size: TypeScale.small, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+            
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(0.6)
+            } else {
+                Button {
+                    onRefresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: TypeScale.small))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, Theme.Spacing.md)
+        .padding(.vertical, Theme.Spacing.sm)
+        .background(Theme.Colors.secondaryBackground.opacity(0.5))
+    }
+}
+
+// MARK: - File Change Row
+
+private struct FileChangeRow: View {
     let file: GitFileChange
     let isExpanded: Bool
     let isLoadingDiff: Bool
@@ -161,21 +212,8 @@ private struct FileChangeDisclosure: View {
             // File row header
             Button(action: onTap) {
                 HStack(spacing: Theme.Spacing.sm) {
-                    // Expand/collapse chevron
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: TypeScale.micro, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(.snappy(duration: 0.2), value: isExpanded)
-                    
-                    // Status badge
-                    Text(file.status.shortLabel)
-                        .font(.system(size: TypeScale.micro, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(statusColor)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(statusColor.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    // Status badge with icon
+                    StatusBadge(status: file.status)
                     
                     // File info
                     VStack(alignment: .leading, spacing: 1) {
@@ -193,6 +231,21 @@ private struct FileChangeDisclosure: View {
                     }
                     
                     Spacer()
+                    
+                    // Diff stats
+                    if file.hasDiffStats {
+                        DiffStatsView(
+                            linesAdded: file.linesAdded ?? 0,
+                            linesRemoved: file.linesRemoved ?? 0
+                        )
+                    }
+                    
+                    // Expand/collapse chevron
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: TypeScale.micro, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(.snappy(duration: 0.2), value: isExpanded)
                 }
                 .padding(.horizontal, Theme.Spacing.md)
                 .padding(.vertical, Theme.Spacing.sm)
@@ -237,9 +290,24 @@ private struct FileChangeDisclosure: View {
                 .padding(.leading, Theme.Spacing.md)
         }
     }
+}
+
+// MARK: - Status Badge
+
+private struct StatusBadge: View {
+    let status: GitFileStatus
+    
+    var body: some View {
+        Text(status.shortLabel)
+            .font(.system(size: TypeScale.micro, weight: .bold, design: .monospaced))
+            .foregroundStyle(statusColor)
+            .frame(width: 22, height: 22)
+            .background(statusColor.opacity(0.2))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+    }
     
     private var statusColor: Color {
-        switch file.status {
+        switch status {
         case .modified: return .orange
         case .added: return Theme.Colors.success
         case .deleted: return Theme.Colors.error
@@ -252,19 +320,42 @@ private struct FileChangeDisclosure: View {
     }
 }
 
+// MARK: - Diff Stats View
+
+private struct DiffStatsView: View {
+    let linesAdded: Int
+    let linesRemoved: Int
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("+\(linesAdded)")
+                .foregroundStyle(Theme.Colors.success)
+            Text("/")
+                .foregroundStyle(.tertiary)
+            Text("-\(linesRemoved)")
+                .foregroundStyle(Theme.Colors.error)
+        }
+        .font(.system(size: TypeScale.tiny, weight: .medium, design: .monospaced))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Theme.Colors.secondaryBackground.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
 // MARK: - Preview
 
 #Preview("Changes View") {
     let gitStore = GitStore()
     
-    // Simulate some files
+    // Simulate some files with diff stats
     Task { @MainActor in
         gitStore.setFiles([
-            GitFileChange(path: "src/App.swift", status: .modified, staged: false),
-            GitFileChange(path: "src/Models/User.swift", status: .added, staged: false),
-            GitFileChange(path: "README.md", status: .modified, staged: true),
-            GitFileChange(path: "old-file.txt", status: .deleted, staged: false),
-            GitFileChange(path: "new-feature.swift", status: .untracked, staged: false),
+            GitFileChange(path: "src/App.swift", status: .modified, staged: false, linesAdded: 15, linesRemoved: 8),
+            GitFileChange(path: "src/Models/User.swift", status: .added, staged: false, linesAdded: 104, linesRemoved: 0),
+            GitFileChange(path: "README.md", status: .modified, staged: true, linesAdded: 28, linesRemoved: 5),
+            GitFileChange(path: "old-file.txt", status: .deleted, staged: false, linesAdded: 0, linesRemoved: 2131),
+            GitFileChange(path: "new-feature.swift", status: .untracked, staged: false, linesAdded: 208, linesRemoved: 0),
         ], for: "preview-session")
     }
     

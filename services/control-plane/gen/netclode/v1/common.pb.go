@@ -717,9 +717,11 @@ func (x *GitHubRepo) GetDescription() string {
 // GitFileChange represents a changed file from git status.
 type GitFileChange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`                                     // File path relative to repository root
-	Status        GitFileStatus          `protobuf:"varint,2,opt,name=status,proto3,enum=netclode.v1.GitFileStatus" json:"status,omitempty"` // Type of change
-	Staged        bool                   `protobuf:"varint,3,opt,name=staged,proto3" json:"staged,omitempty"`                                // Whether the change is staged for commit
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`                                            // File path relative to repository root
+	Status        GitFileStatus          `protobuf:"varint,2,opt,name=status,proto3,enum=netclode.v1.GitFileStatus" json:"status,omitempty"`        // Type of change
+	Staged        bool                   `protobuf:"varint,3,opt,name=staged,proto3" json:"staged,omitempty"`                                       // Whether the change is staged for commit
+	LinesAdded    *int32                 `protobuf:"varint,4,opt,name=lines_added,json=linesAdded,proto3,oneof" json:"lines_added,omitempty"`       // Number of lines added (from git diff --numstat)
+	LinesRemoved  *int32                 `protobuf:"varint,5,opt,name=lines_removed,json=linesRemoved,proto3,oneof" json:"lines_removed,omitempty"` // Number of lines removed (from git diff --numstat)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -773,6 +775,20 @@ func (x *GitFileChange) GetStaged() bool {
 		return x.Staged
 	}
 	return false
+}
+
+func (x *GitFileChange) GetLinesAdded() int32 {
+	if x != nil && x.LinesAdded != nil {
+		return *x.LinesAdded
+	}
+	return 0
+}
+
+func (x *GitFileChange) GetLinesRemoved() int32 {
+	if x != nil && x.LinesRemoved != nil {
+		return *x.LinesRemoved
+	}
+	return 0
 }
 
 // Message represents a chat message in a session.
@@ -1345,11 +1361,16 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\tfull_name\x18\x02 \x01(\tR\bfullName\x12\x18\n" +
 	"\aprivate\x18\x03 \x01(\bR\aprivate\x12%\n" +
 	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01B\x0e\n" +
-	"\f_description\"o\n" +
+	"\f_description\"\xe1\x01\n" +
 	"\rGitFileChange\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x122\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1a.netclode.v1.GitFileStatusR\x06status\x12\x16\n" +
-	"\x06staged\x18\x03 \x01(\bR\x06staged\"\x9b\x01\n" +
+	"\x06staged\x18\x03 \x01(\bR\x06staged\x12$\n" +
+	"\vlines_added\x18\x04 \x01(\x05H\x00R\n" +
+	"linesAdded\x88\x01\x01\x12(\n" +
+	"\rlines_removed\x18\x05 \x01(\x05H\x01R\flinesRemoved\x88\x01\x01B\x0e\n" +
+	"\f_lines_addedB\x10\n" +
+	"\x0e_lines_removed\"\x9b\x01\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12,\n" +
 	"\x04role\x18\x02 \x01(\x0e2\x18.netclode.v1.MessageRoleR\x04role\x12\x18\n" +
@@ -1516,6 +1537,7 @@ func file_netclode_v1_common_proto_init() {
 	file_netclode_v1_common_proto_msgTypes[1].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[2].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[3].OneofWrappers = []any{}
+	file_netclode_v1_common_proto_msgTypes[4].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[7].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[8].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[9].OneofWrappers = []any{}

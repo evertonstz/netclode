@@ -7,6 +7,8 @@ struct GitFileChange: Identifiable, Codable, Equatable, Sendable {
     let path: String
     let status: GitFileStatus
     let staged: Bool
+    let linesAdded: Int?
+    let linesRemoved: Int?
     
     /// Display name (just the filename)
     var fileName: String {
@@ -16,6 +18,11 @@ struct GitFileChange: Identifiable, Codable, Equatable, Sendable {
     /// Directory path
     var directory: String {
         (path as NSString).deletingLastPathComponent
+    }
+    
+    /// Whether diff stats are available
+    var hasDiffStats: Bool {
+        linesAdded != nil || linesRemoved != nil
     }
 }
 

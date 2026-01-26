@@ -928,7 +928,9 @@ final class ConnectService {
         GitFileChange(
             path: proto.path,
             status: convertGitFileStatus(proto.status),
-            staged: proto.staged
+            staged: proto.staged,
+            linesAdded: proto.hasLinesAdded ? Int(proto.linesAdded) : nil,
+            linesRemoved: proto.hasLinesRemoved ? Int(proto.linesRemoved) : nil
         )
     }
     

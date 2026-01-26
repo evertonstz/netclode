@@ -86,6 +86,8 @@ message GitFileChange {
   string path = 1;                       // File path relative to repository root
   GitFileStatus status = 2;              // Type of change
   bool staged = 3;                       // Whether the change is staged for commit
+  optional int32 lines_added = 4;        // Number of lines added (from git diff --numstat)
+  optional int32 lines_removed = 5;      // Number of lines removed (from git diff --numstat)
 }
 
 // GitFileStatus represents the type of change to a file.
