@@ -74,6 +74,12 @@ final class MessageRouter {
         case .sessionUpdated(let session):
             print("[MessageRouter] session.updated received: id=\(session.id), name=\(session.name), status=\(session.status)")
             sessionStore.updateSession(session)
+            
+            // If session becomes running, show streaming indicator
+            // (e.g., when another client sends a prompt)
+            if session.status == .running {
+                sessionStore.setProcessing(for: session.id, processing: true)
+            }
 
         case .sessionDeleted(let id):
             withAnimation {
@@ -230,6 +236,12 @@ final class MessageRouter {
             let currentSession = sessionStore.sessions.first { $0.id == session.id }
             print("[MessageRouter] session.state received: status=\(session.status) (was \(currentSession?.status.rawValue ?? "nil")), \(messages.count) messages, \(events.count) events")
             sessionStore.updateSession(session)
+            
+            // Set processing state based on session status - if session is running,
+            // show the streaming indicator
+            if session.status == .running {
+                sessionStore.setProcessing(for: session.id, processing: true)
+            }
             
             // Always load messages from server - server is authoritative
             chatStore.loadMessages(sessionId: session.id, messages: messages)
