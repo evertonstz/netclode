@@ -916,8 +916,17 @@ func (r *k8sRuntime) ConfigureNetwork(ctx context.Context, sessionID string, net
 		return fmt.Errorf("sandbox claim UID is empty for session %s", sessionID)
 	}
 
-	// Network disabled: create restrictive policy
-	// This policy blocks all egress except DNS and control-plane
+	// Network disabled: delete the default template policy first (policies are additive)
+	// The sandbox controller creates a default policy that allows internet, we need to remove it
+	defaultPolicyName := fmt.Sprintf("sess-%s-network-policy", sessionID)
+	if err := r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Delete(ctx, defaultPolicyName, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+		slog.Warn("Failed to delete default network policy", "sessionID", sessionID, "error", err)
+		// Continue anyway, the restrictive policy might still work
+	} else if err == nil {
+		slog.Info("Deleted default network policy for restriction", "sessionID", sessionID)
+	}
+
+	// Create restrictive policy that blocks all egress except DNS and control-plane
 	udpProtocol := corev1.ProtocolUDP
 	tcpProtocol := corev1.ProtocolTCP
 	dnsPort := intstr.FromInt(53)
