@@ -507,7 +507,8 @@ final class ConnectService {
                     capabilities: proto.capabilities
                 )
             }
-            return .modelsResponse(models: models)
+            let sdkType: SdkType? = msg.hasSdkType ? convertSdkType(msg.sdkType) : nil
+            return .modelsResponse(models: models, sdkType: sdkType)
 
         case .copilotStatus(let msg):
             let auth = CopilotAuthStatus(
@@ -581,6 +582,7 @@ final class ConnectService {
         case .claude: return .claude
         case .opencode: return .opencode
         case .copilot: return .copilot
+        case .codex: return .codex
         case .unspecified, .UNRECOGNIZED: return .claude
         }
     }
@@ -604,6 +606,7 @@ final class ConnectService {
         case .claude: return .claude
         case .opencode: return .opencode
         case .copilot: return .copilot
+        case .codex: return .codex
         }
     }
 

@@ -9,3 +9,4 @@ export { createSDKAdapter, parseSdkType, getAdapter, shutdownAllAdapters } from 
 export { ClaudeSDKAdapter } from "./claude-adapter.js";
 export { OpenCodeAdapter } from "./opencode-adapter.js";
 export { CopilotAdapter } from "./copilot-adapter.js";
+export { CodexAdapter } from "./codex-adapter.js";

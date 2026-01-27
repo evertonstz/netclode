@@ -3038,6 +3038,7 @@ type ModelsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Models        []*ModelInfo           `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"` // Available models for the requested SDK
 	RequestId     *string                `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`
+	SdkType       *SdkType               `protobuf:"varint,3,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"` // Which SDK these models are for
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3084,6 +3085,13 @@ func (x *ModelsResponse) GetRequestId() string {
 		return *x.RequestId
 	}
 	return ""
+}
+
+func (x *ModelsResponse) GetSdkType() SdkType {
+	if x != nil && x.SdkType != nil {
+		return *x.SdkType
+	}
+	return SdkType_SDK_TYPE_UNSPECIFIED
 }
 
 type CopilotStatusResponse struct {
@@ -3695,12 +3703,14 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\v2\x12.netclode.v1.ErrorR\x05error\x12\"\n" +
 	"\n" +
 	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
-	"\v_request_id\"s\n" +
+	"\v_request_id\"\xb6\x01\n" +
 	"\x0eModelsResponse\x12.\n" +
 	"\x06models\x18\x01 \x03(\v2\x16.netclode.v1.ModelInfoR\x06models\x12\"\n" +
 	"\n" +
-	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
-	"\v_request_id\"\xc5\x01\n" +
+	"request_id\x18\x02 \x01(\tH\x00R\trequestId\x88\x01\x01\x124\n" +
+	"\bsdk_type\x18\x03 \x01(\x0e2\x14.netclode.v1.SdkTypeH\x01R\asdkType\x88\x01\x01B\r\n" +
+	"\v_request_idB\v\n" +
+	"\t_sdk_type\"\xc5\x01\n" +
 	"\x15CopilotStatusResponse\x122\n" +
 	"\x04auth\x18\x01 \x01(\v2\x1e.netclode.v1.CopilotAuthStatusR\x04auth\x12;\n" +
 	"\x05quota\x18\x02 \x01(\v2 .netclode.v1.CopilotPremiumQuotaH\x00R\x05quota\x88\x01\x01\x12\"\n" +
@@ -3883,18 +3893,19 @@ var file_netclode_v1_client_proto_depIdxs = []int32{
 	57, // 61: netclode.v1.GitStatusResponse.files:type_name -> netclode.v1.GitFileChange
 	58, // 62: netclode.v1.ErrorResponse.error:type_name -> netclode.v1.Error
 	59, // 63: netclode.v1.ModelsResponse.models:type_name -> netclode.v1.ModelInfo
-	60, // 64: netclode.v1.CopilotStatusResponse.auth:type_name -> netclode.v1.CopilotAuthStatus
-	61, // 65: netclode.v1.CopilotStatusResponse.quota:type_name -> netclode.v1.CopilotPremiumQuota
-	62, // 66: netclode.v1.SnapshotCreatedResponse.snapshot:type_name -> netclode.v1.Snapshot
-	62, // 67: netclode.v1.SnapshotListResponse.snapshots:type_name -> netclode.v1.Snapshot
-	47, // 68: netclode.v1.RepoAccessUpdatedResponse.repo_access:type_name -> netclode.v1.RepoAccess
-	0,  // 69: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
-	1,  // 70: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
-	70, // [70:71] is the sub-list for method output_type
-	69, // [69:70] is the sub-list for method input_type
-	69, // [69:69] is the sub-list for extension type_name
-	69, // [69:69] is the sub-list for extension extendee
-	0,  // [0:69] is the sub-list for field type_name
+	48, // 64: netclode.v1.ModelsResponse.sdk_type:type_name -> netclode.v1.SdkType
+	60, // 65: netclode.v1.CopilotStatusResponse.auth:type_name -> netclode.v1.CopilotAuthStatus
+	61, // 66: netclode.v1.CopilotStatusResponse.quota:type_name -> netclode.v1.CopilotPremiumQuota
+	62, // 67: netclode.v1.SnapshotCreatedResponse.snapshot:type_name -> netclode.v1.Snapshot
+	62, // 68: netclode.v1.SnapshotListResponse.snapshots:type_name -> netclode.v1.Snapshot
+	47, // 69: netclode.v1.RepoAccessUpdatedResponse.repo_access:type_name -> netclode.v1.RepoAccess
+	0,  // 70: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
+	1,  // 71: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
+	71, // [71:72] is the sub-list for method output_type
+	70, // [70:71] is the sub-list for method input_type
+	70, // [70:70] is the sub-list for extension type_name
+	70, // [70:70] is the sub-list for extension extendee
+	0,  // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_netclode_v1_client_proto_init() }

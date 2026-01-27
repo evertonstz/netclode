@@ -8,6 +8,7 @@ struct PromptSheet: View {
     @Environment(GitHubStore.self) private var githubStore
     @Environment(ModelsStore.self) private var modelsStore
     @Environment(CopilotStore.self) private var copilotStore
+    @Environment(CodexStore.self) private var codexStore
 
     @State private var promptText = ""
     @State private var repoURL = ""
@@ -17,6 +18,7 @@ struct PromptSheet: View {
     @State private var selectedClaudeModelId: String = ModelsStore.defaultModelId
     @State private var selectedOpenCodeModelId: String = ModelsStore.defaultModelId
     @State private var selectedCopilotModelId: String = CopilotStore.defaultModelId
+    @State private var selectedCodexModelId: String = CodexStore.defaultModelId
     @State private var isSubmitting = false
     @State private var canSubmit = false
     @State private var showModelDropdown = false
@@ -32,6 +34,8 @@ struct PromptSheet: View {
             return modelsStore.anthropicModels.map { PickerModel.from($0) }
         case .copilot:
             return copilotStore.models.map { PickerModel.from($0) }
+        case .codex:
+            return codexStore.models.map { PickerModel.from($0) }
         }
     }
 
@@ -44,6 +48,8 @@ struct PromptSheet: View {
             return $selectedOpenCodeModelId
         case .copilot:
             return $selectedCopilotModelId
+        case .codex:
+            return $selectedCodexModelId
         }
     }
 
@@ -54,6 +60,8 @@ struct PromptSheet: View {
             return modelsStore.isLoading
         case .copilot:
             return copilotStore.isLoadingModels
+        case .codex:
+            return codexStore.isLoadingModels
         }
     }
 
@@ -350,6 +358,8 @@ struct PromptSheet: View {
             modelParam = selectedOpenCodeModelId
         case .copilot:
             modelParam = selectedCopilotModelId
+        case .codex:
+            modelParam = selectedCodexModelId
         }
         
         // Build network config (only if tailnet access is requested)
@@ -387,6 +397,12 @@ struct PromptSheet: View {
         if copilotStore.models.isEmpty && !copilotStore.isLoadingModels {
             copilotStore.setLoadingModels(true)
             connectService.send(.listModels(sdkType: .copilot, copilotBackend: nil))
+        }
+        
+        // Preload Codex models if not already loaded
+        if codexStore.models.isEmpty && !codexStore.isLoadingModels {
+            codexStore.setLoadingModels(true)
+            connectService.send(.listModels(sdkType: .codex, copilotBackend: nil))
         }
     }
 }
@@ -511,5 +527,6 @@ struct InlineAccessPicker: View {
                 .environment(GitHubStore())
                 .environment(ModelsStore())
                 .environment(CopilotStore())
+                .environment(CodexStore())
         }
 }

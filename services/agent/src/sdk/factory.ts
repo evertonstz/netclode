@@ -8,6 +8,7 @@ import type { SDKAdapter, SDKConfig, SdkType } from "./types.js";
 import { ClaudeSDKAdapter } from "./claude-adapter.js";
 import { OpenCodeAdapter } from "./opencode-adapter.js";
 import { CopilotAdapter } from "./copilot-adapter.js";
+import { CodexAdapter } from "./codex-adapter.js";
 
 // Singleton adapters per SDK type
 const adapterInstances: Map<SdkType, SDKAdapter> = new Map();
@@ -32,6 +33,10 @@ export async function createSDKAdapter(config: SDKConfig): Promise<SDKAdapter> {
     case "copilot":
       console.log("[sdk-factory] Creating Copilot adapter");
       adapter = new CopilotAdapter();
+      break;
+    case "codex":
+      console.log("[sdk-factory] Creating Codex adapter");
+      adapter = new CodexAdapter();
       break;
     case "claude":
     default:
@@ -61,6 +66,10 @@ export function parseSdkType(sdkTypeStr: string | undefined): SdkType {
     case "COPILOT":
     case "copilot":
       return "copilot";
+    case "SDK_TYPE_CODEX":
+    case "CODEX":
+    case "codex":
+      return "codex";
     case "SDK_TYPE_CLAUDE":
     case "CLAUDE":
     case "claude":

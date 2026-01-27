@@ -7,7 +7,7 @@
 
 import type { JsonObject } from "@bufbuild/protobuf";
 
-export type SdkType = "claude" | "opencode" | "copilot";
+export type SdkType = "claude" | "opencode" | "copilot" | "codex";
 
 /**
  * Backend for Copilot SDK sessions
@@ -24,6 +24,9 @@ export interface SDKConfig {
   githubCopilotToken?: string; // GitHub PAT with Copilot scope (for Copilot SDK auth)
   model?: string; // e.g., "anthropic/claude-sonnet-4-0" for OpenCode
   copilotBackend?: CopilotBackend; // For Copilot SDK: "github" or "anthropic"
+  // Codex SDK OAuth tokens (for ChatGPT auth mode)
+  codexAccessToken?: string;
+  codexIdToken?: string;
 }
 
 /**

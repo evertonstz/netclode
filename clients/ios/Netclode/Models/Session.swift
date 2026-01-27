@@ -74,12 +74,14 @@ enum SdkType: String, Codable, CaseIterable, Sendable {
     case claude
     case opencode
     case copilot
+    case codex
 
     var displayName: String {
         switch self {
         case .claude: "Claude Code"
         case .opencode: "OpenCode"
         case .copilot: "GitHub Copilot"
+        case .codex: "OpenAI Codex"
         }
     }
 
@@ -88,6 +90,7 @@ enum SdkType: String, Codable, CaseIterable, Sendable {
         case .claude: "Direct Claude integration"
         case .opencode: "Multi-provider support"
         case .copilot: "GitHub Copilot"
+        case .codex: "OpenAI Codex SDK"
         }
     }
 }

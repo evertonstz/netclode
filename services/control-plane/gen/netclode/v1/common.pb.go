@@ -81,6 +81,7 @@ const (
 	SdkType_SDK_TYPE_CLAUDE      SdkType = 1 // Anthropic Claude Code SDK (direct integration)
 	SdkType_SDK_TYPE_OPENCODE    SdkType = 2 // OpenCode SDK (multi-provider support)
 	SdkType_SDK_TYPE_COPILOT     SdkType = 3 // GitHub Copilot SDK
+	SdkType_SDK_TYPE_CODEX       SdkType = 4 // OpenAI Codex SDK
 )
 
 // Enum value maps for SdkType.
@@ -90,12 +91,14 @@ var (
 		1: "SDK_TYPE_CLAUDE",
 		2: "SDK_TYPE_OPENCODE",
 		3: "SDK_TYPE_COPILOT",
+		4: "SDK_TYPE_CODEX",
 	}
 	SdkType_value = map[string]int32{
 		"SDK_TYPE_UNSPECIFIED": 0,
 		"SDK_TYPE_CLAUDE":      1,
 		"SDK_TYPE_OPENCODE":    2,
 		"SDK_TYPE_COPILOT":     3,
+		"SDK_TYPE_CODEX":       4,
 	}
 )
 
@@ -550,6 +553,8 @@ type SessionConfig struct {
 	Model              *string                `protobuf:"bytes,8,opt,name=model,proto3,oneof" json:"model,omitempty"`                                                                          // Model ID (e.g., "anthropic/claude-sonnet-4-0")
 	CopilotBackend     *CopilotBackend        `protobuf:"varint,9,opt,name=copilot_backend,json=copilotBackend,proto3,enum=netclode.v1.CopilotBackend,oneof" json:"copilot_backend,omitempty"` // Backend for Copilot sessions
 	GithubCopilotToken *string                `protobuf:"bytes,10,opt,name=github_copilot_token,json=githubCopilotToken,proto3,oneof" json:"github_copilot_token,omitempty"`                   // GitHub PAT with Copilot scope (for Copilot SDK)
+	CodexAccessToken   *string                `protobuf:"bytes,11,opt,name=codex_access_token,json=codexAccessToken,proto3,oneof" json:"codex_access_token,omitempty"`                         // Codex OAuth access token (for ChatGPT auth)
+	CodexIdToken       *string                `protobuf:"bytes,12,opt,name=codex_id_token,json=codexIdToken,proto3,oneof" json:"codex_id_token,omitempty"`                                     // Codex OAuth ID token (for ChatGPT auth)
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -650,6 +655,20 @@ func (x *SessionConfig) GetCopilotBackend() CopilotBackend {
 func (x *SessionConfig) GetGithubCopilotToken() string {
 	if x != nil && x.GithubCopilotToken != nil {
 		return *x.GithubCopilotToken
+	}
+	return ""
+}
+
+func (x *SessionConfig) GetCodexAccessToken() string {
+	if x != nil && x.CodexAccessToken != nil {
+		return *x.CodexAccessToken
+	}
+	return ""
+}
+
+func (x *SessionConfig) GetCodexIdToken() string {
+	if x != nil && x.CodexIdToken != nil {
+		return *x.CodexIdToken
 	}
 	return ""
 }
@@ -1345,7 +1364,7 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\rmessage_count\x18\x02 \x01(\x05H\x00R\fmessageCount\x88\x01\x01\x12+\n" +
 	"\x0flast_message_id\x18\x03 \x01(\tH\x01R\rlastMessageId\x88\x01\x01B\x10\n" +
 	"\x0e_message_countB\x12\n" +
-	"\x10_last_message_id\"\xc0\x04\n" +
+	"\x10_last_message_id\"\xc8\x05\n" +
 	"\rSessionConfig\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
@@ -1359,14 +1378,18 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x05model\x18\b \x01(\tH\x04R\x05model\x88\x01\x01\x12I\n" +
 	"\x0fcopilot_backend\x18\t \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x05R\x0ecopilotBackend\x88\x01\x01\x125\n" +
 	"\x14github_copilot_token\x18\n" +
-	" \x01(\tH\x06R\x12githubCopilotToken\x88\x01\x01B\x0f\n" +
+	" \x01(\tH\x06R\x12githubCopilotToken\x88\x01\x01\x121\n" +
+	"\x12codex_access_token\x18\v \x01(\tH\aR\x10codexAccessToken\x88\x01\x01\x12)\n" +
+	"\x0ecodex_id_token\x18\f \x01(\tH\bR\fcodexIdToken\x88\x01\x01B\x0f\n" +
 	"\r_github_tokenB\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\v\n" +
 	"\t_sdk_typeB\b\n" +
 	"\x06_modelB\x12\n" +
 	"\x10_copilot_backendB\x17\n" +
-	"\x15_github_copilot_token\"\x8e\x01\n" +
+	"\x15_github_copilot_tokenB\x15\n" +
+	"\x13_codex_access_tokenB\x11\n" +
+	"\x0f_codex_id_token\"\x8e\x01\n" +
 	"\n" +
 	"GitHubRepo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
@@ -1442,12 +1465,13 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"RepoAccess\x12\x1b\n" +
 	"\x17REPO_ACCESS_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10REPO_ACCESS_READ\x10\x01\x12\x15\n" +
-	"\x11REPO_ACCESS_WRITE\x10\x02*e\n" +
+	"\x11REPO_ACCESS_WRITE\x10\x02*y\n" +
 	"\aSdkType\x12\x18\n" +
 	"\x14SDK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fSDK_TYPE_CLAUDE\x10\x01\x12\x15\n" +
 	"\x11SDK_TYPE_OPENCODE\x10\x02\x12\x14\n" +
-	"\x10SDK_TYPE_COPILOT\x10\x03*l\n" +
+	"\x10SDK_TYPE_COPILOT\x10\x03\x12\x12\n" +
+	"\x0eSDK_TYPE_CODEX\x10\x04*l\n" +
 	"\x0eCopilotBackend\x12\x1f\n" +
 	"\x1bCOPILOT_BACKEND_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16COPILOT_BACKEND_GITHUB\x10\x01\x12\x1d\n" +

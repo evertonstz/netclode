@@ -73,6 +73,8 @@ function parseSdkTypeFromProto(protoSdkType: ProtoSdkType | undefined): SdkType 
       return "opencode";
     case ProtoSdkType.COPILOT:
       return "copilot";
+    case ProtoSdkType.CODEX:
+      return "codex";
     case ProtoSdkType.CLAUDE:
     case ProtoSdkType.UNSPECIFIED:
     default:
@@ -433,6 +435,9 @@ async function handleControlPlaneMessage(
               githubCopilotToken: config.githubCopilotToken,
               model: config.model,
               copilotBackend,
+              // Codex OAuth tokens (for ChatGPT auth mode)
+              codexAccessToken: config.codexAccessToken,
+              codexIdToken: config.codexIdToken,
             });
           } catch (err) {
             console.error("[agent] Failed to initialize SDK adapter:", err);

@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Port               int
 	AnthropicAPIKey    string
+	OpenAIAPIKey       string // OpenAI API key (for Codex SDK)
 	GitHubCopilotToken string // GitHub PAT with Copilot scope (for Copilot SDK)
 	K8sNamespace       string
 	AgentImage         string
@@ -29,6 +30,7 @@ func Load() *Config {
 	return &Config{
 		Port:               getEnvInt("PORT", 3000),
 		AnthropicAPIKey:    getEnv("ANTHROPIC_API_KEY", ""),
+		OpenAIAPIKey:       getEnv("OPENAI_API_KEY", ""),
 		GitHubCopilotToken: getEnv("GITHUB_COPILOT_TOKEN", ""),
 		K8sNamespace:       getEnv("K8S_NAMESPACE", "netclode"),
 		AgentImage:         getEnv("AGENT_IMAGE", "ghcr.io/angristan/netclode-agent:latest"),

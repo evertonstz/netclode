@@ -1621,6 +1621,7 @@ func (m *Manager) GetAgentConnection(sessionID string) AgentConnection {
 
 // ListModels returns available models for the specified SDK type.
 // For Copilot SDK, returns a combined list of GitHub Copilot and Anthropic (BYOK) models.
+// For Codex SDK, returns OpenAI models with "gpt-codex" family.
 func (m *Manager) ListModels(sdkType pb.SdkType, copilotBackend *pb.CopilotBackend) []*pb.ModelInfo {
 	switch sdkType {
 	case pb.SdkType_SDK_TYPE_CLAUDE:
@@ -1630,6 +1631,9 @@ func (m *Manager) ListModels(sdkType pb.SdkType, copilotBackend *pb.CopilotBacke
 	case pb.SdkType_SDK_TYPE_COPILOT:
 		// Return combined list of GitHub Copilot + Anthropic (BYOK) models
 		return m.fetchCopilotModels()
+	case pb.SdkType_SDK_TYPE_CODEX:
+		// Return OpenAI models with "gpt-codex" family
+		return m.fetchCodexModels()
 	default:
 		return m.fetchModelsFromModelsDev("anthropic")
 	}
@@ -1954,6 +1958,112 @@ func (m *Manager) getCopilotModelsFallback() []*pb.ModelInfo {
 	}
 
 	return models
+}
+
+// fetchCodexModels fetches OpenAI Codex models (family: gpt-codex or gpt-codex-mini)
+func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
+	// Check if OpenAI API key is available
+	if m.config.OpenAIAPIKey == "" {
+		slog.Warn("No OpenAI API key configured (need OPENAI_API_KEY for Codex SDK)")
+		return m.getCodexModelsFallback()
+	}
+
+	// Check cache first (valid for 5 minutes)
+	m.copilotModelsMu.RLock()
+	cacheKey := "codex"
+	if cached, ok := m.modelsDevCache[cacheKey]; ok && time.Since(cached.fetchedAt) < 5*time.Minute {
+		models := cached.models
+		m.copilotModelsMu.RUnlock()
+		return models
+	}
+	m.copilotModelsMu.RUnlock()
+
+	// Fetch from models.dev
+	models := m.doFetchCodexModels()
+	if models == nil {
+		return m.getCodexModelsFallback()
+	}
+
+	// Update cache
+	m.copilotModelsMu.Lock()
+	if m.modelsDevCache == nil {
+		m.modelsDevCache = make(map[string]*modelsDevCacheEntry)
+	}
+	m.modelsDevCache[cacheKey] = &modelsDevCacheEntry{
+		models:    models,
+		fetchedAt: time.Now(),
+	}
+	m.copilotModelsMu.Unlock()
+
+	return models
+}
+
+func (m *Manager) doFetchCodexModels() []*pb.ModelInfo {
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get("https://models.dev/api.json")
+	if err != nil {
+		slog.Error("Failed to fetch from models.dev", "error", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("models.dev API error", "status", resp.StatusCode)
+		return nil
+	}
+
+	var data modelsDevResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		slog.Error("Failed to decode models.dev response", "error", err)
+		return nil
+	}
+
+	openaiData, ok := data["openai"]
+	if !ok {
+		slog.Error("OpenAI provider not found in models.dev")
+		return nil
+	}
+
+	var models []*pb.ModelInfo
+	for _, model := range openaiData.Models {
+		// Filter to only include Codex models (family starts with "gpt-codex")
+		if !containsLower(model.Family, "gpt-codex") {
+			continue
+		}
+
+		capabilities := []string{"chat", "code"}
+		for _, input := range model.Modalities.Input {
+			if input == "image" {
+				capabilities = append(capabilities, "vision")
+				break
+			}
+		}
+		if model.Reasoning {
+			capabilities = append(capabilities, "reasoning")
+		}
+
+		models = append(models, &pb.ModelInfo{
+			Id:           model.ID,
+			Name:         model.Name,
+			Provider:     strPtr("OpenAI"),
+			Capabilities: capabilities,
+		})
+	}
+
+	slog.Info("Fetched Codex models from models.dev", "count", len(models))
+	return models
+}
+
+// getCodexModelsFallback returns fallback Codex models when models.dev is unavailable
+func (m *Manager) getCodexModelsFallback() []*pb.ModelInfo {
+	if m.config.OpenAIAPIKey == "" {
+		return nil
+	}
+
+	return []*pb.ModelInfo{
+		{Id: "codex-mini-latest", Name: "Codex Mini", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code"}},
+		{Id: "gpt-5-codex", Name: "GPT-5 Codex", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code"}},
+	}
 }
 
 // ============================================================================

@@ -696,6 +696,7 @@ func (c *ConnectConnection) handleListModels(ctx context.Context, req *pb.ListMo
 			Models: &pb.ModelsResponse{
 				Models:    models,
 				RequestId: req.RequestId,
+				SdkType:   &req.SdkType, // Echo back which SDK type these models are for
 			},
 		},
 	})

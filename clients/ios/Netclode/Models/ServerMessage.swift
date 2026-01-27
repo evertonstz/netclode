@@ -72,8 +72,8 @@ enum ServerMessage: Sendable {
     case gitDiffResponse(sessionId: String, diff: String)
     case gitError(sessionId: String, error: String)
 
-    // Copilot
-    case modelsResponse(models: [CopilotModel])
+    // Models (for Copilot, Codex, etc.)
+    case modelsResponse(models: [CopilotModel], sdkType: SdkType?)
     case copilotStatusResponse(status: CopilotStatus)
 
     // Snapshots

@@ -81,6 +81,9 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
 
   /// GitHub Copilot SDK
   case copilot // = 3
+
+  /// OpenAI Codex SDK
+  case codex // = 4
   case UNRECOGNIZED(Int)
 
   public init() {
@@ -93,6 +96,7 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
     case 1: self = .claude
     case 2: self = .opencode
     case 3: self = .copilot
+    case 4: self = .codex
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -103,6 +107,7 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
     case .claude: return 1
     case .opencode: return 2
     case .copilot: return 3
+    case .codex: return 4
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -113,6 +118,7 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
     .claude,
     .opencode,
     .copilot,
+    .codex,
   ]
 
 }
@@ -558,6 +564,26 @@ public struct Netclode_V1_SessionConfig: Sendable {
   /// Clears the value of `githubCopilotToken`. Subsequent reads from it will return its default value.
   public mutating func clearGithubCopilotToken() {self._githubCopilotToken = nil}
 
+  /// Codex OAuth access token (for ChatGPT auth)
+  public var codexAccessToken: String {
+    get {return _codexAccessToken ?? String()}
+    set {_codexAccessToken = newValue}
+  }
+  /// Returns true if `codexAccessToken` has been explicitly set.
+  public var hasCodexAccessToken: Bool {return self._codexAccessToken != nil}
+  /// Clears the value of `codexAccessToken`. Subsequent reads from it will return its default value.
+  public mutating func clearCodexAccessToken() {self._codexAccessToken = nil}
+
+  /// Codex OAuth ID token (for ChatGPT auth)
+  public var codexIDToken: String {
+    get {return _codexIDToken ?? String()}
+    set {_codexIDToken = newValue}
+  }
+  /// Returns true if `codexIDToken` has been explicitly set.
+  public var hasCodexIDToken: Bool {return self._codexIDToken != nil}
+  /// Clears the value of `codexIDToken`. Subsequent reads from it will return its default value.
+  public mutating func clearCodexIDToken() {self._codexIDToken = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -569,6 +595,8 @@ public struct Netclode_V1_SessionConfig: Sendable {
   fileprivate var _model: String? = nil
   fileprivate var _copilotBackend: Netclode_V1_CopilotBackend? = nil
   fileprivate var _githubCopilotToken: String? = nil
+  fileprivate var _codexAccessToken: String? = nil
+  fileprivate var _codexIDToken: String? = nil
 }
 
 /// GitHubRepo represents a GitHub repository from the user's account.
@@ -909,7 +937,7 @@ extension Netclode_V1_RepoAccess: SwiftProtobuf._ProtoNameProviding {
 }
 
 extension Netclode_V1_SdkType: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SDK_TYPE_UNSPECIFIED\0\u{1}SDK_TYPE_CLAUDE\0\u{1}SDK_TYPE_OPENCODE\0\u{1}SDK_TYPE_COPILOT\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0SDK_TYPE_UNSPECIFIED\0\u{1}SDK_TYPE_CLAUDE\0\u{1}SDK_TYPE_OPENCODE\0\u{1}SDK_TYPE_COPILOT\0\u{1}SDK_TYPE_CODEX\0")
 }
 
 extension Netclode_V1_CopilotBackend: SwiftProtobuf._ProtoNameProviding {
@@ -1053,7 +1081,7 @@ extension Netclode_V1_SessionSummary: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionConfig"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repo\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}github_copilot_token\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repo\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}github_copilot_token\0\u{3}codex_access_token\0\u{3}codex_id_token\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1071,6 +1099,8 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 8: try { try decoder.decodeSingularStringField(value: &self._model) }()
       case 9: try { try decoder.decodeSingularEnumField(value: &self._copilotBackend) }()
       case 10: try { try decoder.decodeSingularStringField(value: &self._githubCopilotToken) }()
+      case 11: try { try decoder.decodeSingularStringField(value: &self._codexAccessToken) }()
+      case 12: try { try decoder.decodeSingularStringField(value: &self._codexIDToken) }()
       default: break
       }
     }
@@ -1111,6 +1141,12 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
     try { if let v = self._githubCopilotToken {
       try visitor.visitSingularStringField(value: v, fieldNumber: 10)
     } }()
+    try { if let v = self._codexAccessToken {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 11)
+    } }()
+    try { if let v = self._codexIDToken {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 12)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1125,6 +1161,8 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs._model != rhs._model {return false}
     if lhs._copilotBackend != rhs._copilotBackend {return false}
     if lhs._githubCopilotToken != rhs._githubCopilotToken {return false}
+    if lhs._codexAccessToken != rhs._codexAccessToken {return false}
+    if lhs._codexIDToken != rhs._codexIDToken {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

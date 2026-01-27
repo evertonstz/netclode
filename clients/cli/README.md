@@ -83,8 +83,11 @@ Events:         107
 # Basic creation
 netclode sessions create --repo owner/repo --name "My Session"
 
-# With SDK type (claude, opencode, copilot)
+# With SDK type (claude, opencode, copilot, codex)
 netclode sessions create --repo owner/repo --sdk opencode --model anthropic/claude-sonnet-4-0
+
+# With Codex SDK
+netclode sessions create --repo owner/repo --sdk codex --model codex-mini-latest
 
 # With Tailnet access
 netclode sessions create --repo owner/repo --tailnet  # Allow Tailnet access (100.64.0.0/10)
@@ -191,12 +194,43 @@ Tailing events for session 9f7c8e64-c84 (Ctrl+C to stop)...
 [14:32:06] thinking        Analyzing the code structure...
 ```
 
+### Authenticate with Codex (ChatGPT OAuth)
+
+For Codex SDK, authenticate with ChatGPT using OAuth device code flow:
+
+```bash
+netclode auth codex
+```
+
+This will:
+1. Display a verification URL and code
+2. Wait for you to authorize in your browser
+3. Output tokens to add to your `.env` file
+
+Example output:
+```
+Visit:  https://auth.openai.com/codex/device
+Code:   ABCD-1234
+
+Waiting for authorization...
+
+Authentication successful!
+
+Add these to your .env file:
+-----------------------------
+CODEX_ACCESS_TOKEN=eyJ...
+CODEX_REFRESH_TOKEN=...
+CODEX_ID_TOKEN=eyJ...
+
+Then deploy with: cd infra/ansible && DEPLOY_HOST=<host> ansible-playbook playbooks/site.yaml
+```
+
 ## Global Flags
 
 | Flag | Description |
 |------|-------------|
 | `--url` | Control-plane URL (overrides `NETCLODE_URL` env var) |
-| `--json` | Output in JSON format |
+| `--json` | Output as JSON |
 | `-h, --help` | Show help |
 
 ## JSON Output
@@ -241,6 +275,7 @@ clients/cli/
 ├── Makefile                   # Build targets
 ├── cmd/
 │   ├── root.go               # Root command, global flags
+│   ├── auth.go               # auth codex command
 │   ├── sessions.go           # sessions list/get/delete
 │   ├── messages.go           # messages command
 │   └── events.go             # events + events tail
@@ -248,6 +283,8 @@ clients/cli/
     ├── client/
     │   ├── client.go         # Connect protocol client
     │   └── client_test.go    # Client tests
+    ├── codex/
+    │   └── oauth.go          # Codex OAuth device code flow
     └── output/
         ├── format.go         # Output formatting
         └── format_test.go    # Formatting tests

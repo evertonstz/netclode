@@ -306,6 +306,7 @@ message ErrorResponse {
 message ModelsResponse {
   repeated ModelInfo models = 1;             // Available models for the requested SDK
   optional string request_id = 2;
+  optional SdkType sdk_type = 3;             // Which SDK these models are for
 }
 
 message CopilotStatusResponse {

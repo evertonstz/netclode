@@ -19,6 +19,7 @@ enum SdkType {
   SDK_TYPE_CLAUDE = 1;       // Anthropic Claude Code SDK (direct integration)
   SDK_TYPE_OPENCODE = 2;     // OpenCode SDK (multi-provider support)
   SDK_TYPE_COPILOT = 3;      // GitHub Copilot SDK
+  SDK_TYPE_CODEX = 4;        // OpenAI Codex SDK
 }
 
 // CopilotBackend defines which backend to use for Copilot SDK sessions.
@@ -73,6 +74,8 @@ message SessionConfig {
   optional string model = 8;             // Model ID (e.g., "anthropic/claude-sonnet-4-0")
   optional CopilotBackend copilot_backend = 9;  // Backend for Copilot sessions
   optional string github_copilot_token = 10;    // GitHub PAT with Copilot scope (for Copilot SDK)
+  optional string codex_access_token = 11;      // Codex OAuth access token (for ChatGPT auth)
+  optional string codex_id_token = 12;          // Codex OAuth ID token (for ChatGPT auth)
 }
 
 // GitHubRepo represents a GitHub repository from the user's account.

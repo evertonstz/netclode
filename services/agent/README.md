@@ -1,6 +1,6 @@
 # Agent
 
-AI coding agent that runs inside Kata Container VMs. Supports multiple SDK backends (Claude Code SDK, OpenCode SDK, Copilot SDK) to execute coding tasks.
+AI coding agent that runs inside Kata Container VMs. Supports multiple SDK backends (Claude Code SDK, OpenCode SDK, Copilot SDK, Codex SDK) to execute coding tasks.
 
 ## What it does
 
@@ -22,7 +22,8 @@ services/agent/
 │   │   ├── factory.ts     # Creates appropriate adapter based on config
 │   │   ├── claude-adapter.ts   # Claude Code SDK implementation
 │   │   ├── opencode-adapter.ts # OpenCode SDK implementation
-│   │   └── copilot-adapter.ts  # GitHub Copilot SDK implementation
+│   │   ├── copilot-adapter.ts  # GitHub Copilot SDK implementation
+│   │   └── codex-adapter.ts    # OpenAI Codex SDK implementation
 │   └── services/
 │       ├── terminal.ts    # PTY management
 │       └── title.ts       # Title generation
@@ -36,6 +37,7 @@ services/agent/
 | Variable | Description |
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key |
+| `OPENAI_API_KEY` | OpenAI API key (required for Codex SDK) |
 | `GITHUB_TOKEN` | GitHub token with Copilot scope (required for Copilot SDK) |
 | `CONTROL_PLANE_URL` | Control plane URL (default `http://control-plane.netclode.svc.cluster.local`) |
 | `SESSION_ID` | Session ID (set by control plane, or polled via warm pool) |
@@ -166,6 +168,41 @@ await session.send({ prompt: text });
 
 **Authentication:** Requires a GitHub token with the `copilot` scope. Create a fine-grained PAT at https://github.com/settings/tokens?type=beta with Account permissions > Copilot > Read-only. Pass it as `GITHUB_TOKEN` environment variable.
 
+### Codex SDK
+
+Uses the OpenAI Codex SDK (`@openai/codex-sdk`). The agent creates a `Codex` client and manages threads for conversation persistence.
+
+```typescript
+import { Codex } from "@openai/codex-sdk";
+
+const codex = new Codex();
+const thread = codex.startThread({
+  workingDirectory: "/agent/workspace",
+  sandboxMode: "danger-full-access",
+  approvalPolicy: "never",
+  model: "codex-mini-latest",
+});
+
+const { events } = await thread.runStreamed(prompt);
+for await (const event of events) {
+  // thread.started, item.started, item.completed, turn.completed, etc.
+}
+```
+
+**Event types:**
+- `thread.started` - Thread created, provides thread ID for resumption
+- `item.started` / `item.completed` - Tool executions, file changes, reasoning
+- `turn.completed` - Turn finished with usage stats
+
+**Item types:**
+- `command_execution` - Shell commands
+- `file_change` - File modifications
+- `mcp_tool_call` - MCP server tool calls
+- `agent_message` - Final text response
+- `reasoning` - Model reasoning/thinking
+
+**Authentication:** Requires `OPENAI_API_KEY` environment variable. Alternatively, OAuth tokens can be passed for ChatGPT subscription authentication.
+
 ## VM environment
 
 ```
@@ -244,7 +281,7 @@ npm run build
 docker build -t ghcr.io/angristan/netclode-agent:latest -f services/agent/Dockerfile .
 ```
 
-Includes Debian trixie-slim, Node.js via mise, Docker, Git, curl, build-essential, sudo, Claude CLI, Copilot CLI.
+Includes Debian trixie-slim, Node.js via mise, Docker, Git, curl, build-essential, sudo, Claude CLI, Copilot CLI, Codex CLI.
 
 ## Agent Events
 

@@ -1540,11 +1540,22 @@ public struct Netclode_V1_ModelsResponse: Sendable {
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
+  /// Which SDK these models are for
+  public var sdkType: Netclode_V1_SdkType {
+    get {return _sdkType ?? .unspecified}
+    set {_sdkType = newValue}
+  }
+  /// Returns true if `sdkType` has been explicitly set.
+  public var hasSdkType: Bool {return self._sdkType != nil}
+  /// Clears the value of `sdkType`. Subsequent reads from it will return its default value.
+  public mutating func clearSdkType() {self._sdkType = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _requestID: String? = nil
+  fileprivate var _sdkType: Netclode_V1_SdkType? = nil
 }
 
 public struct Netclode_V1_CopilotStatusResponse: Sendable {
@@ -4168,7 +4179,7 @@ extension Netclode_V1_ErrorResponse: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_ModelsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ModelsResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}models\0\u{3}request_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}models\0\u{3}request_id\0\u{3}sdk_type\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -4178,6 +4189,7 @@ extension Netclode_V1_ModelsResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
       switch fieldNumber {
       case 1: try { try decoder.decodeRepeatedMessageField(value: &self.models) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self._sdkType) }()
       default: break
       }
     }
@@ -4194,12 +4206,16 @@ extension Netclode_V1_ModelsResponse: SwiftProtobuf.Message, SwiftProtobuf._Mess
     try { if let v = self._requestID {
       try visitor.visitSingularStringField(value: v, fieldNumber: 2)
     } }()
+    try { if let v = self._sdkType {
+      try visitor.visitSingularEnumField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_ModelsResponse, rhs: Netclode_V1_ModelsResponse) -> Bool {
     if lhs.models != rhs.models {return false}
     if lhs._requestID != rhs._requestID {return false}
+    if lhs._sdkType != rhs._sdkType {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
