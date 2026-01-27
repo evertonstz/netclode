@@ -59,8 +59,8 @@ final class ModelsStore {
     /// Cache TTL (1 hour)
     private let cacheTTL: TimeInterval = 3600
 
-    /// Default model ID
-    static let defaultModelId = "anthropic/claude-sonnet-4-0"
+    /// Default model ID (Claude Sonnet 4.5)
+    static let defaultModelId = "anthropic/claude-sonnet-4-5-20250514"
 
     /// UserDefaults keys
     private enum StorageKeys {

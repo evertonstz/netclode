@@ -18,8 +18,8 @@ final class CopilotStore {
     private(set) var modelsError: String?
     private(set) var statusError: String?
 
-    /// Default model ID
-    static let defaultModelId = "claude-sonnet-4"
+    /// Default model ID (Claude Sonnet 4.5 via Copilot)
+    static let defaultModelId = "claude-sonnet-4-5"
 
     /// Update models from server response
     func updateModels(_ models: [CopilotModel]) {

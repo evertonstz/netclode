@@ -1952,11 +1952,12 @@ func getModelsFallback(provider string) []*pb.ModelInfo {
 	switch provider {
 	case "anthropic":
 		return []*pb.ModelInfo{
+			{Id: "claude-sonnet-4-5-20250514", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
 			{Id: "claude-sonnet-4-20250514", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
-			{Id: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
 		}
 	case "opencode":
 		return []*pb.ModelInfo{
+			{Id: "anthropic/claude-sonnet-4-5-20250514", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
 			{Id: "anthropic/claude-sonnet-4-20250514", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
 		}
 	default:
@@ -1975,8 +1976,9 @@ func (m *Manager) getCopilotModelsFallback() []*pb.ModelInfo {
 	// GitHub Copilot models (require GITHUB_COPILOT_TOKEN)
 	if hasGitHubCopilot {
 		models = append(models,
-			&pb.ModelInfo{Id: "gpt-4o", Name: "GPT-4o", Provider: strPtr("Copilot"), Capabilities: []string{"chat", "vision", "code"}},
+			&pb.ModelInfo{Id: "claude-sonnet-4-5", Name: "Claude Sonnet 4.5", Provider: strPtr("Copilot"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
 			&pb.ModelInfo{Id: "claude-sonnet-4", Name: "Claude Sonnet 4", Provider: strPtr("Copilot"), Capabilities: []string{"chat", "vision", "code"}},
+			&pb.ModelInfo{Id: "gpt-4o", Name: "GPT-4o", Provider: strPtr("Copilot"), Capabilities: []string{"chat", "vision", "code"}},
 			&pb.ModelInfo{Id: "gemini-2.5-pro", Name: "Gemini 2.5 Pro", Provider: strPtr("Copilot"), Capabilities: []string{"chat", "vision", "code"}},
 		)
 	}
@@ -1984,8 +1986,8 @@ func (m *Manager) getCopilotModelsFallback() []*pb.ModelInfo {
 	// Anthropic direct models (require ANTHROPIC_API_KEY)
 	if hasAnthropicKey {
 		models = append(models,
+			&pb.ModelInfo{Id: "claude-sonnet-4-5-20250514:anthropic", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
 			&pb.ModelInfo{Id: "claude-sonnet-4-20250514:anthropic", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
-			&pb.ModelInfo{Id: "claude-3-5-sonnet-20241022:anthropic", Name: "Claude 3.5 Sonnet", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
 		)
 	}
 
