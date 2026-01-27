@@ -85,6 +85,12 @@ spec:
                   name: netclode-secrets
                   key: codex-refresh-token
                   optional: true
+            - name: MISTRAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: mistral-api-key
+                  optional: true
             - name: REDIS_URL
               value: "redis://redis-sessions.netclode.svc.cluster.local:6379"
             - name: WARM_POOL_ENABLED
