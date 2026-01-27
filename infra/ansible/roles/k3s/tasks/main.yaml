@@ -65,15 +65,7 @@
     host: 127.0.0.1
     timeout: 120
 
-- name: Wait for k3s node to be ready
-  ansible.builtin.shell: |
-    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-    kubectl wait --for=condition=Ready node --all --timeout=120s
-  register: k3s_node_ready
-  retries: 5
-  delay: 10
-  until: k3s_node_ready.rc == 0
-  changed_when: false
+# Node readiness is handled by Cilium role (CNI must be installed first)
 
 - name: Install kubectl (standalone)
   ansible.builtin.apt:

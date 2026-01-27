@@ -31,8 +31,12 @@ spec:
             - sh
             - -c
             - |
-              DEFAULT="$(ip route show default)"
-              ip route replace $DEFAULT mtu 1450
+              # Extract gateway and interface from default route
+              GW=$(ip route | grep "^default" | awk '{print $3}')
+              DEV=$(ip route | grep "^default" | awk '{print $5}')
+              if [ -n "$GW" ] && [ -n "$DEV" ]; then
+                ip route change default via "$GW" dev "$DEV" mtu 1450 || true
+              fi
           securityContext:
             capabilities:
               add:
