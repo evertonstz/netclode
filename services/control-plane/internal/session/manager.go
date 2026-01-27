@@ -2139,8 +2139,9 @@ func (m *Manager) doFetchCodexModels() []*pb.ModelInfo {
 // These are base models without auth mode suffix - the suffix is added by fetchCodexModels
 func (m *Manager) getCodexBaseModels() []*pb.ModelInfo {
 	return []*pb.ModelInfo{
+		{Id: "gpt-5.2-codex", Name: "GPT-5.2 Codex", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code", "reasoning"}},
+		{Id: "gpt-5.1-codex", Name: "GPT-5.1 Codex", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code", "reasoning"}},
 		{Id: "codex-mini-latest", Name: "Codex Mini", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code"}},
-		{Id: "gpt-5-codex", Name: "GPT-5 Codex", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code"}},
 	}
 }
 

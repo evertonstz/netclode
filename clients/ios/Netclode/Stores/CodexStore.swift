@@ -14,7 +14,7 @@ final class CodexStore {
     private(set) var modelsError: String?
 
     /// Default model ID (GPT 5.2 Codex High - Codex doesn't have Claude)
-    static let defaultModelId = "gpt-5-2-codex:oauth:high"
+    static let defaultModelId = "gpt-5.2-codex:oauth:high"
 
     /// Update models from server response
     func updateModels(_ models: [CopilotModel]) {
