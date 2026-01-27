@@ -1757,10 +1757,21 @@ func (m *Manager) doFetchModelsFromModelsDev(provider string) []*pb.ModelInfo {
 
 // fetchCopilotModels fetches combined GitHub Copilot + Anthropic models
 func (m *Manager) fetchCopilotModels() []*pb.ModelInfo {
+	// Check which credentials are available
+	hasGitHubCopilot := m.config.GitHubCopilotToken != ""
+	hasAnthropicKey := m.config.AnthropicAPIKey != ""
+
+	// If neither credential is available, return empty list
+	if !hasGitHubCopilot && !hasAnthropicKey {
+		slog.Warn("No Copilot credentials configured (need GITHUB_COPILOT_TOKEN or ANTHROPIC_API_KEY)")
+		return nil
+	}
+
 	// Check cache first (valid for 5 minutes)
+	// Note: Cache is shared regardless of credentials, so we filter after retrieving
 	m.copilotModelsMu.RLock()
 	if m.copilotModelsCache != nil && time.Since(m.copilotModelsCacheAt) < 5*time.Minute {
-		models := m.copilotModelsCache
+		models := m.filterCopilotModelsByCredentials(m.copilotModelsCache, hasGitHubCopilot, hasAnthropicKey)
 		m.copilotModelsMu.RUnlock()
 		return models
 	}
@@ -1771,24 +1782,24 @@ func (m *Manager) fetchCopilotModels() []*pb.ModelInfo {
 	resp, err := client.Get("https://models.dev/api.json")
 	if err != nil {
 		slog.Error("Failed to fetch from models.dev", "error", err)
-		return getCopilotModelsFallback()
+		return m.getCopilotModelsFallback()
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Error("models.dev API error", "status", resp.StatusCode)
-		return getCopilotModelsFallback()
+		return m.getCopilotModelsFallback()
 	}
 
 	var data modelsDevResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		slog.Error("Failed to decode models.dev response", "error", err)
-		return getCopilotModelsFallback()
+		return m.getCopilotModelsFallback()
 	}
 
 	var models []*pb.ModelInfo
 
-	// Add GitHub Copilot models
+	// Add GitHub Copilot models (always fetch for cache, filter later)
 	if copilotData, ok := data["github-copilot"]; ok {
 		for _, model := range copilotData.Models {
 			capabilities := []string{"chat", "code"}
@@ -1823,7 +1834,7 @@ func (m *Manager) fetchCopilotModels() []*pb.ModelInfo {
 		}
 	}
 
-	// Add Anthropic models for BYOK
+	// Add Anthropic models for BYOK (always fetch for cache, filter later)
 	if anthropicData, ok := data["anthropic"]; ok {
 		for _, model := range anthropicData.Models {
 			capabilities := []string{"chat", "code"}
@@ -1848,13 +1859,43 @@ func (m *Manager) fetchCopilotModels() []*pb.ModelInfo {
 
 	slog.Info("Fetched Copilot models from models.dev", "count", len(models))
 
-	// Update cache
+	// Update cache with ALL models (filter happens on retrieval)
 	m.copilotModelsMu.Lock()
 	m.copilotModelsCache = models
 	m.copilotModelsCacheAt = time.Now()
 	m.copilotModelsMu.Unlock()
 
-	return models
+	// Return filtered models based on available credentials
+	return m.filterCopilotModelsByCredentials(models, hasGitHubCopilot, hasAnthropicKey)
+}
+
+// filterCopilotModelsByCredentials filters models based on available credentials
+func (m *Manager) filterCopilotModelsByCredentials(models []*pb.ModelInfo, hasGitHubCopilot, hasAnthropicKey bool) []*pb.ModelInfo {
+	// If both credentials available, return all models
+	if hasGitHubCopilot && hasAnthropicKey {
+		return models
+	}
+
+	var filtered []*pb.ModelInfo
+	for _, model := range models {
+		provider := ""
+		if model.Provider != nil {
+			provider = *model.Provider
+		}
+
+		// BYOK models require Anthropic API key
+		isBYOK := provider == "Anthropic (BYOK)"
+		if isBYOK && hasAnthropicKey {
+			filtered = append(filtered, model)
+		}
+
+		// Non-BYOK models require GitHub Copilot token
+		if !isBYOK && hasGitHubCopilot {
+			filtered = append(filtered, model)
+		}
+	}
+
+	return filtered
 }
 
 func contains(s, substr string) bool {
@@ -1888,16 +1929,31 @@ func getModelsFallback(provider string) []*pb.ModelInfo {
 }
 
 // getCopilotModelsFallback returns fallback models when models.dev is unavailable
-func getCopilotModelsFallback() []*pb.ModelInfo {
-	return []*pb.ModelInfo{
-		// GitHub Copilot models
-		{Id: "gpt-4o", Name: "GPT-4o", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "vision", "code"}},
-		{Id: "claude-sonnet-4", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
-		{Id: "gemini-2.5-pro", Name: "Gemini 2.5 Pro", Provider: strPtr("Google"), Capabilities: []string{"chat", "vision", "code"}},
-		// Anthropic BYOK models
-		{Id: "claude-sonnet-4-20250514", Name: "Claude Sonnet 4 (BYOK)", Provider: strPtr("Anthropic (BYOK)"), Capabilities: []string{"chat", "vision", "code"}},
-		{Id: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet (BYOK)", Provider: strPtr("Anthropic (BYOK)"), Capabilities: []string{"chat", "vision", "code"}},
+// Models are filtered based on available credentials
+func (m *Manager) getCopilotModelsFallback() []*pb.ModelInfo {
+	hasGitHubCopilot := m.config.GitHubCopilotToken != ""
+	hasAnthropicKey := m.config.AnthropicAPIKey != ""
+
+	var models []*pb.ModelInfo
+
+	// GitHub Copilot models (require GITHUB_COPILOT_TOKEN)
+	if hasGitHubCopilot {
+		models = append(models,
+			&pb.ModelInfo{Id: "gpt-4o", Name: "GPT-4o", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "vision", "code"}},
+			&pb.ModelInfo{Id: "claude-sonnet-4", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
+			&pb.ModelInfo{Id: "gemini-2.5-pro", Name: "Gemini 2.5 Pro", Provider: strPtr("Google"), Capabilities: []string{"chat", "vision", "code"}},
+		)
 	}
+
+	// Anthropic BYOK models (require ANTHROPIC_API_KEY)
+	if hasAnthropicKey {
+		models = append(models,
+			&pb.ModelInfo{Id: "claude-sonnet-4-20250514", Name: "Claude Sonnet 4 (BYOK)", Provider: strPtr("Anthropic (BYOK)"), Capabilities: []string{"chat", "vision", "code"}},
+			&pb.ModelInfo{Id: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet (BYOK)", Provider: strPtr("Anthropic (BYOK)"), Capabilities: []string{"chat", "vision", "code"}},
+		)
+	}
+
+	return models
 }
 
 // ============================================================================
