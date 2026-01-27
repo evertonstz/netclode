@@ -1952,13 +1952,13 @@ func getModelsFallback(provider string) []*pb.ModelInfo {
 	switch provider {
 	case "anthropic":
 		return []*pb.ModelInfo{
-			{Id: "claude-sonnet-4-5-20250514", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
-			{Id: "claude-sonnet-4-20250514", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
+			{Id: "claude-sonnet-4-5", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
+			{Id: "claude-sonnet-4-0", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
 		}
 	case "opencode":
 		return []*pb.ModelInfo{
-			{Id: "anthropic/claude-sonnet-4-5-20250514", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
-			{Id: "anthropic/claude-sonnet-4-20250514", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
+			{Id: "anthropic/claude-sonnet-4-5", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
+			{Id: "anthropic/claude-sonnet-4-0", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
 		}
 	default:
 		return nil
@@ -1986,8 +1986,8 @@ func (m *Manager) getCopilotModelsFallback() []*pb.ModelInfo {
 	// Anthropic direct models (require ANTHROPIC_API_KEY)
 	if hasAnthropicKey {
 		models = append(models,
-			&pb.ModelInfo{Id: "claude-sonnet-4-5-20250514:anthropic", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
-			&pb.ModelInfo{Id: "claude-sonnet-4-20250514:anthropic", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
+			&pb.ModelInfo{Id: "claude-sonnet-4-5:anthropic", Name: "Claude Sonnet 4.5", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code", "reasoning"}},
+			&pb.ModelInfo{Id: "claude-sonnet-4-0:anthropic", Name: "Claude Sonnet 4", Provider: strPtr("Anthropic"), Capabilities: []string{"chat", "vision", "code"}},
 		)
 	}
 

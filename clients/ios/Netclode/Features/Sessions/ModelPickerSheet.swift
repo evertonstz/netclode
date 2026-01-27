@@ -207,6 +207,11 @@ struct InlineModelPicker: View {
     private var selectedModel: PickerModel? {
         models.first { $0.id == selectedModelId }
     }
+    
+    /// Effective model to display (auto-selects first if default doesn't match)
+    private var effectiveModel: PickerModel? {
+        selectedModel ?? models.first
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -217,7 +222,7 @@ struct InlineModelPicker: View {
                 }
             } label: {
                 HStack(spacing: Theme.Spacing.xs) {
-                    if let model = selectedModel {
+                    if let model = effectiveModel {
                         ProviderLogo(provider: model.provider, size: 16)
                             .frame(width: 20)
                             .foregroundStyle(.secondary)
@@ -239,16 +244,6 @@ struct InlineModelPicker: View {
                                 .font(.netclodeCaption)
                                 .foregroundStyle(.tertiary)
                         }
-                    } else if let model = models.first {
-                        ProviderLogo(provider: model.provider, size: 16)
-                            .frame(width: 20)
-                            .foregroundStyle(.secondary)
-                        
-                        Text(model.name)
-                            .font(.netclodeBody)
-                            .foregroundStyle(.primary)
-                        
-                        Spacer()
                     } else {
                         Text("Select a model")
                             .font(.netclodeBody)
@@ -264,13 +259,25 @@ struct InlineModelPicker: View {
                 .padding(Theme.Spacing.sm)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
-                .animation(.smooth(duration: 0.2), value: selectedModel?.id)
+                .animation(.smooth(duration: 0.2), value: effectiveModel?.id)
             }
             .buttonStyle(.plain)
             .glassEffect(
                 isExpanded ? .regular.tint(Theme.Colors.brand.glassTint).interactive() : .regular.interactive(),
                 in: RoundedRectangle(cornerRadius: Theme.Radius.md)
             )
+            .onAppear {
+                // Auto-select first model if current selection doesn't match any available model
+                if selectedModel == nil, let first = models.first {
+                    selectedModelId = first.id
+                }
+            }
+            .onChange(of: models) { _, newModels in
+                // Re-validate selection when models change
+                if !newModels.contains(where: { $0.id == selectedModelId }), let first = newModels.first {
+                    selectedModelId = first.id
+                }
+            }
 
             // Expanded state - shows all options
             if isExpanded {
