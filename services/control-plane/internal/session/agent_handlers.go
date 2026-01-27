@@ -52,18 +52,32 @@ func (m *Manager) handleTextDelta(ctx context.Context, sessionID string, state *
 
 	// If message ID changed and we have accumulated content, persist the previous message
 	var msgToPersist *pb.Message
+	var previousStartTime time.Time
 	if state.CurrentMessageID != "" && state.CurrentMessageID != messageID {
 		previousContent := state.ContentBuilder.String()
+		previousStartTime = state.CurrentMessageStartTime
 		if previousContent != "" {
+			// Use the timestamp from when the message content first arrived, not now
+			msgTimestamp := previousStartTime
+			if msgTimestamp.IsZero() {
+				msgTimestamp = time.Now()
+			}
 			msgToPersist = &pb.Message{
 				Id:        state.CurrentMessageID,
 				Role:      pb.MessageRole_MESSAGE_ROLE_ASSISTANT,
 				Content:   previousContent,
-				Timestamp: timestamppb.Now(),
+				Timestamp: timestamppb.New(msgTimestamp),
 			}
 		}
 		// Reset content builder for new message
 		state.ContentBuilder.Reset()
+		// Reset start time for new message
+		state.CurrentMessageStartTime = time.Time{}
+	}
+
+	// Track when this message's content first arrived
+	if state.CurrentMessageID != messageID || state.CurrentMessageStartTime.IsZero() {
+		state.CurrentMessageStartTime = time.Now()
 	}
 
 	state.CurrentMessageID = messageID
@@ -111,17 +125,23 @@ func (m *Manager) handleAgentResult(ctx context.Context, sessionID string, state
 	m.mu.Lock()
 	content := state.ContentBuilder.String()
 	messageID := state.CurrentMessageID
+	messageStartTime := state.CurrentMessageStartTime
 	originalPrompt := state.OriginalPrompt
 	titleGenerated := state.TitleGenerated
 	m.mu.Unlock()
 
 	// Persist final assistant message if we have content
 	if content != "" && messageID != "" {
+		// Use the timestamp from when the message content first arrived
+		msgTimestamp := messageStartTime
+		if msgTimestamp.IsZero() {
+			msgTimestamp = time.Now()
+		}
 		msg := &pb.Message{
 			Id:        messageID,
 			Role:      pb.MessageRole_MESSAGE_ROLE_ASSISTANT,
 			Content:   content,
-			Timestamp: timestamppb.Now(),
+			Timestamp: timestamppb.New(msgTimestamp),
 		}
 		if err := m.storage.AppendMessage(ctx, sessionID, msg); err != nil {
 			slog.Warn("Failed to persist assistant message", "sessionID", sessionID, "error", err)

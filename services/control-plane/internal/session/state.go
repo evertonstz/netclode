@@ -2,6 +2,7 @@ package session
 
 import (
 	"strings"
+	"time"
 
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 )
@@ -14,11 +15,12 @@ type SessionState struct {
 	PendingPrompt string // Prompt queued before agent connected
 
 	// Agent streaming state
-	CurrentMessageID string
-	ContentBuilder   strings.Builder
-	TitleGenerated   bool
-	OriginalPrompt   string
-	ThinkingBuffers  map[string]string
+	CurrentMessageID        string
+	CurrentMessageStartTime time.Time // When the first content for current message arrived
+	ContentBuilder          strings.Builder
+	TitleGenerated          bool
+	OriginalPrompt          string
+	ThinkingBuffers         map[string]string
 
 	// Restore state - when set, next sandbox creation restores from this snapshot
 	RestoreSnapshotID string
