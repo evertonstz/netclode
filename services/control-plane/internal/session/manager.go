@@ -1962,11 +1962,6 @@ func (m *Manager) getCopilotModelsFallback() []*pb.ModelInfo {
 
 // fetchCodexModels fetches OpenAI Codex models (family: gpt-codex or gpt-codex-mini)
 func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
-	// When no API key, just use fallback models (OAuth tokens may still be configured)
-	if m.config.OpenAIAPIKey == "" {
-		return m.getCodexModelsFallback()
-	}
-
 	// Check cache first (valid for 5 minutes)
 	m.copilotModelsMu.RLock()
 	cacheKey := "codex"
