@@ -115,8 +115,8 @@ struct ModelRow: View {
                 .font(.system(size: 20))
                 .contentTransition(.symbolEffect(.replace))
 
-            // Provider logo
-            ProviderLogo(provider: model.provider, size: 20)
+            // Provider logo (inferred from model name)
+            ProviderLogo(provider: model.provider, modelName: model.name, size: 20)
                 .foregroundStyle(.secondary)
 
             // Model info
@@ -223,7 +223,7 @@ struct InlineModelPicker: View {
             } label: {
                 HStack(spacing: Theme.Spacing.xs) {
                     if let model = effectiveModel {
-                        ProviderLogo(provider: model.provider, size: 16)
+                        ProviderLogo(provider: model.provider, modelName: model.name, size: 16)
                             .frame(width: 20)
                             .foregroundStyle(.secondary)
                         
@@ -296,7 +296,7 @@ struct InlineModelPicker: View {
                                         .font(.system(size: 16))
                                         .contentTransition(.symbolEffect(.replace))
 
-                                    ProviderLogo(provider: model.provider, size: 16)
+                                    ProviderLogo(provider: model.provider, modelName: model.name, size: 16)
                                         .foregroundStyle(.secondary)
 
                                     Text(model.name)
@@ -384,7 +384,7 @@ struct ModelPickerButton: View {
                         .scaleEffect(0.8)
                     Spacer()
                 } else if let model = selectedModel {
-                    ProviderLogo(provider: model.provider, size: 18)
+                    ProviderLogo(provider: model.provider, modelName: model.name, size: 18)
                         .foregroundStyle(.secondary)
 
                     Text(model.name)

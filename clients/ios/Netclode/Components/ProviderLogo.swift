@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Displays a provider logo based on provider name
+/// Displays a provider logo based on provider name or model name
 struct ProviderLogo: View {
     let provider: String?
+    var modelName: String? = nil  // Used to infer logo when provider is generic (e.g., "Copilot")
     var size: CGFloat = 16
 
     var body: some View {
@@ -20,21 +21,34 @@ struct ProviderLogo: View {
     }
 
     private var providerImage: Image? {
+        // First try to infer from model name (more specific)
+        if let modelName = modelName?.lowercased() {
+            if modelName.contains("claude") || modelName.contains("sonnet") || modelName.contains("haiku") || modelName.contains("opus") {
+                return Image("anthropic-logo")
+            } else if modelName.contains("gpt") || modelName.contains("o1") || modelName.contains("o3") || modelName.contains("codex") {
+                return Image("openai-logo")
+            } else if modelName.contains("gemini") {
+                return Image("google-logo")
+            } else if modelName.contains("grok") {
+                return Image("xai-logo")
+            }
+        }
+        
         guard let provider = provider?.lowercased() else { return nil }
 
         switch provider {
         case "anthropic":
             return Image("anthropic-logo")
-        case "openai":
+        case "openai", "chatgpt":
             return Image("openai-logo")
         case "google", "google ai":
             return Image("google-logo")
         case "xai":
             return Image("xai-logo")
-        case "github", "github copilot":
+        case "github", "github copilot", "copilot":
             return Image("github-mark")
         default:
-            // Check for partial matches
+            // Check for partial matches in provider
             if provider.contains("anthropic") || provider.contains("claude") {
                 return Image("anthropic-logo")
             } else if provider.contains("openai") || provider.contains("gpt") || provider.contains("o1") || provider.contains("o3") {
