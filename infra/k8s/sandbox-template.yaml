@@ -114,15 +114,6 @@ spec:
             port: 80
           - protocol: TCP
             port: 3000
-      # Allow internet access
-      - to:
-          - ipBlock:
-              cidr: 0.0.0.0/0
-              except:
-                - 10.0.0.0/8
-                - 172.16.0.0/12
-                - 192.168.0.0/16
-                - 100.64.0.0/10
       # Allow DNS
       - to:
           - namespaceSelector:
@@ -133,4 +124,6 @@ spec:
             port: 53
           - protocol: UDP
             port: 53
+      # NOTE: Internet access (0.0.0.0/0) is NOT included by default.
+      # Sessions that need internet get an additional NetworkPolicy added by control-plane.
 

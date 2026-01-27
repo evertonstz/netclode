@@ -882,27 +882,26 @@ func (r *k8sRuntime) ExposePort(ctx context.Context, sessionID string, port int)
 	return nil
 }
 
-// ConfigureNetwork applies or removes network restrictions for a sandbox.
-// When networkEnabled is false, a restrictive NetworkPolicy is created that blocks
-// all egress except DNS and control-plane communication.
-// When networkEnabled is true, any restrictive policy is removed (sandbox uses default policy).
+// ConfigureNetwork enables or disables internet access for a sandbox.
+// The default SandboxTemplate has NO internet access (only DNS + control-plane).
+// When networkEnabled is true, creates a NetworkPolicy allowing internet egress (0.0.0.0/0).
+// When networkEnabled is false, removes the internet policy (sandbox uses restrictive default).
 func (r *k8sRuntime) ConfigureNetwork(ctx context.Context, sessionID string, networkEnabled bool) error {
-	restrictPolicyName := fmt.Sprintf("sess-%s-network-restrict", sessionID)
+	internetPolicyName := fmt.Sprintf("sess-%s-internet-access", sessionID)
 
-	if networkEnabled {
-		// Network enabled: remove any restrictive policy
-		err := r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Delete(ctx, restrictPolicyName, metav1.DeleteOptions{})
+	if !networkEnabled {
+		// Network disabled: remove the internet policy if it exists
+		err := r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Delete(ctx, internetPolicyName, metav1.DeleteOptions{})
 		if err != nil && !errors.IsNotFound(err) {
-			return fmt.Errorf("delete network restriction policy: %w", err)
+			return fmt.Errorf("delete internet access policy: %w", err)
 		}
 		if err == nil {
-			slog.Info("Removed network restriction policy", "sessionID", sessionID)
+			slog.Info("Removed internet access policy", "sessionID", sessionID)
 		}
 		return nil
 	}
 
 	// Get the claim UID to use as pod selector
-	// The sandbox controller labels pods with agents.x-k8s.io/claim-uid=<claim-uid>
 	r.cacheMu.RLock()
 	claim, exists := r.claimCache[sessionID]
 	r.cacheMu.RUnlock()
@@ -916,37 +915,19 @@ func (r *k8sRuntime) ConfigureNetwork(ctx context.Context, sessionID string, net
 		return fmt.Errorf("sandbox claim UID is empty for session %s", sessionID)
 	}
 
-	// Network disabled: delete the default template policy that has internet access
-	// The sandbox controller creates it from the template, but doesn't continuously reconcile
-	// so we can safely delete it and replace with our restrictive policy
-	defaultPolicyName := fmt.Sprintf("sess-%s-network-policy", sessionID)
-	if err := r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Delete(ctx, defaultPolicyName, metav1.DeleteOptions{}); err != nil {
-		if !errors.IsNotFound(err) {
-			slog.Warn("Failed to delete default network policy", "sessionID", sessionID, "error", err)
-		}
-	} else {
-		slog.Info("Deleted default network policy (has internet access)", "sessionID", sessionID)
-	}
-
-	// Also create our restrictive policy as a backup (in case the default policy doesn't exist yet)
-	udpProtocol := corev1.ProtocolUDP
-	tcpProtocol := corev1.ProtocolTCP
-	dnsPort := intstr.FromInt(53)
-	cpPort80 := intstr.FromInt(80)
-	cpPort3000 := intstr.FromInt(3000)
-
+	// Network enabled: create policy allowing internet access (0.0.0.0/0)
+	// This policy adds to the template policy (which only allows DNS + control-plane)
+	// Private ranges are excluded - use ConfigureTailnetAccess for Tailscale (100.64.0.0/10)
 	policy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      restrictPolicyName,
+			Name:      internetPolicyName,
 			Namespace: r.namespace,
 			Labels: map[string]string{
 				"netclode.io/session":     sessionID,
-				"netclode.io/policy-type": "network-restrict",
+				"netclode.io/policy-type": "internet-access",
 			},
 		},
 		Spec: networkingv1.NetworkPolicySpec{
-			// Select pods for this session using the claim UID
-			// The sandbox controller labels pods with agents.x-k8s.io/claim-uid
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"agents.x-k8s.io/claim-uid": claimUID,
@@ -956,51 +937,35 @@ func (r *k8sRuntime) ConfigureNetwork(ctx context.Context, sessionID string, net
 				networkingv1.PolicyTypeEgress,
 			},
 			Egress: []networkingv1.NetworkPolicyEgressRule{
-				// Allow DNS (required for K8s probes and control-plane resolution)
+				// Allow internet (excluding private ranges)
 				{
 					To: []networkingv1.NetworkPolicyPeer{
 						{
-							NamespaceSelector: &metav1.LabelSelector{
-								MatchLabels: map[string]string{
-									"kubernetes.io/metadata.name": "kube-system",
+							IPBlock: &networkingv1.IPBlock{
+								CIDR: "0.0.0.0/0",
+								Except: []string{
+									"10.0.0.0/8",
+									"172.16.0.0/12",
+									"192.168.0.0/16",
+									"100.64.0.0/10", // Tailscale CGNAT - use ConfigureTailnetAccess
 								},
 							},
 						},
-					},
-					Ports: []networkingv1.NetworkPolicyPort{
-						{Protocol: &udpProtocol, Port: &dnsPort},
-						{Protocol: &tcpProtocol, Port: &dnsPort},
-					},
-				},
-				// Allow control-plane communication
-				{
-					To: []networkingv1.NetworkPolicyPeer{
-						{
-							PodSelector: &metav1.LabelSelector{
-								MatchLabels: map[string]string{
-									"app": "control-plane",
-								},
-							},
-						},
-					},
-					Ports: []networkingv1.NetworkPolicyPort{
-						{Protocol: &tcpProtocol, Port: &cpPort80},
-						{Protocol: &tcpProtocol, Port: &cpPort3000},
 					},
 				},
 			},
 		},
 	}
 
-	_, createErr := r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Create(ctx, policy, metav1.CreateOptions{})
-	if errors.IsAlreadyExists(createErr) {
-		_, createErr = r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Update(ctx, policy, metav1.UpdateOptions{})
+	_, err := r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Create(ctx, policy, metav1.CreateOptions{})
+	if errors.IsAlreadyExists(err) {
+		_, err = r.clientset.NetworkingV1().NetworkPolicies(r.namespace).Update(ctx, policy, metav1.UpdateOptions{})
 	}
-	if createErr != nil {
-		return fmt.Errorf("apply network restriction policy: %w", createErr)
+	if err != nil {
+		return fmt.Errorf("apply internet access policy: %w", err)
 	}
 
-	slog.Info("Applied network restriction policy", "sessionID", sessionID)
+	slog.Info("Applied internet access policy", "sessionID", sessionID)
 	return nil
 }
 

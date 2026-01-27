@@ -386,12 +386,13 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 	}
 
 	// Apply network policies based on configuration
-	if !networkEnabled {
-		if err := m.k8s.ConfigureNetwork(ctx, sessionID, false); err != nil {
-			slog.Error("Failed to apply network restriction", "sessionID", sessionID, "error", err)
+	// Default template has NO internet - add internet policy only if enabled
+	if networkEnabled {
+		if err := m.k8s.ConfigureNetwork(ctx, sessionID, true); err != nil {
+			slog.Error("Failed to apply internet access policy", "sessionID", sessionID, "error", err)
 			// Non-fatal: continue with sandbox creation, but log the error
 		} else {
-			slog.Info("Applied network restriction policy", "sessionID", sessionID)
+			slog.Info("Applied internet access policy", "sessionID", sessionID)
 		}
 	}
 	if tailnetEnabled {
@@ -560,14 +561,13 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 	}
 
 	// Apply network policies AFTER sandbox is ready
-	// The sandbox controller creates NetworkPolicy when sandbox becomes Ready,
-	// so we must configure network after that to avoid being overwritten
-	if !networkEnabled {
-		if err := m.k8s.ConfigureNetwork(ctx, sessionID, false); err != nil {
-			slog.Error("Failed to apply network restriction", "sessionID", sessionID, "error", err)
+	// Default template has NO internet - add internet policy only if enabled
+	if networkEnabled {
+		if err := m.k8s.ConfigureNetwork(ctx, sessionID, true); err != nil {
+			slog.Error("Failed to apply internet access policy", "sessionID", sessionID, "error", err)
 			// Non-fatal: continue with sandbox creation, but log the error
 		} else {
-			slog.Info("Applied network restriction policy", "sessionID", sessionID)
+			slog.Info("Applied internet access policy", "sessionID", sessionID)
 		}
 	}
 	if tailnetEnabled {
