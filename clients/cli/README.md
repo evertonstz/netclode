@@ -85,7 +85,23 @@ netclode sessions create --repo owner/repo --name "My Session"
 
 # With SDK type (claude, opencode, copilot)
 netclode sessions create --repo owner/repo --sdk opencode --model anthropic/claude-sonnet-4-0
+
+# With network restrictions
+netclode sessions create --repo owner/repo --no-internet  # Block internet access
+netclode sessions create --repo owner/repo --tailnet      # Allow Tailnet access (100.64.0.0/10)
+netclode sessions create --repo owner/repo --no-internet --tailnet  # Block internet but allow Tailnet
 ```
+
+#### Network Access Options
+
+| Flag | Description |
+|------|-------------|
+| `--no-internet` | Block all internet access. Only DNS and control-plane connectivity are allowed. |
+| `--tailnet` | Allow access to Tailscale network (100.64.0.0/10 CGNAT range). |
+
+By default, sessions have internet access but cannot reach private networks (including Tailnet).
+The `--no-internet` flag is useful for sandboxing untrusted code, while `--tailnet` enables
+access to internal services exposed via Tailscale.
 
 ### Pause a session
 
