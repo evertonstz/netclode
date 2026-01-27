@@ -230,11 +230,13 @@ struct InlineModelPicker: View {
                         Text(model.name)
                             .font(.netclodeBody)
                             .foregroundStyle(.primary)
+                            .contentTransition(.numericText())
                         
                         if let effort = model.reasoningEffort {
                             Text(effort)
                                 .font(.netclodeBody.weight(.semibold))
                                 .foregroundStyle(Theme.Colors.brand)
+                                .contentTransition(.numericText())
                         }
                         
                         Spacer()
@@ -243,6 +245,7 @@ struct InlineModelPicker: View {
                             Text(provider)
                                 .font(.netclodeCaption)
                                 .foregroundStyle(.tertiary)
+                                .contentTransition(.numericText())
                         }
                     } else {
                         Text("Select a model")
@@ -269,13 +272,17 @@ struct InlineModelPicker: View {
             .onAppear {
                 // Auto-select if current selection doesn't match any available model
                 if selectedModel == nil {
-                    selectedModelId = findBestModel(in: models, preferring: selectedModelId)?.id ?? selectedModelId
+                    withAnimation(.smooth(duration: 0.2)) {
+                        selectedModelId = findBestModel(in: models, preferring: selectedModelId)?.id ?? selectedModelId
+                    }
                 }
             }
             .onChange(of: models) { _, newModels in
                 // Re-validate selection when models change
                 if !newModels.contains(where: { $0.id == selectedModelId }) {
-                    selectedModelId = findBestModel(in: newModels, preferring: selectedModelId)?.id ?? selectedModelId
+                    withAnimation(.smooth(duration: 0.2)) {
+                        selectedModelId = findBestModel(in: newModels, preferring: selectedModelId)?.id ?? selectedModelId
+                    }
                 }
             }
 
