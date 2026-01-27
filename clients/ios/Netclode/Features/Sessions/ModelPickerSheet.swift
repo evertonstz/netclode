@@ -1,5 +1,68 @@
 import SwiftUI
 
+/// Renders model name with purple effort level and dimmed provider suffix
+/// e.g., "Codex Mini High (ChatGPT)" -> "Codex Mini " + purple "High" + dimmed " (ChatGPT)"
+struct ModelNameText: View {
+    let name: String
+    let font: Font
+
+    private static let effortLevels = ["High", "Med", "Low"]
+
+    init(_ name: String, font: Font = .netclodeBody) {
+        self.name = name
+        self.font = font
+    }
+
+    var body: some View {
+        let (baseName, effort, provider) = parseName(name)
+
+        if let effort = effort {
+            Text(baseName)
+                .font(font)
+                .foregroundStyle(.primary)
+            + Text(effort)
+                .font(font)
+                .foregroundStyle(Theme.Colors.brand)
+            + Text(provider ?? "")
+                .font(font)
+                .foregroundStyle(.tertiary)
+        } else if let provider = provider {
+            Text(baseName)
+                .font(font)
+                .foregroundStyle(.primary)
+            + Text(provider)
+                .font(font)
+                .foregroundStyle(.tertiary)
+        } else {
+            Text(name)
+                .font(font)
+                .foregroundStyle(.primary)
+        }
+    }
+
+    /// Parse "Codex Mini High (ChatGPT)" into ("Codex Mini ", "High", " (ChatGPT)")
+    private func parseName(_ name: String) -> (String, String?, String?) {
+        // Extract provider suffix like " (ChatGPT)"
+        var baseName = name
+        var provider: String? = nil
+
+        if let providerRange = name.range(of: #"\s*\([^)]+\)$"#, options: .regularExpression) {
+            provider = String(name[providerRange])
+            baseName = String(name[..<providerRange.lowerBound])
+        }
+
+        // Check if baseName ends with an effort level
+        for effort in Self.effortLevels {
+            if baseName.hasSuffix(" \(effort)") {
+                let effortStart = baseName.index(baseName.endIndex, offsetBy: -effort.count)
+                return (String(baseName[..<effortStart]), effort, provider)
+            }
+        }
+
+        return (baseName, nil, provider)
+    }
+}
+
 /// Unified model for the picker (works across all providers)
 struct PickerModel: Identifiable, Hashable {
     let id: String
@@ -118,9 +181,7 @@ struct ModelRow: View {
 
             // Model info
             VStack(alignment: .leading, spacing: 2) {
-                Text(model.name)
-                    .font(.netclodeBody)
-                    .foregroundStyle(.primary)
+                ModelNameText(model.name)
 
                 // Capabilities and cost row
                 HStack(spacing: Theme.Spacing.sm) {
@@ -202,16 +263,14 @@ struct InlineModelPicker: View {
                         ProviderLogo(provider: model.provider, size: 16)
                             .frame(width: 20)
                             .foregroundStyle(.secondary)
-                        Text(model.name)
-                            .font(.netclodeBody)
+                        ModelNameText(model.name)
                             .contentTransition(.numericText())
                     } else if !models.isEmpty {
                         // Show first model as fallback
                         ProviderLogo(provider: models.first?.provider, size: 16)
                             .frame(width: 20)
                             .foregroundStyle(.secondary)
-                        Text(models.first?.name ?? "Select a model")
-                            .font(.netclodeBody)
+                        ModelNameText(models.first?.name ?? "Select a model")
                             .contentTransition(.numericText())
                     } else {
                         Text("Select a model")
@@ -255,9 +314,7 @@ struct InlineModelPicker: View {
                                     ProviderLogo(provider: model.provider, size: 16)
                                         .foregroundStyle(.secondary)
 
-                                    Text(model.name)
-                                        .font(.netclodeBody)
-                                        .foregroundStyle(.primary)
+                                    ModelNameText(model.name)
 
                                     Spacer()
                                 }
@@ -302,9 +359,7 @@ struct ModelPickerButton: View {
                     ProviderLogo(provider: model.provider, size: 18)
                         .foregroundStyle(.secondary)
 
-                    Text(model.name)
-                        .font(.netclodeBody)
-                        .foregroundStyle(.primary)
+                    ModelNameText(model.name)
                 } else {
                     Text(placeholder)
                         .font(.netclodeBody)

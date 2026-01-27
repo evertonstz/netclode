@@ -2042,7 +2042,7 @@ func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
 			for _, effort := range effortLevels {
 				models = append(models, &pb.ModelInfo{
 					Id:           fmt.Sprintf("%s:api:%s", base.Id, effort.suffix),
-					Name:         fmt.Sprintf("%s (API, %s)", base.Name, effort.label),
+					Name:         fmt.Sprintf("%s %s (API)", base.Name, effort.label),
 					Provider:     strPtr("OpenAI"),
 					Capabilities: base.Capabilities,
 				})
@@ -2052,7 +2052,7 @@ func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
 			for _, effort := range effortLevels {
 				models = append(models, &pb.ModelInfo{
 					Id:           fmt.Sprintf("%s:oauth:%s", base.Id, effort.suffix),
-					Name:         fmt.Sprintf("%s (ChatGPT, %s)", base.Name, effort.label),
+					Name:         fmt.Sprintf("%s %s (ChatGPT)", base.Name, effort.label),
 					Provider:     strPtr("OpenAI"),
 					Capabilities: base.Capabilities,
 				})
