@@ -1660,7 +1660,7 @@ func (m *Manager) ListModels(sdkType pb.SdkType, copilotBackend *pb.CopilotBacke
 	case pb.SdkType_SDK_TYPE_CLAUDE:
 		return m.fetchModelsFromModelsDev("anthropic")
 	case pb.SdkType_SDK_TYPE_OPENCODE:
-		return m.fetchModelsFromModelsDev("opencode")
+		return m.fetchOpenCodeModels()
 	case pb.SdkType_SDK_TYPE_COPILOT:
 		// Return combined list of GitHub Copilot + Anthropic (BYOK) models
 		return m.fetchCopilotModels()
@@ -1789,6 +1789,29 @@ func (m *Manager) doFetchModelsFromModelsDev(provider string) []*pb.ModelInfo {
 	}
 
 	slog.Info("Fetched models from models.dev", "provider", provider, "count", len(models))
+	return models
+}
+
+// fetchOpenCodeModels fetches models for OpenCode SDK based on configured API keys
+func (m *Manager) fetchOpenCodeModels() []*pb.ModelInfo {
+	var models []*pb.ModelInfo
+
+	// Add Anthropic models if ANTHROPIC_API_KEY is set
+	if m.config.AnthropicAPIKey != "" {
+		anthropicModels := m.fetchModelsFromModelsDev("anthropic")
+		models = append(models, anthropicModels...)
+	}
+
+	// Add OpenAI models if OPENAI_API_KEY is set
+	if m.config.OpenAIAPIKey != "" {
+		openaiModels := m.fetchModelsFromModelsDev("openai")
+		models = append(models, openaiModels...)
+	}
+
+	if len(models) == 0 {
+		slog.Warn("No OpenCode credentials configured (need ANTHROPIC_API_KEY or OPENAI_API_KEY)")
+	}
+
 	return models
 }
 
