@@ -69,6 +69,14 @@ RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/latest/download/o
     chmod +x /usr/local/bin/opencode && \
     rm -rf /tmp/opencode.tar.gz
 
+# GitHub CLI (download Linux x64 binary)
+RUN GH_VERSION=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | grep -oP '"tag_name": "v\K[^"]+') && \
+    curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o /tmp/gh.tar.gz && \
+    tar -xzf /tmp/gh.tar.gz -C /tmp && \
+    mv /tmp/gh_${GH_VERSION}_linux_amd64/bin/gh /usr/local/bin/gh && \
+    chmod +x /usr/local/bin/gh && \
+    rm -rf /tmp/gh.tar.gz /tmp/gh_${GH_VERSION}_linux_amd64
+
 # =============================================================================
 # Runtime
 # =============================================================================
@@ -87,8 +95,9 @@ RUN useradd -m -u 1000 -G docker -d /agent agent && \
 COPY --from=builder --chown=agent:agent /build/services/agent/dist/agent.js /opt/agent/
 COPY --from=builder --chown=agent:agent /build/services/agent/node_modules /opt/agent/node_modules
 
-# Copy OpenCode binary from builder
+# Copy OpenCode and GitHub CLI binaries from builder
 COPY --from=builder /usr/local/bin/opencode /usr/local/bin/opencode
+COPY --from=builder /usr/local/bin/gh /usr/local/bin/gh
 
 # Copy mise and node to /opt (NOT /agent which is a volume mount)
 # mise binary and shims need to be in a persistent location
