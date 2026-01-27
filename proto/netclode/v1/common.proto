@@ -78,6 +78,7 @@ message SessionConfig {
   optional string codex_id_token = 12;          // Codex OAuth ID token (for ChatGPT auth)
   optional string openai_api_key = 13;          // OpenAI API key (for Codex API auth)
   optional string codex_refresh_token = 14;     // Codex OAuth refresh token (for ChatGPT auth)
+  optional string reasoning_effort = 15;        // Reasoning effort level (low, medium, high, minimal, xhigh)
 }
 
 // GitHubRepo represents a GitHub repository from the user's account.

@@ -440,6 +440,7 @@ async function handleControlPlaneMessage(
               codexAccessToken: config.codexAccessToken,
               codexIdToken: config.codexIdToken,
               codexRefreshToken: config.codexRefreshToken,
+              reasoningEffort: config.reasoningEffort,
             });
           } catch (err) {
             console.error("[agent] Failed to initialize SDK adapter:", err);

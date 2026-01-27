@@ -116,6 +116,9 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 	if config.OpenAIAPIKey != "" {
 		sessionConfig.OpenaiApiKey = &config.OpenAIAPIKey
 	}
+	if config.ReasoningEffort != "" {
+		sessionConfig.ReasoningEffort = &config.ReasoningEffort
+	}
 
 	if err := conn.send(&v1.ControlPlaneMessage{
 		Message: &v1.ControlPlaneMessage_Registered{

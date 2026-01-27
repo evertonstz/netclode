@@ -17,7 +17,7 @@
  *    - Allows using ChatGPT subscription for Codex
  */
 
-import { Codex, type Thread, type ThreadEvent, type ThreadItem } from "@openai/codex-sdk";
+import { Codex, type Thread, type ThreadEvent, type ThreadItem, type ModelReasoningEffort } from "@openai/codex-sdk";
 import type { SDKAdapter, SDKConfig, PromptConfig, PromptEvent } from "./types.js";
 import { isSessionInitialized, markSessionInitialized } from "../services/session.js";
 import { setupRepository } from "../git.js";
@@ -38,8 +38,11 @@ export class CodexAdapter implements SDKAdapter {
   private currentGitRepo: string | null = null;
   private currentGithubToken: string | null = null;
 
-  // Cleaned model name (without :api/:oauth suffix)
+  // Cleaned model name (without :api/:oauth/:effort suffixes)
   private cleanedModel: string | undefined = undefined;
+
+  // Reasoning effort level (low, medium, high, minimal, xhigh)
+  private reasoningEffort: string | undefined = undefined;
 
   // Track tool start times for duration calculation
   private toolStartTimes = new Map<string, number>();
@@ -54,14 +57,21 @@ export class CodexAdapter implements SDKAdapter {
   async initialize(config: SDKConfig): Promise<void> {
     this.config = config;
 
-    // Strip :api or :oauth suffix from model if present
-    this.cleanedModel = config.model?.replace(/:api$|:oauth$/, "");
-    const isApiMode = config.model?.endsWith(":api") || Boolean(config.openaiApiKey && !config.codexAccessToken);
-    const isOAuthMode = config.model?.endsWith(":oauth") || Boolean(config.codexAccessToken && !config.openaiApiKey);
+    // Strip :api/:oauth and :effort suffixes from model
+    // Format: model:auth:effort (e.g., gpt-5-codex:oauth:high)
+    this.cleanedModel = config.model?.replace(/:(api|oauth)(:(low|medium|high|minimal|xhigh))?$/, "");
+    this.reasoningEffort = config.reasoningEffort;
+
+    // Determine auth mode from model suffix or available credentials
+    const modelHasApiSuffix = config.model?.includes(":api");
+    const modelHasOAuthSuffix = config.model?.includes(":oauth");
+    const isApiMode = modelHasApiSuffix || Boolean(config.openaiApiKey && !config.codexAccessToken);
+    const isOAuthMode = modelHasOAuthSuffix || Boolean(config.codexAccessToken && !config.openaiApiKey);
 
     console.log("[codex-adapter] Initializing");
     console.log("[codex-adapter] Model:", this.cleanedModel || "default");
     console.log("[codex-adapter] Auth mode:", isApiMode ? "API key" : isOAuthMode ? "OAuth" : "unknown");
+    console.log("[codex-adapter] Reasoning effort:", this.reasoningEffort || "default");
 
     // Build clean env object without undefined values
     const buildEnv = (overrides: Record<string, string | undefined> = {}): Record<string, string> => {
@@ -200,6 +210,7 @@ export class CodexAdapter implements SDKAdapter {
           sandboxMode: "danger-full-access",
           approvalPolicy: "never",
           model: this.cleanedModel,
+          modelReasoningEffort: this.reasoningEffort as ModelReasoningEffort,
         });
       } else {
         console.log(`[codex-adapter] Creating new Codex thread`);
@@ -208,6 +219,7 @@ export class CodexAdapter implements SDKAdapter {
           sandboxMode: "danger-full-access",
           approvalPolicy: "never",
           model: this.cleanedModel,
+          modelReasoningEffort: this.reasoningEffort as ModelReasoningEffort,
           skipGitRepoCheck: true, // We handle git setup ourselves
         });
       }

@@ -43,6 +43,7 @@ type AgentSessionConfig struct {
 	CodexAccessToken   string // For Codex OAuth mode
 	CodexIdToken       string // For Codex OAuth mode
 	CodexRefreshToken  string // For Codex OAuth mode
+	ReasoningEffort    string // For Codex reasoning effort (low, medium, high)
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -1316,13 +1317,30 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 		model := *state.Session.Model
 		config.Model = model
 
-		// For Codex SDK, check auth mode from model suffix and pass appropriate credentials
-		if strings.HasSuffix(model, ":api") {
-			config.OpenAIAPIKey = m.config.OpenAIAPIKey
-		} else if strings.HasSuffix(model, ":oauth") {
-			config.CodexAccessToken = m.config.CodexAccessToken
-			config.CodexIdToken = m.config.CodexIdToken
-			config.CodexRefreshToken = m.config.CodexRefreshToken
+		// For Codex SDK, parse model format: base:auth:effort (e.g., gpt-5-codex:oauth:high)
+		// Also supports legacy format: base:auth (e.g., gpt-5-codex:oauth)
+		parts := strings.Split(model, ":")
+		if len(parts) >= 2 {
+			authMode := parts[len(parts)-1]
+			// Check if last part is a reasoning effort level
+			if authMode == "low" || authMode == "medium" || authMode == "high" || authMode == "minimal" || authMode == "xhigh" {
+				config.ReasoningEffort = authMode
+				// Auth mode is second-to-last
+				if len(parts) >= 3 {
+					authMode = parts[len(parts)-2]
+				} else {
+					authMode = ""
+				}
+			}
+
+			// Set credentials based on auth mode
+			if authMode == "api" {
+				config.OpenAIAPIKey = m.config.OpenAIAPIKey
+			} else if authMode == "oauth" {
+				config.CodexAccessToken = m.config.CodexAccessToken
+				config.CodexIdToken = m.config.CodexIdToken
+				config.CodexRefreshToken = m.config.CodexRefreshToken
+			}
 		}
 	}
 
@@ -2006,24 +2024,39 @@ func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
 		baseModels = m.getCodexBaseModels()
 	}
 
-	// Create models with auth mode suffixes
+	// Reasoning effort levels to generate
+	effortLevels := []struct {
+		suffix string
+		label  string
+	}{
+		{"low", "Low"},
+		{"medium", "Med"},
+		{"high", "High"},
+	}
+
+	// Create models with auth mode and reasoning effort suffixes
+	// Format: model:auth:effort (e.g., gpt-5-codex:oauth:high)
 	var models []*pb.ModelInfo
 	for _, base := range baseModels {
 		if hasAPIKey {
-			models = append(models, &pb.ModelInfo{
-				Id:           base.Id + ":api",
-				Name:         base.Name + " (API)",
-				Provider:     strPtr("OpenAI"),
-				Capabilities: base.Capabilities,
-			})
+			for _, effort := range effortLevels {
+				models = append(models, &pb.ModelInfo{
+					Id:           fmt.Sprintf("%s:api:%s", base.Id, effort.suffix),
+					Name:         fmt.Sprintf("%s (API, %s)", base.Name, effort.label),
+					Provider:     strPtr("OpenAI"),
+					Capabilities: base.Capabilities,
+				})
+			}
 		}
 		if hasOAuth {
-			models = append(models, &pb.ModelInfo{
-				Id:           base.Id + ":oauth",
-				Name:         base.Name + " (ChatGPT)",
-				Provider:     strPtr("OpenAI"),
-				Capabilities: base.Capabilities,
-			})
+			for _, effort := range effortLevels {
+				models = append(models, &pb.ModelInfo{
+					Id:           fmt.Sprintf("%s:oauth:%s", base.Id, effort.suffix),
+					Name:         fmt.Sprintf("%s (ChatGPT, %s)", base.Name, effort.label),
+					Provider:     strPtr("OpenAI"),
+					Capabilities: base.Capabilities,
+				})
+			}
 		}
 	}
 

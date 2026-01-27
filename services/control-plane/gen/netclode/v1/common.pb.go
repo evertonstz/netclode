@@ -557,6 +557,7 @@ type SessionConfig struct {
 	CodexIdToken       *string                `protobuf:"bytes,12,opt,name=codex_id_token,json=codexIdToken,proto3,oneof" json:"codex_id_token,omitempty"`                                     // Codex OAuth ID token (for ChatGPT auth)
 	OpenaiApiKey       *string                `protobuf:"bytes,13,opt,name=openai_api_key,json=openaiApiKey,proto3,oneof" json:"openai_api_key,omitempty"`                                     // OpenAI API key (for Codex API auth)
 	CodexRefreshToken  *string                `protobuf:"bytes,14,opt,name=codex_refresh_token,json=codexRefreshToken,proto3,oneof" json:"codex_refresh_token,omitempty"`                      // Codex OAuth refresh token (for ChatGPT auth)
+	ReasoningEffort    *string                `protobuf:"bytes,15,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`                              // Reasoning effort level (low, medium, high, minimal, xhigh)
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -685,6 +686,13 @@ func (x *SessionConfig) GetOpenaiApiKey() string {
 func (x *SessionConfig) GetCodexRefreshToken() string {
 	if x != nil && x.CodexRefreshToken != nil {
 		return *x.CodexRefreshToken
+	}
+	return ""
+}
+
+func (x *SessionConfig) GetReasoningEffort() string {
+	if x != nil && x.ReasoningEffort != nil {
+		return *x.ReasoningEffort
 	}
 	return ""
 }
@@ -1380,7 +1388,7 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\rmessage_count\x18\x02 \x01(\x05H\x00R\fmessageCount\x88\x01\x01\x12+\n" +
 	"\x0flast_message_id\x18\x03 \x01(\tH\x01R\rlastMessageId\x88\x01\x01B\x10\n" +
 	"\x0e_message_countB\x12\n" +
-	"\x10_last_message_id\"\xd3\x06\n" +
+	"\x10_last_message_id\"\x98\a\n" +
 	"\rSessionConfig\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
@@ -1399,7 +1407,8 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x0ecodex_id_token\x18\f \x01(\tH\bR\fcodexIdToken\x88\x01\x01\x12)\n" +
 	"\x0eopenai_api_key\x18\r \x01(\tH\tR\fopenaiApiKey\x88\x01\x01\x123\n" +
 	"\x13codex_refresh_token\x18\x0e \x01(\tH\n" +
-	"R\x11codexRefreshToken\x88\x01\x01B\x0f\n" +
+	"R\x11codexRefreshToken\x88\x01\x01\x12.\n" +
+	"\x10reasoning_effort\x18\x0f \x01(\tH\vR\x0freasoningEffort\x88\x01\x01B\x0f\n" +
 	"\r_github_tokenB\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\v\n" +
@@ -1410,7 +1419,8 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x13_codex_access_tokenB\x11\n" +
 	"\x0f_codex_id_tokenB\x11\n" +
 	"\x0f_openai_api_keyB\x16\n" +
-	"\x14_codex_refresh_token\"\x8e\x01\n" +
+	"\x14_codex_refresh_tokenB\x13\n" +
+	"\x11_reasoning_effort\"\x8e\x01\n" +
 	"\n" +
 	"GitHubRepo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +

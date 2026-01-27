@@ -29,6 +29,8 @@ export interface SDKConfig {
   codexAccessToken?: string;
   codexIdToken?: string;
   codexRefreshToken?: string;
+  // Codex reasoning effort (low, medium, high, minimal, xhigh)
+  reasoningEffort?: string;
 }
 
 /**

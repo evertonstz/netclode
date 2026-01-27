@@ -434,40 +434,42 @@ public struct Netclode_V1_AgentGitDiffResponse: Sendable {
 }
 
 /// AgentRegistered is sent in response to AgentRegister.
-public struct Netclode_V1_AgentRegistered: Sendable {
+public struct Netclode_V1_AgentRegistered: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// Whether registration succeeded
-  public var success: Bool = false
+  public var success: Bool {
+    get {return _storage._success}
+    set {_uniqueStorage()._success = newValue}
+  }
 
   /// Error message if registration failed
   public var error: String {
-    get {return _error ?? String()}
-    set {_error = newValue}
+    get {return _storage._error ?? String()}
+    set {_uniqueStorage()._error = newValue}
   }
   /// Returns true if `error` has been explicitly set.
-  public var hasError: Bool {return self._error != nil}
+  public var hasError: Bool {return _storage._error != nil}
   /// Clears the value of `error`. Subsequent reads from it will return its default value.
-  public mutating func clearError() {self._error = nil}
+  public mutating func clearError() {_uniqueStorage()._error = nil}
 
   /// Session configuration for the agent
   public var config: Netclode_V1_SessionConfig {
-    get {return _config ?? Netclode_V1_SessionConfig()}
-    set {_config = newValue}
+    get {return _storage._config ?? Netclode_V1_SessionConfig()}
+    set {_uniqueStorage()._config = newValue}
   }
   /// Returns true if `config` has been explicitly set.
-  public var hasConfig: Bool {return self._config != nil}
+  public var hasConfig: Bool {return _storage._config != nil}
   /// Clears the value of `config`. Subsequent reads from it will return its default value.
-  public mutating func clearConfig() {self._config = nil}
+  public mutating func clearConfig() {_uniqueStorage()._config = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
-  fileprivate var _error: String? = nil
-  fileprivate var _config: Netclode_V1_SessionConfig? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 /// ExecutePromptRequest asks the agent to execute a prompt.
@@ -1371,41 +1373,81 @@ extension Netclode_V1_AgentRegistered: SwiftProtobuf.Message, SwiftProtobuf._Mes
   public static let protoMessageName: String = _protobuf_package + ".AgentRegistered"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}success\0\u{1}error\0\u{1}config\0")
 
+  fileprivate class _StorageClass {
+    var _success: Bool = false
+    var _error: String? = nil
+    var _config: Netclode_V1_SessionConfig? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _success = source._success
+      _error = source._error
+      _config = source._config
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularBoolField(value: &self.success) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self._error) }()
-      case 3: try { try decoder.decodeSingularMessageField(value: &self._config) }()
-      default: break
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularBoolField(value: &_storage._success) }()
+        case 2: try { try decoder.decodeSingularStringField(value: &_storage._error) }()
+        case 3: try { try decoder.decodeSingularMessageField(value: &_storage._config) }()
+        default: break
+        }
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if self.success != false {
-      try visitor.visitSingularBoolField(value: self.success, fieldNumber: 1)
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if _storage._success != false {
+        try visitor.visitSingularBoolField(value: _storage._success, fieldNumber: 1)
+      }
+      try { if let v = _storage._error {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+      } }()
+      try { if let v = _storage._config {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+      } }()
     }
-    try { if let v = self._error {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
-    } }()
-    try { if let v = self._config {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_AgentRegistered, rhs: Netclode_V1_AgentRegistered) -> Bool {
-    if lhs.success != rhs.success {return false}
-    if lhs._error != rhs._error {return false}
-    if lhs._config != rhs._config {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._success != rhs_storage._success {return false}
+        if _storage._error != rhs_storage._error {return false}
+        if _storage._config != rhs_storage._config {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
