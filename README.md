@@ -190,6 +190,7 @@ Quick version:
 - [Operations](docs/operations.md) - Day-to-day management
 - [GitHub Integration](docs/github-integration.md) - Clone repos and push commits
 - [Session History](docs/session-history.md) - Snapshots and rollback
+- [Network Access](docs/network-access.md) - Internet and Tailnet access control
 - [iOS App](clients/ios/README.md)
 - [CLI](clients/cli/README.md) - Debug CLI for inspecting sessions
 - [Control Plane](services/control-plane/README.md)
