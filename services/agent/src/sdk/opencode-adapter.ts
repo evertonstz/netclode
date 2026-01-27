@@ -34,6 +34,9 @@ export class OpenCodeAdapter implements SDKAdapter {
   private currentGitRepo: string | null = null;
   private currentGithubToken: string | null = null;
 
+  // Accumulate usage data for result event (emitted on session.idle)
+  private lastUsage: { inputTokens: number; outputTokens: number } | null = null;
+
   async initialize(config: SDKConfig): Promise<void> {
     this.config = config;
     console.log("[opencode-adapter] Initializing with model:", config.model);
@@ -494,16 +497,18 @@ export class OpenCodeAdapter implements SDKAdapter {
           assistantMessageIds.add(info.id as string);
         }
 
+        // Track usage data for later (emitted with session.idle)
         if (info.role === "assistant" && info.time) {
           const time = info.time as Record<string, unknown>;
           if (time.completed) {
             const tokens = info.tokens as Record<string, number> | undefined;
-            return {
-              type: "result",
-              inputTokens: tokens?.input || 0,
-              outputTokens: tokens?.output || 0,
-              totalTurns: 1,
-            };
+            if (tokens) {
+              // Accumulate usage - don't emit result yet, wait for session.idle
+              this.lastUsage = {
+                inputTokens: (this.lastUsage?.inputTokens || 0) + (tokens.input || 0),
+                outputTokens: (this.lastUsage?.outputTokens || 0) + (tokens.output || 0),
+              };
+            }
           }
         }
 
@@ -518,6 +523,16 @@ export class OpenCodeAdapter implements SDKAdapter {
           };
         }
         return null;
+      }
+
+      // session.idle signals the entire conversation turn is complete
+      case "session.idle": {
+        return {
+          type: "result",
+          inputTokens: this.lastUsage?.inputTokens || 0,
+          outputTokens: this.lastUsage?.outputTokens || 0,
+          totalTurns: 1,
+        };
       }
 
       default:
@@ -535,6 +550,7 @@ export class OpenCodeAdapter implements SDKAdapter {
     // Clear tracked assistant message IDs for new prompt
     assistantMessageIds.clear();
     toolStartTimes.clear();
+    this.lastUsage = null;
   }
 
   isInterrupted(): boolean {
@@ -556,5 +572,6 @@ export class OpenCodeAdapter implements SDKAdapter {
     openCodeSessionMap.clear();
     assistantMessageIds.clear();
     toolStartTimes.clear();
+    this.lastUsage = null;
   }
 }
