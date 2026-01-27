@@ -1802,29 +1802,51 @@ func (m *Manager) doFetchModelsFromModelsDev(provider string) []*pb.ModelInfo {
 }
 
 // fetchOpenCodeModels fetches models for OpenCode SDK based on configured API keys
+// Returns models with provider-prefixed IDs (e.g., "anthropic/claude-sonnet-4-0", "mistral/mistral-large-2512")
 func (m *Manager) fetchOpenCodeModels() []*pb.ModelInfo {
 	var models []*pb.ModelInfo
 
 	// Add Anthropic models if ANTHROPIC_API_KEY is set
 	if m.config.AnthropicAPIKey != "" {
-		anthropicModels := m.fetchModelsFromModelsDev("anthropic")
+		anthropicModels := m.fetchOpenCodeModelsForProvider("anthropic")
 		models = append(models, anthropicModels...)
 	}
 
 	// Add OpenAI models if OPENAI_API_KEY is set
 	if m.config.OpenAIAPIKey != "" {
-		openaiModels := m.fetchModelsFromModelsDev("openai")
+		openaiModels := m.fetchOpenCodeModelsForProvider("openai")
 		models = append(models, openaiModels...)
 	}
 
 	// Add Mistral models if MISTRAL_API_KEY is set
 	if m.config.MistralAPIKey != "" {
-		mistralModels := m.fetchModelsFromModelsDev("mistral")
+		mistralModels := m.fetchOpenCodeModelsForProvider("mistral")
 		models = append(models, mistralModels...)
 	}
 
 	if len(models) == 0 {
 		slog.Warn("No OpenCode credentials configured (need ANTHROPIC_API_KEY, OPENAI_API_KEY, or MISTRAL_API_KEY)")
+	}
+
+	return models
+}
+
+// fetchOpenCodeModelsForProvider fetches models for a specific provider with provider-prefixed IDs
+func (m *Manager) fetchOpenCodeModelsForProvider(provider string) []*pb.ModelInfo {
+	baseModels := m.fetchModelsFromModelsDev(provider)
+	if baseModels == nil {
+		return nil
+	}
+
+	// Prefix model IDs with provider name for OpenCode SDK format
+	models := make([]*pb.ModelInfo, 0, len(baseModels))
+	for _, model := range baseModels {
+		models = append(models, &pb.ModelInfo{
+			Id:           provider + "/" + model.Id,
+			Name:         model.Name,
+			Provider:     model.Provider,
+			Capabilities: model.Capabilities,
+		})
 	}
 
 	return models
