@@ -200,6 +200,7 @@ struct InlineModelPicker: View {
                 HStack(spacing: Theme.Spacing.xs) {
                     if let model = selectedModel {
                         ProviderLogo(provider: model.provider, size: 16)
+                            .frame(width: 20)
                             .foregroundStyle(.secondary)
                         Text(model.name)
                             .font(.netclodeBody)
@@ -207,6 +208,7 @@ struct InlineModelPicker: View {
                     } else if !models.isEmpty {
                         // Show first model as fallback
                         ProviderLogo(provider: models.first?.provider, size: 16)
+                            .frame(width: 20)
                             .foregroundStyle(.secondary)
                         Text(models.first?.name ?? "Select a model")
                             .font(.netclodeBody)

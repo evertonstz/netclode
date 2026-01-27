@@ -20,6 +20,7 @@ struct PromptSheet: View {
     @State private var isSubmitting = false
     @State private var canSubmit = false
     @State private var showModelDropdown = false
+    @State private var showRepoDropdown = false
     @State private var showAccessDropdown = false
     @State private var tailnetAccess = false
     @FocusState private var isFocused: Bool
@@ -58,8 +59,9 @@ struct PromptSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
+            ScrollViewReader { scrollProxy in
+                ScrollView {
+                    VStack(spacing: 0) {
                     // Text input area
                     TextField(
                         "What do you want to build?",
@@ -79,6 +81,7 @@ struct PromptSheet: View {
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                         HStack(spacing: Theme.Spacing.xs) {
                             Image(systemName: "cpu")
+                                .font(.system(size: 16))
                                 .foregroundStyle(.secondary)
                             Text("Agent SDK")
                                 .font(.netclodeCaption)
@@ -93,6 +96,7 @@ struct PromptSheet: View {
                         // Model picker (shown for all SDK types)
                         HStack(spacing: Theme.Spacing.xs) {
                             Image(systemName: "sparkles")
+                                .font(.system(size: 16))
                                 .foregroundStyle(.secondary)
                             Text("Model")
                                 .font(.netclodeCaption)
@@ -145,10 +149,23 @@ struct PromptSheet: View {
                                 .foregroundStyle(.secondary)
                         }
                         
-                        RepoAutocomplete(text: $repoURL) { repo in
-                            isPrivateRepo = repo.isPrivate
-                        }
+                        InlineRepoPicker(
+                            selectedRepo: $repoURL,
+                            onRepoSelected: { repo in
+                                isPrivateRepo = repo.isPrivate
+                            },
+                            isExpanded: $showRepoDropdown,
+                            onSearchFocused: {
+                                withAnimation {
+                                    scrollProxy.scrollTo("repoSection", anchor: .top)
+                                }
+                            },
+                            onExpanded: {
+                                isFocused = false
+                            }
+                        )
                     }
+                    .id("repoSection")
                     .padding(.horizontal, Theme.Spacing.md)
                     .padding(.top, Theme.Spacing.md)
                     
@@ -156,6 +173,7 @@ struct PromptSheet: View {
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                         HStack(spacing: Theme.Spacing.xs) {
                             Image(systemName: "lock.shield")
+                                .font(.system(size: 16))
                                 .foregroundStyle(.secondary)
                             Text("GitHub Access")
                                 .font(.netclodeCaption)
@@ -175,6 +193,7 @@ struct PromptSheet: View {
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                         HStack(spacing: Theme.Spacing.xs) {
                             Image(systemName: "network")
+                                .font(.system(size: 16))
                                 .foregroundStyle(.secondary)
                             Text("Network")
                                 .font(.netclodeCaption)
@@ -207,6 +226,7 @@ struct PromptSheet: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            }
             .background(Theme.Colors.background)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -398,6 +418,8 @@ struct InlineAccessPicker: View {
             } label: {
                 HStack(spacing: Theme.Spacing.xs) {
                     Image(systemName: selectedAccess.icon)
+                        .font(.system(size: 16))
+                        .frame(width: 20)
                         .foregroundStyle(.secondary)
                     Text(selectedAccess.displayName)
                         .font(.netclodeBody)
@@ -438,6 +460,7 @@ struct InlineAccessPicker: View {
                                         .contentTransition(.symbolEffect(.replace))
 
                                     Image(systemName: access.icon)
+                                        .font(.system(size: 14))
                                         .foregroundStyle(.secondary)
 
                                     VStack(alignment: .leading, spacing: 2) {
