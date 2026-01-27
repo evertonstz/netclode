@@ -21,8 +21,9 @@ export interface SDKConfig {
   sdkType: SdkType;
   workspaceDir: string;
   anthropicApiKey: string;
+  openaiApiKey?: string; // OpenAI API key (for Codex API mode)
   githubCopilotToken?: string; // GitHub PAT with Copilot scope (for Copilot SDK auth)
-  model?: string; // e.g., "anthropic/claude-sonnet-4-0" for OpenCode
+  model?: string; // e.g., "anthropic/claude-sonnet-4-0" for OpenCode, "codex-mini-latest:api" for Codex
   copilotBackend?: CopilotBackend; // For Copilot SDK: "github" or "anthropic"
   // Codex SDK OAuth tokens (for ChatGPT auth mode)
   codexAccessToken?: string;

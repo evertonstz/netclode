@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,6 +32,7 @@ type SessionUpdateCallback func(session *pb.Session)
 type AgentSessionConfig struct {
 	SessionID          string
 	AnthropicAPIKey    string
+	OpenAIAPIKey       string // For Codex API mode
 	GitHubToken        string // For git credentials (from GitHub App)
 	GitHubCopilotToken string // For Copilot SDK
 	Repo               string
@@ -38,8 +40,8 @@ type AgentSessionConfig struct {
 	SdkType            *pb.SdkType
 	Model              string
 	CopilotBackend     *pb.CopilotBackend
-	CodexAccessToken   string // For Codex OAuth
-	CodexIdToken       string // For Codex OAuth
+	CodexAccessToken   string // For Codex OAuth mode
+	CodexIdToken       string // For Codex OAuth mode
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -1305,14 +1307,21 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 		SessionID:          sessionID,
 		AnthropicAPIKey:    m.config.AnthropicAPIKey,
 		GitHubCopilotToken: m.config.GitHubCopilotToken,
-		CodexAccessToken:   m.config.CodexAccessToken,
-		CodexIdToken:       m.config.CodexIdToken,
 		SdkType:            state.Session.SdkType,
 		CopilotBackend:     state.Session.CopilotBackend,
 	}
 
 	if state.Session.Model != nil {
-		config.Model = *state.Session.Model
+		model := *state.Session.Model
+		config.Model = model
+
+		// For Codex SDK, check auth mode from model suffix and pass appropriate credentials
+		if strings.HasSuffix(model, ":api") {
+			config.OpenAIAPIKey = m.config.OpenAIAPIKey
+		} else if strings.HasSuffix(model, ":oauth") {
+			config.CodexAccessToken = m.config.CodexAccessToken
+			config.CodexIdToken = m.config.CodexIdToken
+		}
 	}
 
 	// Setup GitHub repo access if configured
@@ -1965,10 +1974,23 @@ func (m *Manager) getCopilotModelsFallback() []*pb.ModelInfo {
 }
 
 // fetchCodexModels fetches OpenAI Codex models (family: gpt-codex or gpt-codex-mini)
+// Returns models with auth mode suffix based on available credentials:
+// - ":api" suffix when OPENAI_API_KEY is configured
+// - ":oauth" suffix when CODEX_ACCESS_TOKEN is configured
+// If both are configured, returns both sets of models
 func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
+	hasAPIKey := m.config.OpenAIAPIKey != ""
+	hasOAuth := m.config.CodexAccessToken != ""
+
+	// If neither is configured, return empty
+	if !hasAPIKey && !hasOAuth {
+		return nil
+	}
+
 	// Check cache first (valid for 5 minutes)
+	// Cache key includes auth modes to handle config changes
+	cacheKey := fmt.Sprintf("codex:api=%t:oauth=%t", hasAPIKey, hasOAuth)
 	m.copilotModelsMu.RLock()
-	cacheKey := "codex"
 	if cached, ok := m.modelsDevCache[cacheKey]; ok && time.Since(cached.fetchedAt) < 5*time.Minute {
 		models := cached.models
 		m.copilotModelsMu.RUnlock()
@@ -1976,10 +1998,31 @@ func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
 	}
 	m.copilotModelsMu.RUnlock()
 
-	// Fetch from models.dev
-	models := m.doFetchCodexModels()
-	if models == nil {
-		return m.getCodexModelsFallback()
+	// Fetch base models from models.dev
+	baseModels := m.doFetchCodexModels()
+	if baseModels == nil {
+		baseModels = m.getCodexBaseModels()
+	}
+
+	// Create models with auth mode suffixes
+	var models []*pb.ModelInfo
+	for _, base := range baseModels {
+		if hasAPIKey {
+			models = append(models, &pb.ModelInfo{
+				Id:           base.Id + ":api",
+				Name:         base.Name + " (API)",
+				Provider:     strPtr("OpenAI"),
+				Capabilities: base.Capabilities,
+			})
+		}
+		if hasOAuth {
+			models = append(models, &pb.ModelInfo{
+				Id:           base.Id + ":oauth",
+				Name:         base.Name + " (ChatGPT)",
+				Provider:     strPtr("OpenAI"),
+				Capabilities: base.Capabilities,
+			})
+		}
 	}
 
 	// Update cache
@@ -1993,6 +2036,7 @@ func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
 	}
 	m.copilotModelsMu.Unlock()
 
+	slog.Info("Fetched Codex models", "count", len(models), "hasAPIKey", hasAPIKey, "hasOAuth", hasOAuth)
 	return models
 }
 
@@ -2052,8 +2096,9 @@ func (m *Manager) doFetchCodexModels() []*pb.ModelInfo {
 	return models
 }
 
-// getCodexModelsFallback returns fallback Codex models when models.dev is unavailable
-func (m *Manager) getCodexModelsFallback() []*pb.ModelInfo {
+// getCodexBaseModels returns fallback base Codex models when models.dev is unavailable
+// These are base models without auth mode suffix - the suffix is added by fetchCodexModels
+func (m *Manager) getCodexBaseModels() []*pb.ModelInfo {
 	return []*pb.ModelInfo{
 		{Id: "codex-mini-latest", Name: "Codex Mini", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code"}},
 		{Id: "gpt-5-codex", Name: "GPT-5 Codex", Provider: strPtr("OpenAI"), Capabilities: []string{"chat", "code"}},

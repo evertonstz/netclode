@@ -555,6 +555,7 @@ type SessionConfig struct {
 	GithubCopilotToken *string                `protobuf:"bytes,10,opt,name=github_copilot_token,json=githubCopilotToken,proto3,oneof" json:"github_copilot_token,omitempty"`                   // GitHub PAT with Copilot scope (for Copilot SDK)
 	CodexAccessToken   *string                `protobuf:"bytes,11,opt,name=codex_access_token,json=codexAccessToken,proto3,oneof" json:"codex_access_token,omitempty"`                         // Codex OAuth access token (for ChatGPT auth)
 	CodexIdToken       *string                `protobuf:"bytes,12,opt,name=codex_id_token,json=codexIdToken,proto3,oneof" json:"codex_id_token,omitempty"`                                     // Codex OAuth ID token (for ChatGPT auth)
+	OpenaiApiKey       *string                `protobuf:"bytes,13,opt,name=openai_api_key,json=openaiApiKey,proto3,oneof" json:"openai_api_key,omitempty"`                                     // OpenAI API key (for Codex API auth)
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -669,6 +670,13 @@ func (x *SessionConfig) GetCodexAccessToken() string {
 func (x *SessionConfig) GetCodexIdToken() string {
 	if x != nil && x.CodexIdToken != nil {
 		return *x.CodexIdToken
+	}
+	return ""
+}
+
+func (x *SessionConfig) GetOpenaiApiKey() string {
+	if x != nil && x.OpenaiApiKey != nil {
+		return *x.OpenaiApiKey
 	}
 	return ""
 }
@@ -1364,7 +1372,7 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\rmessage_count\x18\x02 \x01(\x05H\x00R\fmessageCount\x88\x01\x01\x12+\n" +
 	"\x0flast_message_id\x18\x03 \x01(\tH\x01R\rlastMessageId\x88\x01\x01B\x10\n" +
 	"\x0e_message_countB\x12\n" +
-	"\x10_last_message_id\"\xc8\x05\n" +
+	"\x10_last_message_id\"\x86\x06\n" +
 	"\rSessionConfig\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
@@ -1380,7 +1388,8 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x14github_copilot_token\x18\n" +
 	" \x01(\tH\x06R\x12githubCopilotToken\x88\x01\x01\x121\n" +
 	"\x12codex_access_token\x18\v \x01(\tH\aR\x10codexAccessToken\x88\x01\x01\x12)\n" +
-	"\x0ecodex_id_token\x18\f \x01(\tH\bR\fcodexIdToken\x88\x01\x01B\x0f\n" +
+	"\x0ecodex_id_token\x18\f \x01(\tH\bR\fcodexIdToken\x88\x01\x01\x12)\n" +
+	"\x0eopenai_api_key\x18\r \x01(\tH\tR\fopenaiApiKey\x88\x01\x01B\x0f\n" +
 	"\r_github_tokenB\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\v\n" +
@@ -1389,7 +1398,8 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x10_copilot_backendB\x17\n" +
 	"\x15_github_copilot_tokenB\x15\n" +
 	"\x13_codex_access_tokenB\x11\n" +
-	"\x0f_codex_id_token\"\x8e\x01\n" +
+	"\x0f_codex_id_tokenB\x11\n" +
+	"\x0f_openai_api_key\"\x8e\x01\n" +
 	"\n" +
 	"GitHubRepo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +

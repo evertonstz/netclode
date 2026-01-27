@@ -110,6 +110,9 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 	if config.CodexIdToken != "" {
 		sessionConfig.CodexIdToken = &config.CodexIdToken
 	}
+	if config.OpenAIAPIKey != "" {
+		sessionConfig.OpenaiApiKey = &config.OpenAIAPIKey
+	}
 
 	if err := conn.send(&v1.ControlPlaneMessage{
 		Message: &v1.ControlPlaneMessage_Registered{

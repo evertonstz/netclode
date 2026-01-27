@@ -435,7 +435,8 @@ async function handleControlPlaneMessage(
               githubCopilotToken: config.githubCopilotToken,
               model: config.model,
               copilotBackend,
-              // Codex OAuth tokens (for ChatGPT auth mode)
+              // Codex credentials (API mode or OAuth mode)
+              openaiApiKey: config.openaiApiKey,
               codexAccessToken: config.codexAccessToken,
               codexIdToken: config.codexIdToken,
             });

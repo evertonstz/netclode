@@ -38,6 +38,9 @@ export class CodexAdapter implements SDKAdapter {
   private currentGitRepo: string | null = null;
   private currentGithubToken: string | null = null;
 
+  // Cleaned model name (without :api/:oauth suffix)
+  private cleanedModel: string | undefined = undefined;
+
   // Track tool start times for duration calculation
   private toolStartTimes = new Map<string, number>();
 
@@ -51,27 +54,61 @@ export class CodexAdapter implements SDKAdapter {
   async initialize(config: SDKConfig): Promise<void> {
     this.config = config;
 
+    // Strip :api or :oauth suffix from model if present
+    this.cleanedModel = config.model?.replace(/:api$|:oauth$/, "");
+    const isApiMode = config.model?.endsWith(":api") || Boolean(config.openaiApiKey && !config.codexAccessToken);
+    const isOAuthMode = config.model?.endsWith(":oauth") || Boolean(config.codexAccessToken && !config.openaiApiKey);
+
     console.log("[codex-adapter] Initializing");
-    console.log("[codex-adapter] Model:", config.model || "default");
-    console.log("[codex-adapter] OAuth tokens available:", Boolean(config.codexAccessToken));
+    console.log("[codex-adapter] Model:", this.cleanedModel || "default");
+    console.log("[codex-adapter] Auth mode:", isApiMode ? "API key" : isOAuthMode ? "OAuth" : "unknown");
 
-    // If OAuth tokens are provided, write them to ~/.codex/auth.json
-    // The Codex CLI binary reads credentials from this location
-    if (config.codexAccessToken && config.codexIdToken) {
+    // Build clean env object without undefined values
+    const buildEnv = (overrides: Record<string, string | undefined> = {}): Record<string, string> => {
+      const env: Record<string, string> = {};
+      for (const [key, value] of Object.entries(process.env)) {
+        if (value !== undefined) {
+          env[key] = value;
+        }
+      }
+      for (const [key, value] of Object.entries(overrides)) {
+        if (value !== undefined) {
+          env[key] = value;
+        } else {
+          delete env[key];
+        }
+      }
+      return env;
+    };
+
+    // Determine which credentials to use based on auth mode
+    if (isOAuthMode && config.codexAccessToken && config.codexIdToken) {
+      // OAuth mode: write tokens to ~/.codex/auth.json
+      // The Codex CLI binary reads credentials from this location
       await this.writeCodexAuth(config.codexAccessToken, config.codexIdToken);
-    }
+      console.log("[codex-adapter] Using OAuth authentication (ChatGPT subscription)");
 
-    // Create Codex client
-    // Note: If OAuth tokens are written, the CLI will use them automatically
-    // If not, it will fall back to OPENAI_API_KEY env var
-    this.codex = new Codex({
-      // apiKey is optional - if not provided, uses env var or OAuth tokens
-      env: {
-        ...process.env,
-        // Ensure OPENAI_API_KEY is available if set
-        ...(process.env.OPENAI_API_KEY && { OPENAI_API_KEY: process.env.OPENAI_API_KEY }),
-      },
-    });
+      this.codex = new Codex({
+        // For OAuth, don't pass apiKey - let it use auth.json
+        // Remove any OPENAI_API_KEY to force OAuth
+        env: buildEnv({ OPENAI_API_KEY: undefined }),
+      });
+    } else if (isApiMode && config.openaiApiKey) {
+      // API key mode: use OPENAI_API_KEY
+      console.log("[codex-adapter] Using API key authentication");
+
+      this.codex = new Codex({
+        apiKey: config.openaiApiKey,
+        env: buildEnv({ OPENAI_API_KEY: config.openaiApiKey }),
+      });
+    } else {
+      // Fallback: use environment variable
+      console.log("[codex-adapter] Using environment OPENAI_API_KEY");
+
+      this.codex = new Codex({
+        env: buildEnv(),
+      });
+    }
 
     console.log("[codex-adapter] Client created");
   }
@@ -162,7 +199,7 @@ export class CodexAdapter implements SDKAdapter {
           workingDirectory: WORKSPACE_DIR,
           sandboxMode: "danger-full-access",
           approvalPolicy: "never",
-          model: this.config?.model,
+          model: this.cleanedModel,
         });
       } else {
         console.log(`[codex-adapter] Creating new Codex thread`);
@@ -170,7 +207,7 @@ export class CodexAdapter implements SDKAdapter {
           workingDirectory: WORKSPACE_DIR,
           sandboxMode: "danger-full-access",
           approvalPolicy: "never",
-          model: this.config?.model,
+          model: this.cleanedModel,
           skipGitRepoCheck: true, // We handle git setup ourselves
         });
       }
