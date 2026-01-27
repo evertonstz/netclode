@@ -60,12 +60,12 @@ var sessionsResumeCmd = &cobra.Command{
 }
 
 var (
-	createName       string
-	createRepo       string
-	createSdkType    string
-	createModel      string
-	createNoInternet bool
-	createTailnet    bool
+	createName    string
+	createRepo    string
+	createSdkType string
+	createModel   string
+
+	createTailnet bool
 )
 
 func init() {
@@ -81,7 +81,6 @@ func init() {
 	sessionsCreateCmd.Flags().StringVar(&createRepo, "repo", "", "GitHub repository (owner/repo)")
 	sessionsCreateCmd.Flags().StringVar(&createSdkType, "sdk", "claude", "SDK type (claude, opencode, or copilot)")
 	sessionsCreateCmd.Flags().StringVar(&createModel, "model", "", "Model ID for OpenCode (e.g., anthropic/claude-sonnet-4-0)")
-	sessionsCreateCmd.Flags().BoolVar(&createNoInternet, "no-internet", false, "Block internet access (only allow control-plane and DNS)")
 	sessionsCreateCmd.Flags().BoolVar(&createTailnet, "tailnet", false, "Enable Tailnet access (allow 100.64.0.0/10)")
 }
 
@@ -251,12 +250,11 @@ func runSessionsCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := client.CreateSessionOptions{
-		Name:           createName,
-		Repo:           createRepo,
-		SdkType:        sdkType,
-		Model:          createModel,
-		InternetAccess: !createNoInternet,
-		TailnetAccess:  createTailnet,
+		Name:          createName,
+		Repo:          createRepo,
+		SdkType:       sdkType,
+		Model:         createModel,
+		TailnetAccess: createTailnet,
 	}
 
 	session, err := c.CreateSession(ctx, opts)

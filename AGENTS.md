@@ -3,6 +3,7 @@
 ## Rules
 
 - Always ask before running `git push`
+- Prefer breaking changes over backwards compatibility (no `reserved` fields in protos, etc.)
 
 ## Deployment
 

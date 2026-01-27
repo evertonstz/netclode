@@ -835,14 +835,10 @@ func (*ServerMessage_RepoAccessUpdated) isServerMessage_Message() {}
 // NetworkConfig controls network access for a session's sandbox.
 type NetworkConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Whether internet access is enabled for this session.
-	// Default: true. When false, sandbox can only reach control-plane and DNS
-	// (no external internet access).
-	InternetAccess bool `protobuf:"varint,1,opt,name=internet_access,json=internetAccess,proto3" json:"internet_access,omitempty"`
 	// Whether Tailnet access is enabled for this session.
 	// Default: false. When true, sandbox can reach other devices on the
 	// Tailscale network (100.64.0.0/10 CGNAT range).
-	TailnetAccess bool `protobuf:"varint,2,opt,name=tailnet_access,json=tailnetAccess,proto3" json:"tailnet_access,omitempty"`
+	TailnetAccess bool `protobuf:"varint,1,opt,name=tailnet_access,json=tailnetAccess,proto3" json:"tailnet_access,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -875,13 +871,6 @@ func (x *NetworkConfig) ProtoReflect() protoreflect.Message {
 // Deprecated: Use NetworkConfig.ProtoReflect.Descriptor instead.
 func (*NetworkConfig) Descriptor() ([]byte, []int) {
 	return file_netclode_v1_client_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *NetworkConfig) GetInternetAccess() bool {
-	if x != nil {
-		return x.InternetAccess
-	}
-	return false
 }
 
 func (x *NetworkConfig) GetTailnetAccess() bool {
@@ -3461,10 +3450,9 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\rsnapshot_list\x18\x15 \x01(\v2!.netclode.v1.SnapshotListResponseH\x00R\fsnapshotList\x12T\n" +
 	"\x11snapshot_restored\x18\x16 \x01(\v2%.netclode.v1.SnapshotRestoredResponseH\x00R\x10snapshotRestored\x12X\n" +
 	"\x13repo_access_updated\x18\x17 \x01(\v2&.netclode.v1.RepoAccessUpdatedResponseH\x00R\x11repoAccessUpdatedB\t\n" +
-	"\amessage\"_\n" +
-	"\rNetworkConfig\x12'\n" +
-	"\x0finternet_access\x18\x01 \x01(\bR\x0einternetAccess\x12%\n" +
-	"\x0etailnet_access\x18\x02 \x01(\bR\rtailnetAccess\"\xbd\x04\n" +
+	"\amessage\"6\n" +
+	"\rNetworkConfig\x12%\n" +
+	"\x0etailnet_access\x18\x01 \x01(\bR\rtailnetAccess\"\xbd\x04\n" +
 	"\x14CreateSessionRequest\x12\"\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x17\n" +

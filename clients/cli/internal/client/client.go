@@ -27,12 +27,11 @@ func New(baseURL string) *Client {
 
 // CreateSessionOptions contains options for creating a session.
 type CreateSessionOptions struct {
-	Name           string
-	Repo           string
-	SdkType        pb.SdkType
-	Model          string
-	InternetAccess bool // default true
-	TailnetAccess  bool // default false
+	Name          string
+	Repo          string
+	SdkType       pb.SdkType
+	Model         string
+	TailnetAccess bool // default false
 }
 
 // CreateSession creates a new session and returns it.
@@ -53,10 +52,11 @@ func (c *Client) CreateSession(ctx context.Context, opts CreateSessionOptions) (
 	if opts.Model != "" {
 		req.Model = &opts.Model
 	}
-	// Set network config (always send to override defaults if needed)
-	req.NetworkConfig = &pb.NetworkConfig{
-		InternetAccess: opts.InternetAccess,
-		TailnetAccess:  opts.TailnetAccess,
+	// Set network config if tailnet access is requested (non-default)
+	if opts.TailnetAccess {
+		req.NetworkConfig = &pb.NetworkConfig{
+			TailnetAccess: opts.TailnetAccess,
+		}
 	}
 
 	if err := stream.Send(&pb.ClientMessage{

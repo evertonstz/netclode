@@ -2,8 +2,6 @@ import Foundation
 
 /// Network configuration for sandbox sessions
 struct NetworkConfig: Sendable {
-    /// Whether internet access is enabled (default: true)
-    var internetAccess: Bool = true
     /// Whether Tailnet access is enabled (default: false)
     var tailnetAccess: Bool = false
 }

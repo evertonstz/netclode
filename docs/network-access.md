@@ -1,37 +1,17 @@
 # Network Access Control
 
-Netclode provides fine-grained network access control for agent sandboxes using Kubernetes NetworkPolicies and Cilium CNI.
+Netclode provides network access control for agent sandboxes using Kubernetes NetworkPolicies and Cilium CNI.
 
 ## Overview
 
-By default, agent sandboxes have:
-- **Internet access**: Can reach external services (0.0.0.0/0)
+Agent sandboxes have:
+- **Internet access**: Can reach external services (required for LLM API calls)
 - **Control-plane access**: Can communicate with the Netclode control-plane
 - **DNS access**: Can resolve domain names via kube-system DNS
-- **No private network access**: Cannot reach private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10)
+- **No private network access**: Cannot reach private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+- **No Tailnet access** by default: Cannot reach Tailscale network (100.64.0.0/10)
 
 ## Configuration Options
-
-### Block Internet Access (`--no-internet`)
-
-When creating a session with `--no-internet`, the sandbox cannot reach the public internet:
-
-```bash
-netclode sessions create --repo owner/repo --no-internet
-```
-
-**Allowed:**
-- DNS resolution (kube-system)
-- Control-plane communication (for agent protocol)
-
-**Blocked:**
-- All internet egress (0.0.0.0/0)
-- Private networks (unchanged)
-
-**Use cases:**
-- Running untrusted code that shouldn't exfiltrate data
-- Enforcing air-gapped development environments
-- Testing offline behavior
 
 ### Enable Tailnet Access (`--tailnet`)
 
@@ -50,50 +30,38 @@ netclode sessions create --repo owner/repo --tailnet
 - Connecting to databases on your tailnet
 - Using private package registries
 
-### Combined Options
-
-You can combine both flags for maximum control:
-
-```bash
-# No internet, but can reach Tailnet services
-netclode sessions create --repo owner/repo --no-internet --tailnet
-```
-
 | Flags | Internet | Tailnet | Control-plane | DNS |
 |-------|----------|---------|---------------|-----|
 | (default) | Allowed | Blocked | Allowed | Allowed |
-| `--no-internet` | Blocked | Blocked | Allowed | Allowed |
 | `--tailnet` | Allowed | Allowed | Allowed | Allowed |
-| `--no-internet --tailnet` | Blocked | Allowed | Allowed | Allowed |
 
 ## Implementation Details
 
-### SandboxTemplates
+### SandboxTemplate
 
-Network access is implemented using different SandboxTemplates:
+Network access is implemented using a single SandboxTemplate (`netclode-agent`) that provides:
+- DNS access (kube-system)
+- Control-plane access
+- Ingress from Tailscale namespace (for preview URLs)
 
-- **`netclode-agent`**: Default template with internet access
-- **`netclode-agent-no-internet`**: Template without internet egress rule
-
-When `--no-internet` is specified, the control-plane creates a SandboxClaim referencing the `netclode-agent-no-internet` template.
+Internet access and Tailnet access are added dynamically via additional NetworkPolicies.
 
 ### NetworkPolicies
 
-Each sandbox gets NetworkPolicies created by the sandbox controller based on the template:
+Each sandbox gets NetworkPolicies:
+
+1. **Base policy** (from template): DNS + control-plane access
+2. **Internet access** (always added): `sess-<id>-internet-access` - allows `0.0.0.0/0` except private ranges
+3. **Tailnet access** (if `--tailnet`): `sess-<id>-tailnet-access` - allows `100.64.0.0/10`
 
 ```yaml
-# Default policy (from template)
+# Internet access policy (always created)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sess-<id>-internet-access
 spec:
   egress:
-    # Control-plane access
-    - to:
-        - podSelector:
-            matchLabels:
-              app: control-plane
-      ports:
-        - port: 80
-        - port: 3000
-    # Internet access (NOT present in no-internet template)
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
@@ -102,20 +70,10 @@ spec:
               - 172.16.0.0/12
               - 192.168.0.0/16
               - 100.64.0.0/10
-    # DNS
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-      ports:
-        - port: 53
 ```
 
-### Tailnet Access Policy
-
-When `--tailnet` is specified, an additional NetworkPolicy is created:
-
 ```yaml
+# Tailnet access policy (created with --tailnet)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -127,7 +85,7 @@ spec:
             cidr: 100.64.0.0/10
 ```
 
-Since Kubernetes NetworkPolicies are additive (union), this allows Tailnet access even when the base template excludes it.
+Since Kubernetes NetworkPolicies are additive (union), the tailnet policy allows Tailnet access alongside internet access.
 
 ## Troubleshooting
 
@@ -138,7 +96,7 @@ Since Kubernetes NetworkPolicies are additive (union), this allows Tailnet acces
 kubectl --context netclode -n netclode get networkpolicies | grep <session-id>
 
 # Check policy details
-kubectl --context netclode -n netclode get networkpolicy sess-<id>-network-policy -o yaml
+kubectl --context netclode -n netclode get networkpolicy sess-<id>-internet-access -o yaml
 ```
 
 ### Test Connectivity from a Sandbox
@@ -149,24 +107,21 @@ CLAIM_UID=$(kubectl --context netclode -n netclode get sandboxclaim sess-<id> -o
 POD=$(kubectl --context netclode -n netclode get pods -l agents.x-k8s.io/claim-uid=$CLAIM_UID -o jsonpath='{.items[0].metadata.name}')
 
 # Test internet
-kubectl --context netclode -n netclode exec $POD -- curl -s --connect-timeout 5 https://google.com
+kubectl --context netclode -n netclode exec $POD -- curl -s --connect-timeout 5 https://httpbin.org/get
 
 # Test control-plane
-kubectl --context netclode -n netclode exec $POD -- curl -s http://control-plane/health
+kubectl --context netclode -n netclode exec $POD -- curl -s http://control-plane.netclode.svc.cluster.local/health
 
 # Test Tailnet (replace with your Tailscale IP)
-kubectl --context netclode -n netclode exec $POD -- curl -s --connect-timeout 5 https://100.x.x.x/health
+kubectl --context netclode -n netclode exec $POD -- curl -s --connect-timeout 5 http://100.x.x.x:8123
 ```
 
 ### Common Issues
 
-**Internet still accessible with `--no-internet`:**
-- Ensure the control-plane was restarted after deploying the `netclode-agent-no-internet` template
-- Check that the SandboxClaim references the correct template in logs
-
 **Tailnet not accessible with `--tailnet`:**
-- Verify the tailnet-access NetworkPolicy exists
+- Verify the `sess-<id>-tailnet-access` NetworkPolicy exists
 - Ensure the target service is actually on the Tailscale network (100.64.0.0/10)
+- Check that the host has routes to Tailscale IPs (traffic is masqueraded through the host)
 
 **DNS not working:**
 - Check that kube-system namespace has the correct label: `kubernetes.io/metadata.name: kube-system`

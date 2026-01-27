@@ -21,7 +21,6 @@ struct PromptSheet: View {
     @State private var canSubmit = false
     @State private var showModelDropdown = false
     @State private var showAccessDropdown = false
-    @State private var internetAccess = true
     @State private var tailnetAccess = false
     @FocusState private var isFocused: Bool
 
@@ -183,26 +182,6 @@ struct PromptSheet: View {
                         }
                         
                         VStack(spacing: 0) {
-                            Toggle(isOn: $internetAccess) {
-                                HStack(spacing: Theme.Spacing.sm) {
-                                    Image(systemName: "globe")
-                                        .foregroundStyle(Theme.Colors.brand)
-                                        .frame(width: 20)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Internet Access")
-                                            .font(.netclodeBody)
-                                        Text("Allow connections to external services")
-                                            .font(.netclodeCaption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                            .tint(Theme.Colors.brand)
-                            .padding(Theme.Spacing.sm)
-                            
-                            Divider()
-                                .padding(.leading, 40)
-                            
                             Toggle(isOn: $tailnetAccess) {
                                 HStack(spacing: Theme.Spacing.sm) {
                                     Image(systemName: "point.3.connected.trianglepath.dotted")
@@ -353,11 +332,10 @@ struct PromptSheet: View {
             modelParam = selectedCopilotModelId
         }
         
-        // Build network config (only if non-default values)
+        // Build network config (only if tailnet access is requested)
         var networkConfig: NetworkConfig? = nil
-        if !internetAccess || tailnetAccess {
+        if tailnetAccess {
             networkConfig = NetworkConfig(
-                internetAccess: internetAccess,
                 tailnetAccess: tailnetAccess
             )
         }

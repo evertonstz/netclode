@@ -1133,7 +1133,6 @@ final class ConnectService {
             }
             if let networkConfig = networkConfig {
                 var protoNetworkConfig = Netclode_V1_NetworkConfig()
-                protoNetworkConfig.internetAccess = networkConfig.internetAccess
                 protoNetworkConfig.tailnetAccess = networkConfig.tailnetAccess
                 req.networkConfig = protoNetworkConfig
             }

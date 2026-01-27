@@ -464,11 +464,6 @@ public struct Netclode_V1_NetworkConfig: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  /// Whether internet access is enabled for this session.
-  /// Default: true. When false, sandbox can only reach control-plane and DNS
-  /// (no external internet access).
-  public var internetAccess: Bool = false
-
   /// Whether Tailnet access is enabled for this session.
   /// Default: false. When true, sandbox can reach other devices on the
   /// Tailscale network (100.64.0.0/10 CGNAT range).
@@ -2521,7 +2516,7 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_NetworkConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".NetworkConfig"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}internet_access\0\u{3}tailnet_access\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}tailnet_access\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2529,25 +2524,20 @@ extension Netclode_V1_NetworkConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularBoolField(value: &self.internetAccess) }()
-      case 2: try { try decoder.decodeSingularBoolField(value: &self.tailnetAccess) }()
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.tailnetAccess) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.internetAccess != false {
-      try visitor.visitSingularBoolField(value: self.internetAccess, fieldNumber: 1)
-    }
     if self.tailnetAccess != false {
-      try visitor.visitSingularBoolField(value: self.tailnetAccess, fieldNumber: 2)
+      try visitor.visitSingularBoolField(value: self.tailnetAccess, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_NetworkConfig, rhs: Netclode_V1_NetworkConfig) -> Bool {
-    if lhs.internetAccess != rhs.internetAccess {return false}
     if lhs.tailnetAccess != rhs.tailnetAccess {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true

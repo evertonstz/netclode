@@ -212,7 +212,7 @@ func generateID() string {
 }
 
 // Create creates a new session.
-func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string, copilotBackend *pb.CopilotBackend, networkEnabled *bool, tailnetAccess *bool) (*pb.Session, error) {
+func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string, copilotBackend *pb.CopilotBackend, tailnetAccess *bool) (*pb.Session, error) {
 	// Ensure we have a slot for a new active session
 	m.ensureActiveSlot(ctx, "")
 
@@ -247,34 +247,30 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAcc
 	m.sessions[id] = state
 	m.mu.Unlock()
 
-	// Determine network settings (defaults: network enabled, tailnet disabled)
-	netEnabled := true
-	if networkEnabled != nil {
-		netEnabled = *networkEnabled
-	}
+	// Determine tailnet setting (default: disabled)
 	tailnetEnabled := false
 	if tailnetAccess != nil {
 		tailnetEnabled = *tailnetAccess
 	}
 
 	// Start sandbox creation in background
-	go m.createSandbox(context.Background(), id, repo, repoAccess, netEnabled, tailnetEnabled)
+	go m.createSandbox(context.Background(), id, repo, repoAccess, tailnetEnabled)
 
 	return session, nil
 }
 
-func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, networkEnabled bool, tailnetEnabled bool) {
+func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool) {
 	if m.config.UseWarmPool {
-		m.createSandboxViaClaim(ctx, sessionID, repo, repoAccess, networkEnabled, tailnetEnabled)
+		m.createSandboxViaClaim(ctx, sessionID, repo, repoAccess, tailnetEnabled)
 	} else {
-		m.createSandboxDirect(ctx, sessionID, repo, repoAccess, networkEnabled, tailnetEnabled)
+		m.createSandboxDirect(ctx, sessionID, repo, repoAccess, tailnetEnabled)
 	}
 }
 
 // createSandboxDirect creates a sandbox directly (legacy mode).
 // If restoreSnapshotID is provided, the PVC is restored from that snapshot BEFORE creating the sandbox.
 // If resuming from a paused session, uses the stored PVC name.
-func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, networkEnabled bool, tailnetEnabled bool, restoreSnapshotID ...string) {
+func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool, restoreSnapshotID ...string) {
 	env := map[string]string{
 		"SESSION_ID":        sessionID,
 		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
@@ -385,15 +381,13 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		return
 	}
 
-	// Apply network policies based on configuration
-	// Default template has NO internet - add internet policy only if enabled
-	if networkEnabled {
-		if err := m.k8s.ConfigureNetwork(ctx, sessionID, true); err != nil {
-			slog.Error("Failed to apply internet access policy", "sessionID", sessionID, "error", err)
-			// Non-fatal: continue with sandbox creation, but log the error
-		} else {
-			slog.Info("Applied internet access policy", "sessionID", sessionID)
-		}
+	// Apply network policies
+	// Always enable internet access (required for LLM API calls)
+	if err := m.k8s.ConfigureNetwork(ctx, sessionID, true); err != nil {
+		slog.Error("Failed to apply internet access policy", "sessionID", sessionID, "error", err)
+		// Non-fatal: continue with sandbox creation, but log the error
+	} else {
+		slog.Info("Applied internet access policy", "sessionID", sessionID)
 	}
 	if tailnetEnabled {
 		if err := m.k8s.ConfigureTailnetAccess(ctx, sessionID, true); err != nil {
@@ -468,7 +462,7 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 }
 
 // createSandboxViaClaim uses SandboxClaim for warm pool allocation
-func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, networkEnabled bool, tailnetEnabled bool) {
+func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool) {
 	// Always use the same template to leverage the warm pool
 	// Network restrictions are applied via ConfigureNetwork() after claiming
 	templateName := m.config.SandboxTemplate
@@ -561,14 +555,12 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 	}
 
 	// Apply network policies AFTER sandbox is ready
-	// Default template has NO internet - add internet policy only if enabled
-	if networkEnabled {
-		if err := m.k8s.ConfigureNetwork(ctx, sessionID, true); err != nil {
-			slog.Error("Failed to apply internet access policy", "sessionID", sessionID, "error", err)
-			// Non-fatal: continue with sandbox creation, but log the error
-		} else {
-			slog.Info("Applied internet access policy", "sessionID", sessionID)
-		}
+	// Always enable internet access (required for LLM API calls)
+	if err := m.k8s.ConfigureNetwork(ctx, sessionID, true); err != nil {
+		slog.Error("Failed to apply internet access policy", "sessionID", sessionID, "error", err)
+		// Non-fatal: continue with sandbox creation, but log the error
+	} else {
+		slog.Info("Applied internet access policy", "sessionID", sessionID)
 	}
 	if tailnetEnabled {
 		if err := m.k8s.ConfigureTailnetAccess(ctx, sessionID, true); err != nil {
@@ -811,14 +803,14 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	// Always use direct sandbox creation for resume (bypasses warm pool).
 	// This ensures we use the session's existing PVC instead of getting a fresh warm pool PVC.
 	// createSandboxDirect will automatically use the stored PVC name if available.
-	// Note: Resume always uses defaults (networkEnabled=true, tailnetEnabled=false) since we don't store network config
+	// Note: Resume always uses default tailnetEnabled=false since we don't store network config
 	if restoreSnapshotID != "" {
 		slog.Info("Resuming with snapshot restore", "sessionID", id, "snapshotID", restoreSnapshotID)
 		_ = m.storage.ClearRestoreSnapshotID(ctx, id) // Clear from storage
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, true, false, restoreSnapshotID)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false, restoreSnapshotID)
 	} else {
 		slog.Info("Resuming session", "sessionID", id)
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, true, false)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false)
 	}
 
 	return state.Session, nil

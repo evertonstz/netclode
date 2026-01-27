@@ -883,9 +883,9 @@ func (r *k8sRuntime) ExposePort(ctx context.Context, sessionID string, port int)
 }
 
 // ConfigureNetwork enables or disables internet access for a sandbox.
+// ConfigureNetwork adds or removes internet access for a sandbox.
 // The default SandboxTemplate has NO internet access (only DNS + control-plane).
-// When networkEnabled is true, creates a NetworkPolicy allowing internet egress (0.0.0.0/0).
-// When networkEnabled is false, removes the internet policy (sandbox uses restrictive default).
+// This is always called with networkEnabled=true to add internet access (required for LLM APIs).
 func (r *k8sRuntime) ConfigureNetwork(ctx context.Context, sessionID string, networkEnabled bool) error {
 	internetPolicyName := fmt.Sprintf("sess-%s-internet-access", sessionID)
 
@@ -1240,7 +1240,7 @@ func (r *k8sRuntime) checkAndNotifyClaim(sessionID string, claim *SandboxClaim) 
 }
 
 // CreateSandboxClaim creates a claim to request a sandbox from the warm pool.
-// templateName specifies which SandboxTemplate to use (e.g., "netclode-agent" or "netclode-agent-no-internet").
+// templateName specifies which SandboxTemplate to use (e.g., "netclode-agent").
 func (r *k8sRuntime) CreateSandboxClaim(ctx context.Context, sessionID string, templateName string) error {
 	claim := &SandboxClaim{
 		TypeMeta: metav1.TypeMeta{
