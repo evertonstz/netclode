@@ -439,6 +439,7 @@ async function handleControlPlaneMessage(
               openaiApiKey: config.openaiApiKey,
               codexAccessToken: config.codexAccessToken,
               codexIdToken: config.codexIdToken,
+              codexRefreshToken: config.codexRefreshToken,
             });
           } catch (err) {
             console.error("[agent] Failed to initialize SDK adapter:", err);

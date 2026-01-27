@@ -243,10 +243,12 @@ func runSessionsCreate(cmd *cobra.Command, args []string) error {
 		sdkType = pb.SdkType_SDK_TYPE_OPENCODE
 	case "copilot":
 		sdkType = pb.SdkType_SDK_TYPE_COPILOT
+	case "codex":
+		sdkType = pb.SdkType_SDK_TYPE_CODEX
 	case "claude", "":
 		sdkType = pb.SdkType_SDK_TYPE_CLAUDE
 	default:
-		return fmt.Errorf("invalid SDK type: %s (use 'claude', 'opencode', or 'copilot')", createSdkType)
+		return fmt.Errorf("invalid SDK type: %s (use 'claude', 'opencode', 'copilot', or 'codex')", createSdkType)
 	}
 
 	opts := client.CreateSessionOptions{

@@ -21,8 +21,9 @@ type Config struct {
 	MaxActiveSessions  int
 
 	// Codex OAuth tokens (for ChatGPT auth mode)
-	CodexAccessToken string
-	CodexIdToken     string
+	CodexAccessToken  string
+	CodexIdToken      string
+	CodexRefreshToken string
 
 	// GitHub App integration (for repo-scoped tokens)
 	GitHubAppID          int64
@@ -46,8 +47,9 @@ func Load() *Config {
 		MaxActiveSessions:  getEnvInt("MAX_ACTIVE_SESSIONS", 5),
 
 		// Codex OAuth tokens
-		CodexAccessToken: getEnv("CODEX_ACCESS_TOKEN", ""),
-		CodexIdToken:     getEnv("CODEX_ID_TOKEN", ""),
+		CodexAccessToken:  getEnv("CODEX_ACCESS_TOKEN", ""),
+		CodexIdToken:      getEnv("CODEX_ID_TOKEN", ""),
+		CodexRefreshToken: getEnv("CODEX_REFRESH_TOKEN", ""),
 
 		// GitHub App integration
 		GitHubAppID:          getEnvInt64("GITHUB_APP_ID", 0),

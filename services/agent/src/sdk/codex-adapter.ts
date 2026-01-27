@@ -85,7 +85,7 @@ export class CodexAdapter implements SDKAdapter {
     if (isOAuthMode && config.codexAccessToken && config.codexIdToken) {
       // OAuth mode: write tokens to ~/.codex/auth.json
       // The Codex CLI binary reads credentials from this location
-      await this.writeCodexAuth(config.codexAccessToken, config.codexIdToken);
+      await this.writeCodexAuth(config.codexAccessToken, config.codexIdToken, config.codexRefreshToken);
       console.log("[codex-adapter] Using OAuth authentication (ChatGPT subscription)");
 
       this.codex = new Codex({
@@ -117,7 +117,7 @@ export class CodexAdapter implements SDKAdapter {
    * Write OAuth tokens to Codex auth file
    * The Codex CLI reads from ~/.codex/auth.json
    */
-  private async writeCodexAuth(accessToken: string, idToken: string): Promise<void> {
+  private async writeCodexAuth(accessToken: string, idToken: string, refreshToken?: string): Promise<void> {
     const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
     await fs.mkdir(codexHome, { recursive: true });
 
@@ -125,7 +125,7 @@ export class CodexAdapter implements SDKAdapter {
       tokens: {
         access_token: accessToken,
         id_token: idToken,
-        // refresh_token would be here too if we had it
+        refresh_token: refreshToken || "",
       },
       last_refresh: new Date().toISOString(),
     };

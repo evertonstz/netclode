@@ -28,6 +28,7 @@ export interface SDKConfig {
   // Codex SDK OAuth tokens (for ChatGPT auth mode)
   codexAccessToken?: string;
   codexIdToken?: string;
+  codexRefreshToken?: string;
 }
 
 /**

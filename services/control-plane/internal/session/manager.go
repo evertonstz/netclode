@@ -42,6 +42,7 @@ type AgentSessionConfig struct {
 	CopilotBackend     *pb.CopilotBackend
 	CodexAccessToken   string // For Codex OAuth mode
 	CodexIdToken       string // For Codex OAuth mode
+	CodexRefreshToken  string // For Codex OAuth mode
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -1321,6 +1322,7 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 		} else if strings.HasSuffix(model, ":oauth") {
 			config.CodexAccessToken = m.config.CodexAccessToken
 			config.CodexIdToken = m.config.CodexIdToken
+			config.CodexRefreshToken = m.config.CodexRefreshToken
 		}
 	}
 

@@ -110,6 +110,9 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 	if config.CodexIdToken != "" {
 		sessionConfig.CodexIdToken = &config.CodexIdToken
 	}
+	if config.CodexRefreshToken != "" {
+		sessionConfig.CodexRefreshToken = &config.CodexRefreshToken
+	}
 	if config.OpenAIAPIKey != "" {
 		sessionConfig.OpenaiApiKey = &config.OpenAIAPIKey
 	}
