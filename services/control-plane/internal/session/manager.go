@@ -72,17 +72,6 @@ type Manager struct {
 
 	// onSessionUpdated is called when a session is updated internally (e.g., auto-pause).
 	onSessionUpdated SessionUpdateCallback
-
-	// Models cache
-	copilotModelsCache   []*pb.ModelInfo
-	copilotModelsCacheAt time.Time
-	modelsDevCache       map[string]*modelsDevCacheEntry
-	copilotModelsMu      sync.RWMutex
-}
-
-type modelsDevCacheEntry struct {
-	models    []*pb.ModelInfo
-	fetchedAt time.Time
 }
 
 // NewManager creates a new session manager.
@@ -1736,33 +1725,10 @@ type modelsDevLimit struct {
 
 // fetchModelsFromModelsDev fetches models from models.dev API for a specific provider
 func (m *Manager) fetchModelsFromModelsDev(provider string) []*pb.ModelInfo {
-	// Check cache first (valid for 5 minutes)
-	m.copilotModelsMu.RLock()
-	cacheKey := "modelsDev_" + provider
-	if cached, ok := m.modelsDevCache[cacheKey]; ok && time.Since(cached.fetchedAt) < 5*time.Minute {
-		models := cached.models
-		m.copilotModelsMu.RUnlock()
-		return models
-	}
-	m.copilotModelsMu.RUnlock()
-
-	// Fetch from models.dev
 	models := m.doFetchModelsFromModelsDev(provider)
 	if models == nil {
 		return getModelsFallback(provider)
 	}
-
-	// Update cache
-	m.copilotModelsMu.Lock()
-	if m.modelsDevCache == nil {
-		m.modelsDevCache = make(map[string]*modelsDevCacheEntry)
-	}
-	m.modelsDevCache[cacheKey] = &modelsDevCacheEntry{
-		models:    models,
-		fetchedAt: time.Now(),
-	}
-	m.copilotModelsMu.Unlock()
-
 	return models
 }
 
@@ -1931,16 +1897,6 @@ func (m *Manager) fetchCopilotModels() []*pb.ModelInfo {
 		return nil
 	}
 
-	// Check cache first (valid for 5 minutes)
-	// Note: Cache is shared regardless of credentials, so we filter after retrieving
-	m.copilotModelsMu.RLock()
-	if m.copilotModelsCache != nil && time.Since(m.copilotModelsCacheAt) < 5*time.Minute {
-		models := m.filterCopilotModelsByCredentials(m.copilotModelsCache, hasGitHubCopilot, hasAnthropicKey)
-		m.copilotModelsMu.RUnlock()
-		return models
-	}
-	m.copilotModelsMu.RUnlock()
-
 	// Fetch from models.dev - get both github-copilot and anthropic providers
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get("https://models.dev/api.json")
@@ -1963,86 +1919,58 @@ func (m *Manager) fetchCopilotModels() []*pb.ModelInfo {
 
 	var models []*pb.ModelInfo
 
-	// Add GitHub Copilot models (always fetch for cache, filter later)
-	if copilotData, ok := data["github-copilot"]; ok {
-		for _, model := range copilotData.Models {
-			capabilities := []string{"chat", "code"}
-			for _, input := range model.Modalities.Input {
-				if input == "image" {
-					capabilities = append(capabilities, "vision")
-					break
+	// Add GitHub Copilot models
+	if hasGitHubCopilot {
+		if copilotData, ok := data["github-copilot"]; ok {
+			for _, model := range copilotData.Models {
+				capabilities := []string{"chat", "code"}
+				for _, input := range model.Modalities.Input {
+					if input == "image" {
+						capabilities = append(capabilities, "vision")
+						break
+					}
 				}
-			}
-			if model.Reasoning {
-				capabilities = append(capabilities, "reasoning")
-			}
+				if model.Reasoning {
+					capabilities = append(capabilities, "reasoning")
+				}
 
-			models = append(models, &pb.ModelInfo{
-				Id:           model.ID,
-				Name:         model.Name,
-				Provider:     strPtr("Copilot"),
-				Capabilities: capabilities,
-			})
+				models = append(models, &pb.ModelInfo{
+					Id:           model.ID,
+					Name:         model.Name,
+					Provider:     strPtr("Copilot"),
+					Capabilities: capabilities,
+				})
+			}
 		}
 	}
 
-	// Add Anthropic models for BYOK (always fetch for cache, filter later)
-	if anthropicData, ok := data["anthropic"]; ok {
-		for _, model := range anthropicData.Models {
-			capabilities := []string{"chat", "code"}
-			for _, input := range model.Modalities.Input {
-				if input == "image" {
-					capabilities = append(capabilities, "vision")
-					break
+	// Add Anthropic models for BYOK
+	if hasAnthropicKey {
+		if anthropicData, ok := data["anthropic"]; ok {
+			for _, model := range anthropicData.Models {
+				capabilities := []string{"chat", "code"}
+				for _, input := range model.Modalities.Input {
+					if input == "image" {
+						capabilities = append(capabilities, "vision")
+						break
+					}
 				}
-			}
-			if model.Reasoning {
-				capabilities = append(capabilities, "reasoning")
-			}
+				if model.Reasoning {
+					capabilities = append(capabilities, "reasoning")
+				}
 
-			models = append(models, &pb.ModelInfo{
-				Id:           model.ID + ":anthropic",
-				Name:         model.Name,
-				Provider:     strPtr("Anthropic"),
-				Capabilities: capabilities,
-			})
+				models = append(models, &pb.ModelInfo{
+					Id:           model.ID + ":anthropic",
+					Name:         model.Name,
+					Provider:     strPtr("Anthropic"),
+					Capabilities: capabilities,
+				})
+			}
 		}
 	}
 
 	slog.Info("Fetched Copilot models from models.dev", "count", len(models))
-
-	// Update cache with ALL models (filter happens on retrieval)
-	m.copilotModelsMu.Lock()
-	m.copilotModelsCache = models
-	m.copilotModelsCacheAt = time.Now()
-	m.copilotModelsMu.Unlock()
-
-	// Return filtered models based on available credentials
-	return m.filterCopilotModelsByCredentials(models, hasGitHubCopilot, hasAnthropicKey)
-}
-
-// filterCopilotModelsByCredentials filters models based on available credentials
-func (m *Manager) filterCopilotModelsByCredentials(models []*pb.ModelInfo, hasGitHubCopilot, hasAnthropicKey bool) []*pb.ModelInfo {
-	// If both credentials available, return all models
-	if hasGitHubCopilot && hasAnthropicKey {
-		return models
-	}
-
-	var filtered []*pb.ModelInfo
-	for _, model := range models {
-		// Anthropic direct models (ID ends with :anthropic) require Anthropic API key
-		isAnthropicDirect := strings.HasSuffix(model.Id, ":anthropic")
-		if isAnthropicDirect && hasAnthropicKey {
-			filtered = append(filtered, model)
-		}
-
-		// Copilot models require GitHub Copilot token
-		if !isAnthropicDirect && hasGitHubCopilot {
-			filtered = append(filtered, model)
-		}
-	}
-
-	return filtered
+	return models
 }
 
 // getModelsFallback returns fallback models for a provider when models.dev is unavailable
@@ -2106,17 +2034,6 @@ func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
 		return nil
 	}
 
-	// Check cache first (valid for 5 minutes)
-	// Cache key includes auth modes to handle config changes
-	cacheKey := fmt.Sprintf("codex:api=%t:oauth=%t", hasAPIKey, hasOAuth)
-	m.copilotModelsMu.RLock()
-	if cached, ok := m.modelsDevCache[cacheKey]; ok && time.Since(cached.fetchedAt) < 5*time.Minute {
-		models := cached.models
-		m.copilotModelsMu.RUnlock()
-		return models
-	}
-	m.copilotModelsMu.RUnlock()
-
 	// Fetch base models from models.dev
 	baseModels := m.doFetchCodexModels()
 	if baseModels == nil {
@@ -2161,17 +2078,6 @@ func (m *Manager) fetchCodexModels() []*pb.ModelInfo {
 			}
 		}
 	}
-
-	// Update cache
-	m.copilotModelsMu.Lock()
-	if m.modelsDevCache == nil {
-		m.modelsDevCache = make(map[string]*modelsDevCacheEntry)
-	}
-	m.modelsDevCache[cacheKey] = &modelsDevCacheEntry{
-		models:    models,
-		fetchedAt: time.Now(),
-	}
-	m.copilotModelsMu.Unlock()
 
 	slog.Info("Fetched Codex models", "count", len(models), "hasAPIKey", hasAPIKey, "hasOAuth", hasOAuth)
 	return models

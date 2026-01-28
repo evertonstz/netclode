@@ -6,19 +6,17 @@ struct PromptSheet: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(SessionStore.self) private var sessionStore
     @Environment(GitHubStore.self) private var githubStore
-    @Environment(ModelsStore.self) private var modelsStore
-    @Environment(CopilotStore.self) private var copilotStore
-    @Environment(CodexStore.self) private var codexStore
+    @Environment(UnifiedModelsStore.self) private var modelsStore
 
     @State private var promptText = ""
     @State private var repoURL = ""
     @State private var repoAccess: RepoAccess = .read
     @State private var isPrivateRepo = false
     @State private var selectedSdkType: SdkType = .claude
-    @State private var selectedClaudeModelId: String = ModelsStore.defaultModelId
-    @State private var selectedOpenCodeModelId: String = ModelsStore.defaultModelId
-    @State private var selectedCopilotModelId: String = CopilotStore.defaultModelId
-    @State private var selectedCodexModelId: String = CodexStore.defaultModelId
+    @State private var selectedClaudeModelId: String = UnifiedModelsStore.defaultClaudeModelId
+    @State private var selectedOpenCodeModelId: String = UnifiedModelsStore.defaultOpenCodeModelId
+    @State private var selectedCopilotModelId: String = UnifiedModelsStore.defaultCopilotModelId
+    @State private var selectedCodexModelId: String = UnifiedModelsStore.defaultCodexModelId
     @State private var isSubmitting = false
     @State private var canSubmit = false
     @State private var showModelDropdown = false
@@ -29,19 +27,7 @@ struct PromptSheet: View {
 
     /// Get available models as PickerModels based on current SDK selection
     private var availablePickerModels: [PickerModel] {
-        let models: [PickerModel]
-        switch selectedSdkType {
-        case .claude:
-            // Claude SDK only supports Anthropic models
-            models = modelsStore.anthropicModels.map { PickerModel.from($0) }
-        case .opencode:
-            // OpenCode SDK supports multiple providers (Anthropic, Mistral, etc.)
-            models = modelsStore.allModels.map { PickerModel.from($0) }
-        case .copilot:
-            models = copilotStore.models.map { PickerModel.from($0) }
-        case .codex:
-            models = codexStore.models.map { PickerModel.from($0) }
-        }
+        let models = modelsStore.models(for: selectedSdkType).map { PickerModel.from($0) }
         return models.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
@@ -61,14 +47,7 @@ struct PromptSheet: View {
 
     /// Whether models are loading
     private var isLoadingModels: Bool {
-        switch selectedSdkType {
-        case .claude, .opencode:
-            return modelsStore.isLoading
-        case .copilot:
-            return copilotStore.isLoadingModels
-        case .codex:
-            return codexStore.isLoadingModels
-        }
+        modelsStore.isLoading(for: selectedSdkType)
     }
 
     var body: some View {
@@ -392,23 +371,12 @@ struct PromptSheet: View {
     }
 
     private func preloadAllModels() {
-        // Refresh Anthropic models if stale (for Claude & OpenCode SDKs)
-        if modelsStore.isCacheStale {
-            Task {
-                await modelsStore.fetchModels()
+        // Request models for all SDK types via control-plane (no client caching)
+        for sdkType in SdkType.allCases {
+            if modelsStore.models(for: sdkType).isEmpty && !modelsStore.isLoading(for: sdkType) {
+                modelsStore.setLoading(true, for: sdkType)
+                connectService.send(.listModels(sdkType: sdkType, copilotBackend: nil))
             }
-        }
-        
-        // Preload Copilot models if not already loaded
-        if copilotStore.models.isEmpty && !copilotStore.isLoadingModels {
-            copilotStore.setLoadingModels(true)
-            connectService.send(.listModels(sdkType: .copilot, copilotBackend: nil))
-        }
-        
-        // Preload Codex models if not already loaded
-        if codexStore.models.isEmpty && !codexStore.isLoadingModels {
-            codexStore.setLoadingModels(true)
-            connectService.send(.listModels(sdkType: .codex, copilotBackend: nil))
         }
     }
 }
@@ -531,8 +499,6 @@ struct InlineAccessPicker: View {
                 .environment(SettingsStore())
                 .environment(SessionStore())
                 .environment(GitHubStore())
-                .environment(ModelsStore())
-                .environment(CopilotStore())
-                .environment(CodexStore())
+                .environment(UnifiedModelsStore())
         }
 }

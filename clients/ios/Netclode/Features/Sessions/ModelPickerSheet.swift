@@ -11,7 +11,7 @@ struct PickerModel: Identifiable, Hashable {
     let outputCost: Double?
     let reasoningEffort: String?  // For Codex: "High", "Med", "Low", "xHigh"
 
-    /// Create from CopilotModel
+    /// Create from CopilotModel (unified model from control-plane)
     static func from(_ model: CopilotModel) -> PickerModel {
         PickerModel(
             id: model.id,
@@ -22,20 +22,6 @@ struct PickerModel: Identifiable, Hashable {
             inputCost: nil,
             outputCost: nil,
             reasoningEffort: model.reasoningEffort
-        )
-    }
-
-    /// Create from AIModel (models.dev)
-    static func from(_ model: AIModel) -> PickerModel {
-        PickerModel(
-            id: model.fullModelId,
-            name: model.name,
-            provider: model.providerName,
-            supportsVision: false,
-            supportsReasoning: model.supportsReasoning,
-            inputCost: model.inputCost,
-            outputCost: model.outputCost,
-            reasoningEffort: nil
         )
     }
 }

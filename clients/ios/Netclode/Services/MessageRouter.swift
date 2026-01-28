@@ -11,8 +11,7 @@ final class MessageRouter {
     private let terminalStore: TerminalStore
     private let githubStore: GitHubStore
     private let gitStore: GitStore
-    private let copilotStore: CopilotStore
-    private let codexStore: CodexStore
+    private let modelsStore: UnifiedModelsStore
     private let snapshotStore: SnapshotStore
 
     private var routingTask: Task<Void, Never>?
@@ -27,8 +26,7 @@ final class MessageRouter {
         terminalStore: TerminalStore,
         githubStore: GitHubStore,
         gitStore: GitStore,
-        copilotStore: CopilotStore,
-        codexStore: CodexStore,
+        modelsStore: UnifiedModelsStore,
         snapshotStore: SnapshotStore
     ) {
         self.connectService = connectService
@@ -38,8 +36,7 @@ final class MessageRouter {
         self.terminalStore = terminalStore
         self.githubStore = githubStore
         self.gitStore = gitStore
-        self.copilotStore = copilotStore
-        self.codexStore = codexStore
+        self.modelsStore = modelsStore
         self.snapshotStore = snapshotStore
 
         startRouting()
@@ -278,21 +275,16 @@ final class MessageRouter {
             gitStore.setLoadingDiff(false, for: sessionId)
             gitStore.setError(error, for: sessionId)
 
-        // Models messages (Copilot, Codex, etc.)
+        // Models messages (all SDK types via unified store)
         case .modelsResponse(let models, let sdkType):
             print("[MessageRouter] models received: \(models.count) models, sdkType=\(String(describing: sdkType))")
-            // Route to appropriate store based on SDK type
-            switch sdkType {
-            case .codex:
-                codexStore.updateModels(models)
-            case .copilot, .claude, .opencode, nil:
-                // Default to Copilot store for backwards compatibility
-                copilotStore.updateModels(models)
+            if let sdkType = sdkType {
+                modelsStore.updateModels(models, sdkType: sdkType)
             }
 
         case .copilotStatusResponse(let status):
             print("[MessageRouter] copilot status received: authenticated=\(status.auth.isAuthenticated)")
-            copilotStore.updateStatus(status)
+            modelsStore.updateCopilotStatus(status)
 
         // Snapshot messages
         case .snapshotCreated(let sessionId, let snapshot):
@@ -332,8 +324,7 @@ final class MessageRouter {
             terminalStore: TerminalStore(),
             githubStore: GitHubStore(),
             gitStore: GitStore(),
-            copilotStore: CopilotStore(),
-            codexStore: CodexStore(),
+            modelsStore: UnifiedModelsStore(),
             snapshotStore: SnapshotStore()
         )
     }

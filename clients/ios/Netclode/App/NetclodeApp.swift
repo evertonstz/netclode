@@ -11,9 +11,7 @@ struct NetclodeApp: App {
     @State private var settingsStore = SettingsStore()
     @State private var githubStore = GitHubStore()
     @State private var gitStore = GitStore()
-    @State private var modelsStore = ModelsStore()
-    @State private var copilotStore = CopilotStore()
-    @State private var codexStore = CodexStore()
+    @State private var modelsStore = UnifiedModelsStore()
     @State private var snapshotStore = SnapshotStore()
     @State private var connectService: ConnectService
     @State private var messageRouter: MessageRouter
@@ -27,9 +25,7 @@ struct NetclodeApp: App {
         let terminal = TerminalStore()
         let github = GitHubStore()
         let git = GitStore()
-        let models = ModelsStore()
-        let copilot = CopilotStore()
-        let codex = CodexStore()
+        let models = UnifiedModelsStore()
         let snapshots = SnapshotStore()
         let connect = ConnectService()
         let appCoordinator = AppStateCoordinator()
@@ -45,8 +41,7 @@ struct NetclodeApp: App {
             terminalStore: terminal,
             githubStore: github,
             gitStore: git,
-            copilotStore: copilot,
-            codexStore: codex,
+            modelsStore: models,
             snapshotStore: snapshots
         )
 
@@ -58,8 +53,6 @@ struct NetclodeApp: App {
         _githubStore = State(initialValue: github)
         _gitStore = State(initialValue: git)
         _modelsStore = State(initialValue: models)
-        _copilotStore = State(initialValue: copilot)
-        _codexStore = State(initialValue: codex)
         _snapshotStore = State(initialValue: snapshots)
         _connectService = State(initialValue: connect)
         _messageRouter = State(initialValue: router)
@@ -77,8 +70,6 @@ struct NetclodeApp: App {
                 .environment(githubStore)
                 .environment(gitStore)
                 .environment(modelsStore)
-                .environment(copilotStore)
-                .environment(codexStore)
                 .environment(snapshotStore)
                 .environment(connectService)
                 .environment(messageRouter)
