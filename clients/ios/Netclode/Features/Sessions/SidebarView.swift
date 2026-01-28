@@ -28,7 +28,7 @@ struct SidebarView: View {
             .padding(.top, Theme.Spacing.xs)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.Colors.background)
+        .background(.clear)
         .safeAreaInset(edge: .top) {
             SidebarHeader()
         }
@@ -161,7 +161,7 @@ struct SidebarHeader: View {
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial)
+        .glassEffect(.regular, in: Rectangle())
     }
 }
 
@@ -216,7 +216,7 @@ struct SidebarFooter: View {
         .padding(.horizontal, Theme.Spacing.sm)
         .padding(.vertical, Theme.Spacing.xs)
         .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
+        .glassEffect(.regular, in: Rectangle())
     }
 }
 
@@ -282,15 +282,16 @@ struct SidebarSessionRow: View {
             .padding(.vertical, Theme.Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                RoundedRectangle(cornerRadius: Theme.Radius.sm)
-                    .fill(backgroundFill)
-            }
-            .overlay {
-                if isSelected {
+                if isHovering && !isSelected {
                     RoundedRectangle(cornerRadius: Theme.Radius.sm)
-                        .strokeBorder(Theme.Colors.brand.opacity(0.3), lineWidth: 1)
+                        .fill(Color.primary.opacity(0.05))
                 }
             }
+            .modifier(ConditionalGlassModifier(
+                isEnabled: isSelected,
+                tint: Theme.Colors.brand,
+                cornerRadius: Theme.Radius.sm
+            ))
             .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
         }
         .buttonStyle(.plain)
@@ -323,13 +324,24 @@ struct SidebarSessionRow: View {
         }
     }
 
-    private var backgroundFill: some ShapeStyle {
-        if isSelected {
-            return AnyShapeStyle(Theme.Colors.brand.opacity(0.15))
-        } else if isHovering {
-            return AnyShapeStyle(Color.primary.opacity(0.05))
+}
+
+// MARK: - Conditional Glass Modifier
+
+struct ConditionalGlassModifier: ViewModifier {
+    let isEnabled: Bool
+    let tint: Color
+    let cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content
+                .glassEffect(
+                    .regular.tint(tint.glassTint).interactive(),
+                    in: RoundedRectangle(cornerRadius: cornerRadius)
+                )
         } else {
-            return AnyShapeStyle(Color.clear)
+            content
         }
     }
 }
