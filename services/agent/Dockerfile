@@ -9,6 +9,7 @@ FROM debian:trixie-slim AS base
 
 # Install essentials + mise + docker
 # Note: Use iptables-legacy because Kata VM kernel lacks nftables support
+# Note: Node is installed in builder stage only, then copied to runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
@@ -26,18 +27,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PATH="/root/.local/bin:/root/.local/share/mise/shims:${PATH}"
 
-# Install node via mise
-RUN mise install node@24 && \
-    mise use -g node@24 && \
-    mise reshim
-
 # =============================================================================
 # Builder
 # =============================================================================
 FROM base AS builder
 
-# Install Python for node-gyp (required by node-pty)
-RUN apt-get update && apt-get install -y --no-install-recommends python3 && rm -rf /var/lib/apt/lists/*
+# Install Python for node-gyp (required by node-pty) and Node via mise
+RUN apt-get update && apt-get install -y --no-install-recommends python3 && rm -rf /var/lib/apt/lists/* && \
+    mise install node@24 && \
+    mise use -g node@24 && \
+    mise reshim
 
 WORKDIR /build
 
@@ -77,6 +76,9 @@ RUN GH_VERSION=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest
     chmod +x /usr/local/bin/gh && \
     rm -rf /tmp/gh.tar.gz /tmp/gh_${GH_VERSION}_linux_amd64
 
+# Remove C headers from Node (only needed for compiling native modules)
+RUN rm -rf /root/.local/share/mise/installs/node/24/include
+
 # =============================================================================
 # Runtime
 # =============================================================================
@@ -99,11 +101,11 @@ COPY --from=builder --chown=agent:agent /build/services/agent/node_modules /opt/
 COPY --from=builder /usr/local/bin/opencode /usr/local/bin/opencode
 COPY --from=builder /usr/local/bin/gh /usr/local/bin/gh
 
-# Copy mise and node to /opt (NOT /agent which is a volume mount)
-# mise binary and shims need to be in a persistent location
-RUN mkdir -p /opt/mise/bin /opt/mise/shims && \
-    cp /root/.local/bin/mise /opt/mise/bin/ && \
-    cp -r /root/.local/share/mise /opt/mise/share
+# Copy mise binary to /opt (NOT /agent which is a volume mount)
+# mise binary needs to be in a persistent location for on-demand tooling
+# Node is copied separately from builder (headers already removed in builder stage)
+RUN mkdir -p /opt/mise/bin && \
+    cp /root/.local/bin/mise /opt/mise/bin/
 COPY --from=builder /root/.local/share/mise/installs/node/24 /opt/node
 
 # Install bun (download binary directly)
