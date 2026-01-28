@@ -15,7 +15,7 @@ The host runs:
 Everything else runs in Kubernetes:
 - Redis (JuiceFS metadata)
 - JuiceFS CSI driver
-- Control plane, web, agent sandboxes
+- Control plane, agent sandboxes
 
 ## Requirements
 

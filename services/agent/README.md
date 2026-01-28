@@ -34,6 +34,8 @@ services/agent/
 
 ## Configuration
 
+### Environment Variables
+
 | Variable | Description |
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key |
@@ -41,6 +43,21 @@ services/agent/
 | `GITHUB_TOKEN` | GitHub token with Copilot scope (required for Copilot SDK) |
 | `CONTROL_PLANE_URL` | Control plane URL (default `http://control-plane.netclode.svc.cluster.local`) |
 | `SESSION_ID` | Session ID (set by control plane, or polled via warm pool) |
+
+### Session Config
+
+The control plane passes `SessionConfig` to the agent on registration. Key fields:
+
+| Field | Description |
+|-------|-------------|
+| `session_id` | Unique session identifier |
+| `workspace_dir` | Absolute path to workspace |
+| `sdk_type` | SDK backend (Claude, OpenCode, Copilot, Codex) |
+| `model` | Model ID (e.g., `claude-sonnet-4-0`, `gpt-4o`) |
+| `reasoning_effort` | Reasoning effort level for Codex SDK: `minimal`, `low`, `medium` (default), `high`, `xhigh` |
+| `github_token` | GitHub token for git operations |
+| `repo` | Repository to clone (e.g., `owner/repo`) |
+| `repo_access` | Permission level (`read` or `write`) |
 
 ## API
 

@@ -74,6 +74,9 @@ rpc Connect(stream ClientMessage) returns (stream ServerMessage);
 | `list_github_repos` | | List available GitHub repos |
 | `list_snapshots` | `session_id` | List session snapshots |
 | `restore_snapshot` | `session_id`, `snapshot_id` | Restore to snapshot |
+| `list_models` | `sdk_type`, `copilot_backend?` | List available models for an SDK |
+| `get_copilot_status` | | Get Copilot auth status and premium quota |
+| `update_repo_access` | `session_id`, `repo_access` | Change repository permission level |
 
 ### Server → Client messages
 
@@ -102,6 +105,9 @@ rpc Connect(stream ClientMessage) returns (stream ServerMessage);
 | `snapshot_created` | Auto-snapshot created after turn |
 | `snapshot_list` | List of session snapshots |
 | `snapshot_restored` | Snapshot restored with message count |
+| `models` | List of available models for an SDK |
+| `copilot_status` | Copilot auth status and premium quota |
+| `repo_access_updated` | Repository access level changed |
 | `error` | Generic error |
 
 ### Agent events
@@ -174,7 +180,7 @@ Server: XREAD BLOCK ... 1234567890123-1
     └──── Resume blocking for new events
 ```
 
-Multi-client sync works the same way. iOS app and web client on the same session both get events through separate XREAD consumers on the same stream.
+Multi-client sync works the same way. Multiple clients on the same session all get events through separate XREAD consumers on the same stream.
 
 The streams are trimmed to keep memory bounded (`MAXLEN ~50` for events, configurable via `MAX_EVENTS_PER_SESSION`).
 

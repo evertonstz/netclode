@@ -194,6 +194,46 @@ Tailing events for session 9f7c8e64-c84 (Ctrl+C to stop)...
 [14:32:06] thinking        Analyzing the code structure...
 ```
 
+### Send a prompt
+
+Send a prompt to a session (useful for testing):
+
+```bash
+# Send and return immediately
+netclode prompt <session-id> "Fix the login bug"
+
+# Send and wait for the full response
+netclode prompt <session-id> "Fix the login bug" --wait
+```
+
+With `--wait`, the CLI streams the response and events in real-time until the agent completes.
+
+### List snapshots
+
+List available snapshots for a session:
+
+```bash
+netclode snapshots list <session-id>
+```
+
+Output:
+```
+ID                TURN  NAME                                      MSGS  CREATED
+snap_abc123...    3     Turn 3: Fix login bug                     6     2h ago
+snap_def456...    2     Turn 2: Add user model                    4     3h ago
+snap_789xyz...    1     Turn 1: Initial setup                     2     4h ago
+```
+
+### Restore a snapshot
+
+Restore a session to a previous snapshot (rolls back workspace and conversation):
+
+```bash
+netclode snapshots restore <session-id> <snapshot-id>
+```
+
+This restores both the workspace files and the conversation history to the state at that snapshot.
+
 ### Authenticate with Codex (ChatGPT OAuth)
 
 For Codex SDK, authenticate with ChatGPT using OAuth device code flow:
@@ -278,7 +318,9 @@ clients/cli/
 │   ├── auth.go               # auth codex command
 │   ├── sessions.go           # sessions list/get/delete
 │   ├── messages.go           # messages command
-│   └── events.go             # events + events tail
+│   ├── events.go             # events + events tail
+│   ├── prompt.go             # prompt command
+│   └── snapshots.go          # snapshots list/restore
 └── internal/
     ├── client/
     │   ├── client.go         # Connect protocol client
@@ -303,3 +345,5 @@ The client wrapper (`internal/client/`) provides a simple Go API:
 - `ResumeSession(id)` - Resume a paused session
 - `DeleteSession(id)` - Delete a session
 - `TailEvents(id, handler)` - Stream events in real-time
+- `ListSnapshots(id)` - List snapshots for a session
+- `RestoreSnapshot(sessionId, snapshotId)` - Restore a session to a snapshot

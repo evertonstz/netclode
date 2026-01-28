@@ -90,20 +90,17 @@ Create a bucket named `netclode-juicefs` with read/write credentials.
 kubectl --context netclode -n netclode get pods
 ```
 
-You should see `control-plane`, `web`, and `redis-sessions` running.
+You should see `control-plane` and `redis-sessions` running.
 
 Test access from your tailnet:
 
 ```bash
 curl http://netclode/health
-open http://netclode-web
 ```
 
 ## 7. Connect clients
 
 **iOS/Mac**: Open the app → Settings → enter `netclode.your-tailnet.ts.net` → Connect
-
-**Web**: Open `http://netclode-web` in your browser
 
 ## Configuration
 

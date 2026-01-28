@@ -26,12 +26,6 @@ Control plane:
 kubectl --context netclode -n netclode logs -l app=control-plane -f
 ```
 
-Web:
-
-```bash
-kubectl --context netclode -n netclode logs -l app=web -f
-```
-
 Agent pods:
 
 ```bash
@@ -90,6 +84,8 @@ kubectl --context netclode -n kube-system get pods -l app=juicefs-csi-driver
 kubectl --context netclode -n kube-system logs -l app=juicefs-csi-driver
 ```
 
+For detailed JuiceFS maintenance procedures (garbage collection, trash cleanup, debugging), see [JuiceFS Maintenance Guide](../infra/docs/juicefs-maintenance.md).
+
 ## Networking
 
 ```bash
@@ -114,14 +110,12 @@ gh run watch
 
 # Or specific
 ./scripts/rollout.sh control-plane
-./scripts/rollout.sh web
 ```
 
 Manual trigger:
 
 ```bash
 gh workflow run "Control Plane Image"
-gh workflow run "Web App Image"
 gh workflow run "Agent Image"
 ```
 
