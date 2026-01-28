@@ -504,17 +504,36 @@ func TestEnsureActiveSlot_PausesMultipleWhenOverLimit(t *testing.T) {
 func TestEnsureActiveSlot_ExcludesSpecifiedSession(t *testing.T) {
 	manager, _, _ := newTestManager(2)
 
-	// Add 2 running sessions (at limit)
+	// Add 3 running sessions (over limit)
 	now := time.Now()
-	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour)) // oldest
-	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour))
+	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-3*time.Hour)) // oldest
+	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour))
+	addSession(manager, "sess-3", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour))
 
-	// Exclude sess-1 from being paused
+	// Exclude sess-1 from being paused AND from count (simulates resuming a zombie session)
 	pausedID := manager.ensureActiveSlot(context.Background(), "sess-1")
 
-	// Should pause sess-2 instead (even though sess-1 is older)
+	// Should pause sess-2 (oldest among non-excluded)
 	if pausedID != "sess-2" {
 		t.Errorf("Expected sess-2 to be paused (sess-1 excluded), got %s", pausedID)
+	}
+}
+
+func TestEnsureActiveSlot_NoActionWhenExcludedSessionAtLimit(t *testing.T) {
+	manager, _, _ := newTestManager(2)
+
+	// Add 2 running sessions (at limit)
+	now := time.Now()
+	addSession(manager, "sess-1", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-2*time.Hour))
+	addSession(manager, "sess-2", pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(-1*time.Hour))
+
+	// Exclude sess-1 from count - simulates resuming a zombie session that's already counted as active
+	// Since we exclude sess-1, count is 1, which is under limit of 2
+	pausedID := manager.ensureActiveSlot(context.Background(), "sess-1")
+
+	// Should NOT pause anything - the excluded session is already using the slot
+	if pausedID != "" {
+		t.Errorf("Expected no session to be paused when excluded session is at limit, got %s", pausedID)
 	}
 }
 

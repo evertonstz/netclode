@@ -744,17 +744,15 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	}
 	m.mu.Unlock()
 
-	// Ensure we have a slot (exclude the session we're resuming from being paused)
-	m.ensureActiveSlot(ctx, id)
-
-	// Check if sandbox exists and is ready
+	// Check if sandbox exists and is ready BEFORE calling ensureActiveSlot.
+	// If sandbox already exists, we don't need to make room for it.
 	status, err := m.k8s.GetStatus(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get sandbox status: %w", err)
 	}
 
 	if status.Exists && status.Ready && status.ServiceFQDN != "" {
-		// Sandbox already running and ready to accept prompts
+		// Sandbox already running and ready to accept prompts - no need to ensure slot
 		m.mu.Lock()
 		state.ServiceFQDN = status.ServiceFQDN
 		// Preserve RUNNING status if already set (e.g., during warm pool creation)
@@ -772,6 +770,9 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 		}
 		return state.Session, nil
 	}
+
+	// Sandbox doesn't exist or isn't ready - ensure we have a slot before creating/waiting
+	m.ensureActiveSlot(ctx, id)
 
 	if status.Exists {
 		// Sandbox exists but not ready yet - just wait for it
@@ -1100,15 +1101,20 @@ func (m *Manager) getState(id string) *SessionState {
 // isActiveStatus returns true if the status represents an active session (using resources).
 func isActiveStatus(status pb.SessionStatus) bool {
 	return status == pb.SessionStatus_SESSION_STATUS_CREATING ||
+		status == pb.SessionStatus_SESSION_STATUS_RESUMING ||
 		status == pb.SessionStatus_SESSION_STATUS_READY ||
 		status == pb.SessionStatus_SESSION_STATUS_RUNNING
 }
 
-// countActiveSessions returns the number of active sessions.
+// countActiveSessionsLocked returns the number of active sessions.
+// Excludes the session with excludeID if provided.
 // Must be called with m.mu held (read or write).
-func (m *Manager) countActiveSessionsLocked() int {
+func (m *Manager) countActiveSessionsLocked(excludeID string) int {
 	count := 0
-	for _, state := range m.sessions {
+	for id, state := range m.sessions {
+		if id == excludeID {
+			continue
+		}
 		if isActiveStatus(state.Session.Status) {
 			count++
 		}
@@ -1157,7 +1163,7 @@ func (m *Manager) ensureActiveSlot(ctx context.Context, excludeID string) string
 
 	for {
 		m.mu.Lock()
-		activeCount := m.countActiveSessionsLocked()
+		activeCount := m.countActiveSessionsLocked(excludeID)
 
 		if activeCount < maxActive {
 			m.mu.Unlock()
@@ -1201,7 +1207,7 @@ func (m *Manager) enforceActiveLimit(ctx context.Context) {
 
 	for {
 		m.mu.Lock()
-		activeCount := m.countActiveSessionsLocked()
+		activeCount := m.countActiveSessionsLocked("")
 
 		if activeCount <= maxActive {
 			m.mu.Unlock()
