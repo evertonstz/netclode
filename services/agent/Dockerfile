@@ -53,6 +53,22 @@ RUN --mount=type=cache,target=/root/.npm npm install
 # Bundle agent
 RUN esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/agent.js
 
+# Remove devDependencies (typescript, vitest, etc. not needed at runtime)
+RUN npm prune --omit=dev
+
+# Remove unused platform binaries (keep only linux-x64)
+# @openai/codex-sdk: ships binaries for all 6 platforms (~270MB savings)
+# @github/copilot: prebuilds and ripgrep for all platforms (~60MB savings)
+RUN rm -rf node_modules/@openai/codex-sdk/vendor/aarch64-* \
+           node_modules/@openai/codex-sdk/vendor/x86_64-apple-* \
+           node_modules/@openai/codex-sdk/vendor/x86_64-pc-windows-* \
+           node_modules/@github/copilot/prebuilds/darwin-* \
+           node_modules/@github/copilot/prebuilds/win32-* \
+           node_modules/@github/copilot/prebuilds/linux-arm64 \
+           node_modules/@github/copilot/ripgrep/bin/darwin-* \
+           node_modules/@github/copilot/ripgrep/bin/win32-* \
+           node_modules/@github/copilot/ripgrep/bin/linux-arm64
+
 # Claude CLI
 RUN --mount=type=cache,target=/root/.npm \
     npm install -g @anthropic-ai/claude-code
