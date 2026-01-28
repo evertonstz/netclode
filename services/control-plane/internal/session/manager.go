@@ -1326,29 +1326,45 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 			config.CopilotBackend = &anthropicBackend
 		}
 
-		// For Codex SDK, parse model format: base:auth:effort (e.g., gpt-5-codex:oauth:high)
-		// Also supports legacy format: base:auth (e.g., gpt-5-codex:oauth)
-		parts := strings.Split(model, ":")
-		if len(parts) >= 2 {
-			authMode := parts[len(parts)-1]
-			// Check if last part is a reasoning effort level
-			if authMode == "low" || authMode == "medium" || authMode == "high" || authMode == "minimal" || authMode == "xhigh" {
-				config.ReasoningEffort = authMode
-				// Auth mode is second-to-last
-				if len(parts) >= 3 {
-					authMode = parts[len(parts)-2]
-				} else {
-					authMode = ""
+		// For OpenCode SDK, parse model format: provider/model:thinking (e.g., anthropic/claude-sonnet-4-5:high)
+		// Thinking levels: high, max (for Claude extended thinking)
+		if state.Session.SdkType != nil && *state.Session.SdkType == pb.SdkType_SDK_TYPE_OPENCODE {
+			parts := strings.Split(model, ":")
+			if len(parts) == 2 {
+				thinkingLevel := parts[1]
+				if thinkingLevel == "high" || thinkingLevel == "max" {
+					config.ReasoningEffort = thinkingLevel
+					// Strip the thinking suffix from model ID for the agent
+					config.Model = parts[0]
 				}
 			}
+		}
 
-			// Set credentials based on auth mode
-			if authMode == "api" {
-				config.OpenAIAPIKey = m.config.OpenAIAPIKey
-			} else if authMode == "oauth" {
-				config.CodexAccessToken = m.config.CodexAccessToken
-				config.CodexIdToken = m.config.CodexIdToken
-				config.CodexRefreshToken = m.config.CodexRefreshToken
+		// For Codex SDK, parse model format: base:auth:effort (e.g., gpt-5-codex:oauth:high)
+		// Also supports legacy format: base:auth (e.g., gpt-5-codex:oauth)
+		if state.Session.SdkType != nil && *state.Session.SdkType == pb.SdkType_SDK_TYPE_CODEX {
+			parts := strings.Split(model, ":")
+			if len(parts) >= 2 {
+				authMode := parts[len(parts)-1]
+				// Check if last part is a reasoning effort level
+				if authMode == "low" || authMode == "medium" || authMode == "high" || authMode == "minimal" || authMode == "xhigh" {
+					config.ReasoningEffort = authMode
+					// Auth mode is second-to-last
+					if len(parts) >= 3 {
+						authMode = parts[len(parts)-2]
+					} else {
+						authMode = ""
+					}
+				}
+
+				// Set credentials based on auth mode
+				if authMode == "api" {
+					config.OpenAIAPIKey = m.config.OpenAIAPIKey
+				} else if authMode == "oauth" {
+					config.CodexAccessToken = m.config.CodexAccessToken
+					config.CodexIdToken = m.config.CodexIdToken
+					config.CodexRefreshToken = m.config.CodexRefreshToken
+				}
 			}
 		}
 	}
@@ -1847,15 +1863,57 @@ func (m *Manager) fetchOpenCodeModelsForProvider(provider string) []*pb.ModelInf
 		return nil
 	}
 
+	// Thinking levels for Claude models that support reasoning
+	thinkingLevels := []struct {
+		suffix string
+		label  string
+	}{
+		{"high", "High"},
+		{"max", "Max"},
+	}
+
 	// Prefix model IDs with provider name for OpenCode SDK format
 	models := make([]*pb.ModelInfo, 0, len(baseModels))
 	for _, model := range baseModels {
-		models = append(models, &pb.ModelInfo{
-			Id:           provider + "/" + model.Id,
-			Name:         model.Name,
-			Provider:     model.Provider,
-			Capabilities: model.Capabilities,
-		})
+		baseID := provider + "/" + model.Id
+
+		// Check if model supports reasoning (extended thinking)
+		supportsThinking := false
+		for _, cap := range model.Capabilities {
+			if cap == "reasoning" {
+				supportsThinking = true
+				break
+			}
+		}
+
+		if supportsThinking && provider == "anthropic" {
+			// For Claude models with reasoning, generate variants:
+			// 1. Base model without thinking
+			models = append(models, &pb.ModelInfo{
+				Id:           baseID,
+				Name:         model.Name,
+				Provider:     model.Provider,
+				Capabilities: model.Capabilities,
+			})
+			// 2. Variants with thinking levels (high, max)
+			for _, level := range thinkingLevels {
+				models = append(models, &pb.ModelInfo{
+					Id:              baseID + ":" + level.suffix,
+					Name:            model.Name,
+					Provider:        model.Provider,
+					Capabilities:    model.Capabilities,
+					ReasoningEffort: strPtr(level.label),
+				})
+			}
+		} else {
+			// Non-thinking models: just add with provider prefix
+			models = append(models, &pb.ModelInfo{
+				Id:           baseID,
+				Name:         model.Name,
+				Provider:     model.Provider,
+				Capabilities: model.Capabilities,
+			})
+		}
 	}
 
 	return models

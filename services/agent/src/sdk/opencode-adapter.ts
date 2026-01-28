@@ -97,27 +97,24 @@ export class OpenCodeAdapter implements SDKAdapter {
 
     // Build OpenCode config as JSON
     const model = this.config?.model || "anthropic/claude-sonnet-4-0";
-    
-    // Enable extended thinking for Claude models that support it
-    // Using "high" variant (16k tokens) as default - matches OpenCode's variant system
-    const isClaudeWithThinking = model.includes("claude-sonnet-4") || 
-                                  model.includes("claude-opus-4") ||
-                                  model.includes("claude-3-7") ||
-                                  model.includes("claude-3.7");
+    const thinkingLevel = this.config?.reasoningEffort; // "high" or "max" from model picker
     
     // Extract provider and model name from model ID (e.g., "anthropic/claude-sonnet-4-5-20250514")
     const [providerId, modelName] = model.includes("/") ? model.split("/", 2) : ["anthropic", model];
     
-    // Build provider config with thinking enabled for supported models
+    // Build provider config with thinking enabled if a thinking level is specified
     // OpenCode expects thinking config at: provider.<provider>.models.<model>.options.thinking
-    const providerConfig = isClaudeWithThinking ? {
+    // Budget tokens: high = 16000, max = 32000
+    const thinkingBudget = thinkingLevel === "max" ? 32000 : thinkingLevel === "high" ? 16000 : 0;
+    
+    const providerConfig = thinkingBudget > 0 ? {
       [providerId]: {
         models: {
           [modelName]: {
             options: {
               thinking: {
                 type: "enabled",
-                budgetTokens: 16000,
+                budgetTokens: thinkingBudget,
               },
             },
           },
