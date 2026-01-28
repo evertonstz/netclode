@@ -27,6 +27,9 @@ const assistantMessageIds = new Set<string>();
 // Track tool start times for duration calculation
 const toolStartTimes = new Map<string, number>();
 
+// Track which tools have emitted toolStart (to avoid duplicates)
+const toolStartEmitted = new Set<string>();
+
 // Map OpenCode tool names to Claude Code style (capitalized)
 const TOOL_NAME_MAP: Record<string, string> = {
   read: "Read",
@@ -467,22 +470,28 @@ export class OpenCodeAdapter implements SDKAdapter {
             const toolName = normalizeToolName(part.tool as string);
             const callId = part.callID as string;
 
-            // Debug: log the full part structure to understand where input is
-            console.log(`[opencode-adapter] Tool event: tool=${toolName}, status=${status}, part keys=${Object.keys(part).join(",")}, state keys=${Object.keys(state).join(",")}`);
-            if (state.input) console.log(`[opencode-adapter] state.input=${JSON.stringify(state.input).slice(0, 200)}`);
+            // Get input from state.input or parse from state.raw (JSON string)
+            let input = state.input as Record<string, unknown> | undefined;
+            if (!input && state.raw) {
+              try {
+                input = JSON.parse(state.raw as string);
+              } catch {
+                // raw might be incomplete during streaming
+              }
+            }
 
-            if (status === "pending" || status === "running") {
-              // Only emit toolStart once when first seen
-              if (status === "pending") {
+            if (status === "pending") {
+              // Just track the start time, don't emit yet (input might not be complete)
+              if (!toolStartTimes.has(callId)) {
                 toolStartTimes.set(callId, Date.now());
-                // Try to get input from state.input or parse from state.raw (JSON string)
-                let input = state.input as Record<string, unknown> | undefined;
-                if (!input && state.raw) {
-                  try {
-                    input = JSON.parse(state.raw as string);
-                  } catch {
-                    // raw might be incomplete during streaming
-                  }
+              }
+              return null;
+            } else if (status === "running") {
+              // Input is now complete, emit toolStart if we haven't already
+              if (!toolStartEmitted.has(callId)) {
+                toolStartEmitted.add(callId);
+                if (!toolStartTimes.has(callId)) {
+                  toolStartTimes.set(callId, Date.now());
                 }
                 return {
                   type: "toolStart",
@@ -493,8 +502,26 @@ export class OpenCodeAdapter implements SDKAdapter {
               }
               return null;
             } else if (status === "completed") {
+              // If we never emitted toolStart (tool completed very fast), emit it now
+              if (!toolStartEmitted.has(callId)) {
+                toolStartEmitted.add(callId);
+                // We need to emit both toolStart and toolEnd - return toolStart first
+                // and queue toolEnd. But since we can only return one event, emit toolStart
+                // with the input, and the next status update will emit toolEnd
+                if (!toolStartTimes.has(callId)) {
+                  toolStartTimes.set(callId, Date.now());
+                }
+                return {
+                  type: "toolStart",
+                  tool: toolName,
+                  toolUseId: callId,
+                  input: input as import("@bufbuild/protobuf").JsonObject | undefined,
+                };
+              }
+              
               const startTime = toolStartTimes.get(callId);
               toolStartTimes.delete(callId);
+              toolStartEmitted.delete(callId);
               const durationMs = startTime ? Date.now() - startTime : undefined;
               return {
                 type: "toolEnd",
@@ -504,8 +531,23 @@ export class OpenCodeAdapter implements SDKAdapter {
                 ...(durationMs !== undefined && { durationMs }),
               };
             } else if (status === "error") {
+              // If we never emitted toolStart, emit it now
+              if (!toolStartEmitted.has(callId)) {
+                toolStartEmitted.add(callId);
+                if (!toolStartTimes.has(callId)) {
+                  toolStartTimes.set(callId, Date.now());
+                }
+                return {
+                  type: "toolStart",
+                  tool: toolName,
+                  toolUseId: callId,
+                  input: input as import("@bufbuild/protobuf").JsonObject | undefined,
+                };
+              }
+              
               const startTime = toolStartTimes.get(callId);
               toolStartTimes.delete(callId);
+              toolStartEmitted.delete(callId);
               const durationMs = startTime ? Date.now() - startTime : undefined;
               return {
                 type: "toolEnd",
@@ -583,6 +625,7 @@ export class OpenCodeAdapter implements SDKAdapter {
     // Clear tracked assistant message IDs for new prompt
     assistantMessageIds.clear();
     toolStartTimes.clear();
+    toolStartEmitted.clear();
     this.lastUsage = null;
   }
 
@@ -605,6 +648,7 @@ export class OpenCodeAdapter implements SDKAdapter {
     openCodeSessionMap.clear();
     assistantMessageIds.clear();
     toolStartTimes.clear();
+    toolStartEmitted.clear();
     this.lastUsage = null;
   }
 }
