@@ -99,6 +99,7 @@ export class OpenCodeAdapter implements SDKAdapter {
     const model = this.config?.model || "anthropic/claude-sonnet-4-0";
     
     // Enable extended thinking for Claude models that support it
+    // Using "high" variant (16k tokens) as default - matches OpenCode's variant system
     const isClaudeWithThinking = model.includes("claude-sonnet-4") || 
                                   model.includes("claude-opus-4") ||
                                   model.includes("claude-3-7") ||
@@ -114,11 +115,11 @@ export class OpenCodeAdapter implements SDKAdapter {
         webfetch: "allow",
         mcp: "allow",
       },
-      // Enable extended thinking for supported Claude models
+      // Enable extended thinking for supported Claude models (high = 16k tokens)
       ...(isClaudeWithThinking && {
         thinking: {
           type: "enabled",
-          budget_tokens: 10000,
+          budgetTokens: 16000,
         },
       }),
     };
