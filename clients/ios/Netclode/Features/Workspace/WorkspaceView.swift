@@ -7,6 +7,7 @@ struct WorkspaceView: View {
     @Environment(ConnectService.self) private var connectService
     @Environment(TerminalStore.self) private var terminalStore
     @Environment(SnapshotStore.self) private var snapshotStore
+    @Environment(UnifiedModelsStore.self) private var modelsStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedTab: WorkspaceTab = .chat
@@ -32,6 +33,33 @@ struct WorkspaceView: View {
 
     var session: Session? {
         sessionStore.sessions.first { $0.id == sessionId }
+    }
+
+    private var sessionModel: CopilotModel? {
+        guard let session, let modelId = session.model, let sdkType = session.sdkType else { return nil }
+        return modelsStore.model(id: modelId, sdkType: sdkType)
+    }
+
+    private var modelDisplayName: String? {
+        guard let session, let modelId = session.model else { return nil }
+        if let model = sessionModel {
+            return model.name
+        }
+        // Fallback: format the model ID
+        return formatModelId(modelId)
+    }
+
+    private func formatModelId(_ modelId: String) -> String {
+        var id = modelId.contains("/") ? String(modelId.split(separator: "/").last ?? Substring(modelId)) : modelId
+        if id.contains(":") {
+            id = String(id.split(separator: ":").first ?? Substring(id))
+        }
+        return id
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+            .split(separator: " ")
+            .map { $0.capitalized }
+            .joined(separator: " ")
     }
 
     var body: some View {
@@ -72,6 +100,12 @@ struct WorkspaceView: View {
                             }
                             
                             Label(session.createdAt.formatted(.relative(presentation: .named)), systemImage: "clock")
+                            
+                            if let modelName = modelDisplayName {
+                                let effort = sessionModel?.reasoningEffort.map { " \($0)" } ?? ""
+                                let provider = sessionModel?.provider.map { " · \($0)" } ?? ""
+                                Label("\(modelName)\(effort)\(provider)", systemImage: "cpu")
+                            }
                         } header: {
                             Text(session.name)
                         }
@@ -220,5 +254,6 @@ struct WorkspaceView: View {
     .environment(GitStore())
     .environment(SnapshotStore())
     .environment(ConnectService())
+    .environment(UnifiedModelsStore())
     .environment(MessageRouter.preview)
 }

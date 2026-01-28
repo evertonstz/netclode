@@ -95,6 +95,18 @@ struct NetclodeApp: App {
         // Connect if we have a server URL configured
         if !settingsStore.serverURL.isEmpty {
             connectService.connect(to: settingsStore.serverURL, connectPort: settingsStore.connectPort)
+            
+            // Load models for all SDK types once connected
+            Task {
+                // Wait for connection
+                let connected = await connectService.waitForConnection(timeout: 10)
+                guard connected else { return }
+                
+                // Load models for all SDK types
+                for sdkType in SdkType.allCases {
+                    connectService.send(.listModels(sdkType: sdkType, copilotBackend: nil))
+                }
+            }
         }
     }
 }
