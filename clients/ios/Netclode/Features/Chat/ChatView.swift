@@ -603,24 +603,7 @@ struct ExposePortSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: Theme.Spacing.lg) {
-                // Header
-                VStack(spacing: Theme.Spacing.md) {
-                    Image(systemName: "globe")
-                        .font(.system(size: 48))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.cyan, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-
-                    Text("Expose Port")
-                        .font(.netclodeTitle)
-                }
-                .padding(.top, Theme.Spacing.lg)
-
+            VStack(spacing: Theme.Spacing.md) {
                 // Input
                 VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                     Text("Port Number")
@@ -637,40 +620,24 @@ struct ExposePortSheet: View {
                     .autocorrectionDisabled()
                     .focused($isInputFocused)
                 }
-                .padding(.horizontal)
 
                 // Info
-                GlassCard {
-                    HStack(alignment: .top, spacing: Theme.Spacing.sm) {
-                        Image(systemName: "info.circle.fill")
-                            .foregroundStyle(.cyan)
+                HStack(alignment: .top, spacing: Theme.Spacing.sm) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(.cyan)
 
-                        Text("The port will be accessible via Tailscale on your private network.")
-                            .font(.netclodeCaption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    Text("The port will be accessible via Tailscale on your private network.")
+                        .font(.netclodeCaption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.horizontal)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Spacer()
-
-                // Action button
-                GlassButton(
-                    "Expose Port",
-                    icon: "arrow.up.right.circle.fill",
-                    tint: .cyan.opacity(0.3)
-                ) {
-                    if let port = portNumber, isValidPort {
-                        onExpose(port)
-                    }
-                }
-                .disabled(!isValidPort)
-                .opacity(isValidPort ? 1 : 0.5)
-                .padding(.horizontal)
-                .padding(.bottom, Theme.Spacing.lg)
             }
+            .padding()
             .background(Theme.Colors.background)
+            .navigationTitle("Expose Port")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -678,9 +645,18 @@ struct ExposePortSheet: View {
                         dismiss()
                     }
                 }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Expose") {
+                        if let port = portNumber, isValidPort {
+                            onExpose(port)
+                        }
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(!isValidPort)
+                }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.height(200)])
         .presentationDragIndicator(.visible)
         .onAppear {
             isInputFocused = true

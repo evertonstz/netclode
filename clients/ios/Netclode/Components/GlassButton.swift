@@ -114,7 +114,7 @@ struct FloatingActionButton: View {
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(tint ?? .white)
                 .frame(width: 60, height: 60)
                 .adaptiveGlassInteractive(in: Circle())
         }
