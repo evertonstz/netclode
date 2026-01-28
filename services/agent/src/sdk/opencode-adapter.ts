@@ -452,6 +452,9 @@ export class OpenCodeAdapter implements SDKAdapter {
 
         if (!part) return null;
 
+        // Debug: log all part types
+        console.log(`[opencode-adapter] message.part.updated: type=${part.type}, delta=${delta?.slice(0, 50) || "none"}`);
+
         // Only process parts that belong to assistant messages
         const messageId = part.messageID as string | undefined;
         if (messageId && !assistantMessageIds.has(messageId)) {
