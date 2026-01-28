@@ -16,6 +16,9 @@ struct TerminalView: View {
     
     var body: some View {
         SwiftTerminalView(bridge: terminalStore.bridge(for: sessionId))
+            #if targetEnvironment(macCatalyst)
+            .padding(.leading, 8)
+            #endif
             .ignoresSafeArea(.keyboard)
             .background(terminalBackgroundColor)
             .focusEffectDisabled()
