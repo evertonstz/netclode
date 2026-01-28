@@ -95,3 +95,69 @@
     path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
     regexp: '^virtio_fs_cache\s*='
     line: 'virtio_fs_cache = "always"'
+
+# Memory optimization settings
+# virtio-mem allows dynamic memory resize - VMs can grow/shrink based on actual
+# memory pressure rather than allocating full default_memory upfront.
+# This improves host memory utilization when running many sandboxes.
+- name: Configure virtio-mem for dynamic memory
+  ansible.builtin.lineinfile:
+    path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
+    regexp: '^enable_virtio_mem\s*='
+    line: 'enable_virtio_mem = {{ kata_enable_virtio_mem | lower }}'
+
+# Memory reclaim uses the virtio-balloon device to return unused guest memory
+# back to the host. When containers free memory, the balloon inflates to
+# reclaim those pages for other VMs or host processes.
+- name: Configure memory reclaim via balloon
+  ansible.builtin.lineinfile:
+    path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
+    regexp: '^reclaim_guest_freed_memory\s*='
+    line: 'reclaim_guest_freed_memory = {{ kata_reclaim_guest_freed_memory | lower }}'
+
+# virtio-mem requires memory overcommit to be enabled on the host.
+# This allows the kernel to promise more memory than physically available,
+# which is safe when VMs don't actually use their full allocation.
+- name: Enable memory overcommit for virtio-mem
+  ansible.posix.sysctl:
+    name: vm.overcommit_memory
+    value: "1"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-kata-memory.conf
+    reload: yes
+  when: kata_enable_virtio_mem
+
+# Security hardening settings
+# Rootless mode runs Cloud Hypervisor as a non-root user.
+# If the VMM is compromised, the attacker only has unprivileged access.
+- name: Configure rootless mode
+  ansible.builtin.lineinfile:
+    path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
+    regexp: '^rootless\s*='
+    line: 'rootless = {{ kata_rootless | lower }}'
+
+# Guest seccomp applies container seccomp profiles inside the VM.
+# This provides defense in depth - even if an attacker escapes the container
+# namespace, they're still constrained by seccomp inside the VM.
+- name: Configure guest seccomp
+  ansible.builtin.lineinfile:
+    path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
+    regexp: '^disable_guest_seccomp\s*='
+    line: 'disable_guest_seccomp = {{ (not kata_enable_guest_seccomp) | lower }}'
+
+# virtiofs performance tuning
+# Higher queue size allows more in-flight I/O requests, improving throughput
+# for parallel workloads like npm install, git operations, builds.
+- name: Configure virtiofs queue size
+  ansible.builtin.lineinfile:
+    path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
+    regexp: '^virtio_fs_queue_size\s*='
+    line: 'virtio_fs_queue_size = {{ kata_virtio_fs_queue_size }}'
+
+# More virtiofsd threads allow better handling of concurrent I/O requests.
+- name: Configure virtiofs thread pool size
+  ansible.builtin.lineinfile:
+    path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
+    regexp: '^virtio_fs_extra_args\s*='
+    line: 'virtio_fs_extra_args = ["--thread-pool-size={{ kata_virtio_fs_thread_pool_size }}", "--announce-submounts"]'
+
