@@ -27,6 +27,26 @@ const assistantMessageIds = new Set<string>();
 // Track tool start times for duration calculation
 const toolStartTimes = new Map<string, number>();
 
+// Map OpenCode tool names to Claude Code style (capitalized)
+const TOOL_NAME_MAP: Record<string, string> = {
+  read: "Read",
+  write: "Write",
+  edit: "Edit",
+  glob: "Glob",
+  grep: "Grep",
+  bash: "Bash",
+  webfetch: "WebFetch",
+  todowrite: "TodoWrite",
+  todoread: "TodoRead",
+  task: "Task",
+  codesearch: "CodeSearch",
+  websearch: "WebSearch",
+};
+
+function normalizeToolName(name: string): string {
+  return TOOL_NAME_MAP[name.toLowerCase()] || name;
+}
+
 export class OpenCodeAdapter implements SDKAdapter {
   private config: SDKConfig | null = null;
   private server: OpenCodeServer | null = null;
@@ -444,7 +464,7 @@ export class OpenCodeAdapter implements SDKAdapter {
             if (!state) return null;
 
             const status = state.status as string;
-            const toolName = part.tool as string;
+            const toolName = normalizeToolName(part.tool as string);
             const callId = part.callID as string;
 
             if (status === "pending" || status === "running") {
