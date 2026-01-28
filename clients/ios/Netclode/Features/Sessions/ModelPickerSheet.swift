@@ -330,7 +330,7 @@ struct InlineModelPicker: View {
             // Show quota for Copilot section (premium requests)
             if section.provider == "Copilot", let quota = copilotQuota {
                 Spacer()
-                Text("\(quota.remaining)/\(quota.limit)")
+                Text("\(quota.remaining)/\(quota.limit) premium reqs left")
                     .font(.netclodeCaption)
                     .foregroundStyle(quota.remaining < 50 ? .orange : .secondary)
             }
@@ -364,6 +364,12 @@ struct InlineModelPicker: View {
                 }
 
                 Spacer()
+
+                if let provider = model.provider {
+                    Text(provider)
+                        .font(.netclodeCaption)
+                        .foregroundStyle(.tertiary)
+                }
             }
             .padding(.horizontal, Theme.Spacing.sm)
             .padding(.vertical, Theme.Spacing.xs)
