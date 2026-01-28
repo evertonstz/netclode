@@ -13,6 +13,7 @@ final class MessageRouter {
     private let gitStore: GitStore
     private let modelsStore: UnifiedModelsStore
     private let snapshotStore: SnapshotStore
+    private let settingsStore: SettingsStore
 
     private var routingTask: Task<Void, Never>?
 
@@ -27,7 +28,8 @@ final class MessageRouter {
         githubStore: GitHubStore,
         gitStore: GitStore,
         modelsStore: UnifiedModelsStore,
-        snapshotStore: SnapshotStore
+        snapshotStore: SnapshotStore,
+        settingsStore: SettingsStore
     ) {
         self.connectService = connectService
         self.sessionStore = sessionStore
@@ -38,6 +40,7 @@ final class MessageRouter {
         self.gitStore = gitStore
         self.modelsStore = modelsStore
         self.snapshotStore = snapshotStore
+        self.settingsStore = settingsStore
 
         startRouting()
     }
@@ -177,6 +180,9 @@ final class MessageRouter {
             }
 
         case .agentDone(let sessionId):
+            if settingsStore.hapticFeedbackEnabled {
+                HapticFeedback.success()
+            }
             sessionStore.setProcessing(for: sessionId, processing: false)
             chatStore.finalizeLastMessage(sessionId: sessionId)
             // Clear pending state - agent has responded
@@ -325,7 +331,8 @@ final class MessageRouter {
             githubStore: GitHubStore(),
             gitStore: GitStore(),
             modelsStore: UnifiedModelsStore(),
-            snapshotStore: SnapshotStore()
+            snapshotStore: SnapshotStore(),
+            settingsStore: SettingsStore()
         )
     }
 }

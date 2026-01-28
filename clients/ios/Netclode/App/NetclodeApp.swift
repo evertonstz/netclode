@@ -42,7 +42,8 @@ struct NetclodeApp: App {
             githubStore: github,
             gitStore: git,
             modelsStore: models,
-            snapshotStore: snapshots
+            snapshotStore: snapshots,
+            settingsStore: settings
         )
 
         _settingsStore = State(initialValue: settings)

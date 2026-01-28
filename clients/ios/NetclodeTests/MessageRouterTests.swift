@@ -21,7 +21,10 @@ final class MessageRouterTests: XCTestCase {
             eventStore: eventStore,
             terminalStore: terminalStore,
             githubStore: GitHubStore(),
-            gitStore: GitStore()
+            gitStore: GitStore(),
+            modelsStore: UnifiedModelsStore(),
+            snapshotStore: SnapshotStore(),
+            settingsStore: SettingsStore()
         )
 
         // Add initial session with default name
@@ -205,7 +208,10 @@ final class MessageRouterTests: XCTestCase {
             eventStore: eventStore,
             terminalStore: terminalStore,
             githubStore: githubStore,
-            gitStore: gitStore
+            gitStore: gitStore,
+            modelsStore: UnifiedModelsStore(),
+            snapshotStore: SnapshotStore(),
+            settingsStore: SettingsStore()
         )
     }
 }
