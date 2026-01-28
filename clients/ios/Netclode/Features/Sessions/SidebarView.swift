@@ -5,6 +5,7 @@ struct SidebarView: View {
     @Environment(ConnectService.self) private var connectService
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(GitHubStore.self) private var githubStore
+    @Environment(UnifiedModelsStore.self) private var modelsStore
 
     @Binding var selectedSessionId: String?
     @State private var showPromptSheet = false
@@ -60,6 +61,7 @@ struct SidebarView: View {
                 .environment(settingsStore)
                 .environment(sessionStore)
                 .environment(githubStore)
+                .environment(modelsStore)
         }
         .alert("Delete Session?", isPresented: .init(
             get: { sessionToDelete != nil },

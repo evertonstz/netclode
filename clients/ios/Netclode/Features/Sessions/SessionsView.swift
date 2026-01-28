@@ -4,6 +4,8 @@ struct SessionsView: View {
     @Environment(SessionStore.self) private var sessionStore
     @Environment(ConnectService.self) private var connectService
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(GitHubStore.self) private var githubStore
+    @Environment(UnifiedModelsStore.self) private var modelsStore
 
     @State private var showPromptSheet = false
     @State private var showSettingsSheet = false
@@ -70,6 +72,8 @@ struct SessionsView: View {
                 .environment(connectService)
                 .environment(settingsStore)
                 .environment(sessionStore)
+                .environment(githubStore)
+                .environment(modelsStore)
         }
         .navigationDestination(item: $selectedSession) { session in
             WorkspaceView(sessionId: session.id)
