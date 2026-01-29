@@ -25,6 +25,11 @@ type Config struct {
 	HostCPUs     int // Total CPUs on the host (for 50% limit validation)
 	HostMemoryMB int // Total memory in MB on the host (for 50% limit validation)
 
+	// Overcommit ratios for K8s scheduling (requests = actual / ratio)
+	// Higher ratio = more overcommit. 1 = no overcommit, 4 = 4x overcommit
+	CPUOvercommitRatio    int
+	MemoryOvercommitRatio int
+
 	// Codex OAuth tokens (for ChatGPT auth mode)
 	CodexAccessToken  string
 	CodexIdToken      string
@@ -38,21 +43,23 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		Port:               getEnvInt("PORT", 3000),
-		AnthropicAPIKey:    getEnv("ANTHROPIC_API_KEY", ""),
-		OpenAIAPIKey:       getEnv("OPENAI_API_KEY", ""),
-		MistralAPIKey:      getEnv("MISTRAL_API_KEY", ""),
-		GitHubCopilotToken: getEnv("GITHUB_COPILOT_TOKEN", ""),
-		K8sNamespace:       getEnv("K8S_NAMESPACE", "netclode"),
-		AgentImage:         getEnv("AGENT_IMAGE", "ghcr.io/angristan/netclode-agent:latest"),
-		SandboxTemplate:    getEnv("SANDBOX_TEMPLATE", "netclode-agent"),
-		DefaultCPUs:        getEnvInt("DEFAULT_CPUS", 4),
-		DefaultMemoryMB:    getEnvInt("DEFAULT_MEMORY_MB", 4096),
-		RedisURL:           getEnv("REDIS_URL", "redis://redis-sessions.netclode.svc.cluster.local:6379"),
-		UseWarmPool:        getEnvBool("WARM_POOL_ENABLED", true),
-		MaxActiveSessions:  getEnvInt("MAX_ACTIVE_SESSIONS", 5),
-		HostCPUs:           getEnvInt("HOST_CPUS", 16),         // Default assumes 16-core host
-		HostMemoryMB:       getEnvInt("HOST_MEMORY_MB", 32768), // Default assumes 32GB host
+		Port:                  getEnvInt("PORT", 3000),
+		AnthropicAPIKey:       getEnv("ANTHROPIC_API_KEY", ""),
+		OpenAIAPIKey:          getEnv("OPENAI_API_KEY", ""),
+		MistralAPIKey:         getEnv("MISTRAL_API_KEY", ""),
+		GitHubCopilotToken:    getEnv("GITHUB_COPILOT_TOKEN", ""),
+		K8sNamespace:          getEnv("K8S_NAMESPACE", "netclode"),
+		AgentImage:            getEnv("AGENT_IMAGE", "ghcr.io/angristan/netclode-agent:latest"),
+		SandboxTemplate:       getEnv("SANDBOX_TEMPLATE", "netclode-agent"),
+		DefaultCPUs:           getEnvInt("DEFAULT_CPUS", 4),
+		DefaultMemoryMB:       getEnvInt("DEFAULT_MEMORY_MB", 4096),
+		RedisURL:              getEnv("REDIS_URL", "redis://redis-sessions.netclode.svc.cluster.local:6379"),
+		UseWarmPool:           getEnvBool("WARM_POOL_ENABLED", true),
+		MaxActiveSessions:     getEnvInt("MAX_ACTIVE_SESSIONS", 5),
+		HostCPUs:              getEnvInt("HOST_CPUS", 16),              // Default assumes 16-core host
+		HostMemoryMB:          getEnvInt("HOST_MEMORY_MB", 32768),      // Default assumes 32GB host
+		CPUOvercommitRatio:    getEnvInt("CPU_OVERCOMMIT_RATIO", 1),    // 1 = no overcommit
+		MemoryOvercommitRatio: getEnvInt("MEMORY_OVERCOMMIT_RATIO", 1), // 1 = no overcommit
 
 		// Codex OAuth tokens
 		CodexAccessToken:  getEnv("CODEX_ACCESS_TOKEN", ""),

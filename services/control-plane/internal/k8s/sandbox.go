@@ -468,6 +468,8 @@ func (r *k8sRuntime) buildPodMetadata(sessionID string, resources *SandboxResour
 
 // buildContainerResources creates container resource requests for K8s scheduling.
 // We use requests (NOT limits!) to inform the scheduler while avoiding cgroup throttling.
+// Requests are divided by overcommit ratio to allow packing more pods on the node.
+// The actual VM resources (via Kata annotations) remain at full size.
 func (r *k8sRuntime) buildContainerResources(resources *SandboxResourceConfig) *ContainerResources {
 	if resources == nil {
 		return nil
@@ -476,10 +478,24 @@ func (r *k8sRuntime) buildContainerResources(resources *SandboxResourceConfig) *
 	requests := make(map[string]string)
 
 	if resources.VCPUs > 0 {
-		requests["cpu"] = fmt.Sprintf("%d", resources.VCPUs)
+		cpuRequest := int(resources.VCPUs)
+		if r.config.CPUOvercommitRatio > 1 {
+			cpuRequest = int(resources.VCPUs) / r.config.CPUOvercommitRatio
+			if cpuRequest < 1 {
+				cpuRequest = 1 // Minimum 1 CPU request
+			}
+		}
+		requests["cpu"] = fmt.Sprintf("%d", cpuRequest)
 	}
 	if resources.MemoryMB > 0 {
-		requests["memory"] = fmt.Sprintf("%dMi", resources.MemoryMB)
+		memRequest := int(resources.MemoryMB)
+		if r.config.MemoryOvercommitRatio > 1 {
+			memRequest = int(resources.MemoryMB) / r.config.MemoryOvercommitRatio
+			if memRequest < 512 {
+				memRequest = 512 // Minimum 512Mi request
+			}
+		}
+		requests["memory"] = fmt.Sprintf("%dMi", memRequest)
 	}
 
 	if len(requests) == 0 {

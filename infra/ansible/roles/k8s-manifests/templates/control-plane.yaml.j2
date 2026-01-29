@@ -102,6 +102,12 @@ spec:
               value: "{{ ansible_processor_vcpus }}"
             - name: HOST_MEMORY_MB
               value: "{{ ansible_memtotal_mb }}"
+            # Overcommit ratios for K8s scheduling (requests = actual / ratio)
+            # Higher ratio = more pods can be scheduled. Kata VMs still get full resources.
+            - name: CPU_OVERCOMMIT_RATIO
+              value: "{{ cpu_overcommit_ratio | default('4') }}"
+            - name: MEMORY_OVERCOMMIT_RATIO
+              value: "{{ memory_overcommit_ratio | default('4') }}"
           readinessProbe:
             httpGet:
               path: /health
