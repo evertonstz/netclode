@@ -1,0 +1,176 @@
+# Ollama deployment for local GPU inference
+#
+# Provides OpenAI-compatible API at ollama.netclode.svc.cluster.local:11434
+# Agents can use this for local model inference instead of cloud APIs.
+#
+# Prerequisites:
+# - NVIDIA drivers installed on host (570+ for RTX 50 series)
+# - NVIDIA Container Toolkit installed
+# - NVIDIA Device Plugin deployed to K8s
+#
+# Usage:
+#   kubectl apply -f ollama.yaml
+#   kubectl -n netclode exec -it deploy/ollama -- ollama pull qwen2.5-coder:32b
+#
+# Models that fit in 16GB VRAM (RTX 5080):
+#   - qwen2.5-coder:32b-instruct-q4_K_M (~19GB, best coding)
+#   - deepseek-coder-v2:16b (~9GB, fast)
+#   - codellama:34b-instruct-q4_K_M (~20GB, Meta's coding model)
+#   - mistral:7b-instruct (~4GB, fast general purpose)
+#
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: netclode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: juicefs-sc
+  resources:
+    requests:
+      storage: 100Gi  # Model weights can be large
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: netclode
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # GPU can only be used by one pod
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      # Use regular runtime (not Kata) for GPU access
+      # GPU passthrough to Kata VMs requires VFIO which is complex
+      runtimeClassName: ""  # Default containerd runtime
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        # Fix permissions on the models volume for non-root user
+        - name: fix-permissions
+          image: busybox:1.37
+          command: ["sh", "-c", "chown -R 1000:1000 /models"]
+          securityContext:
+            runAsUser: 0  # Need root to chown
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.15.2
+          ports:
+            - name: http
+              containerPort: 11434
+              protocol: TCP
+          env:
+            # Store models in our volume (not /root/.ollama since we run as non-root)
+            - name: OLLAMA_MODELS
+              value: "/models"
+            # Keep models loaded in VRAM for faster inference (don't unload between requests)
+            - name: OLLAMA_KEEP_ALIVE
+              value: "24h"
+            # Number of parallel requests - each needs VRAM for KV cache
+            # With 16GB VRAM: 1 for 32B models, 2-4 for 7B-14B models
+            # Set to 1 for safety, increase if using smaller models
+            - name: OLLAMA_NUM_PARALLEL
+              value: "1"
+            # Flash Attention - optimized attention that reduces VRAM usage ~2-4x
+            # Enables longer context and/or more parallel requests
+            # Requires: GPU with compute capability >= 8.0 (RTX 30/40/50 series)
+            - name: OLLAMA_FLASH_ATTENTION
+              value: "1"
+            # Context window size (default 2048) - higher uses more VRAM
+            # 8192 is good balance for coding tasks
+            - name: OLLAMA_NUM_CTX
+              value: "8192"
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+              memory: 32Gi
+            requests:
+              nvidia.com/gpu: 1
+              memory: 16Gi
+          volumeMounts:
+            - name: models
+              mountPath: /models
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Ollama needs to write temp files
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models
+      # Ensure pod lands on node with GPU
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: netclode
+  labels:
+    app: ollama
+spec:
+  type: ClusterIP
+  selector:
+    app: ollama
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+      protocol: TCP
+---
+# NetworkPolicy to allow agents to access Ollama
+# This supplements the sandbox template's egress rules
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ollama-from-agents
+  namespace: netclode
+spec:
+  podSelector:
+    matchLabels:
+      app: ollama
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from any pod in netclode namespace (agents)
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 11434

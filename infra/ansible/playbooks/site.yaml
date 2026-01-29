@@ -49,6 +49,11 @@
     - role: kata
       tags: [kata, k8s]
 
+    # NVIDIA drivers and container runtime (optional, for GPU inference)
+    - role: nvidia
+      tags: [nvidia, gpu]
+      when: nvidia_enabled | default(false)
+
     - role: k3s
       tags: [k3s, k8s]
 

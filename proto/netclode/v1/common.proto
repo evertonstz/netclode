@@ -100,6 +100,7 @@ message SessionConfig {
   optional string codex_refresh_token = 14;
   optional string reasoning_effort = 15;
   optional string mistral_api_key = 16;
+  optional string ollama_url = 17;     // URL for local Ollama inference (e.g., "http://ollama.netclode.svc.cluster.local:11434")
 }
 
 // ============================================================================
@@ -202,6 +203,8 @@ message ModelInfo {
   optional double billing_multiplier = 4;
   repeated string capabilities = 5;
   optional string reasoning_effort = 6;
+  optional bool downloaded = 7;        // For Ollama: whether the model is downloaded locally
+  optional int64 size_bytes = 8;       // For Ollama: model size in bytes
 }
 
 // CopilotAuthStatus represents GitHub Copilot authentication state.

@@ -1,0 +1,241 @@
+---
+# NVIDIA role - Driver, Container Toolkit, and K8s Device Plugin
+#
+# Installs:
+# 1. NVIDIA driver (570+ for RTX 50 series Blackwell support)
+# 2. NVIDIA Container Toolkit (for container GPU access)
+# 3. Configures K3s containerd for nvidia runtime
+# 4. Deploys NVIDIA Device Plugin for K8s GPU scheduling
+#
+# Control via environment variable:
+#   NVIDIA_ENABLED=false ansible-playbook playbooks/site.yaml
+
+# =============================================================================
+# Prerequisites
+# =============================================================================
+
+- name: Skip if NVIDIA disabled
+  ansible.builtin.debug:
+    msg: "NVIDIA GPU support disabled via nvidia_enabled={{ nvidia_enabled }}"
+  when: not nvidia_enabled
+
+- name: End play if NVIDIA disabled
+  ansible.builtin.meta: end_host
+  when: not nvidia_enabled
+
+- name: Check for NVIDIA GPU
+  ansible.builtin.shell: lspci | grep -i nvidia
+  register: nvidia_gpu_check
+  failed_when: false
+  changed_when: false
+
+- name: Skip if no NVIDIA GPU found
+  ansible.builtin.debug:
+    msg: "No NVIDIA GPU found, skipping NVIDIA setup"
+  when: nvidia_gpu_check.rc != 0
+
+- name: End play if no GPU
+  ansible.builtin.meta: end_host
+  when: nvidia_gpu_check.rc != 0
+
+- name: Display detected GPU
+  ansible.builtin.debug:
+    msg: "Detected NVIDIA GPU: {{ nvidia_gpu_check.stdout }}"
+
+# =============================================================================
+# NVIDIA Driver Installation
+# =============================================================================
+
+- name: Check if nvidia-smi works
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_smi_check
+  failed_when: false
+  changed_when: false
+
+- name: Check installed driver version
+  ansible.builtin.shell: nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -1
+  register: installed_driver_version
+  when: nvidia_smi_check.rc == 0
+  changed_when: false
+
+- name: Set driver_needs_install fact
+  ansible.builtin.set_fact:
+    driver_needs_install: "{{ nvidia_smi_check.rc != 0 or (installed_driver_version.stdout | default('') | trim) != nvidia_driver_version }}"
+
+- name: Display driver status
+  ansible.builtin.debug:
+    msg: |
+      Current driver: {{ installed_driver_version.stdout | default('not installed') | trim }}
+      Target driver: {{ nvidia_driver_version }}
+      Needs install: {{ driver_needs_install }}
+
+- name: Install driver build dependencies
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - linux-headers-{{ ansible_kernel }}
+      - pkg-config
+      - libglvnd-dev
+      - dkms
+    state: present
+    update_cache: yes
+  when: driver_needs_install
+
+- name: Download NVIDIA driver
+  ansible.builtin.get_url:
+    url: "{{ nvidia_driver_url }}"
+    dest: /tmp/NVIDIA-driver.run
+    mode: "0755"
+  when: driver_needs_install
+
+- name: Stop display manager if running
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - gdm
+    - lightdm
+    - sddm
+  failed_when: false
+  when: driver_needs_install
+
+- name: Unload nouveau driver
+  community.general.modprobe:
+    name: nouveau
+    state: absent
+  failed_when: false
+  when: driver_needs_install
+
+- name: Install NVIDIA driver
+  ansible.builtin.command: >
+    /tmp/NVIDIA-driver.run
+    --silent
+    --dkms
+    --no-questions
+    --ui=none
+  when: driver_needs_install
+  register: driver_install
+
+- name: Load nvidia kernel modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - nvidia
+    - nvidia_uvm
+    - nvidia_modeset
+  when: driver_needs_install
+
+- name: Clean up driver installer
+  ansible.builtin.file:
+    path: /tmp/NVIDIA-driver.run
+    state: absent
+  when: driver_needs_install
+
+- name: Verify driver installation
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_smi_verify
+  changed_when: false
+
+- name: Display GPU info
+  ansible.builtin.debug:
+    msg: "{{ nvidia_smi_verify.stdout }}"
+
+# =============================================================================
+# GPU Monitoring Tools
+# =============================================================================
+
+- name: Install nvtop for GPU monitoring
+  ansible.builtin.apt:
+    name: nvtop
+    state: present
+
+# =============================================================================
+# NVIDIA Container Toolkit
+# =============================================================================
+
+- name: Add NVIDIA Container Toolkit GPG key
+  ansible.builtin.shell: |
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+      gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+- name: Add NVIDIA Container Toolkit repository
+  ansible.builtin.shell: |
+    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+      sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+      tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  args:
+    creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+- name: Install NVIDIA Container Toolkit
+  ansible.builtin.apt:
+    name: nvidia-container-toolkit
+    state: present
+    update_cache: yes
+
+# =============================================================================
+# Configure K3s containerd for NVIDIA runtime
+# =============================================================================
+
+- name: Create containerd config directory
+  ansible.builtin.file:
+    path: "{{ k3s_containerd_config | dirname }}"
+    state: directory
+    mode: "0755"
+
+- name: Configure containerd with nvidia runtime
+  ansible.builtin.template:
+    src: containerd-config.toml.j2
+    dest: "{{ k3s_containerd_config }}"
+    mode: "0644"
+  notify: Restart k3s
+
+- name: Flush handlers to restart k3s
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for k3s to be ready
+  ansible.builtin.command: kubectl get nodes
+  environment:
+    KUBECONFIG: "{{ k3s_kubeconfig }}"
+  register: k3s_ready
+  until: k3s_ready.rc == 0
+  retries: 30
+  delay: 5
+  changed_when: false
+
+# =============================================================================
+# NVIDIA Device Plugin for Kubernetes
+# =============================================================================
+
+- name: Deploy NVIDIA Device Plugin
+  kubernetes.core.k8s:
+    state: present
+    src: "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/{{ nvidia_device_plugin_version }}/deployments/static/nvidia-device-plugin.yml"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
+- name: Wait for device plugin to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: DaemonSet
+    name: nvidia-device-plugin-daemonset
+    namespace: kube-system
+    kubeconfig: "{{ k3s_kubeconfig }}"
+  register: device_plugin
+  until: device_plugin.resources[0].status.numberReady | default(0) > 0
+  retries: 30
+  delay: 10
+
+- name: Verify GPU is visible to Kubernetes
+  ansible.builtin.shell: |
+    kubectl get nodes -o json | jq -r '.items[].status.allocatable["nvidia.com/gpu"] // "0"'
+  environment:
+    KUBECONFIG: "{{ k3s_kubeconfig }}"
+  register: k8s_gpu_check
+  changed_when: false
+  failed_when: k8s_gpu_check.stdout | int < 1
+
+- name: Display K8s GPU status
+  ansible.builtin.debug:
+    msg: "Kubernetes sees {{ k8s_gpu_check.stdout }} NVIDIA GPU(s)"

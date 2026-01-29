@@ -122,6 +122,9 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 	if config.ReasoningEffort != "" {
 		sessionConfig.ReasoningEffort = &config.ReasoningEffort
 	}
+	if config.OllamaURL != "" {
+		sessionConfig.OllamaUrl = &config.OllamaURL
+	}
 
 	if err := conn.send(&v1.ControlPlaneMessage{
 		Message: &v1.ControlPlaneMessage_Registered{

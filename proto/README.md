@@ -127,6 +127,34 @@ flowchart LR
 - **iOS → Control Plane**: HTTPS with HTTP/2 via Tailscale Ingress
 - **Agent → Control Plane**: h2c (HTTP/2 cleartext) within cluster
 
+## Key Types
+
+### SessionConfig
+
+Configuration passed from control plane to agents on registration:
+
+| Field | Description |
+|-------|-------------|
+| `session_id` | Unique session identifier |
+| `workspace_dir` | Absolute path to workspace |
+| `sdk_type` | SDK backend (Claude, OpenCode, Copilot, Codex) |
+| `model` | Model ID (e.g., `claude-sonnet-4-0`, `ollama/qwen2.5-coder:32b`) |
+| `ollama_url` | URL for local Ollama inference (optional) |
+| `github_token` | GitHub token for git operations |
+| `repo` | Repository to clone |
+
+### ModelInfo
+
+Model metadata returned by `ListModels`:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Model identifier (e.g., `ollama/qwen2.5-coder:32b`) |
+| `name` | Display name |
+| `provider` | Provider name (anthropic, openai, ollama) |
+| `downloaded` | For Ollama: whether model is downloaded locally |
+| `size_bytes` | For Ollama: model size in bytes |
+
 ## Adding New Messages
 
 1. Edit the appropriate `.proto` file

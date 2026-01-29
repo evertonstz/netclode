@@ -415,151 +415,158 @@ public struct Netclode_V1_SessionSummary: Sendable {
 }
 
 /// SessionConfig contains configuration passed to the agent on registration.
-public struct Netclode_V1_SessionConfig: Sendable {
+public struct Netclode_V1_SessionConfig: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var sessionID: String = String()
+  public var sessionID: String {
+    get {return _storage._sessionID}
+    set {_uniqueStorage()._sessionID = newValue}
+  }
 
-  public var workspaceDir: String = String()
+  public var workspaceDir: String {
+    get {return _storage._workspaceDir}
+    set {_uniqueStorage()._workspaceDir = newValue}
+  }
 
   public var githubToken: String {
-    get {return _githubToken ?? String()}
-    set {_githubToken = newValue}
+    get {return _storage._githubToken ?? String()}
+    set {_uniqueStorage()._githubToken = newValue}
   }
   /// Returns true if `githubToken` has been explicitly set.
-  public var hasGithubToken: Bool {return self._githubToken != nil}
+  public var hasGithubToken: Bool {return _storage._githubToken != nil}
   /// Clears the value of `githubToken`. Subsequent reads from it will return its default value.
-  public mutating func clearGithubToken() {self._githubToken = nil}
+  public mutating func clearGithubToken() {_uniqueStorage()._githubToken = nil}
 
   public var repo: String {
-    get {return _repo ?? String()}
-    set {_repo = newValue}
+    get {return _storage._repo ?? String()}
+    set {_uniqueStorage()._repo = newValue}
   }
   /// Returns true if `repo` has been explicitly set.
-  public var hasRepo: Bool {return self._repo != nil}
+  public var hasRepo: Bool {return _storage._repo != nil}
   /// Clears the value of `repo`. Subsequent reads from it will return its default value.
-  public mutating func clearRepo() {self._repo = nil}
+  public mutating func clearRepo() {_uniqueStorage()._repo = nil}
 
   public var repoAccess: Netclode_V1_RepoAccess {
-    get {return _repoAccess ?? .unspecified}
-    set {_repoAccess = newValue}
+    get {return _storage._repoAccess ?? .unspecified}
+    set {_uniqueStorage()._repoAccess = newValue}
   }
   /// Returns true if `repoAccess` has been explicitly set.
-  public var hasRepoAccess: Bool {return self._repoAccess != nil}
+  public var hasRepoAccess: Bool {return _storage._repoAccess != nil}
   /// Clears the value of `repoAccess`. Subsequent reads from it will return its default value.
-  public mutating func clearRepoAccess() {self._repoAccess = nil}
+  public mutating func clearRepoAccess() {_uniqueStorage()._repoAccess = nil}
 
-  public var controlPlaneURL: String = String()
+  public var controlPlaneURL: String {
+    get {return _storage._controlPlaneURL}
+    set {_uniqueStorage()._controlPlaneURL = newValue}
+  }
 
   public var sdkType: Netclode_V1_SdkType {
-    get {return _sdkType ?? .unspecified}
-    set {_sdkType = newValue}
+    get {return _storage._sdkType ?? .unspecified}
+    set {_uniqueStorage()._sdkType = newValue}
   }
   /// Returns true if `sdkType` has been explicitly set.
-  public var hasSdkType: Bool {return self._sdkType != nil}
+  public var hasSdkType: Bool {return _storage._sdkType != nil}
   /// Clears the value of `sdkType`. Subsequent reads from it will return its default value.
-  public mutating func clearSdkType() {self._sdkType = nil}
+  public mutating func clearSdkType() {_uniqueStorage()._sdkType = nil}
 
   public var model: String {
-    get {return _model ?? String()}
-    set {_model = newValue}
+    get {return _storage._model ?? String()}
+    set {_uniqueStorage()._model = newValue}
   }
   /// Returns true if `model` has been explicitly set.
-  public var hasModel: Bool {return self._model != nil}
+  public var hasModel: Bool {return _storage._model != nil}
   /// Clears the value of `model`. Subsequent reads from it will return its default value.
-  public mutating func clearModel() {self._model = nil}
+  public mutating func clearModel() {_uniqueStorage()._model = nil}
 
   public var copilotBackend: Netclode_V1_CopilotBackend {
-    get {return _copilotBackend ?? .unspecified}
-    set {_copilotBackend = newValue}
+    get {return _storage._copilotBackend ?? .unspecified}
+    set {_uniqueStorage()._copilotBackend = newValue}
   }
   /// Returns true if `copilotBackend` has been explicitly set.
-  public var hasCopilotBackend: Bool {return self._copilotBackend != nil}
+  public var hasCopilotBackend: Bool {return _storage._copilotBackend != nil}
   /// Clears the value of `copilotBackend`. Subsequent reads from it will return its default value.
-  public mutating func clearCopilotBackend() {self._copilotBackend = nil}
+  public mutating func clearCopilotBackend() {_uniqueStorage()._copilotBackend = nil}
 
   public var githubCopilotToken: String {
-    get {return _githubCopilotToken ?? String()}
-    set {_githubCopilotToken = newValue}
+    get {return _storage._githubCopilotToken ?? String()}
+    set {_uniqueStorage()._githubCopilotToken = newValue}
   }
   /// Returns true if `githubCopilotToken` has been explicitly set.
-  public var hasGithubCopilotToken: Bool {return self._githubCopilotToken != nil}
+  public var hasGithubCopilotToken: Bool {return _storage._githubCopilotToken != nil}
   /// Clears the value of `githubCopilotToken`. Subsequent reads from it will return its default value.
-  public mutating func clearGithubCopilotToken() {self._githubCopilotToken = nil}
+  public mutating func clearGithubCopilotToken() {_uniqueStorage()._githubCopilotToken = nil}
 
   public var codexAccessToken: String {
-    get {return _codexAccessToken ?? String()}
-    set {_codexAccessToken = newValue}
+    get {return _storage._codexAccessToken ?? String()}
+    set {_uniqueStorage()._codexAccessToken = newValue}
   }
   /// Returns true if `codexAccessToken` has been explicitly set.
-  public var hasCodexAccessToken: Bool {return self._codexAccessToken != nil}
+  public var hasCodexAccessToken: Bool {return _storage._codexAccessToken != nil}
   /// Clears the value of `codexAccessToken`. Subsequent reads from it will return its default value.
-  public mutating func clearCodexAccessToken() {self._codexAccessToken = nil}
+  public mutating func clearCodexAccessToken() {_uniqueStorage()._codexAccessToken = nil}
 
   public var codexIDToken: String {
-    get {return _codexIDToken ?? String()}
-    set {_codexIDToken = newValue}
+    get {return _storage._codexIDToken ?? String()}
+    set {_uniqueStorage()._codexIDToken = newValue}
   }
   /// Returns true if `codexIDToken` has been explicitly set.
-  public var hasCodexIDToken: Bool {return self._codexIDToken != nil}
+  public var hasCodexIDToken: Bool {return _storage._codexIDToken != nil}
   /// Clears the value of `codexIDToken`. Subsequent reads from it will return its default value.
-  public mutating func clearCodexIDToken() {self._codexIDToken = nil}
+  public mutating func clearCodexIDToken() {_uniqueStorage()._codexIDToken = nil}
 
   public var openaiApiKey: String {
-    get {return _openaiApiKey ?? String()}
-    set {_openaiApiKey = newValue}
+    get {return _storage._openaiApiKey ?? String()}
+    set {_uniqueStorage()._openaiApiKey = newValue}
   }
   /// Returns true if `openaiApiKey` has been explicitly set.
-  public var hasOpenaiApiKey: Bool {return self._openaiApiKey != nil}
+  public var hasOpenaiApiKey: Bool {return _storage._openaiApiKey != nil}
   /// Clears the value of `openaiApiKey`. Subsequent reads from it will return its default value.
-  public mutating func clearOpenaiApiKey() {self._openaiApiKey = nil}
+  public mutating func clearOpenaiApiKey() {_uniqueStorage()._openaiApiKey = nil}
 
   public var codexRefreshToken: String {
-    get {return _codexRefreshToken ?? String()}
-    set {_codexRefreshToken = newValue}
+    get {return _storage._codexRefreshToken ?? String()}
+    set {_uniqueStorage()._codexRefreshToken = newValue}
   }
   /// Returns true if `codexRefreshToken` has been explicitly set.
-  public var hasCodexRefreshToken: Bool {return self._codexRefreshToken != nil}
+  public var hasCodexRefreshToken: Bool {return _storage._codexRefreshToken != nil}
   /// Clears the value of `codexRefreshToken`. Subsequent reads from it will return its default value.
-  public mutating func clearCodexRefreshToken() {self._codexRefreshToken = nil}
+  public mutating func clearCodexRefreshToken() {_uniqueStorage()._codexRefreshToken = nil}
 
   public var reasoningEffort: String {
-    get {return _reasoningEffort ?? String()}
-    set {_reasoningEffort = newValue}
+    get {return _storage._reasoningEffort ?? String()}
+    set {_uniqueStorage()._reasoningEffort = newValue}
   }
   /// Returns true if `reasoningEffort` has been explicitly set.
-  public var hasReasoningEffort: Bool {return self._reasoningEffort != nil}
+  public var hasReasoningEffort: Bool {return _storage._reasoningEffort != nil}
   /// Clears the value of `reasoningEffort`. Subsequent reads from it will return its default value.
-  public mutating func clearReasoningEffort() {self._reasoningEffort = nil}
+  public mutating func clearReasoningEffort() {_uniqueStorage()._reasoningEffort = nil}
 
   public var mistralApiKey: String {
-    get {return _mistralApiKey ?? String()}
-    set {_mistralApiKey = newValue}
+    get {return _storage._mistralApiKey ?? String()}
+    set {_uniqueStorage()._mistralApiKey = newValue}
   }
   /// Returns true if `mistralApiKey` has been explicitly set.
-  public var hasMistralApiKey: Bool {return self._mistralApiKey != nil}
+  public var hasMistralApiKey: Bool {return _storage._mistralApiKey != nil}
   /// Clears the value of `mistralApiKey`. Subsequent reads from it will return its default value.
-  public mutating func clearMistralApiKey() {self._mistralApiKey = nil}
+  public mutating func clearMistralApiKey() {_uniqueStorage()._mistralApiKey = nil}
+
+  /// URL for local Ollama inference (e.g., "http://ollama.netclode.svc.cluster.local:11434")
+  public var ollamaURL: String {
+    get {return _storage._ollamaURL ?? String()}
+    set {_uniqueStorage()._ollamaURL = newValue}
+  }
+  /// Returns true if `ollamaURL` has been explicitly set.
+  public var hasOllamaURL: Bool {return _storage._ollamaURL != nil}
+  /// Clears the value of `ollamaURL`. Subsequent reads from it will return its default value.
+  public mutating func clearOllamaURL() {_uniqueStorage()._ollamaURL = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
-  fileprivate var _githubToken: String? = nil
-  fileprivate var _repo: String? = nil
-  fileprivate var _repoAccess: Netclode_V1_RepoAccess? = nil
-  fileprivate var _sdkType: Netclode_V1_SdkType? = nil
-  fileprivate var _model: String? = nil
-  fileprivate var _copilotBackend: Netclode_V1_CopilotBackend? = nil
-  fileprivate var _githubCopilotToken: String? = nil
-  fileprivate var _codexAccessToken: String? = nil
-  fileprivate var _codexIDToken: String? = nil
-  fileprivate var _openaiApiKey: String? = nil
-  fileprivate var _codexRefreshToken: String? = nil
-  fileprivate var _reasoningEffort: String? = nil
-  fileprivate var _mistralApiKey: String? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 /// StreamEntry represents a single entry in the unified session stream.
@@ -863,6 +870,26 @@ public struct Netclode_V1_ModelInfo: Sendable {
   /// Clears the value of `reasoningEffort`. Subsequent reads from it will return its default value.
   public mutating func clearReasoningEffort() {self._reasoningEffort = nil}
 
+  /// For Ollama: whether the model is downloaded locally
+  public var downloaded: Bool {
+    get {return _downloaded ?? false}
+    set {_downloaded = newValue}
+  }
+  /// Returns true if `downloaded` has been explicitly set.
+  public var hasDownloaded: Bool {return self._downloaded != nil}
+  /// Clears the value of `downloaded`. Subsequent reads from it will return its default value.
+  public mutating func clearDownloaded() {self._downloaded = nil}
+
+  /// For Ollama: model size in bytes
+  public var sizeBytes: Int64 {
+    get {return _sizeBytes ?? 0}
+    set {_sizeBytes = newValue}
+  }
+  /// Returns true if `sizeBytes` has been explicitly set.
+  public var hasSizeBytes: Bool {return self._sizeBytes != nil}
+  /// Clears the value of `sizeBytes`. Subsequent reads from it will return its default value.
+  public mutating func clearSizeBytes() {self._sizeBytes = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -870,6 +897,8 @@ public struct Netclode_V1_ModelInfo: Sendable {
   fileprivate var _provider: String? = nil
   fileprivate var _billingMultiplier: Double? = nil
   fileprivate var _reasoningEffort: String? = nil
+  fileprivate var _downloaded: Bool? = nil
+  fileprivate var _sizeBytes: Int64? = nil
 }
 
 /// CopilotAuthStatus represents GitHub Copilot authentication state.
@@ -1098,108 +1127,181 @@ extension Netclode_V1_SessionSummary: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionConfig"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repo\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}github_copilot_token\0\u{3}codex_access_token\0\u{3}codex_id_token\0\u{3}openai_api_key\0\u{3}codex_refresh_token\0\u{3}reasoning_effort\0\u{3}mistral_api_key\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repo\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}github_copilot_token\0\u{3}codex_access_token\0\u{3}codex_id_token\0\u{3}openai_api_key\0\u{3}codex_refresh_token\0\u{3}reasoning_effort\0\u{3}mistral_api_key\0\u{3}ollama_url\0")
+
+  fileprivate class _StorageClass {
+    var _sessionID: String = String()
+    var _workspaceDir: String = String()
+    var _githubToken: String? = nil
+    var _repo: String? = nil
+    var _repoAccess: Netclode_V1_RepoAccess? = nil
+    var _controlPlaneURL: String = String()
+    var _sdkType: Netclode_V1_SdkType? = nil
+    var _model: String? = nil
+    var _copilotBackend: Netclode_V1_CopilotBackend? = nil
+    var _githubCopilotToken: String? = nil
+    var _codexAccessToken: String? = nil
+    var _codexIDToken: String? = nil
+    var _openaiApiKey: String? = nil
+    var _codexRefreshToken: String? = nil
+    var _reasoningEffort: String? = nil
+    var _mistralApiKey: String? = nil
+    var _ollamaURL: String? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _sessionID = source._sessionID
+      _workspaceDir = source._workspaceDir
+      _githubToken = source._githubToken
+      _repo = source._repo
+      _repoAccess = source._repoAccess
+      _controlPlaneURL = source._controlPlaneURL
+      _sdkType = source._sdkType
+      _model = source._model
+      _copilotBackend = source._copilotBackend
+      _githubCopilotToken = source._githubCopilotToken
+      _codexAccessToken = source._codexAccessToken
+      _codexIDToken = source._codexIDToken
+      _openaiApiKey = source._openaiApiKey
+      _codexRefreshToken = source._codexRefreshToken
+      _reasoningEffort = source._reasoningEffort
+      _mistralApiKey = source._mistralApiKey
+      _ollamaURL = source._ollamaURL
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.workspaceDir) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self._githubToken) }()
-      case 4: try { try decoder.decodeSingularStringField(value: &self._repo) }()
-      case 5: try { try decoder.decodeSingularEnumField(value: &self._repoAccess) }()
-      case 6: try { try decoder.decodeSingularStringField(value: &self.controlPlaneURL) }()
-      case 7: try { try decoder.decodeSingularEnumField(value: &self._sdkType) }()
-      case 8: try { try decoder.decodeSingularStringField(value: &self._model) }()
-      case 9: try { try decoder.decodeSingularEnumField(value: &self._copilotBackend) }()
-      case 10: try { try decoder.decodeSingularStringField(value: &self._githubCopilotToken) }()
-      case 11: try { try decoder.decodeSingularStringField(value: &self._codexAccessToken) }()
-      case 12: try { try decoder.decodeSingularStringField(value: &self._codexIDToken) }()
-      case 13: try { try decoder.decodeSingularStringField(value: &self._openaiApiKey) }()
-      case 14: try { try decoder.decodeSingularStringField(value: &self._codexRefreshToken) }()
-      case 15: try { try decoder.decodeSingularStringField(value: &self._reasoningEffort) }()
-      case 16: try { try decoder.decodeSingularStringField(value: &self._mistralApiKey) }()
-      default: break
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularStringField(value: &_storage._sessionID) }()
+        case 2: try { try decoder.decodeSingularStringField(value: &_storage._workspaceDir) }()
+        case 3: try { try decoder.decodeSingularStringField(value: &_storage._githubToken) }()
+        case 4: try { try decoder.decodeSingularStringField(value: &_storage._repo) }()
+        case 5: try { try decoder.decodeSingularEnumField(value: &_storage._repoAccess) }()
+        case 6: try { try decoder.decodeSingularStringField(value: &_storage._controlPlaneURL) }()
+        case 7: try { try decoder.decodeSingularEnumField(value: &_storage._sdkType) }()
+        case 8: try { try decoder.decodeSingularStringField(value: &_storage._model) }()
+        case 9: try { try decoder.decodeSingularEnumField(value: &_storage._copilotBackend) }()
+        case 10: try { try decoder.decodeSingularStringField(value: &_storage._githubCopilotToken) }()
+        case 11: try { try decoder.decodeSingularStringField(value: &_storage._codexAccessToken) }()
+        case 12: try { try decoder.decodeSingularStringField(value: &_storage._codexIDToken) }()
+        case 13: try { try decoder.decodeSingularStringField(value: &_storage._openaiApiKey) }()
+        case 14: try { try decoder.decodeSingularStringField(value: &_storage._codexRefreshToken) }()
+        case 15: try { try decoder.decodeSingularStringField(value: &_storage._reasoningEffort) }()
+        case 16: try { try decoder.decodeSingularStringField(value: &_storage._mistralApiKey) }()
+        case 17: try { try decoder.decodeSingularStringField(value: &_storage._ollamaURL) }()
+        default: break
+        }
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.sessionID.isEmpty {
-      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if !_storage._sessionID.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._sessionID, fieldNumber: 1)
+      }
+      if !_storage._workspaceDir.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._workspaceDir, fieldNumber: 2)
+      }
+      try { if let v = _storage._githubToken {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+      } }()
+      try { if let v = _storage._repo {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 4)
+      } }()
+      try { if let v = _storage._repoAccess {
+        try visitor.visitSingularEnumField(value: v, fieldNumber: 5)
+      } }()
+      if !_storage._controlPlaneURL.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._controlPlaneURL, fieldNumber: 6)
+      }
+      try { if let v = _storage._sdkType {
+        try visitor.visitSingularEnumField(value: v, fieldNumber: 7)
+      } }()
+      try { if let v = _storage._model {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 8)
+      } }()
+      try { if let v = _storage._copilotBackend {
+        try visitor.visitSingularEnumField(value: v, fieldNumber: 9)
+      } }()
+      try { if let v = _storage._githubCopilotToken {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 10)
+      } }()
+      try { if let v = _storage._codexAccessToken {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 11)
+      } }()
+      try { if let v = _storage._codexIDToken {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 12)
+      } }()
+      try { if let v = _storage._openaiApiKey {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 13)
+      } }()
+      try { if let v = _storage._codexRefreshToken {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 14)
+      } }()
+      try { if let v = _storage._reasoningEffort {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 15)
+      } }()
+      try { if let v = _storage._mistralApiKey {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 16)
+      } }()
+      try { if let v = _storage._ollamaURL {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 17)
+      } }()
     }
-    if !self.workspaceDir.isEmpty {
-      try visitor.visitSingularStringField(value: self.workspaceDir, fieldNumber: 2)
-    }
-    try { if let v = self._githubToken {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
-    } }()
-    try { if let v = self._repo {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
-    } }()
-    try { if let v = self._repoAccess {
-      try visitor.visitSingularEnumField(value: v, fieldNumber: 5)
-    } }()
-    if !self.controlPlaneURL.isEmpty {
-      try visitor.visitSingularStringField(value: self.controlPlaneURL, fieldNumber: 6)
-    }
-    try { if let v = self._sdkType {
-      try visitor.visitSingularEnumField(value: v, fieldNumber: 7)
-    } }()
-    try { if let v = self._model {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 8)
-    } }()
-    try { if let v = self._copilotBackend {
-      try visitor.visitSingularEnumField(value: v, fieldNumber: 9)
-    } }()
-    try { if let v = self._githubCopilotToken {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 10)
-    } }()
-    try { if let v = self._codexAccessToken {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 11)
-    } }()
-    try { if let v = self._codexIDToken {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 12)
-    } }()
-    try { if let v = self._openaiApiKey {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 13)
-    } }()
-    try { if let v = self._codexRefreshToken {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 14)
-    } }()
-    try { if let v = self._reasoningEffort {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 15)
-    } }()
-    try { if let v = self._mistralApiKey {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 16)
-    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_SessionConfig, rhs: Netclode_V1_SessionConfig) -> Bool {
-    if lhs.sessionID != rhs.sessionID {return false}
-    if lhs.workspaceDir != rhs.workspaceDir {return false}
-    if lhs._githubToken != rhs._githubToken {return false}
-    if lhs._repo != rhs._repo {return false}
-    if lhs._repoAccess != rhs._repoAccess {return false}
-    if lhs.controlPlaneURL != rhs.controlPlaneURL {return false}
-    if lhs._sdkType != rhs._sdkType {return false}
-    if lhs._model != rhs._model {return false}
-    if lhs._copilotBackend != rhs._copilotBackend {return false}
-    if lhs._githubCopilotToken != rhs._githubCopilotToken {return false}
-    if lhs._codexAccessToken != rhs._codexAccessToken {return false}
-    if lhs._codexIDToken != rhs._codexIDToken {return false}
-    if lhs._openaiApiKey != rhs._openaiApiKey {return false}
-    if lhs._codexRefreshToken != rhs._codexRefreshToken {return false}
-    if lhs._reasoningEffort != rhs._reasoningEffort {return false}
-    if lhs._mistralApiKey != rhs._mistralApiKey {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._sessionID != rhs_storage._sessionID {return false}
+        if _storage._workspaceDir != rhs_storage._workspaceDir {return false}
+        if _storage._githubToken != rhs_storage._githubToken {return false}
+        if _storage._repo != rhs_storage._repo {return false}
+        if _storage._repoAccess != rhs_storage._repoAccess {return false}
+        if _storage._controlPlaneURL != rhs_storage._controlPlaneURL {return false}
+        if _storage._sdkType != rhs_storage._sdkType {return false}
+        if _storage._model != rhs_storage._model {return false}
+        if _storage._copilotBackend != rhs_storage._copilotBackend {return false}
+        if _storage._githubCopilotToken != rhs_storage._githubCopilotToken {return false}
+        if _storage._codexAccessToken != rhs_storage._codexAccessToken {return false}
+        if _storage._codexIDToken != rhs_storage._codexIDToken {return false}
+        if _storage._openaiApiKey != rhs_storage._openaiApiKey {return false}
+        if _storage._codexRefreshToken != rhs_storage._codexRefreshToken {return false}
+        if _storage._reasoningEffort != rhs_storage._reasoningEffort {return false}
+        if _storage._mistralApiKey != rhs_storage._mistralApiKey {return false}
+        if _storage._ollamaURL != rhs_storage._ollamaURL {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1654,7 +1756,7 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_ModelInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ModelInfo"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}provider\0\u{3}billing_multiplier\0\u{1}capabilities\0\u{3}reasoning_effort\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}provider\0\u{3}billing_multiplier\0\u{1}capabilities\0\u{3}reasoning_effort\0\u{1}downloaded\0\u{3}size_bytes\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1668,6 +1770,8 @@ extension Netclode_V1_ModelInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       case 4: try { try decoder.decodeSingularDoubleField(value: &self._billingMultiplier) }()
       case 5: try { try decoder.decodeRepeatedStringField(value: &self.capabilities) }()
       case 6: try { try decoder.decodeSingularStringField(value: &self._reasoningEffort) }()
+      case 7: try { try decoder.decodeSingularBoolField(value: &self._downloaded) }()
+      case 8: try { try decoder.decodeSingularInt64Field(value: &self._sizeBytes) }()
       default: break
       }
     }
@@ -1696,6 +1800,12 @@ extension Netclode_V1_ModelInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     try { if let v = self._reasoningEffort {
       try visitor.visitSingularStringField(value: v, fieldNumber: 6)
     } }()
+    try { if let v = self._downloaded {
+      try visitor.visitSingularBoolField(value: v, fieldNumber: 7)
+    } }()
+    try { if let v = self._sizeBytes {
+      try visitor.visitSingularInt64Field(value: v, fieldNumber: 8)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1706,6 +1816,8 @@ extension Netclode_V1_ModelInfo: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     if lhs._billingMultiplier != rhs._billingMultiplier {return false}
     if lhs.capabilities != rhs.capabilities {return false}
     if lhs._reasoningEffort != rhs._reasoningEffort {return false}
+    if lhs._downloaded != rhs._downloaded {return false}
+    if lhs._sizeBytes != rhs._sizeBytes {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

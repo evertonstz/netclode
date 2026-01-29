@@ -190,11 +190,85 @@ kubectl config use-context netclode
 | `deploy-secrets` | Deploy secrets from .env to host and k8s |
 | `tailscale` | Tailscale daemon + auto-connect |
 | `kata` | Kata Containers static release |
+| `nvidia` | NVIDIA driver, container toolkit, device plugin (optional) |
 | `k3s` | k3s single-node server with Kata support |
 | `cilium` | Cilium CNI for NetworkPolicy enforcement |
 | `juicefs-csi` | JuiceFS CSI driver with VolumeSnapshot support |
 | `tailscale-operator` | Tailscale K8s Operator via Helm |
 | `k8s-manifests` | Deploy all k8s manifests from infra/k8s/ |
+
+## GPU Support (Optional)
+
+For local model inference with Ollama, enable NVIDIA GPU support:
+
+### Prerequisites
+
+- NVIDIA GPU (RTX 30/40/50 series recommended)
+- GPU must be detected by `lspci | grep -i nvidia`
+
+### Configuration
+
+Add to `.env`:
+
+```bash
+# Enable NVIDIA driver and container toolkit installation
+NVIDIA_ENABLED=true
+
+# Enable Ollama deployment with GPU access
+OLLAMA_ENABLED=true
+
+# Ollama URL for control-plane (auto-configured if OLLAMA_ENABLED=true)
+OLLAMA_URL=http://ollama.netclode.svc.cluster.local:11434
+```
+
+### What gets installed
+
+1. **NVIDIA Driver** (570+ for RTX 50 series Blackwell support)
+2. **NVIDIA Container Toolkit** - Enables GPU access from containers
+3. **NVIDIA Device Plugin** - K8s scheduler sees `nvidia.com/gpu` resources
+4. **nvtop** - GPU monitoring TUI
+5. **Ollama** - Local LLM inference server with GPU acceleration
+
+### GPU Monitoring
+
+```bash
+# Quick status
+ssh root@netclode-host nvidia-smi
+
+# Live monitoring
+ssh root@netclode-host nvidia-smi -l 1
+
+# Pretty TUI
+ssh root@netclode-host nvtop
+
+# From inside Ollama pod
+kubectl --context netclode -n netclode exec -it deploy/ollama -- nvidia-smi
+```
+
+### Ollama Model Management
+
+```bash
+# Pull a model
+kubectl --context netclode -n netclode exec -it deploy/ollama -- ollama pull qwen2.5-coder:32b
+
+# List downloaded models
+kubectl --context netclode -n netclode exec -it deploy/ollama -- ollama list
+
+# Remove a model
+kubectl --context netclode -n netclode exec -it deploy/ollama -- ollama rm qwen2.5-coder:32b
+```
+
+### Recommended Models for 16GB VRAM (RTX 5080)
+
+| Model | Size | Use Case |
+|-------|------|----------|
+| `qwen2.5-coder:32b-instruct-q4_K_M` | ~19GB | Best coding performance |
+| `deepseek-coder-v2:16b` | ~9GB | Fast coding |
+| `mistral:7b-instruct` | ~4GB | Fast general purpose |
+
+### Limitations
+
+**Tool calling with local models is unreliable.** OpenCode + Ollama may generate tool call JSON but commands don't execute. This is a model capability issue, not infrastructure. Use cloud APIs (Anthropic, OpenAI) for production agentic workloads.
 
 ## Supported Distributions
 

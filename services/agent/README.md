@@ -225,7 +225,28 @@ const res = await fetch(`http://localhost:${port}/session`, {
 const eventSource = new EventSource(`http://localhost:${port}/session/${id}/message`);
 ```
 
-OpenCode supports multiple model providers (Anthropic, OpenAI, etc.). The model is specified in the session config (e.g., `anthropic/claude-sonnet-4-0`).
+OpenCode supports multiple model providers (Anthropic, OpenAI, Ollama, etc.). The model is specified in the session config (e.g., `anthropic/claude-sonnet-4-0`, `ollama/qwen2.5-coder:32b`).
+
+#### Ollama Support (Local GPU Inference)
+
+When the model ID starts with `ollama/`, the adapter configures OpenCode to use the local Ollama server:
+
+```typescript
+// Session config from control-plane includes:
+// - model: "ollama/qwen2.5-coder:32b"
+// - ollamaUrl: "http://ollama.netclode.svc.cluster.local:11434"
+
+const opencodeConfig = {
+  model: "ollama/qwen2.5-coder:32b",
+  provider: {
+    ollama: {
+      baseURL: "http://ollama.netclode.svc.cluster.local:11434"
+    }
+  }
+};
+```
+
+**Limitations:** Tool calling with local models is unreliable. The model may generate tool call JSON but commands don't execute. This is a model capability limitation, not infrastructure. Use cloud APIs for production agentic workloads.
 
 ### Copilot SDK
 

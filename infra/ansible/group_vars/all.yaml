@@ -80,3 +80,11 @@ juicefs_csi_version: "v0.31.0"
 
 # Tailscale
 tailscale_port: 41641
+
+# NVIDIA GPU support (optional)
+# Set NVIDIA_ENABLED=true in .env to install NVIDIA drivers and container toolkit
+nvidia_enabled: "{{ lookup('env', 'NVIDIA_ENABLED') | default('false', true) | lower == 'true' }}"
+
+# Ollama local inference (optional)
+# Set OLLAMA_ENABLED=true in .env to deploy Ollama with GPU support
+ollama_enabled: "{{ lookup('env', 'OLLAMA_ENABLED') | default('false', true) | lower == 'true' }}"

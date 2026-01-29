@@ -113,4 +113,12 @@
     definition: "{{ lookup('file', k8s_manifest_dir ~ '/control-plane-ingress.yaml') | from_yaml_all }}"
     kubeconfig: "{{ k3s_kubeconfig }}"
 
+# Deploy Ollama (optional, for local GPU inference)
+- name: Deploy Ollama
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', k8s_manifest_dir ~ '/ollama.yaml') | from_yaml_all }}"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+  when: ollama_enabled | default(false)
+
 # tailscale-operator.yaml is just documentation - actual operator is deployed via Helm in tailscale-operator role

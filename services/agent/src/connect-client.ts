@@ -436,6 +436,8 @@ async function handleControlPlaneMessage(
               reasoningEffort: config.reasoningEffort,
               // Mistral API key for OpenCode SDK
               mistralApiKey: config.mistralApiKey,
+              // Ollama URL for local inference
+              ollamaUrl: config.ollamaUrl,
             });
           } catch (err) {
             console.error("[agent] Failed to initialize SDK adapter:", err);

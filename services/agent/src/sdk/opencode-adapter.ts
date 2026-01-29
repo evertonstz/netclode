@@ -77,13 +77,15 @@ export class OpenCodeAdapter implements SDKAdapter {
   private interruptSignal = false;
   private currentGitRepo: string | null = null;
   private currentGithubToken: string | null = null;
+  private ollamaUrl: string | null = null;
 
   // Accumulate usage data for result event (emitted on session.idle)
   private lastUsage: { inputTokens: number; outputTokens: number } | null = null;
 
   async initialize(config: SDKConfig): Promise<void> {
     this.config = config;
-    console.log("[opencode-adapter] Initializing with model:", config.model);
+    this.ollamaUrl = config.ollamaUrl || null;
+    console.log("[opencode-adapter] Initializing with model:", config.model, "ollamaUrl:", this.ollamaUrl);
 
     // Start opencode serve process
     await this.startServer();
@@ -112,8 +114,12 @@ export class OpenCodeAdapter implements SDKAdapter {
     // Budget tokens: high = 16000, max = 32000
     const thinkingBudget = thinkingLevel === "max" ? 32000 : thinkingLevel === "high" ? 16000 : 0;
     
-    const providerConfig = thinkingBudget > 0 ? {
-      [providerId]: {
+    // Start with empty provider config
+    let providerConfig: Record<string, unknown> = {};
+    
+    // Add thinking config for Anthropic models
+    if (thinkingBudget > 0) {
+      providerConfig[providerId] = {
         models: {
           [modelName]: {
             options: {
@@ -124,8 +130,17 @@ export class OpenCodeAdapter implements SDKAdapter {
             },
           },
         },
-      },
-    } : {};
+      };
+    }
+    
+    // Configure Ollama provider if model starts with "ollama/" and we have a URL
+    if (providerId === "ollama" && this.ollamaUrl) {
+      console.log("[opencode-adapter] Configuring Ollama provider with URL:", this.ollamaUrl);
+      providerConfig["ollama"] = {
+        ...(providerConfig["ollama"] as Record<string, unknown> || {}),
+        baseURL: this.ollamaUrl,
+      };
+    }
     
     const opencodeConfig = {
       model,
@@ -137,7 +152,7 @@ export class OpenCodeAdapter implements SDKAdapter {
         webfetch: "allow",
         mcp: "allow",
       },
-      // Configure provider-specific options (including thinking for Claude)
+      // Configure provider-specific options (including thinking for Claude, baseURL for Ollama)
       ...(Object.keys(providerConfig).length > 0 && { provider: providerConfig }),
     };
 

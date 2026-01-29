@@ -45,6 +45,7 @@ type AgentSessionConfig struct {
 	CodexIdToken       string // For Codex OAuth mode
 	CodexRefreshToken  string // For Codex OAuth mode
 	ReasoningEffort    string // For Codex reasoning effort (low, medium, high)
+	OllamaURL          string // For local Ollama inference
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -1416,6 +1417,7 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 		GitHubCopilotToken: m.config.GitHubCopilotToken,
 		SdkType:            state.Session.SdkType,
 		CopilotBackend:     state.Session.CopilotBackend,
+		OllamaURL:          m.config.OllamaURL,
 	}
 
 	if state.Session.Model != nil {

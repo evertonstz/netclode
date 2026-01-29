@@ -39,6 +39,9 @@ type Config struct {
 	GitHubAppID          int64
 	GitHubAppPrivateKey  string // PEM-encoded private key
 	GitHubInstallationID int64
+
+	// Ollama local inference (optional)
+	OllamaURL string // URL for Ollama API (e.g., "http://ollama.netclode.svc.cluster.local:11434")
 }
 
 func Load() *Config {
@@ -70,6 +73,9 @@ func Load() *Config {
 		GitHubAppID:          getEnvInt64("GITHUB_APP_ID", 0),
 		GitHubAppPrivateKey:  getGitHubPrivateKey(),
 		GitHubInstallationID: getEnvInt64("GITHUB_INSTALLATION_ID", 0),
+
+		// Ollama local inference
+		OllamaURL: getEnv("OLLAMA_URL", ""),
 	}
 }
 

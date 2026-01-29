@@ -32,6 +32,8 @@ export interface SDKConfig {
   codexRefreshToken?: string;
   // Codex reasoning effort (low, medium, high, minimal, xhigh)
   reasoningEffort?: string;
+  // Ollama URL for local inference (e.g., "http://ollama.netclode.svc.cluster.local:11434")
+  ollamaUrl?: string;
 }
 
 /**

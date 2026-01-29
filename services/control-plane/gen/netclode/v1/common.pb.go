@@ -508,6 +508,7 @@ type SessionConfig struct {
 	CodexRefreshToken  *string                `protobuf:"bytes,14,opt,name=codex_refresh_token,json=codexRefreshToken,proto3,oneof" json:"codex_refresh_token,omitempty"`
 	ReasoningEffort    *string                `protobuf:"bytes,15,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
 	MistralApiKey      *string                `protobuf:"bytes,16,opt,name=mistral_api_key,json=mistralApiKey,proto3,oneof" json:"mistral_api_key,omitempty"`
+	OllamaUrl          *string                `protobuf:"bytes,17,opt,name=ollama_url,json=ollamaUrl,proto3,oneof" json:"ollama_url,omitempty"` // URL for local Ollama inference (e.g., "http://ollama.netclode.svc.cluster.local:11434")
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -650,6 +651,13 @@ func (x *SessionConfig) GetReasoningEffort() string {
 func (x *SessionConfig) GetMistralApiKey() string {
 	if x != nil && x.MistralApiKey != nil {
 		return *x.MistralApiKey
+	}
+	return ""
+}
+
+func (x *SessionConfig) GetOllamaUrl() string {
+	if x != nil && x.OllamaUrl != nil {
+		return *x.OllamaUrl
 	}
 	return ""
 }
@@ -1287,6 +1295,8 @@ type ModelInfo struct {
 	BillingMultiplier *float64               `protobuf:"fixed64,4,opt,name=billing_multiplier,json=billingMultiplier,proto3,oneof" json:"billing_multiplier,omitempty"`
 	Capabilities      []string               `protobuf:"bytes,5,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
 	ReasoningEffort   *string                `protobuf:"bytes,6,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	Downloaded        *bool                  `protobuf:"varint,7,opt,name=downloaded,proto3,oneof" json:"downloaded,omitempty"`                // For Ollama: whether the model is downloaded locally
+	SizeBytes         *int64                 `protobuf:"varint,8,opt,name=size_bytes,json=sizeBytes,proto3,oneof" json:"size_bytes,omitempty"` // For Ollama: model size in bytes
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1361,6 +1371,20 @@ func (x *ModelInfo) GetReasoningEffort() string {
 		return *x.ReasoningEffort
 	}
 	return ""
+}
+
+func (x *ModelInfo) GetDownloaded() bool {
+	if x != nil && x.Downloaded != nil {
+		return *x.Downloaded
+	}
+	return false
+}
+
+func (x *ModelInfo) GetSizeBytes() int64 {
+	if x != nil && x.SizeBytes != nil {
+		return *x.SizeBytes
+	}
+	return 0
 }
 
 // CopilotAuthStatus represents GitHub Copilot authentication state.
@@ -1575,7 +1599,7 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\rmessage_count\x18\x02 \x01(\x05H\x00R\fmessageCount\x88\x01\x01\x12)\n" +
 	"\x0elast_stream_id\x18\x03 \x01(\tH\x01R\flastStreamId\x88\x01\x01B\x10\n" +
 	"\x0e_message_countB\x11\n" +
-	"\x0f_last_stream_id\"\xd9\a\n" +
+	"\x0f_last_stream_id\"\x8c\b\n" +
 	"\rSessionConfig\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
@@ -1596,7 +1620,9 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x13codex_refresh_token\x18\x0e \x01(\tH\n" +
 	"R\x11codexRefreshToken\x88\x01\x01\x12.\n" +
 	"\x10reasoning_effort\x18\x0f \x01(\tH\vR\x0freasoningEffort\x88\x01\x01\x12+\n" +
-	"\x0fmistral_api_key\x18\x10 \x01(\tH\fR\rmistralApiKey\x88\x01\x01B\x0f\n" +
+	"\x0fmistral_api_key\x18\x10 \x01(\tH\fR\rmistralApiKey\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"ollama_url\x18\x11 \x01(\tH\rR\tollamaUrl\x88\x01\x01B\x0f\n" +
 	"\r_github_tokenB\a\n" +
 	"\x05_repoB\x0e\n" +
 	"\f_repo_accessB\v\n" +
@@ -1609,7 +1635,8 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x0f_openai_api_keyB\x16\n" +
 	"\x14_codex_refresh_tokenB\x13\n" +
 	"\x11_reasoning_effortB\x12\n" +
-	"\x10_mistral_api_key\"\xe0\x02\n" +
+	"\x10_mistral_api_keyB\r\n" +
+	"\v_ollama_url\"\xe0\x02\n" +
 	"\vStreamEntry\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
 	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x18\n" +
@@ -1677,17 +1704,24 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"linesAdded\x88\x01\x01\x12(\n" +
 	"\rlines_removed\x18\x05 \x01(\x05H\x01R\flinesRemoved\x88\x01\x01B\x0e\n" +
 	"\f_lines_addedB\x10\n" +
-	"\x0e_lines_removed\"\x91\x02\n" +
+	"\x0e_lines_removed\"\xf8\x02\n" +
 	"\tModelInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
 	"\bprovider\x18\x03 \x01(\tH\x00R\bprovider\x88\x01\x01\x122\n" +
 	"\x12billing_multiplier\x18\x04 \x01(\x01H\x01R\x11billingMultiplier\x88\x01\x01\x12\"\n" +
 	"\fcapabilities\x18\x05 \x03(\tR\fcapabilities\x12.\n" +
-	"\x10reasoning_effort\x18\x06 \x01(\tH\x02R\x0freasoningEffort\x88\x01\x01B\v\n" +
+	"\x10reasoning_effort\x18\x06 \x01(\tH\x02R\x0freasoningEffort\x88\x01\x01\x12#\n" +
+	"\n" +
+	"downloaded\x18\a \x01(\bH\x03R\n" +
+	"downloaded\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"size_bytes\x18\b \x01(\x03H\x04R\tsizeBytes\x88\x01\x01B\v\n" +
 	"\t_providerB\x15\n" +
 	"\x13_billing_multiplierB\x13\n" +
-	"\x11_reasoning_effort\"\x93\x01\n" +
+	"\x11_reasoning_effortB\r\n" +
+	"\v_downloadedB\r\n" +
+	"\v_size_bytes\"\x93\x01\n" +
 	"\x11CopilotAuthStatus\x12)\n" +
 	"\x10is_authenticated\x18\x01 \x01(\bR\x0fisAuthenticated\x12 \n" +
 	"\tauth_type\x18\x02 \x01(\tH\x00R\bauthType\x88\x01\x01\x12\x19\n" +

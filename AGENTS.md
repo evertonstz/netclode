@@ -144,3 +144,36 @@ go run ./clients/cli events <session-id> --json
 - `thinking` - Agent reasoning content
 - `repo_clone` - Repository clone progress
 - `port_exposed` - Port exposed for preview
+
+## GPU Monitoring (Ollama)
+
+If NVIDIA GPU support is enabled, monitor GPU usage:
+
+```bash
+# Quick status
+ssh root@netclode-host nvidia-smi
+
+# Live monitoring (refresh every 1s)
+ssh root@netclode-host nvidia-smi -l 1
+
+# Pretty TUI (nvtop)
+ssh root@netclode-host nvtop
+
+# From inside Ollama pod
+kubectl --context netclode -n netclode exec -it deploy/ollama -- nvidia-smi
+```
+
+### Ollama Management
+
+```bash
+# Pull a model
+kubectl --context netclode -n netclode exec -it deploy/ollama -- ollama pull qwen2.5-coder:32b
+
+# List models
+kubectl --context netclode -n netclode exec -it deploy/ollama -- ollama list
+
+# Check Ollama logs
+kubectl --context netclode -n netclode logs -l app=ollama -f
+```
+
+See `infra/ansible/README.md` for full GPU setup documentation.
