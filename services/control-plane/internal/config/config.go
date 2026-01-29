@@ -91,9 +91,17 @@ func (c *Config) MaxSessionCPUs() int {
 	return c.HostCPUs / 2
 }
 
-// MaxSessionMemoryMB returns the maximum allowed memory per session in MB (25% of host).
+// MaxSessionMemoryMB returns the maximum allowed memory per session in MB (25% of host, rounded up to power of 2 GB).
 func (c *Config) MaxSessionMemoryMB() int {
-	return c.HostMemoryMB / 4
+	raw := c.HostMemoryMB / 4
+	// Round up to nearest power of 2 in GB (1024, 2048, 4096, 8192, 16384, ...)
+	gbOptions := []int{1024, 2048, 4096, 8192, 16384, 32768, 65536}
+	for _, gb := range gbOptions {
+		if gb >= raw {
+			return gb
+		}
+	}
+	return raw // Fallback if larger than 64GB
 }
 
 func getEnv(key, defaultValue string) string {
