@@ -782,12 +782,12 @@ func (m *Manager) waitForSandbox(ctx context.Context, sessionID string) {
 
 // Resume resumes a paused session.
 func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
-	m.mu.Lock()
-	state, ok := m.sessions[id]
-	if !ok {
-		m.mu.Unlock()
+	state := m.getOrLoadState(ctx, id)
+	if state == nil {
 		return nil, fmt.Errorf("session %s not found", id)
 	}
+
+	m.mu.Lock()
 
 	// If session is already CREATING or RESUMING, a sandbox creation is already in progress.
 	// Don't start another one - just return and let the caller queue the prompt.
@@ -871,11 +871,8 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 
 // Pause pauses a running session.
 func (m *Manager) Pause(ctx context.Context, id string) (*pb.Session, error) {
-	m.mu.Lock()
-	state, ok := m.sessions[id]
-	m.mu.Unlock()
-
-	if !ok {
+	state := m.getOrLoadState(ctx, id)
+	if state == nil {
 		return nil, fmt.Errorf("session %s not found", id)
 	}
 
@@ -1052,11 +1049,8 @@ func (m *Manager) List(ctx context.Context) ([]pb.Session, error) {
 
 // Get returns a session by ID.
 func (m *Manager) Get(ctx context.Context, id string) (*pb.Session, error) {
-	m.mu.RLock()
-	state, ok := m.sessions[id]
-	m.mu.RUnlock()
-
-	if !ok {
+	state := m.getOrLoadState(ctx, id)
+	if state == nil {
 		return nil, fmt.Errorf("session %s not found", id)
 	}
 
@@ -1163,6 +1157,51 @@ func (m *Manager) getState(id string) *SessionState {
 	defer m.mu.RUnlock()
 
 	return m.sessions[id]
+}
+
+// getOrLoadState retrieves session state from memory or loads from storage if not found.
+// This handles the case where a session was created on a different pod during rollout.
+func (m *Manager) getOrLoadState(ctx context.Context, id string) *SessionState {
+	// First try memory
+	m.mu.RLock()
+	state, ok := m.sessions[id]
+	m.mu.RUnlock()
+
+	if ok {
+		return state
+	}
+
+	// Not in memory, try loading from storage
+	session, err := m.storage.GetSession(ctx, id)
+	if err != nil {
+		slog.Debug("Session not found in storage", "sessionID", id, "error", err)
+		return nil
+	}
+
+	// Load into memory
+	state = NewSessionState(session)
+
+	// Load persisted restore snapshot ID if any
+	if restoreID, err := m.storage.GetRestoreSnapshotID(ctx, id); err == nil && restoreID != "" {
+		state.RestoreSnapshotID = restoreID
+	}
+
+	// Check K8s for sandbox status to set ServiceFQDN
+	if status, err := m.k8s.GetStatus(ctx, id); err == nil && status.Exists && status.Ready {
+		state.ServiceFQDN = status.ServiceFQDN
+	}
+
+	m.mu.Lock()
+	// Double-check it wasn't added while we were loading
+	if existing, ok := m.sessions[id]; ok {
+		m.mu.Unlock()
+		return existing
+	}
+	m.sessions[id] = state
+	m.mu.Unlock()
+
+	slog.Info("Loaded session from storage into memory", "sessionID", id)
+	return state
 }
 
 // isActiveStatus returns true if the status represents an active session (using resources).
@@ -1360,11 +1399,8 @@ func (m *Manager) GetSessionIDByPodName(ctx context.Context, podName string) (st
 // GetSessionConfig returns session configuration for the agent.
 // This is used by agents to get session-specific config when using warm pools.
 func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*AgentSessionConfig, error) {
-	m.mu.RLock()
-	state, ok := m.sessions[sessionID]
-	m.mu.RUnlock()
-
-	if !ok {
+	state := m.getOrLoadState(ctx, sessionID)
+	if state == nil {
 		return nil, fmt.Errorf("session %s not found", sessionID)
 	}
 

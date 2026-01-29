@@ -19,7 +19,7 @@ const (
 // If the sandbox isn't ready yet, queues the prompt to be sent when ready.
 // If the session is paused or no agent is connected, automatically resumes it first.
 func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error {
-	state := m.getState(sessionID)
+	state := m.getOrLoadState(ctx, sessionID)
 	if state == nil {
 		return fmt.Errorf("session %s not found", sessionID)
 	}
