@@ -1177,6 +1177,10 @@ func (m *Manager) getOrLoadState(ctx context.Context, id string) *SessionState {
 		slog.Debug("Session not found in storage", "sessionID", id, "error", err)
 		return nil
 	}
+	if session == nil {
+		slog.Debug("Session not found in storage", "sessionID", id)
+		return nil
+	}
 
 	// Load into memory
 	state = NewSessionState(session)
