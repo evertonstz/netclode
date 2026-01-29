@@ -338,7 +338,6 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 	}
 	if req.Resources != nil {
 		resourcesPtr = req.Resources
-		slog.Info("CreateSession request has custom resources", "vcpus", req.Resources.Vcpus, "memoryMB", req.Resources.MemoryMb)
 	}
 
 	name := ""
