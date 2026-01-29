@@ -18,12 +18,28 @@ services/agent/
 │   ├── connect-client.ts  # Bidirectional Connect client to control plane
 │   ├── git.ts             # Git operations
 │   ├── sdk/               # SDK abstraction layer
+│   │   ├── index.ts       # Public exports
 │   │   ├── types.ts       # SDKAdapter interface, event types
 │   │   ├── factory.ts     # Creates appropriate adapter based on config
-│   │   ├── claude-adapter.ts   # Claude Code SDK implementation
-│   │   ├── opencode-adapter.ts # OpenCode SDK implementation
-│   │   ├── copilot-adapter.ts  # GitHub Copilot SDK implementation
-│   │   └── codex-adapter.ts    # OpenAI Codex SDK implementation
+│   │   ├── utils/         # Shared utilities
+│   │   │   ├── index.ts   # Tool name normalization, ID generators
+│   │   │   └── index.test.ts
+│   │   ├── claude/        # Claude Code SDK
+│   │   │   ├── adapter.ts
+│   │   │   ├── translator.ts      # Event translation (pure functions)
+│   │   │   └── translator.test.ts
+│   │   ├── opencode/      # OpenCode SDK
+│   │   │   ├── adapter.ts
+│   │   │   ├── translator.ts
+│   │   │   └── translator.test.ts
+│   │   ├── copilot/       # GitHub Copilot SDK
+│   │   │   ├── adapter.ts
+│   │   │   ├── translator.ts
+│   │   │   └── translator.test.ts
+│   │   └── codex/         # OpenAI Codex SDK
+│   │       ├── adapter.ts
+│   │       ├── translator.ts
+│   │       └── translator.test.ts
 │   └── services/
 │       ├── terminal.ts    # PTY management
 │       └── title.ts       # Title generation
@@ -149,11 +165,17 @@ When the agent registers with the control plane, it receives a `SessionConfig` c
                     ┌───────────────┼───────────────┬───────────────┐
                     ▼               ▼               ▼               ▼
              ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌───────────┐
-             │  Claude   │   │  OpenCode │   │  Copilot  │   │   Codex   │
-             │  Adapter  │   │  Adapter  │   │  Adapter  │   │  Adapter  │
-             └───────────┘   └───────────┘   └───────────┘   └───────────┘
-                    │               │               │               │
-                    ▼               ▼               ▼               ▼
+             │  claude/  │   │ opencode/ │   │ copilot/  │   │  codex/   │
+             │ adapter.ts│   │ adapter.ts│   │ adapter.ts│   │ adapter.ts│
+             └─────┬─────┘   └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+                   │               │               │               │
+                   ▼               ▼               ▼               ▼
+             ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌───────────┐
+             │translator │   │translator │   │translator │   │translator │
+             │    .ts    │   │    .ts    │   │    .ts    │   │    .ts    │
+             └─────┬─────┘   └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+                   │               │               │               │
+                   ▼               ▼               ▼               ▼
              ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌───────────┐
              │ @anthropic│   │  opencode │   │  @github/ │   │  @openai/ │
              │ /claude-  │   │   serve   │   │  copilot- │   │  codex-   │
@@ -175,9 +197,12 @@ interface SDKAdapter {
 }
 ```
 
-Each adapter translates its native SDK events to a unified `PromptEvent` type:
+Each adapter uses a **translator module** (pure functions) to convert SDK-native events to a unified `PromptEvent` type. This separation enables unit testing of translation logic without SDK dependencies.
+
+Event types:
 - `textDelta` – Streaming text content
 - `toolStart` / `toolEnd` – Tool invocations with inputs and results
+- `toolInput` / `toolInputComplete` – Streaming tool input
 - `thinking` – Extended thinking/reasoning content
 - `repoClone` – Repository clone progress
 - `result` – Token usage and turn counts
