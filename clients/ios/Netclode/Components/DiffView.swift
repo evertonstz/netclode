@@ -8,7 +8,7 @@ struct DiffView: View {
     let newString: String
     let language: String?
     let maxLines: Int
-    
+
     @Environment(\.colorScheme) private var colorScheme
     @State private var isFullyExpanded = false
 
@@ -30,11 +30,11 @@ struct DiffView: View {
     private var diffResult: DiffResult {
         DiffEngine.computeDiff(old: oldString, new: newString)
     }
-    
+
     private var isTruncated: Bool {
         diffResult.lines.count > maxLines
     }
-    
+
     private var displayedLines: ArraySlice<DiffLine> {
         if isFullyExpanded || !isTruncated {
             return diffResult.lines[...]
@@ -52,7 +52,7 @@ struct DiffView: View {
             .font(.system(size: 12, design: .monospaced))
             .background(DiffColors.background)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            
+
             // Show more button
             if isTruncated {
                 Button {
@@ -96,49 +96,45 @@ struct DiffLineView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            // Single line number column (optional)
+            // Single column line number (optional)
             if showLineNumbers {
                 Text(displayLineNumber)
-                    .frame(width: 28, alignment: .trailing)
+                    .frame(width: 32, alignment: .trailing)
                     .foregroundStyle(DiffColors.lineNumber)
                     .padding(.leading, 4)
                     .padding(.trailing, 6)
             }
 
-            // Prefix (+/-/space) with content
-            HStack(spacing: 3) {
-                Text(line.type.prefix)
-                    .foregroundStyle(prefixColor)
-                    .frame(width: 8, alignment: .leading)
+            // Prefix (+/-/space)
+            Text(line.type.prefix)
+                .foregroundStyle(prefixColor)
+                .frame(width: 14)
 
-                // Content with syntax highlighting and word highlights
-                SyntaxHighlightedDiffText(
-                    text: line.content,
-                    language: language,
-                    colorScheme: colorScheme,
-                    wordHighlights: line.wordHighlights,
-                    fallbackColor: textColor,
-                    highlightColor: wordHighlightColor
-                )
-                .fixedSize(horizontal: true, vertical: false)
-                .lineLimit(1)
-            }
+            // Content with syntax highlighting and word highlights
+            SyntaxHighlightedDiffText(
+                text: line.content,
+                language: language,
+                colorScheme: colorScheme,
+                wordHighlights: line.wordHighlights,
+                fallbackColor: textColor,
+                highlightColor: wordHighlightColor
+            )
+
+            Spacer(minLength: 0)
         }
         .font(.system(size: 11, design: .monospaced))
-        .padding(.trailing, 4)
-        .padding(.vertical, 2)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 1)
         .background(backgroundColor)
     }
 
     private var displayLineNumber: String {
-        // Show the relevant line number based on line type
         switch line.type {
         case .deletion:
             return line.oldLineNumber.map { "\($0)" } ?? ""
         case .addition:
             return line.newLineNumber.map { "\($0)" } ?? ""
         case .context:
-            // For context, prefer new line number (or old if new is missing)
             return line.newLineNumber.map { "\($0)" } ?? line.oldLineNumber.map { "\($0)" } ?? ""
         }
     }
@@ -201,6 +197,7 @@ struct SyntaxHighlightedDiffText: View {
 
     var body: some View {
         Text(buildAttributedString())
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func buildAttributedString() -> AttributedString {
@@ -285,7 +282,7 @@ enum DiffColors {
         light: Color(white: 0.98),
         dark: Color(white: 0.08)
     )
-    
+
     // Deletion colors
     static let deletionBackground = Color.adaptive(
         light: Color(red: 1.0, green: 0.9, blue: 0.9),
@@ -299,7 +296,7 @@ enum DiffColors {
         light: Color(red: 0.6, green: 0.1, blue: 0.1),
         dark: Color(red: 1.0, green: 0.6, blue: 0.6)
     )
-    
+
     // Addition colors
     static let additionBackground = Color.adaptive(
         light: Color(red: 0.9, green: 1.0, blue: 0.9),
@@ -313,19 +310,19 @@ enum DiffColors {
         light: Color(red: 0.1, green: 0.5, blue: 0.1),
         dark: Color(red: 0.6, green: 1.0, blue: 0.6)
     )
-    
+
     // Context colors
     static let contextText = Color.adaptive(
         light: Color(white: 0.3),
         dark: Color(white: 0.7)
     )
-    
+
     // Line numbers
     static let lineNumber = Color.adaptive(
         light: Color(white: 0.6),
         dark: Color(white: 0.4)
     )
-    
+
     // Hunk header
     static let hunkHeader = Color.adaptive(
         light: Color(red: 0.9, green: 0.95, blue: 1.0),
