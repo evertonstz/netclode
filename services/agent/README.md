@@ -118,6 +118,71 @@ Available at `GET /health` for k8s probes.
 
 The agent supports multiple AI SDK backends. Users select which SDK to use when creating a session.
 
+### How SDK routing works
+
+When the agent registers with the control plane, it receives a `SessionConfig` containing `sdk_type`. The agent uses a factory pattern to instantiate the correct adapter:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              connect-client.ts                               │
+│                                                                              │
+│  1. Agent connects to control plane                                          │
+│  2. Receives SessionConfig with sdk_type, model, credentials                 │
+│  3. Calls createSDKAdapter(config)                                           │
+│  4. On executePrompt: iterates adapter.executePrompt() → streams events      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              sdk/factory.ts                                  │
+│                                                                              │
+│  switch (config.sdkType) {                                                   │
+│    case "opencode": adapter = new OpenCodeAdapter(); break;                  │
+│    case "copilot":  adapter = new CopilotAdapter();  break;                  │
+│    case "codex":    adapter = new CodexAdapter();    break;                  │
+│    case "claude":                                                            │
+│    default:         adapter = new ClaudeSDKAdapter(); break;                 │
+│  }                                                                           │
+│  await adapter.initialize(config);                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┬───────────────┐
+                    ▼               ▼               ▼               ▼
+             ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌───────────┐
+             │  Claude   │   │  OpenCode │   │  Copilot  │   │   Codex   │
+             │  Adapter  │   │  Adapter  │   │  Adapter  │   │  Adapter  │
+             └───────────┘   └───────────┘   └───────────┘   └───────────┘
+                    │               │               │               │
+                    ▼               ▼               ▼               ▼
+             ┌───────────┐   ┌───────────┐   ┌───────────┐   ┌───────────┐
+             │ @anthropic│   │  opencode │   │  @github/ │   │  @openai/ │
+             │ /claude-  │   │   serve   │   │  copilot- │   │  codex-   │
+             │ agent-sdk │   │ REST+SSE  │   │    sdk    │   │    sdk    │
+             └───────────┘   └───────────┘   └───────────┘   └───────────┘
+```
+
+All adapters implement the `SDKAdapter` interface (`sdk/types.ts`):
+
+```typescript
+interface SDKAdapter {
+  initialize(config: SDKConfig): Promise<void>;
+  executePrompt(sessionId: string, text: string, config?: PromptConfig): AsyncGenerator<PromptEvent>;
+  setInterruptSignal(): void;
+  clearInterruptSignal(): void;
+  isInterrupted(): boolean;
+  getCurrentGitRepo(): string | null;
+  shutdown(): Promise<void>;
+}
+```
+
+Each adapter translates its native SDK events to a unified `PromptEvent` type:
+- `textDelta` – Streaming text content
+- `toolStart` / `toolEnd` – Tool invocations with inputs and results
+- `thinking` – Extended thinking/reasoning content
+- `repoClone` – Repository clone progress
+- `result` – Token usage and turn counts
+- `error` – Errors with retry hints
+
 ### Claude Code SDK (default)
 
 ```typescript
