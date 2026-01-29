@@ -1,6 +1,6 @@
 # Agent
 
-AI coding agent that runs inside Kata Container VMs. Supports multiple SDK backends (Claude Code SDK, OpenCode SDK, Copilot SDK, Codex SDK) to execute coding tasks.
+AI coding agent that runs inside Kata Container VMs. Supports multiple SDK backends (Claude Agent SDK, OpenCode SDK, Copilot SDK, Codex SDK) to execute coding tasks.
 
 ## What it does
 
@@ -24,7 +24,7 @@ services/agent/
 │   │   ├── utils/         # Shared utilities
 │   │   │   ├── index.ts   # Tool name normalization, ID generators
 │   │   │   └── index.test.ts
-│   │   ├── claude/        # Claude Code SDK
+│   │   ├── claude/        # Claude Agent SDK
 │   │   │   ├── adapter.ts
 │   │   │   ├── translator.ts      # Event translation (pure functions)
 │   │   │   └── translator.test.ts
@@ -208,7 +208,7 @@ Event types:
 - `result` – Token usage and turn counts
 - `error` – Errors with retry hints
 
-### Claude Code SDK (default)
+### Claude Agent SDK (default)
 
 ```typescript
 import { query } from "@anthropic-ai/claude-agent-sdk";

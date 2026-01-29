@@ -1,5 +1,5 @@
 /**
- * Claude Code SDK Adapter
+ * Claude Agent SDK Adapter
  *
  * Wraps the @anthropic-ai/claude-agent-sdk integration
  */
@@ -95,6 +95,7 @@ export class ClaudeSDKAdapter implements SDKAdapter {
           includePartialMessages: true,
           maxThinkingTokens: 10000,
           systemPrompt: buildSystemPrompt({ currentGitRepo: this.currentGitRepo }),
+          settingSources: ["user", "project", "local"],
           abortController: this.abortController,
           ...(sdkSessionId && { resume: sdkSessionId }),
         },

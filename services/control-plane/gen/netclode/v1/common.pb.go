@@ -77,7 +77,7 @@ type SdkType int32
 
 const (
 	SdkType_SDK_TYPE_UNSPECIFIED SdkType = 0
-	SdkType_SDK_TYPE_CLAUDE      SdkType = 1 // Anthropic Claude Code SDK
+	SdkType_SDK_TYPE_CLAUDE      SdkType = 1 // Anthropic Claude Agent SDK
 	SdkType_SDK_TYPE_OPENCODE    SdkType = 2 // OpenCode SDK (multi-provider)
 	SdkType_SDK_TYPE_COPILOT     SdkType = 3 // GitHub Copilot SDK
 	SdkType_SDK_TYPE_CODEX       SdkType = 4 // OpenAI Codex SDK

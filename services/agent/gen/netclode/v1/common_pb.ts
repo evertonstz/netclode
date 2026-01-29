@@ -723,7 +723,7 @@ export enum SdkType {
   UNSPECIFIED = 0,
 
   /**
-   * Anthropic Claude Code SDK
+   * Anthropic Claude Agent SDK
    *
    * @generated from enum value: SDK_TYPE_CLAUDE = 1;
    */
@@ -899,4 +899,3 @@ export enum GitFileStatus {
  */
 export const GitFileStatusSchema: GenEnum<GitFileStatus> = /*@__PURE__*/
   enumDesc(file_netclode_v1_common, 4);
-

@@ -2,7 +2,7 @@
  * SDK abstraction layer types
  *
  * This module defines the interface for SDK adapters, allowing the agent
- * to use different AI SDKs (Claude Code SDK, OpenCode SDK, etc.)
+ * to use different AI SDKs (Claude Agent SDK, OpenCode SDK, etc.)
  */
 
 import type { JsonObject } from "@bufbuild/protobuf";

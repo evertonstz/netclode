@@ -9,7 +9,7 @@ export interface SystemPromptConfig {
 }
 
 /**
- * Build the system prompt for Claude Code SDK
+ * Build the system prompt for Claude Agent SDK
  */
 export function buildSystemPrompt(config: SystemPromptConfig): {
   type: "preset";

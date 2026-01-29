@@ -6,14 +6,14 @@ Netclode supports multiple AI agent SDKs, allowing you to choose the best provid
 
 | SDK | Provider | Authentication | Key Features |
 |-----|----------|----------------|--------------|
-| Claude Code | Anthropic | API key | Extended thinking, native tools, session persistence |
+| Claude Agent | Anthropic | API key | Extended thinking, native tools, session persistence |
 | OpenCode | Multi-provider | API keys | Anthropic, OpenAI, Mistral support |
 | Copilot | GitHub / Anthropic | GitHub token or API key | Premium quota tracking, billing multipliers |
 | Codex | OpenAI | API key or ChatGPT OAuth | Reasoning effort levels, thread persistence |
 
-## Claude Code SDK (Default)
+## Claude Agent SDK (Default)
 
-The Claude Code SDK provides direct integration with Anthropic's Claude models via `@anthropic-ai/claude-agent-sdk`.
+The Claude Agent SDK provides direct integration with Anthropic's Claude models via `@anthropic-ai/claude-agent-sdk`.
 
 ### Authentication
 

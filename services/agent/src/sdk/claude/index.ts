@@ -1,5 +1,5 @@
 /**
- * Claude Code SDK adapter
+ * Claude Agent SDK adapter
  */
 
 export { ClaudeSDKAdapter } from "./adapter.js";

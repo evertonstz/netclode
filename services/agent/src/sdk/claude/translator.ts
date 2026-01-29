@@ -1,5 +1,5 @@
 /**
- * Claude Code SDK event translator
+ * Claude Agent SDK event translator
  *
  * Translates Claude SDK messages to our common PromptEvent format.
  */

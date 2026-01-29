@@ -1,5 +1,5 @@
 /**
- * Tests for Claude Code SDK event translator
+ * Tests for Claude Agent SDK event translator
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
