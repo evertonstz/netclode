@@ -197,9 +197,12 @@ struct PromptSheet: View {
                         VStack(spacing: 0) {
                             Toggle(isOn: $tailnetAccess) {
                                 HStack(spacing: Theme.Spacing.sm) {
-                                    Image(systemName: "point.3.connected.trianglepath.dotted")
-                                        .foregroundStyle(Theme.Colors.brand)
-                                        .frame(width: 20)
+                                    Image("tailscale-logo")
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 20, height: 20)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Tailnet Access")
                                             .font(.netclodeBody)
