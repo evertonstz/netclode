@@ -550,6 +550,17 @@ async function handleExecutePrompt(
       config ? { repo: config.repo, githubToken: config.githubToken } : undefined
     )) {
       send(promptEventToAgentMessage(event));
+      
+      // If toolStart has input, also send toolInputComplete event
+      // This is needed because the proto toolStart doesn't carry input - it comes via toolInput
+      if (event.type === "toolStart" && event.input && Object.keys(event.input).length > 0) {
+        send(promptEventToAgentMessage({
+          type: "toolInputComplete",
+          toolUseId: event.toolUseId,
+          parentToolUseId: event.parentToolUseId,
+          input: event.input,
+        }));
+      }
     }
   } catch (error) {
     console.error("[agent] Prompt execution error:", error);

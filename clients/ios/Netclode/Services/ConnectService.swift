@@ -437,12 +437,14 @@ final class ConnectService {
             
         case .sessionState(let msg):
             let sessionId = msg.session.id
+            // Convert unified StreamEntry list to separate messages and events for backward compatibility
+            let (messages, events) = convertStreamEntriesToMessagesAndEvents(msg.entries, sessionId: sessionId)
             return .sessionState(
                 session: convertSession(msg.session),
-                messages: msg.messages.map { convertPersistedMessage($0, sessionId: sessionId) },
-                events: msg.events.map { convertPersistedEvent($0, sessionId: sessionId) },
+                messages: messages,
+                events: events,
                 hasMore: msg.hasMore_p,
-                lastNotificationId: msg.hasLastNotificationID ? msg.lastNotificationID : nil
+                lastNotificationId: msg.hasLastStreamID ? msg.lastStreamID : nil
             )
             
         case .syncResponse(let msg):
@@ -451,20 +453,9 @@ final class ConnectService {
                 serverTime: msg.serverTime.date
             )
             
-        case .agentMessage(let msg):
-            return .agentMessage(sessionId: msg.sessionID, content: msg.content, partial: msg.partial, messageId: msg.messageID.isEmpty ? nil : msg.messageID)
-            
-        case .agentEvent(let msg):
-            return .agentEvent(sessionId: msg.sessionID, event: convertAgentEvent(msg.event))
-            
-        case .agentDone(let msg):
-            return .agentDone(sessionId: msg.sessionID)
-            
-        case .userMessage(let msg):
-            return .userMessage(sessionId: msg.sessionID, content: msg.content)
-            
-        case .terminalOutput(let msg):
-            return .terminalOutput(sessionId: msg.sessionID, data: msg.data)
+        case .streamEntry(let msg):
+            // Handle unified stream entry - route to appropriate message type
+            return convertStreamEntryToServerMessage(msg.sessionID, msg.entry)
             
         case .portExposed(let msg):
             return .portExposed(sessionId: msg.sessionID, port: Int(msg.port), previewUrl: msg.previewURL)
@@ -645,7 +636,7 @@ final class ConnectService {
             createdAt: session.createdAt.date,
             lastActiveAt: session.lastActiveAt.date,
             messageCount: proto.hasMessageCount ? Int(proto.messageCount) : nil,
-            lastMessageId: proto.hasLastMessageID ? proto.lastMessageID : nil,
+            lastMessageId: proto.hasLastStreamID ? proto.lastStreamID : nil,
             sdkType: session.hasSdkType ? convertSdkType(session.sdkType) : nil,
             model: session.hasModel ? session.model : nil,
             copilotBackend: session.hasCopilotBackend ? convertCopilotBackend(session.copilotBackend) : nil
@@ -665,115 +656,95 @@ final class ConnectService {
         }
     }
     
-    private func convertAgentEvent(_ proto: Netclode_V1_AgentEvent) -> AgentEvent {
+    /// Convert AgentEvent proto to internal AgentEvent type
+    /// Note: timestamp and partial flag come from the parent StreamEntry, not the AgentEvent itself
+    private func convertAgentEvent(_ proto: Netclode_V1_AgentEvent, timestamp: Date = Date(), partial: Bool = false) -> AgentEvent {
         let id = UUID()
-        let timestamp = proto.timestamp.date
+        let correlationId = proto.correlationID
         
         switch proto.kind {
         case .toolStart:
-            let tool = proto.tool
+            let payload = proto.toolStart
             return .toolStart(ToolStartEvent(
                 id: id,
                 timestamp: timestamp,
-                tool: tool.tool,
-                toolUseId: tool.toolUseID,
-                parentToolUseId: tool.hasParentToolUseID ? tool.parentToolUseID : nil,
-                input: tool.hasInput ? convertProtoStruct(tool.input) : [:]
+                tool: payload.tool,
+                toolUseId: correlationId,
+                parentToolUseId: payload.hasParentToolUseID ? payload.parentToolUseID : nil,
+                input: [:]  // Input comes via toolInput events
             ))
             
         case .toolInput:
-            let tool = proto.tool
-            return .toolInput(ToolInputEvent(
-                id: id,
-                timestamp: timestamp,
-                toolUseId: tool.toolUseID,
-                parentToolUseId: tool.hasParentToolUseID ? tool.parentToolUseID : nil,
-                inputDelta: tool.hasInputDelta ? tool.inputDelta : ""
-            ))
-            
-        case .toolInputComplete:
-            let tool = proto.tool
-            return .toolInputComplete(ToolInputCompleteEvent(
-                id: id,
-                timestamp: timestamp,
-                toolUseId: tool.toolUseID,
-                parentToolUseId: tool.hasParentToolUseID ? tool.parentToolUseID : nil,
-                input: tool.hasInput ? convertProtoStruct(tool.input) : [:]
-            ))
-            
-        case .toolEnd:
-            let tool = proto.tool
-            return .toolEnd(ToolEndEvent(
-                id: id,
-                timestamp: timestamp,
-                tool: tool.tool,
-                toolUseId: tool.toolUseID,
-                parentToolUseId: tool.hasParentToolUseID ? tool.parentToolUseID : nil,
-                result: tool.hasResult ? tool.result : nil,
-                error: tool.hasError ? tool.error : nil,
-                durationMs: tool.hasDurationMs ? tool.durationMs : nil
-            ))
-            
-        case .fileChange:
-            let fc = proto.fileChange
-            let action: FileAction
-            switch fc.action {
-            case .create: action = .create
-            case .delete: action = .delete
-            case .edit, .unspecified, .UNRECOGNIZED: action = .edit
+            let payload = proto.toolInput
+            // Check if this is a partial delta or complete input
+            if payload.hasDelta {
+                return .toolInput(ToolInputEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    toolUseId: correlationId,
+                    parentToolUseId: nil,
+                    inputDelta: payload.delta
+                ))
+            } else {
+                // Complete input
+                return .toolInputComplete(ToolInputCompleteEvent(
+                    id: id,
+                    timestamp: timestamp,
+                    toolUseId: correlationId,
+                    parentToolUseId: nil,
+                    input: payload.hasInput ? convertProtoStruct(payload.input) : [:]
+                ))
             }
-            return .fileChange(FileChangeEvent(
-                id: id,
-                timestamp: timestamp,
-                path: fc.path,
-                action: action,
-                linesAdded: fc.hasLinesAdded ? Int(fc.linesAdded) : nil,
-                linesRemoved: fc.hasLinesRemoved ? Int(fc.linesRemoved) : nil
-            ))
             
-        case .commandStart:
-            let cmd = proto.command
-            return .commandStart(CommandStartEvent(
-                id: id,
-                timestamp: timestamp,
-                command: cmd.command,
-                cwd: cmd.hasCwd ? cmd.cwd : nil
-            ))
-            
-        case .commandEnd:
-            let cmd = proto.command
-            return .commandEnd(CommandEndEvent(
-                id: id,
-                timestamp: timestamp,
-                command: cmd.command,
-                exitCode: cmd.hasExitCode ? Int(cmd.exitCode) : 0,
-                output: cmd.hasOutput ? cmd.output : nil
-            ))
-            
-        case .thinking:
-            let th = proto.thinking
+        case .toolOutput:
+            // Tool output is handled as part of tool lifecycle, convert to thinking for display
+            let payload = proto.toolOutput
+            let output = payload.hasDelta ? payload.delta : (payload.hasOutput ? payload.output : "")
             return .thinking(ThinkingEvent(
                 id: id,
                 timestamp: timestamp,
-                thinkingId: th.thinkingID.isEmpty ? "thinking_\(id.uuidString)" : th.thinkingID,
-                content: th.content,
-                partial: th.partial
+                thinkingId: "output_\(correlationId)",
+                content: output,
+                partial: payload.hasDelta
+            ))
+            
+        case .toolEnd:
+            let payload = proto.toolEnd
+            return .toolEnd(ToolEndEvent(
+                id: id,
+                timestamp: timestamp,
+                tool: "",  // Tool name comes from toolStart
+                toolUseId: correlationId,
+                parentToolUseId: nil,
+                result: nil,  // Result comes from toolOutput
+                error: payload.hasError ? payload.error : nil,
+                durationMs: payload.hasDurationMs ? payload.durationMs : nil
+            ))
+            
+        case .thinking:
+            let payload = proto.thinking
+            return .thinking(ThinkingEvent(
+                id: id,
+                timestamp: timestamp,
+                thinkingId: correlationId.isEmpty ? "thinking_\(id.uuidString)" : correlationId,
+                content: payload.content,
+                partial: partial  // partial flag from StreamEntry
             ))
             
         case .portExposed:
-            let pe = proto.portExposed
+            let payload = proto.portExposed
             return .portExposed(PortExposedEvent(
                 id: id,
                 timestamp: timestamp,
-                port: Int(pe.port),
-                process: pe.hasProcess ? pe.process : nil,
-                previewUrl: pe.hasPreviewURL ? pe.previewURL : nil
+                port: Int(payload.port),
+                process: payload.hasProcess ? payload.process : nil,
+                previewUrl: payload.hasPreviewURL ? payload.previewURL : nil
             ))
             
         case .repoClone:
-            let rc = proto.repoClone
+            let payload = proto.repoClone
             let stage: RepoCloneStage
-            switch rc.stage {
+            switch payload.stage {
             case .starting: stage = .starting
             case .cloning: stage = .cloning
             case .error: stage = .error
@@ -782,9 +753,9 @@ final class ConnectService {
             return .repoClone(RepoCloneEvent(
                 id: id,
                 timestamp: timestamp,
-                repo: rc.repo,
+                repo: payload.repo,
                 stage: stage,
-                message: rc.message
+                message: payload.message
             ))
             
         case .agentDisconnected:
@@ -801,8 +772,8 @@ final class ConnectService {
                 message: "Agent reconnected. Send a message to continue."
             ))
             
-        case .UNRECOGNIZED, .unspecified:
-            // Return a placeholder thinking event for unknown types
+        case .message, .UNRECOGNIZED, .unspecified:
+            // MESSAGE kind is handled separately, return placeholder for unknown types
             return .thinking(ThinkingEvent(
                 id: id,
                 timestamp: timestamp,
@@ -852,16 +823,6 @@ final class ConnectService {
         }
     }
     
-    private func convertPersistedMessage(_ proto: Netclode_V1_Message, sessionId: String) -> PersistedMessage {
-        PersistedMessage(
-            id: proto.id,
-            sessionId: sessionId,
-            role: convertMessageRole(proto.role),
-            content: proto.content,
-            timestamp: proto.timestamp.date
-        )
-    }
-    
     private func convertMessageRole(_ proto: Netclode_V1_MessageRole) -> PersistedMessage.ChatRole {
         switch proto {
         case .user: return .user
@@ -870,20 +831,101 @@ final class ConnectService {
         }
     }
     
-    private func convertPersistedEvent(_ proto: Netclode_V1_Event, sessionId: String) -> PersistedEvent {
-        // Convert the embedded AgentEvent to RawAgentEventData
-        let agentEvent = proto.event
-        let eventData = convertAgentEventToRaw(agentEvent)
+    // MARK: - StreamEntry Conversion
+    
+    /// Convert unified StreamEntry array to separate messages and events arrays (for sessionState backward compat)
+    private func convertStreamEntriesToMessagesAndEvents(_ entries: [Netclode_V1_StreamEntry], sessionId: String) -> ([PersistedMessage], [PersistedEvent]) {
+        var messages: [PersistedMessage] = []
+        var events: [PersistedEvent] = []
         
-        return PersistedEvent(
-            id: proto.id,
-            sessionId: sessionId,
-            event: eventData,
-            timestamp: proto.timestamp.date
-        )
+        for entry in entries {
+            let timestamp = entry.hasTimestamp ? entry.timestamp.date : Date()
+            
+            switch entry.payload {
+            case .event(let agentEvent):
+                // MESSAGE kind becomes PersistedMessage, others become PersistedEvent
+                if agentEvent.kind == .message {
+                    let msgPayload = agentEvent.message
+                    let message = PersistedMessage(
+                        id: entry.id,
+                        sessionId: sessionId,
+                        role: convertMessageRole(msgPayload.role),
+                        content: msgPayload.content,
+                        timestamp: timestamp
+                    )
+                    messages.append(message)
+                } else {
+                    // Convert to PersistedEvent
+                    let eventData = convertAgentEventToRaw(agentEvent, timestamp: timestamp)
+                    let event = PersistedEvent(
+                        id: entry.id,
+                        sessionId: sessionId,
+                        event: eventData,
+                        timestamp: timestamp
+                    )
+                    events.append(event)
+                }
+                
+            case .terminalOutput, .sessionUpdate, .error, .none:
+                // These don't map to persisted messages/events
+                break
+            }
+        }
+        
+        return (messages, events)
     }
     
-    private func convertAgentEventToRaw(_ proto: Netclode_V1_AgentEvent) -> PersistedEvent.RawAgentEventData {
+    /// Convert a single StreamEntry to a ServerMessage for real-time streaming
+    private func convertStreamEntryToServerMessage(_ sessionId: String, _ entry: Netclode_V1_StreamEntry) -> ServerMessage? {
+        switch entry.payload {
+        case .event(let agentEvent):
+            switch agentEvent.kind {
+            case .message:
+                let msgPayload = agentEvent.message
+                let role = msgPayload.role
+                
+                if role == .user {
+                    return .userMessage(sessionId: sessionId, content: msgPayload.content)
+                } else {
+                    // Assistant message
+                    return .agentMessage(
+                        sessionId: sessionId,
+                        content: msgPayload.content,
+                        partial: entry.partial,
+                        messageId: agentEvent.correlationID.isEmpty ? nil : agentEvent.correlationID
+                    )
+                }
+                
+            case .thinking, .toolStart, .toolInput, .toolOutput, .toolEnd, .portExposed, .repoClone, .agentDisconnected, .agentReconnected:
+                let timestamp = entry.hasTimestamp ? entry.timestamp.date : Date()
+                let event = convertAgentEvent(agentEvent, timestamp: timestamp, partial: entry.partial)
+                return .agentEvent(sessionId: sessionId, event: event)
+                
+            case .unspecified, .UNRECOGNIZED:
+                return nil
+            }
+            
+        case .terminalOutput(let termOut):
+            return .terminalOutput(sessionId: sessionId, data: termOut.data)
+            
+        case .sessionUpdate(let session):
+            return .sessionUpdated(session: convertSession(session))
+            
+        case .error(let err):
+            if err.hasSessionID {
+                return .agentError(sessionId: err.sessionID, error: err.message)
+            } else {
+                return .error(message: err.message)
+            }
+            
+        case .none:
+            return nil
+        }
+    }
+    
+    /// Convert AgentEvent to raw data for persistence
+    /// Note: timestamp comes from the parent StreamEntry, passed as parameter
+    private func convertAgentEventToRaw(_ proto: Netclode_V1_AgentEvent, timestamp: Date = Date()) -> PersistedEvent.RawAgentEventData {
         let kind: String
         var tool: String? = nil
         var toolUseId: String? = nil
@@ -891,14 +933,14 @@ final class ConnectService {
         var input: [String: AnyCodableValue]? = nil
         var inputDelta: String? = nil
         var result: String? = nil
-        var path: String? = nil
-        var action: String? = nil
-        var linesAdded: Int? = nil
-        var linesRemoved: Int? = nil
-        var command: String? = nil
-        var cwd: String? = nil
-        var exitCode: Int? = nil
-        var output: String? = nil
+        let path: String? = nil      // file_change events no longer exist in new proto
+        let action: String? = nil    // file_change events no longer exist in new proto
+        let linesAdded: Int? = nil   // file_change events no longer exist in new proto
+        let linesRemoved: Int? = nil // file_change events no longer exist in new proto
+        let command: String? = nil   // command events no longer exist in new proto
+        let cwd: String? = nil       // command events no longer exist in new proto
+        let exitCode: Int? = nil     // command events no longer exist in new proto
+        let output: String? = nil    // command events no longer exist in new proto
         var content: String? = nil
         var thinkingId: String? = nil
         var partial: Bool? = nil
@@ -911,93 +953,86 @@ final class ConnectService {
         var error: String? = nil
         var durationMs: Int64? = nil
         
+        // Use correlationID as the tool/thinking ID
+        let correlationId = proto.correlationID
+        
         switch proto.kind {
         case .toolStart:
             kind = "tool_start"
-            let t = proto.tool
-            tool = t.tool
-            toolUseId = t.toolUseID
-            parentToolUseId = t.hasParentToolUseID ? t.parentToolUseID : nil
-            input = t.hasInput ? convertProtoStruct(t.input) : nil
+            let payload = proto.toolStart
+            tool = payload.tool
+            toolUseId = correlationId
+            parentToolUseId = payload.hasParentToolUseID ? payload.parentToolUseID : nil
+            
         case .toolInput:
-            kind = "tool_input"
-            let t = proto.tool
-            toolUseId = t.toolUseID
-            parentToolUseId = t.hasParentToolUseID ? t.parentToolUseID : nil
-            inputDelta = t.hasInputDelta ? t.inputDelta : nil
-        case .toolInputComplete:
-            kind = "tool_input_complete"
-            let t = proto.tool
-            toolUseId = t.toolUseID
-            parentToolUseId = t.hasParentToolUseID ? t.parentToolUseID : nil
-            input = t.hasInput ? convertProtoStruct(t.input) : nil
+            let payload = proto.toolInput
+            if payload.hasDelta {
+                kind = "tool_input"
+                inputDelta = payload.delta
+            } else {
+                kind = "tool_input_complete"
+                input = payload.hasInput ? convertProtoStruct(payload.input) : nil
+            }
+            toolUseId = correlationId
+            
+        case .toolOutput:
+            kind = "tool_output"
+            let payload = proto.toolOutput
+            if payload.hasDelta {
+                result = payload.delta
+            } else if payload.hasOutput {
+                result = payload.output
+            }
+            toolUseId = correlationId
+            
         case .toolEnd:
             kind = "tool_end"
-            let t = proto.tool
-            tool = t.tool
-            toolUseId = t.toolUseID
-            parentToolUseId = t.hasParentToolUseID ? t.parentToolUseID : nil
-            result = t.hasResult ? t.result : nil
-            error = t.hasError ? t.error : nil
-            durationMs = t.hasDurationMs ? t.durationMs : nil
-        case .fileChange:
-            kind = "file_change"
-            let fc = proto.fileChange
-            path = fc.path
-            switch fc.action {
-            case .create: action = "create"
-            case .delete: action = "delete"
-            case .edit, .unspecified, .UNRECOGNIZED: action = "edit"
-            }
-            linesAdded = fc.hasLinesAdded ? Int(fc.linesAdded) : nil
-            linesRemoved = fc.hasLinesRemoved ? Int(fc.linesRemoved) : nil
-        case .commandStart:
-            kind = "command_start"
-            let cmd = proto.command
-            command = cmd.command
-            cwd = cmd.hasCwd ? cmd.cwd : nil
-        case .commandEnd:
-            kind = "command_end"
-            let cmd = proto.command
-            command = cmd.command
-            exitCode = cmd.hasExitCode ? Int(cmd.exitCode) : nil
-            output = cmd.hasOutput ? cmd.output : nil
+            let payload = proto.toolEnd
+            toolUseId = correlationId
+            error = payload.hasError ? payload.error : nil
+            durationMs = payload.hasDurationMs ? payload.durationMs : nil
+            
         case .thinking:
             kind = "thinking"
-            let th = proto.thinking
-            thinkingId = th.thinkingID
-            content = th.content
-            partial = th.partial
+            let payload = proto.thinking
+            thinkingId = correlationId
+            content = payload.content
+            partial = false  // partial flag is on StreamEntry
+            
         case .portExposed:
             kind = "port_exposed"
-            let pe = proto.portExposed
-            port = Int(pe.port)
-            process = pe.hasProcess ? pe.process : nil
-            previewUrl = pe.hasPreviewURL ? pe.previewURL : nil
+            let payload = proto.portExposed
+            port = Int(payload.port)
+            process = payload.hasProcess ? payload.process : nil
+            previewUrl = payload.hasPreviewURL ? payload.previewURL : nil
+            
         case .repoClone:
             kind = "repo_clone"
-            let rc = proto.repoClone
-            repo = rc.repo
-            switch rc.stage {
+            let payload = proto.repoClone
+            repo = payload.repo
+            switch payload.stage {
             case .starting: stage = "starting"
             case .cloning: stage = "cloning"
             case .error: stage = "error"
             case .done, .unspecified, .UNRECOGNIZED: stage = "done"
             }
-            message = rc.message
+            message = payload.message
+            
         case .agentDisconnected:
             kind = "agent_disconnected"
             message = "Agent connection lost. Send a message to continue when reconnected."
+            
         case .agentReconnected:
             kind = "agent_reconnected"
             message = "Agent reconnected. Send a message to continue."
-        case .unspecified, .UNRECOGNIZED:
+            
+        case .message, .unspecified, .UNRECOGNIZED:
             kind = "unknown"
         }
         
         return PersistedEvent.RawAgentEventData(
             kind: kind,
-            timestamp: proto.timestamp.date,
+            timestamp: timestamp,
             tool: tool, toolUseId: toolUseId, parentToolUseId: parentToolUseId, input: input, inputDelta: inputDelta, result: result, durationMs: durationMs,
             path: path, action: action, linesAdded: linesAdded, linesRemoved: linesRemoved,
             command: command, cwd: cwd, exitCode: exitCode, output: output,
@@ -1322,11 +1357,9 @@ final class ConnectService {
         case .sessionOpen(let id, let lastMessageId, let lastNotificationId):
             var req = Netclode_V1_OpenSessionRequest()
             req.sessionID = id
-            if let lastMessageId = lastMessageId {
-                req.lastMessageID = lastMessageId
-            }
-            if let lastNotificationId = lastNotificationId {
-                req.lastNotificationID = lastNotificationId
+            // Use lastNotificationId as afterStreamID if available, else use lastMessageId
+            if let afterStreamId = lastNotificationId ?? lastMessageId {
+                req.afterStreamID = afterStreamId
             }
             proto.message = .openSession(req)
             

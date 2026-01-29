@@ -78,10 +78,25 @@ final class MessageRouter {
             print("[MessageRouter] session.updated received: id=\(session.id), name=\(session.name), status=\(session.status)")
             sessionStore.updateSession(session)
             
-            // If session becomes running, show streaming indicator
-            // (e.g., when another client sends a prompt)
+            // Handle status transitions
             if session.status == .running {
+                // Session is processing - show streaming indicator
                 sessionStore.setProcessing(for: session.id, processing: true)
+            } else if session.status == .ready {
+                // Session is done - stop processing indicator and finalize messages
+                // This replaces the old agentDone handling in the unified streaming model
+                if sessionStore.isProcessing(session.id) {
+                    if settingsStore.hapticFeedbackEnabled {
+                        HapticFeedback.success()
+                    }
+                    sessionStore.setProcessing(for: session.id, processing: false)
+                    chatStore.finalizeLastMessage(sessionId: session.id)
+                    // Clear pending state - agent has responded
+                    if sessionStore.pendingSessionId == session.id {
+                        sessionStore.pendingPromptText = nil
+                        sessionStore.pendingSessionId = nil
+                    }
+                }
             }
 
         case .sessionDeleted(let id):
