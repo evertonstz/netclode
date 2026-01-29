@@ -63,8 +63,8 @@ enum RepoAccess: String, Codable, CaseIterable, Sendable {
 
     var icon: String {
         switch self {
-        case .read: "eye"
-        case .write: "square.and.pencil"
+        case .read: "book"
+        case .write: "pencil"
         }
     }
 }
