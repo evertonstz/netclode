@@ -80,8 +80,11 @@ func (m *Manager) handleTextDelta(ctx context.Context, sessionID string, state *
 		m.appendMessage(ctx, sessionID, idToPersist, pb.MessageRole_MESSAGE_ROLE_ASSISTANT, contentToPersist)
 	}
 
-	// Emit delta to clients (not accumulated content) - client accumulates
-	m.emitAgentMessage(ctx, sessionID, messageID, delta.Content, delta.Partial)
+	// Only emit streaming deltas (partial=true) to clients
+	// The final complete message (partial=false) will be stored by handleAgentResult via appendMessage
+	if delta.Partial {
+		m.emitAgentMessage(ctx, sessionID, messageID, delta.Content, true)
+	}
 
 	return nil
 }
