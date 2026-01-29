@@ -45,7 +45,14 @@ metadata:
 data:
   config.yaml: |
     mountPodPatch:
-      - mountOptions:
+      # Reduce CPU requests to allow more pods to be scheduled
+      # Default is 1 CPU per mount pod which blocks scheduling quickly
+      # No limits - let pods burst as needed
+      - resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        mountOptions:
           # Writeback cache: async writes to local disk, sync to S3 in background
           - writeback
           # FUSE writeback cache: kernel consolidates small writes before sending to FUSE
