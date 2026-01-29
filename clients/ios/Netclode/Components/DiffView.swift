@@ -96,42 +96,51 @@ struct DiffLineView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            // Line numbers (optional)
+            // Single line number column (optional)
             if showLineNumbers {
-                // Old line number
-                Text(line.oldLineNumber.map { "\($0)" } ?? "")
+                Text(displayLineNumber)
                     .frame(width: 28, alignment: .trailing)
                     .foregroundStyle(DiffColors.lineNumber)
-                    .padding(.trailing, 2)
-
-                // New line number
-                Text(line.newLineNumber.map { "\($0)" } ?? "")
-                    .frame(width: 28, alignment: .trailing)
-                    .foregroundStyle(DiffColors.lineNumber)
+                    .padding(.leading, 4)
                     .padding(.trailing, 6)
             }
 
-            // Prefix (+/-/space)
-            Text(line.type.prefix)
-                .foregroundStyle(prefixColor)
-                .frame(width: 14)
+            // Prefix (+/-/space) with content
+            HStack(spacing: 3) {
+                Text(line.type.prefix)
+                    .foregroundStyle(prefixColor)
+                    .frame(width: 8, alignment: .leading)
 
-            // Content with syntax highlighting and word highlights
-            SyntaxHighlightedDiffText(
-                text: line.content,
-                language: language,
-                colorScheme: colorScheme,
-                wordHighlights: line.wordHighlights,
-                fallbackColor: textColor,
-                highlightColor: wordHighlightColor
-            )
-
-            Spacer(minLength: 0)
+                // Content with syntax highlighting and word highlights
+                SyntaxHighlightedDiffText(
+                    text: line.content,
+                    language: language,
+                    colorScheme: colorScheme,
+                    wordHighlights: line.wordHighlights,
+                    fallbackColor: textColor,
+                    highlightColor: wordHighlightColor
+                )
+                .fixedSize(horizontal: true, vertical: false)
+                .lineLimit(1)
+            }
         }
         .font(.system(size: 11, design: .monospaced))
-        .padding(.horizontal, 6)
-        .padding(.vertical, 1)
+        .padding(.trailing, 4)
+        .padding(.vertical, 2)
         .background(backgroundColor)
+    }
+
+    private var displayLineNumber: String {
+        // Show the relevant line number based on line type
+        switch line.type {
+        case .deletion:
+            return line.oldLineNumber.map { "\($0)" } ?? ""
+        case .addition:
+            return line.newLineNumber.map { "\($0)" } ?? ""
+        case .context:
+            // For context, prefer new line number (or old if new is missing)
+            return line.newLineNumber.map { "\($0)" } ?? line.oldLineNumber.map { "\($0)" } ?? ""
+        }
     }
 
     private var backgroundColor: Color {

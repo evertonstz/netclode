@@ -270,7 +270,6 @@ private struct FileChangeRow: View {
                         .transition(.opacity)
                     } else if let diff = diffContent, !diff.isEmpty {
                         UnifiedDiffView(diffContent: diff, showFileHeaders: false)
-                            .padding(.horizontal, Theme.Spacing.sm)
                             .padding(.bottom, Theme.Spacing.sm)
                             .transition(.opacity.animation(.easeOut(duration: 0.2)))
                     } else {

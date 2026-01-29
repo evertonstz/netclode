@@ -21,9 +21,11 @@ struct UnifiedDiffView: View {
         if files.isEmpty {
             emptyState
         } else {
-            LazyVStack(alignment: .leading, spacing: Theme.Spacing.md) {
-                ForEach(files) { file in
-                    FileDiffSection(file: file, showHeader: showFileHeaders)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: Theme.Spacing.md) {
+                    ForEach(files) { file in
+                        FileDiffSection(file: file, showHeader: showFileHeaders)
+                    }
                 }
             }
         }
@@ -111,14 +113,8 @@ struct FileDiffSection: View {
                         HunkSection(hunk: hunk, language: detectedLanguage, colorScheme: colorScheme)
                     }
                 }
-                .background(DiffColors.background)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Radius.sm)
-                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-        )
     }
 
     private var stats: (additions: Int, deletions: Int) {
