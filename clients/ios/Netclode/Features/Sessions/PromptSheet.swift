@@ -415,7 +415,7 @@ struct InlineAccessPicker: View {
             } label: {
                 HStack(spacing: Theme.Spacing.xs) {
                     Image(systemName: hasRepo ? selectedAccess.icon : "eye")
-                        .font(.system(size: 16))
+                        .font(.system(size: 14))
                         .frame(width: 20)
                         .foregroundStyle(.secondary)
                     Text(hasRepo ? selectedAccess.displayName : "Read only")
