@@ -52,11 +52,7 @@ func (m *Manager) SendPrompt(ctx context.Context, sessionID, text string) error 
 		return nil
 	}
 
-	// Persist user message
-	userMsgID := "msg_" + uuid.NewString()[:12]
-	m.appendMessage(ctx, sessionID, userMsgID, pb.MessageRole_MESSAGE_ROLE_USER, text)
-
-	// Broadcast user message to all subscribers (for cross-client sync)
+	// Persist and broadcast user message (emitUserMessage does both via publishStreamEntry)
 	m.emitUserMessage(ctx, sessionID, text)
 
 	// Update session status to running and last active time

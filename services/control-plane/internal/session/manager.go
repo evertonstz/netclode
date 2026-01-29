@@ -1601,7 +1601,7 @@ func (m *Manager) emitAgentError(ctx context.Context, sessionID, errMsg string) 
 	})
 }
 
-// emitUserMessage broadcasts a user message to all subscribers.
+// emitUserMessage broadcasts a user message to all subscribers and increments message counter.
 func (m *Manager) emitUserMessage(ctx context.Context, sessionID, text string) {
 	messageID := uuid.New().String()
 	event := &pb.AgentEvent{
@@ -1621,6 +1621,10 @@ func (m *Manager) emitUserMessage(ctx context.Context, sessionID, text string) {
 		Payload:   payload,
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	})
+	// Increment message counter
+	if err := m.storage.IncrementMessageCount(ctx, sessionID); err != nil {
+		slog.Warn("Failed to increment message count", "sessionID", sessionID, "error", err)
+	}
 }
 
 // EmitEvent broadcasts an event from a sandbox to all connected clients.

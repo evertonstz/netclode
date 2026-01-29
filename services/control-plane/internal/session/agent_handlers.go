@@ -163,13 +163,11 @@ func (m *Manager) handleAgentResult(ctx context.Context, sessionID string, state
 	m.mu.Unlock()
 
 	// Persist final assistant message if we have content
+	// Note: appendMessage both stores the message AND increments the message counter
+	// We don't call emitAgentMessage here because appendMessage already persists to the stream
 	if content != "" && messageID != "" {
-		// Use the timestamp from when the message content first arrived
 		_ = messageStartTime // Timestamp is now set at storage layer
 		m.appendMessage(ctx, sessionID, messageID, pb.MessageRole_MESSAGE_ROLE_ASSISTANT, content)
-
-		// Emit final (non-partial) message
-		m.emitAgentMessage(ctx, sessionID, messageID, content, false)
 	}
 
 	// Emit agent done
