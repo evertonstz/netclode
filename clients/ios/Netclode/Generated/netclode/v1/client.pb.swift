@@ -569,6 +569,16 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
   /// Clears the value of `networkConfig`. Subsequent reads from it will return its default value.
   public mutating func clearNetworkConfig() {self._networkConfig = nil}
 
+  /// Custom VM resources (bypasses warm pool if set)
+  public var resources: Netclode_V1_SandboxResources {
+    get {return _resources ?? Netclode_V1_SandboxResources()}
+    set {_resources = newValue}
+  }
+  /// Returns true if `resources` has been explicitly set.
+  public var hasResources: Bool {return self._resources != nil}
+  /// Clears the value of `resources`. Subsequent reads from it will return its default value.
+  public mutating func clearResources() {self._resources = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -582,6 +592,7 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
   fileprivate var _model: String? = nil
   fileprivate var _copilotBackend: Netclode_V1_CopilotBackend? = nil
   fileprivate var _networkConfig: Netclode_V1_NetworkConfig? = nil
+  fileprivate var _resources: Netclode_V1_SandboxResources? = nil
 }
 
 public struct Netclode_V1_ListSessionsRequest: Sendable {
@@ -2557,7 +2568,7 @@ extension Netclode_V1_NetworkConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CreateSessionRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{1}name\0\u{1}repo\0\u{3}repo_access\0\u{3}initial_prompt\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}network_config\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{1}name\0\u{1}repo\0\u{3}repo_access\0\u{3}initial_prompt\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}network_config\0\u{1}resources\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2574,6 +2585,7 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
       case 7: try { try decoder.decodeSingularStringField(value: &self._model) }()
       case 8: try { try decoder.decodeSingularEnumField(value: &self._copilotBackend) }()
       case 9: try { try decoder.decodeSingularMessageField(value: &self._networkConfig) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._resources) }()
       default: break
       }
     }
@@ -2611,6 +2623,9 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
     try { if let v = self._networkConfig {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
     } }()
+    try { if let v = self._resources {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2624,6 +2639,7 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
     if lhs._model != rhs._model {return false}
     if lhs._copilotBackend != rhs._copilotBackend {return false}
     if lhs._networkConfig != rhs._networkConfig {return false}
+    if lhs._resources != rhs._resources {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

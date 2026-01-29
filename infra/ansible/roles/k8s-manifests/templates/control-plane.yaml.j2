@@ -97,6 +97,11 @@ spec:
               value: "true"
             - name: MAX_ACTIVE_SESSIONS
               value: "10"
+            # Host resource limits for per-session resource validation (50% max)
+            - name: HOST_CPUS
+              value: "{{ ansible_processor_vcpus }}"
+            - name: HOST_MEMORY_MB
+              value: "{{ ansible_memtotal_mb }}"
           readinessProbe:
             httpGet:
               path: /health

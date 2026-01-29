@@ -1274,6 +1274,65 @@ func (x *CopilotPremiumQuota) GetResetAt() string {
 	return ""
 }
 
+// SandboxResources defines resource allocation for a session's sandbox VM.
+// When specified, the session bypasses the warm pool and creates a sandbox directly.
+// Resources are validated against host limits (max 50% of host resources).
+type SandboxResources struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Number of vCPUs for the VM. Must be >= 1 and <= 50% of host CPUs.
+	// Default (when not specified): uses warm pool with standard resources.
+	Vcpus int32 `protobuf:"varint,1,opt,name=vcpus,proto3" json:"vcpus,omitempty"`
+	// Memory in MiB for the VM. Must be >= 512 and <= 50% of host memory.
+	// Default (when not specified): uses warm pool with standard resources.
+	MemoryMb      int32 `protobuf:"varint,2,opt,name=memory_mb,json=memoryMb,proto3" json:"memory_mb,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SandboxResources) Reset() {
+	*x = SandboxResources{}
+	mi := &file_netclode_v1_common_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SandboxResources) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SandboxResources) ProtoMessage() {}
+
+func (x *SandboxResources) ProtoReflect() protoreflect.Message {
+	mi := &file_netclode_v1_common_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SandboxResources.ProtoReflect.Descriptor instead.
+func (*SandboxResources) Descriptor() ([]byte, []int) {
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SandboxResources) GetVcpus() int32 {
+	if x != nil {
+		return x.Vcpus
+	}
+	return 0
+}
+
+func (x *SandboxResources) GetMemoryMb() int32 {
+	if x != nil {
+		return x.MemoryMb
+	}
+	return 0
+}
+
 // Snapshot represents a point-in-time snapshot of session workspace and conversation.
 type Snapshot struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1291,7 +1350,7 @@ type Snapshot struct {
 
 func (x *Snapshot) Reset() {
 	*x = Snapshot{}
-	mi := &file_netclode_v1_common_proto_msgTypes[11]
+	mi := &file_netclode_v1_common_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1303,7 +1362,7 @@ func (x *Snapshot) String() string {
 func (*Snapshot) ProtoMessage() {}
 
 func (x *Snapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_netclode_v1_common_proto_msgTypes[11]
+	mi := &file_netclode_v1_common_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1316,7 +1375,7 @@ func (x *Snapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Snapshot.ProtoReflect.Descriptor instead.
 func (*Snapshot) Descriptor() ([]byte, []int) {
-	return file_netclode_v1_common_proto_rawDescGZIP(), []int{11}
+	return file_netclode_v1_common_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Snapshot) GetId() string {
@@ -1498,7 +1557,10 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x1c\n" +
 	"\tremaining\x18\x03 \x01(\x05R\tremaining\x12\x1e\n" +
 	"\breset_at\x18\x04 \x01(\tH\x00R\aresetAt\x88\x01\x01B\v\n" +
-	"\t_reset_at\"\x95\x02\n" +
+	"\t_reset_at\"E\n" +
+	"\x10SandboxResources\x12\x14\n" +
+	"\x05vcpus\x18\x01 \x01(\x05R\x05vcpus\x12\x1b\n" +
+	"\tmemory_mb\x18\x02 \x01(\x05R\bmemoryMb\"\x95\x02\n" +
 	"\bSnapshot\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -1565,7 +1627,7 @@ func file_netclode_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_netclode_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_netclode_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_netclode_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_netclode_v1_common_proto_goTypes = []any{
 	(RepoAccess)(0),               // 0: netclode.v1.RepoAccess
 	(SdkType)(0),                  // 1: netclode.v1.SdkType
@@ -1584,16 +1646,17 @@ var file_netclode_v1_common_proto_goTypes = []any{
 	(*ModelInfo)(nil),             // 14: netclode.v1.ModelInfo
 	(*CopilotAuthStatus)(nil),     // 15: netclode.v1.CopilotAuthStatus
 	(*CopilotPremiumQuota)(nil),   // 16: netclode.v1.CopilotPremiumQuota
-	(*Snapshot)(nil),              // 17: netclode.v1.Snapshot
-	nil,                           // 18: netclode.v1.Error.DetailsEntry
-	(*timestamppb.Timestamp)(nil), // 19: google.protobuf.Timestamp
-	(*AgentEvent)(nil),            // 20: netclode.v1.AgentEvent
+	(*SandboxResources)(nil),      // 17: netclode.v1.SandboxResources
+	(*Snapshot)(nil),              // 18: netclode.v1.Snapshot
+	nil,                           // 19: netclode.v1.Error.DetailsEntry
+	(*timestamppb.Timestamp)(nil), // 20: google.protobuf.Timestamp
+	(*AgentEvent)(nil),            // 21: netclode.v1.AgentEvent
 }
 var file_netclode_v1_common_proto_depIdxs = []int32{
 	3,  // 0: netclode.v1.Session.status:type_name -> netclode.v1.SessionStatus
 	0,  // 1: netclode.v1.Session.repo_access:type_name -> netclode.v1.RepoAccess
-	19, // 2: netclode.v1.Session.created_at:type_name -> google.protobuf.Timestamp
-	19, // 3: netclode.v1.Session.last_active_at:type_name -> google.protobuf.Timestamp
+	20, // 2: netclode.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	20, // 3: netclode.v1.Session.last_active_at:type_name -> google.protobuf.Timestamp
 	1,  // 4: netclode.v1.Session.sdk_type:type_name -> netclode.v1.SdkType
 	2,  // 5: netclode.v1.Session.copilot_backend:type_name -> netclode.v1.CopilotBackend
 	6,  // 6: netclode.v1.SessionSummary.session:type_name -> netclode.v1.Session
@@ -1602,11 +1665,11 @@ var file_netclode_v1_common_proto_depIdxs = []int32{
 	2,  // 9: netclode.v1.SessionConfig.copilot_backend:type_name -> netclode.v1.CopilotBackend
 	4,  // 10: netclode.v1.GitFileChange.status:type_name -> netclode.v1.GitFileStatus
 	5,  // 11: netclode.v1.Message.role:type_name -> netclode.v1.MessageRole
-	19, // 12: netclode.v1.Message.timestamp:type_name -> google.protobuf.Timestamp
-	19, // 13: netclode.v1.Event.timestamp:type_name -> google.protobuf.Timestamp
-	20, // 14: netclode.v1.Event.event:type_name -> netclode.v1.AgentEvent
-	18, // 15: netclode.v1.Error.details:type_name -> netclode.v1.Error.DetailsEntry
-	19, // 16: netclode.v1.Snapshot.created_at:type_name -> google.protobuf.Timestamp
+	20, // 12: netclode.v1.Message.timestamp:type_name -> google.protobuf.Timestamp
+	20, // 13: netclode.v1.Event.timestamp:type_name -> google.protobuf.Timestamp
+	21, // 14: netclode.v1.Event.event:type_name -> netclode.v1.AgentEvent
+	19, // 15: netclode.v1.Error.details:type_name -> netclode.v1.Error.DetailsEntry
+	20, // 16: netclode.v1.Snapshot.created_at:type_name -> google.protobuf.Timestamp
 	17, // [17:17] is the sub-list for method output_type
 	17, // [17:17] is the sub-list for method input_type
 	17, // [17:17] is the sub-list for extension type_name
@@ -1635,7 +1698,7 @@ func file_netclode_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_netclode_v1_common_proto_rawDesc), len(file_netclode_v1_common_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

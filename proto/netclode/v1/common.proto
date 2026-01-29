@@ -169,6 +169,19 @@ message CopilotPremiumQuota {
   optional string reset_at = 4;          // ISO timestamp when quota resets
 }
 
+// SandboxResources defines resource allocation for a session's sandbox VM.
+// When specified, the session bypasses the warm pool and creates a sandbox directly.
+// Resources are validated against host limits (max 50% of host resources).
+message SandboxResources {
+  // Number of vCPUs for the VM. Must be >= 1 and <= 50% of host CPUs.
+  // Default (when not specified): uses warm pool with standard resources.
+  int32 vcpus = 1;
+
+  // Memory in MiB for the VM. Must be >= 512 and <= 50% of host memory.
+  // Default (when not specified): uses warm pool with standard resources.
+  int32 memory_mb = 2;
+}
+
 // Snapshot represents a point-in-time snapshot of session workspace and conversation.
 message Snapshot {
   string id = 1;                         // Unique snapshot ID

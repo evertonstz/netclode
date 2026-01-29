@@ -38,8 +38,14 @@ type SandboxSpec struct {
 
 // PodTemplateSpec is a simplified pod template
 type PodTemplateSpec struct {
-	Metadata metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec     PodSpec           `json:"spec,omitempty"`
+	Metadata PodMetadata `json:"metadata,omitempty"`
+	Spec     PodSpec     `json:"spec,omitempty"`
+}
+
+// PodMetadata is pod metadata with annotations support for Kata VM sizing
+type PodMetadata struct {
+	Labels      map[string]string `json:"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // PodSpec is a simplified pod spec
@@ -62,14 +68,28 @@ type PersistentVolumeClaimVolumeSource struct {
 
 // Container is a simplified container spec
 type Container struct {
-	Name            string           `json:"name"`
-	Image           string           `json:"image"`
-	Ports           []Port           `json:"ports,omitempty"`
-	Env             []EnvVar         `json:"env,omitempty"`
-	EnvFrom         []EnvFromSource  `json:"envFrom,omitempty"`
-	VolumeMounts    []VolumeMount    `json:"volumeMounts,omitempty"`
-	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
-	ReadinessProbe  *Probe           `json:"readinessProbe,omitempty"`
+	Name            string              `json:"name"`
+	Image           string              `json:"image"`
+	Ports           []Port              `json:"ports,omitempty"`
+	Env             []EnvVar            `json:"env,omitempty"`
+	EnvFrom         []EnvFromSource     `json:"envFrom,omitempty"`
+	VolumeMounts    []VolumeMount       `json:"volumeMounts,omitempty"`
+	SecurityContext *SecurityContext    `json:"securityContext,omitempty"`
+	ReadinessProbe  *Probe              `json:"readinessProbe,omitempty"`
+	Resources       *ContainerResources `json:"resources,omitempty"`
+}
+
+// ContainerResources defines resource requests for K8s scheduling.
+// We only use requests (not limits) to avoid cgroup throttling with Kata.
+type ContainerResources struct {
+	Requests map[string]string `json:"requests,omitempty"`
+}
+
+// SandboxResourceConfig holds resource configuration for a sandbox VM.
+// These map to Kata annotations for VM sizing and K8s requests for scheduling.
+type SandboxResourceConfig struct {
+	VCPUs    int32 // Number of vCPUs for the VM
+	MemoryMB int32 // Memory in MiB for the VM
 }
 
 // Port defines a container port

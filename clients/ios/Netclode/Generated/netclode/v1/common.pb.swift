@@ -940,6 +940,27 @@ public struct Netclode_V1_CopilotPremiumQuota: Sendable {
   fileprivate var _resetAt: String? = nil
 }
 
+/// SandboxResources defines resource allocation for a session's sandbox VM.
+/// When specified, the session bypasses the warm pool and creates a sandbox directly.
+/// Resources are validated against host limits (max 50% of host resources).
+public struct Netclode_V1_SandboxResources: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Number of vCPUs for the VM. Must be >= 1 and <= 50% of host CPUs.
+  /// Default (when not specified): uses warm pool with standard resources.
+  public var vcpus: Int32 = 0
+
+  /// Memory in MiB for the VM. Must be >= 512 and <= 50% of host memory.
+  /// Default (when not specified): uses warm pool with standard resources.
+  public var memoryMb: Int32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 /// Snapshot represents a point-in-time snapshot of session workspace and conversation.
 public struct Netclode_V1_Snapshot: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -1640,6 +1661,41 @@ extension Netclode_V1_CopilotPremiumQuota: SwiftProtobuf.Message, SwiftProtobuf.
     if lhs.limit != rhs.limit {return false}
     if lhs.remaining != rhs.remaining {return false}
     if lhs._resetAt != rhs._resetAt {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_SandboxResources: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SandboxResources"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}vcpus\0\u{3}memory_mb\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt32Field(value: &self.vcpus) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self.memoryMb) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.vcpus != 0 {
+      try visitor.visitSingularInt32Field(value: self.vcpus, fieldNumber: 1)
+    }
+    if self.memoryMb != 0 {
+      try visitor.visitSingularInt32Field(value: self.memoryMb, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_SandboxResources, rhs: Netclode_V1_SandboxResources) -> Bool {
+    if lhs.vcpus != rhs.vcpus {return false}
+    if lhs.memoryMb != rhs.memoryMb {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

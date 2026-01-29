@@ -208,7 +208,15 @@ func generateID() string {
 }
 
 // Create creates a new session.
-func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string, copilotBackend *pb.CopilotBackend, tailnetAccess *bool) (*pb.Session, error) {
+// If resources is provided, validates against host limits (max 50%) and bypasses warm pool.
+func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string, copilotBackend *pb.CopilotBackend, tailnetAccess *bool, resources *pb.SandboxResources) (*pb.Session, error) {
+	// Validate custom resources if provided
+	if resources != nil {
+		if err := m.validateResources(resources); err != nil {
+			return nil, err
+		}
+	}
+
 	// Ensure we have a slot for a new active session
 	m.ensureActiveSlot(ctx, "")
 
@@ -250,23 +258,62 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAcc
 	}
 
 	// Start sandbox creation in background
-	go m.createSandbox(context.Background(), id, repo, repoAccess, tailnetEnabled)
+	go m.createSandbox(context.Background(), id, repo, repoAccess, tailnetEnabled, resources)
 
 	return session, nil
 }
 
-func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool) {
+// validateResources checks that requested resources don't exceed host limits (50% of host).
+func (m *Manager) validateResources(resources *pb.SandboxResources) error {
+	maxCPUs := m.config.MaxSessionCPUs()
+	maxMemoryMB := m.config.MaxSessionMemoryMB()
+
+	if resources.Vcpus < 1 {
+		return fmt.Errorf("vcpus must be at least 1")
+	}
+	if resources.Vcpus > int32(maxCPUs) {
+		return fmt.Errorf("vcpus %d exceeds maximum allowed %d (50%% of host)", resources.Vcpus, maxCPUs)
+	}
+
+	if resources.MemoryMb < 512 {
+		return fmt.Errorf("memory_mb must be at least 512")
+	}
+	if resources.MemoryMb > int32(maxMemoryMB) {
+		return fmt.Errorf("memory_mb %d exceeds maximum allowed %d (50%% of host)", resources.MemoryMb, maxMemoryMB)
+	}
+
+	return nil
+}
+
+func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool, resources *pb.SandboxResources) {
+	// If custom resources are requested, bypass warm pool and create directly
+	if resources != nil {
+		slog.Info("Creating sandbox with custom resources (bypassing warm pool)", "sessionID", sessionID, "vcpus", resources.Vcpus, "memoryMB", resources.MemoryMb)
+		m.createSandboxDirect(ctx, sessionID, repo, repoAccess, tailnetEnabled, resources)
+		return
+	}
+
 	if m.config.UseWarmPool {
 		m.createSandboxViaClaim(ctx, sessionID, repo, repoAccess, tailnetEnabled)
 	} else {
-		m.createSandboxDirect(ctx, sessionID, repo, repoAccess, tailnetEnabled)
+		m.createSandboxDirect(ctx, sessionID, repo, repoAccess, tailnetEnabled, nil)
 	}
 }
 
-// createSandboxDirect creates a sandbox directly (legacy mode).
-// If restoreSnapshotID is provided, the PVC is restored from that snapshot BEFORE creating the sandbox.
-// If resuming from a paused session, uses the stored PVC name.
-func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool, restoreSnapshotID ...string) {
+// createSandboxDirectOptions holds optional parameters for createSandboxDirect.
+type createSandboxDirectOptions struct {
+	restoreSnapshotID string
+	resources         *pb.SandboxResources
+}
+
+// createSandboxDirect creates a sandbox directly (legacy mode or custom resources mode).
+// If opts.restoreSnapshotID is provided, the PVC is restored from that snapshot BEFORE creating the sandbox.
+// If opts.resources is provided, the sandbox is created with custom VM resources.
+func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool, resources *pb.SandboxResources, restoreSnapshotID ...string) {
+	var snapID string
+	if len(restoreSnapshotID) > 0 {
+		snapID = restoreSnapshotID[0]
+	}
 	env := map[string]string{
 		"SESSION_ID":        sessionID,
 		"ANTHROPIC_API_KEY": m.config.AnthropicAPIKey,
@@ -274,8 +321,7 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 
 	// If restoring from snapshot, create the PVC first and wait for restore to complete
 	// BEFORE creating the sandbox. This ensures the restore job finishes before the pod mounts.
-	if len(restoreSnapshotID) > 0 && restoreSnapshotID[0] != "" {
-		snapID := restoreSnapshotID[0]
+	if snapID != "" {
 		slog.Info("Creating PVC from snapshot before sandbox", "sessionID", sessionID, "snapshotID", snapID)
 
 		// Create standalone PVC from snapshot
@@ -354,8 +400,17 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		}
 	}
 
+	// Convert proto resources to k8s config
+	var k8sResources *k8s.SandboxResourceConfig
+	if resources != nil {
+		k8sResources = &k8s.SandboxResourceConfig{
+			VCPUs:    resources.Vcpus,
+			MemoryMB: resources.MemoryMb,
+		}
+	}
+
 	// Create sandbox
-	if err := m.k8s.CreateSandbox(ctx, sessionID, env); err != nil {
+	if err := m.k8s.CreateSandbox(ctx, sessionID, env, k8sResources); err != nil {
 		slog.Error("Failed to create sandbox", "sessionID", sessionID, "error", err)
 		m.updateSessionStatus(ctx, sessionID, pb.SessionStatus_SESSION_STATUS_ERROR)
 		m.emitSessionError(ctx, sessionID, err.Error())
@@ -801,13 +856,14 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	// This ensures we use the session's existing PVC instead of getting a fresh warm pool PVC.
 	// createSandboxDirect will automatically use the stored PVC name if available.
 	// Note: Resume always uses default tailnetEnabled=false since we don't store network config
+	// Note: Resume doesn't support custom resources - uses nil to get default resources
 	if restoreSnapshotID != "" {
 		slog.Info("Resuming with snapshot restore", "sessionID", id, "snapshotID", restoreSnapshotID)
 		_ = m.storage.ClearRestoreSnapshotID(ctx, id) // Clear from storage
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false, restoreSnapshotID)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false, nil, restoreSnapshotID)
 	} else {
 		slog.Info("Resuming session", "sessionID", id)
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false, nil)
 	}
 
 	return state.Session, nil

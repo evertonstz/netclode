@@ -283,7 +283,7 @@ func pvcName(sessionID string) string {
 // It's not passed to the actual container, just used to configure the sandbox.
 const ExistingPVCEnvKey = "_EXISTING_PVC_NAME"
 
-func (r *k8sRuntime) CreateSandbox(ctx context.Context, sessionID string, env map[string]string) error {
+func (r *k8sRuntime) CreateSandbox(ctx context.Context, sessionID string, env map[string]string, resources *SandboxResourceConfig) error {
 	// Extract existing PVC name if present (not passed to container)
 	existingPVCName := env[ExistingPVCEnvKey]
 	delete(env, ExistingPVCEnvKey)
@@ -294,7 +294,7 @@ func (r *k8sRuntime) CreateSandbox(ctx context.Context, sessionID string, env ma
 	}
 
 	// Create the Sandbox CRD
-	sandbox := r.buildSandboxManifest(sessionID, existingPVCName)
+	sandbox := r.buildSandboxManifest(sessionID, existingPVCName, resources)
 
 	data, err := json.Marshal(sandbox)
 	if err != nil {
@@ -338,7 +338,7 @@ func (r *k8sRuntime) createEnvSecret(ctx context.Context, sessionID string, env 
 	return nil
 }
 
-func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName string) *Sandbox {
+func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName string, resources *SandboxResourceConfig) *Sandbox {
 	name := sandboxName(sessionID)
 
 	// If we have an existing PVC (from restore), use Volumes instead of VolumeClaimTemplates
@@ -379,6 +379,12 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName stri
 		}
 	}
 
+	// Build pod metadata with Kata annotations for custom resources
+	podMetadata := r.buildPodMetadata(sessionID, resources)
+
+	// Build container resources for K8s scheduling
+	containerResources := r.buildContainerResources(resources)
+
 	return &Sandbox{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "agents.x-k8s.io/v1alpha1",
@@ -393,11 +399,7 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName stri
 		},
 		Spec: SandboxSpec{
 			PodTemplate: PodTemplateSpec{
-				Metadata: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"netclode.io/session": sessionID,
-					},
-				},
+				Metadata: podMetadata,
 				Spec: PodSpec{
 					RuntimeClassName: "kata-clh",
 					Containers: []Container{
@@ -427,6 +429,7 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName stri
 								InitialDelaySeconds: 3,
 								PeriodSeconds:       5,
 							},
+							Resources: containerResources,
 						},
 					},
 					Volumes: volumes,
@@ -434,6 +437,57 @@ func (r *k8sRuntime) buildSandboxManifest(sessionID string, existingPVCName stri
 			},
 			VolumeClaimTemplates: volumeClaimTemplates,
 		},
+	}
+}
+
+// buildPodMetadata creates pod metadata with labels and Kata annotations for VM sizing.
+func (r *k8sRuntime) buildPodMetadata(sessionID string, resources *SandboxResourceConfig) PodMetadata {
+	metadata := PodMetadata{
+		Labels: map[string]string{
+			"netclode.io/session": sessionID,
+		},
+	}
+
+	// Add Kata annotations for custom VM sizing
+	if resources != nil {
+		annotations := make(map[string]string)
+		if resources.VCPUs > 0 {
+			annotations["io.katacontainers.config.hypervisor.default_vcpus"] = fmt.Sprintf("%d", resources.VCPUs)
+		}
+		if resources.MemoryMB > 0 {
+			annotations["io.katacontainers.config.hypervisor.default_memory"] = fmt.Sprintf("%d", resources.MemoryMB)
+		}
+		if len(annotations) > 0 {
+			metadata.Annotations = annotations
+			slog.Info("Setting custom VM resources", "sessionID", sessionID, "vcpus", resources.VCPUs, "memoryMB", resources.MemoryMB)
+		}
+	}
+
+	return metadata
+}
+
+// buildContainerResources creates container resource requests for K8s scheduling.
+// We use requests (NOT limits!) to inform the scheduler while avoiding cgroup throttling.
+func (r *k8sRuntime) buildContainerResources(resources *SandboxResourceConfig) *ContainerResources {
+	if resources == nil {
+		return nil
+	}
+
+	requests := make(map[string]string)
+
+	if resources.VCPUs > 0 {
+		requests["cpu"] = fmt.Sprintf("%d", resources.VCPUs)
+	}
+	if resources.MemoryMB > 0 {
+		requests["memory"] = fmt.Sprintf("%dMi", resources.MemoryMB)
+	}
+
+	if len(requests) == 0 {
+		return nil
+	}
+
+	return &ContainerResources{
+		Requests: requests,
 	}
 }
 

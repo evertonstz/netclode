@@ -21,6 +21,10 @@ type Config struct {
 	UseWarmPool        bool
 	MaxActiveSessions  int
 
+	// Host resource limits for per-session resource validation
+	HostCPUs     int // Total CPUs on the host (for 50% limit validation)
+	HostMemoryMB int // Total memory in MB on the host (for 50% limit validation)
+
 	// Codex OAuth tokens (for ChatGPT auth mode)
 	CodexAccessToken  string
 	CodexIdToken      string
@@ -47,6 +51,8 @@ func Load() *Config {
 		RedisURL:           getEnv("REDIS_URL", "redis://redis-sessions.netclode.svc.cluster.local:6379"),
 		UseWarmPool:        getEnvBool("WARM_POOL_ENABLED", true),
 		MaxActiveSessions:  getEnvInt("MAX_ACTIVE_SESSIONS", 5),
+		HostCPUs:           getEnvInt("HOST_CPUS", 16),         // Default assumes 16-core host
+		HostMemoryMB:       getEnvInt("HOST_MEMORY_MB", 32768), // Default assumes 32GB host
 
 		// Codex OAuth tokens
 		CodexAccessToken:  getEnv("CODEX_ACCESS_TOKEN", ""),
@@ -78,6 +84,16 @@ func getGitHubPrivateKey() string {
 // HasGitHubApp returns true if GitHub App is configured.
 func (c *Config) HasGitHubApp() bool {
 	return c.GitHubAppID > 0 && c.GitHubAppPrivateKey != "" && c.GitHubInstallationID > 0
+}
+
+// MaxSessionCPUs returns the maximum allowed vCPUs per session (50% of host).
+func (c *Config) MaxSessionCPUs() int {
+	return c.HostCPUs / 2
+}
+
+// MaxSessionMemoryMB returns the maximum allowed memory per session in MB (50% of host).
+func (c *Config) MaxSessionMemoryMB() int {
+	return c.HostMemoryMB / 2
 }
 
 func getEnv(key, defaultValue string) string {

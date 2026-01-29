@@ -104,7 +104,7 @@
 - name: Deploy control-plane
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('file', k8s_manifest_dir ~ '/control-plane.yaml') | from_yaml_all }}"
+    definition: "{{ lookup('template', 'control-plane.yaml.j2') | from_yaml_all }}"
     kubeconfig: "{{ k3s_kubeconfig }}"
 
 - name: Deploy control-plane ingress

@@ -891,6 +891,7 @@ type CreateSessionRequest struct {
 	Model          *string                `protobuf:"bytes,7,opt,name=model,proto3,oneof" json:"model,omitempty"`                                                                          // Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
 	CopilotBackend *CopilotBackend        `protobuf:"varint,8,opt,name=copilot_backend,json=copilotBackend,proto3,enum=netclode.v1.CopilotBackend,oneof" json:"copilot_backend,omitempty"` // Backend for Copilot SDK (GitHub or Anthropic)
 	NetworkConfig  *NetworkConfig         `protobuf:"bytes,9,opt,name=network_config,json=networkConfig,proto3,oneof" json:"network_config,omitempty"`                                     // Network configuration (defaults to enabled)
+	Resources      *SandboxResources      `protobuf:"bytes,10,opt,name=resources,proto3,oneof" json:"resources,omitempty"`                                                                 // Custom VM resources (bypasses warm pool if set)
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -984,6 +985,13 @@ func (x *CreateSessionRequest) GetCopilotBackend() CopilotBackend {
 func (x *CreateSessionRequest) GetNetworkConfig() *NetworkConfig {
 	if x != nil {
 		return x.NetworkConfig
+	}
+	return nil
+}
+
+func (x *CreateSessionRequest) GetResources() *SandboxResources {
+	if x != nil {
+		return x.Resources
 	}
 	return nil
 }
@@ -3460,7 +3468,7 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\x13repo_access_updated\x18\x17 \x01(\v2&.netclode.v1.RepoAccessUpdatedResponseH\x00R\x11repoAccessUpdatedB\t\n" +
 	"\amessage\"6\n" +
 	"\rNetworkConfig\x12%\n" +
-	"\x0etailnet_access\x18\x01 \x01(\bR\rtailnetAccess\"\xbd\x04\n" +
+	"\x0etailnet_access\x18\x01 \x01(\bR\rtailnetAccess\"\x8d\x05\n" +
 	"\x14CreateSessionRequest\x12\"\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x17\n" +
@@ -3472,7 +3480,9 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\bsdk_type\x18\x06 \x01(\x0e2\x14.netclode.v1.SdkTypeH\x05R\asdkType\x88\x01\x01\x12\x19\n" +
 	"\x05model\x18\a \x01(\tH\x06R\x05model\x88\x01\x01\x12I\n" +
 	"\x0fcopilot_backend\x18\b \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\aR\x0ecopilotBackend\x88\x01\x01\x12F\n" +
-	"\x0enetwork_config\x18\t \x01(\v2\x1a.netclode.v1.NetworkConfigH\bR\rnetworkConfig\x88\x01\x01B\r\n" +
+	"\x0enetwork_config\x18\t \x01(\v2\x1a.netclode.v1.NetworkConfigH\bR\rnetworkConfig\x88\x01\x01\x12@\n" +
+	"\tresources\x18\n" +
+	" \x01(\v2\x1d.netclode.v1.SandboxResourcesH\tR\tresources\x88\x01\x01B\r\n" +
 	"\v_request_idB\a\n" +
 	"\x05_nameB\a\n" +
 	"\x05_repoB\x0e\n" +
@@ -3481,7 +3491,9 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\t_sdk_typeB\b\n" +
 	"\x06_modelB\x12\n" +
 	"\x10_copilot_backendB\x11\n" +
-	"\x0f_network_config\"H\n" +
+	"\x0f_network_configB\f\n" +
+	"\n" +
+	"_resources\"H\n" +
 	"\x13ListSessionsRequest\x12\"\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01B\r\n" +
@@ -3814,19 +3826,20 @@ var file_netclode_v1_client_proto_goTypes = []any{
 	(RepoAccess)(0),                    // 47: netclode.v1.RepoAccess
 	(SdkType)(0),                       // 48: netclode.v1.SdkType
 	(CopilotBackend)(0),                // 49: netclode.v1.CopilotBackend
-	(*Session)(nil),                    // 50: netclode.v1.Session
-	(*Message)(nil),                    // 51: netclode.v1.Message
-	(*Event)(nil),                      // 52: netclode.v1.Event
-	(*SessionSummary)(nil),             // 53: netclode.v1.SessionSummary
-	(*timestamppb.Timestamp)(nil),      // 54: google.protobuf.Timestamp
-	(*AgentEvent)(nil),                 // 55: netclode.v1.AgentEvent
-	(*GitHubRepo)(nil),                 // 56: netclode.v1.GitHubRepo
-	(*GitFileChange)(nil),              // 57: netclode.v1.GitFileChange
-	(*Error)(nil),                      // 58: netclode.v1.Error
-	(*ModelInfo)(nil),                  // 59: netclode.v1.ModelInfo
-	(*CopilotAuthStatus)(nil),          // 60: netclode.v1.CopilotAuthStatus
-	(*CopilotPremiumQuota)(nil),        // 61: netclode.v1.CopilotPremiumQuota
-	(*Snapshot)(nil),                   // 62: netclode.v1.Snapshot
+	(*SandboxResources)(nil),           // 50: netclode.v1.SandboxResources
+	(*Session)(nil),                    // 51: netclode.v1.Session
+	(*Message)(nil),                    // 52: netclode.v1.Message
+	(*Event)(nil),                      // 53: netclode.v1.Event
+	(*SessionSummary)(nil),             // 54: netclode.v1.SessionSummary
+	(*timestamppb.Timestamp)(nil),      // 55: google.protobuf.Timestamp
+	(*AgentEvent)(nil),                 // 56: netclode.v1.AgentEvent
+	(*GitHubRepo)(nil),                 // 57: netclode.v1.GitHubRepo
+	(*GitFileChange)(nil),              // 58: netclode.v1.GitFileChange
+	(*Error)(nil),                      // 59: netclode.v1.Error
+	(*ModelInfo)(nil),                  // 60: netclode.v1.ModelInfo
+	(*CopilotAuthStatus)(nil),          // 61: netclode.v1.CopilotAuthStatus
+	(*CopilotPremiumQuota)(nil),        // 62: netclode.v1.CopilotPremiumQuota
+	(*Snapshot)(nil),                   // 63: netclode.v1.Snapshot
 }
 var file_netclode_v1_client_proto_depIdxs = []int32{
 	3,  // 0: netclode.v1.ClientMessage.create_session:type_name -> netclode.v1.CreateSessionRequest
@@ -3877,35 +3890,36 @@ var file_netclode_v1_client_proto_depIdxs = []int32{
 	48, // 45: netclode.v1.CreateSessionRequest.sdk_type:type_name -> netclode.v1.SdkType
 	49, // 46: netclode.v1.CreateSessionRequest.copilot_backend:type_name -> netclode.v1.CopilotBackend
 	2,  // 47: netclode.v1.CreateSessionRequest.network_config:type_name -> netclode.v1.NetworkConfig
-	48, // 48: netclode.v1.ListModelsRequest.sdk_type:type_name -> netclode.v1.SdkType
-	49, // 49: netclode.v1.ListModelsRequest.copilot_backend:type_name -> netclode.v1.CopilotBackend
-	47, // 50: netclode.v1.UpdateRepoAccessRequest.repo_access:type_name -> netclode.v1.RepoAccess
-	50, // 51: netclode.v1.SessionCreatedResponse.session:type_name -> netclode.v1.Session
-	50, // 52: netclode.v1.SessionUpdatedResponse.session:type_name -> netclode.v1.Session
-	50, // 53: netclode.v1.SessionListResponse.sessions:type_name -> netclode.v1.Session
-	50, // 54: netclode.v1.SessionStateResponse.session:type_name -> netclode.v1.Session
-	51, // 55: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.Message
-	52, // 56: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.Event
-	53, // 57: netclode.v1.SyncResponse.sessions:type_name -> netclode.v1.SessionSummary
-	54, // 58: netclode.v1.SyncResponse.server_time:type_name -> google.protobuf.Timestamp
-	55, // 59: netclode.v1.AgentEventResponse.event:type_name -> netclode.v1.AgentEvent
-	56, // 60: netclode.v1.GitHubReposResponse.repos:type_name -> netclode.v1.GitHubRepo
-	57, // 61: netclode.v1.GitStatusResponse.files:type_name -> netclode.v1.GitFileChange
-	58, // 62: netclode.v1.ErrorResponse.error:type_name -> netclode.v1.Error
-	59, // 63: netclode.v1.ModelsResponse.models:type_name -> netclode.v1.ModelInfo
-	48, // 64: netclode.v1.ModelsResponse.sdk_type:type_name -> netclode.v1.SdkType
-	60, // 65: netclode.v1.CopilotStatusResponse.auth:type_name -> netclode.v1.CopilotAuthStatus
-	61, // 66: netclode.v1.CopilotStatusResponse.quota:type_name -> netclode.v1.CopilotPremiumQuota
-	62, // 67: netclode.v1.SnapshotCreatedResponse.snapshot:type_name -> netclode.v1.Snapshot
-	62, // 68: netclode.v1.SnapshotListResponse.snapshots:type_name -> netclode.v1.Snapshot
-	47, // 69: netclode.v1.RepoAccessUpdatedResponse.repo_access:type_name -> netclode.v1.RepoAccess
-	0,  // 70: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
-	1,  // 71: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
-	71, // [71:72] is the sub-list for method output_type
-	70, // [70:71] is the sub-list for method input_type
-	70, // [70:70] is the sub-list for extension type_name
-	70, // [70:70] is the sub-list for extension extendee
-	0,  // [0:70] is the sub-list for field type_name
+	50, // 48: netclode.v1.CreateSessionRequest.resources:type_name -> netclode.v1.SandboxResources
+	48, // 49: netclode.v1.ListModelsRequest.sdk_type:type_name -> netclode.v1.SdkType
+	49, // 50: netclode.v1.ListModelsRequest.copilot_backend:type_name -> netclode.v1.CopilotBackend
+	47, // 51: netclode.v1.UpdateRepoAccessRequest.repo_access:type_name -> netclode.v1.RepoAccess
+	51, // 52: netclode.v1.SessionCreatedResponse.session:type_name -> netclode.v1.Session
+	51, // 53: netclode.v1.SessionUpdatedResponse.session:type_name -> netclode.v1.Session
+	51, // 54: netclode.v1.SessionListResponse.sessions:type_name -> netclode.v1.Session
+	51, // 55: netclode.v1.SessionStateResponse.session:type_name -> netclode.v1.Session
+	52, // 56: netclode.v1.SessionStateResponse.messages:type_name -> netclode.v1.Message
+	53, // 57: netclode.v1.SessionStateResponse.events:type_name -> netclode.v1.Event
+	54, // 58: netclode.v1.SyncResponse.sessions:type_name -> netclode.v1.SessionSummary
+	55, // 59: netclode.v1.SyncResponse.server_time:type_name -> google.protobuf.Timestamp
+	56, // 60: netclode.v1.AgentEventResponse.event:type_name -> netclode.v1.AgentEvent
+	57, // 61: netclode.v1.GitHubReposResponse.repos:type_name -> netclode.v1.GitHubRepo
+	58, // 62: netclode.v1.GitStatusResponse.files:type_name -> netclode.v1.GitFileChange
+	59, // 63: netclode.v1.ErrorResponse.error:type_name -> netclode.v1.Error
+	60, // 64: netclode.v1.ModelsResponse.models:type_name -> netclode.v1.ModelInfo
+	48, // 65: netclode.v1.ModelsResponse.sdk_type:type_name -> netclode.v1.SdkType
+	61, // 66: netclode.v1.CopilotStatusResponse.auth:type_name -> netclode.v1.CopilotAuthStatus
+	62, // 67: netclode.v1.CopilotStatusResponse.quota:type_name -> netclode.v1.CopilotPremiumQuota
+	63, // 68: netclode.v1.SnapshotCreatedResponse.snapshot:type_name -> netclode.v1.Snapshot
+	63, // 69: netclode.v1.SnapshotListResponse.snapshots:type_name -> netclode.v1.Snapshot
+	47, // 70: netclode.v1.RepoAccessUpdatedResponse.repo_access:type_name -> netclode.v1.RepoAccess
+	0,  // 71: netclode.v1.ClientService.Connect:input_type -> netclode.v1.ClientMessage
+	1,  // 72: netclode.v1.ClientService.Connect:output_type -> netclode.v1.ServerMessage
+	72, // [72:73] is the sub-list for method output_type
+	71, // [71:72] is the sub-list for method input_type
+	71, // [71:71] is the sub-list for extension type_name
+	71, // [71:71] is the sub-list for extension extendee
+	0,  // [0:71] is the sub-list for field type_name
 }
 
 func init() { file_netclode_v1_client_proto_init() }

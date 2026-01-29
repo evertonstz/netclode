@@ -31,7 +31,9 @@ type CreateSessionOptions struct {
 	Repo          string
 	SdkType       pb.SdkType
 	Model         string
-	TailnetAccess bool // default false
+	TailnetAccess bool  // default false
+	VCPUs         int32 // Custom vCPUs (0 = use default)
+	MemoryMB      int32 // Custom memory in MB (0 = use default)
 }
 
 // CreateSession creates a new session and returns it.
@@ -56,6 +58,13 @@ func (c *Client) CreateSession(ctx context.Context, opts CreateSessionOptions) (
 	if opts.TailnetAccess {
 		req.NetworkConfig = &pb.NetworkConfig{
 			TailnetAccess: opts.TailnetAccess,
+		}
+	}
+	// Set custom resources if specified (bypasses warm pool)
+	if opts.VCPUs > 0 || opts.MemoryMB > 0 {
+		req.Resources = &pb.SandboxResources{
+			Vcpus:    opts.VCPUs,
+			MemoryMb: opts.MemoryMB,
 		}
 	}
 

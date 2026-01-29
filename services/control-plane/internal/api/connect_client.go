@@ -316,6 +316,7 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 	var modelPtr *string
 	var copilotBackendPtr *pb.CopilotBackend
 	var tailnetAccessPtr *bool
+	var resourcesPtr *pb.SandboxResources
 
 	if req.Repo != nil {
 		repoPtr = req.Repo
@@ -335,13 +336,16 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 	if req.NetworkConfig != nil {
 		tailnetAccessPtr = &req.NetworkConfig.TailnetAccess
 	}
+	if req.Resources != nil {
+		resourcesPtr = req.Resources
+	}
 
 	name := ""
 	if req.Name != nil {
 		name = *req.Name
 	}
 
-	sess, err := c.manager.Create(ctx, name, repoPtr, repoAccessPtr, sdkTypePtr, modelPtr, copilotBackendPtr, tailnetAccessPtr)
+	sess, err := c.manager.Create(ctx, name, repoPtr, repoAccessPtr, sdkTypePtr, modelPtr, copilotBackendPtr, tailnetAccessPtr, resourcesPtr)
 	if err != nil {
 		return err
 	}

@@ -65,7 +65,9 @@ var (
 	createSdkType string
 	createModel   string
 
-	createTailnet bool
+	createTailnet  bool
+	createVCPUs    int32
+	createMemoryMB int32
 )
 
 func init() {
@@ -82,6 +84,8 @@ func init() {
 	sessionsCreateCmd.Flags().StringVar(&createSdkType, "sdk", "claude", "SDK type (claude, opencode, copilot, or codex)")
 	sessionsCreateCmd.Flags().StringVar(&createModel, "model", "", "Model ID for OpenCode (e.g., anthropic/claude-sonnet-4-0)")
 	sessionsCreateCmd.Flags().BoolVar(&createTailnet, "tailnet", false, "Enable Tailnet access (allow 100.64.0.0/10)")
+	sessionsCreateCmd.Flags().Int32Var(&createVCPUs, "vcpus", 0, "Custom vCPUs for VM (bypasses warm pool, max 50% of host)")
+	sessionsCreateCmd.Flags().Int32Var(&createMemoryMB, "memory-mb", 0, "Custom memory in MB for VM (bypasses warm pool, max 50% of host)")
 }
 
 func runSessionsList(cmd *cobra.Command, args []string) error {
@@ -257,6 +261,8 @@ func runSessionsCreate(cmd *cobra.Command, args []string) error {
 		SdkType:       sdkType,
 		Model:         createModel,
 		TailnetAccess: createTailnet,
+		VCPUs:         createVCPUs,
+		MemoryMB:      createMemoryMB,
 	}
 
 	session, err := c.CreateSession(ctx, opts)

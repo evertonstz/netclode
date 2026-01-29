@@ -10,7 +10,8 @@ import (
 // Runtime defines the interface for Kubernetes operations.
 type Runtime interface {
 	// Direct Sandbox operations (legacy mode)
-	CreateSandbox(ctx context.Context, sessionID string, env map[string]string) error
+	// resources is optional - if nil, uses global defaults from Kata config
+	CreateSandbox(ctx context.Context, sessionID string, env map[string]string, resources *SandboxResourceConfig) error
 	WaitForReady(ctx context.Context, sessionID string, timeout time.Duration) (serviceFQDN string, err error)
 	WatchSandboxReady(sessionID string, callback SandboxReadyCallback)
 	GetStatus(ctx context.Context, sessionID string) (*SandboxStatusInfo, error)

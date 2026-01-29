@@ -95,6 +95,7 @@ message CreateSessionRequest {
   optional string model = 7;                 // Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
   optional CopilotBackend copilot_backend = 8;  // Backend for Copilot SDK (GitHub or Anthropic)
   optional NetworkConfig network_config = 9;   // Network configuration (defaults to enabled)
+  optional SandboxResources resources = 10;    // Custom VM resources (bypasses warm pool if set)
 }
 
 message ListSessionsRequest {
