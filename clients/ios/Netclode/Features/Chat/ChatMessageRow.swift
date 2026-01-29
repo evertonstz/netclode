@@ -22,10 +22,7 @@ struct ChatMessageRow: View {
                     MessageContent(content: message.content, isStreaming: isStreaming)
                 }
 
-                if isStreaming {
-                    ProgressView()
-                        .scaleEffect(0.6)
-                }
+
             }
 
             // Duration indicator for completed assistant messages
