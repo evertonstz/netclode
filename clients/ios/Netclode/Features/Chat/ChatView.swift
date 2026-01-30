@@ -122,6 +122,7 @@ struct ChatView: View {
     /// Unified timeline combining messages and events, sorted by timestamp
     private func computeTimeline() -> [TimelineItem] {
         var items: [TimelineItem] = []
+        let repoOrder = repoOrderMap()
 
         // Add messages with turn duration calculation
         var precedingUserTimestamp: Date?
@@ -162,7 +163,41 @@ struct ChatView: View {
         }
 
         // Sort by timestamp - each text block is a separate message with its own timestamp
-        return items.sorted { $0.timestamp < $1.timestamp }
+        // For repo clone events, preserve the session repo order to avoid surprising reordering.
+        return items.sorted { lhs, rhs in
+            if case .event(let lhsGrouped) = lhs,
+               case .event(let rhsGrouped) = rhs,
+               case .repoClone(let lhsRepo) = lhsGrouped.event,
+               case .repoClone(let rhsRepo) = rhsGrouped.event {
+                let lhsIndex = repoOrder[normalizeRepoName(lhsRepo.repo)] ?? Int.max
+                let rhsIndex = repoOrder[normalizeRepoName(rhsRepo.repo)] ?? Int.max
+                if lhsIndex != rhsIndex {
+                    return lhsIndex < rhsIndex
+                }
+            }
+            return lhs.timestamp < rhs.timestamp
+        }
+    }
+
+    private func repoOrderMap() -> [String: Int] {
+        guard let repos = session?.repos, !repos.isEmpty else { return [:] }
+        var map: [String: Int] = [:]
+        for (index, repo) in repos.enumerated() {
+            let normalized = normalizeRepoName(repo)
+            if map[normalized] == nil {
+                map[normalized] = index
+            }
+        }
+        return map
+    }
+
+    /// Normalizes repo strings to "owner/repo" for comparison.
+    private func normalizeRepoName(_ repo: String) -> String {
+        if let range = repo.range(of: "github.com/") {
+            let afterGithub = String(repo[range.upperBound...])
+            return afterGithub.replacingOccurrences(of: ".git", with: "")
+        }
+        return repo.replacingOccurrences(of: ".git", with: "")
     }
 
     var body: some View {
