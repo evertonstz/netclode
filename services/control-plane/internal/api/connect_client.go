@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"strings"
@@ -84,6 +85,7 @@ type ConnectConnection struct {
 
 	// For graceful shutdown
 	done    chan struct{}
+	closed  bool // true when connection is closed, protected by writeMu
 	writeMu sync.Mutex
 }
 
@@ -218,11 +220,19 @@ func (c *ConnectConnection) handleMessage(ctx context.Context, msg *pb.ClientMes
 func (c *ConnectConnection) send(msg *pb.ServerMessage) error {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
+	if c.closed {
+		return fmt.Errorf("connection closed")
+	}
 	return c.stream.Send(msg)
 }
 
 // close closes the connection and cancels all subscriptions.
 func (c *ConnectConnection) close() {
+	// Mark as closed first to prevent new sends
+	c.writeMu.Lock()
+	c.closed = true
+	c.writeMu.Unlock()
+
 	select {
 	case <-c.done:
 		return
