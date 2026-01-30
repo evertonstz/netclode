@@ -72,6 +72,7 @@ struct ChatView: View {
     @State private var lastThinkingContentLength: Int = 0
     @State private var lastToolInputContentLength: Int = 0
     @State private var lastProcessingState: Bool = false
+    @State private var lastRepoOrderSignature: String = ""
     
     // Status pill visibility
     @State private var showStatusPill = false
@@ -97,6 +98,10 @@ struct ChatView: View {
     
     var session: Session? {
         sessionStore.sessions.first { $0.id == sessionId }
+    }
+    
+    private var sessionReposSignature: String {
+        session?.repos.joined(separator: "|") ?? ""
     }
 
     /// Total content length of all thinking events (to detect streaming updates)
@@ -233,6 +238,9 @@ struct ChatView: View {
                     withAnimation(.glassSpring) {
                         proxy.scrollTo("bottom", anchor: .bottom)
                     }
+                }
+                .onChange(of: sessionReposSignature) {
+                    updateTimelineIfNeeded()
                 }
                 .onChange(of: toolInputContentLength) {
                     updateTimelineIfNeeded()
@@ -552,6 +560,7 @@ struct ChatView: View {
         let currentThinkingLength = thinkingContentLength
         let currentToolInputLength = toolInputContentLength
         let currentProcessing = isProcessing
+        let currentRepoOrderSignature = sessionReposSignature
         
         let messageCountChanged = messages.count != cachedTimeline.filter {
             if case .message = $0 { return true }
@@ -565,9 +574,10 @@ struct ChatView: View {
         let thinkingLengthChanged = currentThinkingLength != lastThinkingContentLength
         let toolInputLengthChanged = currentToolInputLength != lastToolInputContentLength
         let processingStateChanged = currentProcessing != lastProcessingState
+        let repoOrderChanged = currentRepoOrderSignature != lastRepoOrderSignature
         
         let dataChanged = messageCountChanged || eventCountChanged || contentLengthChanged
-            || thinkingLengthChanged || toolInputLengthChanged || processingStateChanged
+            || thinkingLengthChanged || toolInputLengthChanged || processingStateChanged || repoOrderChanged
 
         guard dataChanged else { return }
 
@@ -575,6 +585,7 @@ struct ChatView: View {
         lastThinkingContentLength = currentThinkingLength
         lastToolInputContentLength = currentToolInputLength
         lastProcessingState = currentProcessing
+        lastRepoOrderSignature = currentRepoOrderSignature
         cachedTimeline = computeTimeline()
     }
     
