@@ -8,23 +8,26 @@ struct DiffView: View {
     let newString: String
     let language: String?
     let maxLines: Int
+    let showStats: Bool
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var isFullyExpanded = false
 
-    init(oldString: String, newString: String, language: String? = nil, maxLines: Int = 20) {
+    init(oldString: String, newString: String, language: String? = nil, maxLines: Int = 20, showStats: Bool = true) {
         self.oldString = oldString
         self.newString = newString
         self.language = language
         self.maxLines = maxLines
+        self.showStats = showStats
     }
 
     /// Initialize with a file path for automatic language detection
-    init(oldString: String, newString: String, filePath: String?, maxLines: Int = 20) {
+    init(oldString: String, newString: String, filePath: String?, maxLines: Int = 20, showStats: Bool = true) {
         self.oldString = oldString
         self.newString = newString
         self.language = filePath.flatMap { LanguageDetector.language(for: $0) }
         self.maxLines = maxLines
+        self.showStats = showStats
     }
 
     private var diffResult: DiffResult {
@@ -44,9 +47,26 @@ struct DiffView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            // Diff stats header (optional)
+            if showStats {
+                HStack(spacing: Theme.Spacing.xs) {
+                    if diffResult.stats.additions > 0 {
+                        Text("+\(diffResult.stats.additions)")
+                            .font(.system(size: TypeScale.caption, weight: .medium, design: .monospaced))
+                            .foregroundStyle(DiffColors.additionText)
+                    }
+                    if diffResult.stats.deletions > 0 {
+                        Text("-\(diffResult.stats.deletions)")
+                            .font(.system(size: TypeScale.caption, weight: .medium, design: .monospaced))
+                            .foregroundStyle(DiffColors.deletionText)
+                    }
+                }
+                .padding(.bottom, Theme.Spacing.xxs)
+            }
+
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(displayedLines) { line in
-                    DiffLineView(line: line, language: language, colorScheme: colorScheme)
+                    DiffLineView(line: line, showLineNumbers: true, language: language, colorScheme: colorScheme)
                 }
             }
             .font(.system(size: 12, design: .monospaced))

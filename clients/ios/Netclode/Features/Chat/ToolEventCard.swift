@@ -68,6 +68,15 @@ struct ToolEventCard: View {
         return input["description"]?.stringValue
     }
 
+    /// For Edit tools, compute diff stats from old/new strings
+    private var editDiffStats: DiffStats? {
+        guard toolName.lowercased() == "edit", let input = toolInput else { return nil }
+        guard let oldString = input["old_string"]?.stringValue,
+              let newString = input["new_string"]?.stringValue else { return nil }
+        let result = DiffEngine.computeDiff(old: oldString, new: newString)
+        return result.stats
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header row
@@ -115,6 +124,21 @@ struct ToolEventCard: View {
                         Text(duration)
                             .font(.system(size: TypeScale.micro, weight: .medium, design: .monospaced))
                             .foregroundStyle(.tertiary)
+                    }
+
+                    // Diff stats for Edit tool (when expanded)
+                    if isExpanded, toolName.lowercased() == "edit", let stats = editDiffStats {
+                        HStack(spacing: 2) {
+                            if stats.additions > 0 {
+                                Text("+\(stats.additions)")
+                                    .foregroundStyle(DiffColors.additionText)
+                            }
+                            if stats.deletions > 0 {
+                                Text("-\(stats.deletions)")
+                                    .foregroundStyle(DiffColors.deletionText)
+                            }
+                        }
+                        .font(.system(size: TypeScale.micro, weight: .medium, design: .monospaced))
                     }
 
                     // Status indicator
@@ -445,10 +469,10 @@ private struct EditToolDiffSection: View {
                         .truncationMode(.middle)
                 }
             }
-            
+
             // Diff view with syntax highlighting based on file extension
             if let oldString = oldString, let newString = newString {
-                DiffView(oldString: oldString, newString: newString, filePath: filePath)
+                DiffView(oldString: oldString, newString: newString, filePath: filePath, showStats: false)
             } else if let oldString = oldString {
                 // Only old string (deletion)
                 VStack(alignment: .leading, spacing: 0) {
