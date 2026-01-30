@@ -91,6 +91,11 @@ spec:
                   name: netclode-secrets
                   key: mistral-api-key
                   optional: true
+            # Ollama local inference (optional - only set if ollama_enabled)
+{% if ollama_enabled | default(false) %}
+            - name: OLLAMA_URL
+              value: "http://ollama.netclode.svc.cluster.local:11434"
+{% endif %}
             - name: REDIS_URL
               value: "redis://redis-sessions.netclode.svc.cluster.local:6379"
             - name: WARM_POOL_ENABLED
