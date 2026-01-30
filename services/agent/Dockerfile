@@ -145,6 +145,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends unzip && \
 #
 # OpenCode checks if node_modules exists in its config dir before running bun add.
 # By pre-creating this directory with the plugin installed, we skip the ~4s install.
+# Note: @opencode-ai/plugin@1.1.45 has broken workspace references, so we use 1.1.44 as fallback
 RUN OPENCODE_VERSION=$(/usr/local/bin/opencode --version) && \
     export HOME=/opt/bun-cache-home && \
     mkdir -p $HOME/.bun && \
@@ -153,8 +154,8 @@ RUN OPENCODE_VERSION=$(/usr/local/bin/opencode --version) && \
     if /opt/bun add "@opencode-ai/plugin@${OPENCODE_VERSION}" "@opencode-ai/sdk@${OPENCODE_VERSION}" "zod" --exact; then \
       echo "Preinstalled OpenCode plugin ${OPENCODE_VERSION}"; \
     else \
-      echo "Warning: OpenCode plugin ${OPENCODE_VERSION} not found, falling back to latest"; \
-      /opt/bun add "@opencode-ai/plugin@latest" "@opencode-ai/sdk@latest" "zod"; \
+      echo "Warning: OpenCode plugin ${OPENCODE_VERSION} not found, falling back to 1.1.44"; \
+      /opt/bun add "@opencode-ai/plugin@1.1.44" "@opencode-ai/sdk@1.1.44" "zod@4.1.8" --exact; \
     fi && \
     if [ -d "$HOME/.bun" ]; then mv $HOME/.bun /opt/bun-cache; fi && \
     rm -rf $HOME
