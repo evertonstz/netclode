@@ -149,6 +149,7 @@ RUN OPENCODE_VERSION=$(/usr/local/bin/opencode --version) && \
     export HOME=/opt/bun-cache-home && \
     mkdir -p $HOME/.bun && \
     mkdir -p /opt/opencode-config && cd /opt/opencode-config && \
+    echo '{"name": "opencode-config", "private": true}' > package.json && \
     if /opt/bun add "@opencode-ai/plugin@${OPENCODE_VERSION}" "@opencode-ai/sdk@${OPENCODE_VERSION}" "zod" --exact; then \
       echo "Preinstalled OpenCode plugin ${OPENCODE_VERSION}"; \
     else \
