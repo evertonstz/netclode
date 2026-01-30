@@ -46,47 +46,89 @@
 # NVIDIA Driver Installation
 # =============================================================================
 
-- name: Check if nvidia-smi works
-  ansible.builtin.command: nvidia-smi
-  register: nvidia_smi_check
+- name: Check if nvidia kernel module is loaded and working
+  ansible.builtin.shell: |
+    modprobe nvidia 2>/dev/null || true
+    cat /proc/driver/nvidia/version 2>/dev/null | grep -oP 'NVRM version: NVIDIA UNIX.*\K[0-9]+\.[0-9]+\.[0-9]+' | head -1
+  register: nvidia_module_version
   failed_when: false
   changed_when: false
 
-- name: Check installed driver version
-  ansible.builtin.shell: nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -1
-  register: installed_driver_version
-  when: nvidia_smi_check.rc == 0
+- name: Check if nvidia-smi binary exists
+  ansible.builtin.stat:
+    path: /usr/bin/nvidia-smi
+  register: nvidia_smi_binary
+
+- name: Check nvidia-smi version if it exists
+  ansible.builtin.shell: nvidia-smi --version 2>/dev/null | grep -oP 'NVIDIA-SMI \K[0-9]+\.[0-9]+\.[0-9]+'
+  register: nvidia_smi_version
+  when: nvidia_smi_binary.stat.exists
+  failed_when: false
   changed_when: false
 
-- name: Set driver_needs_install fact
+- name: Set driver facts
   ansible.builtin.set_fact:
-    driver_needs_install: "{{ nvidia_smi_check.rc != 0 or (installed_driver_version.stdout | default('') | trim) != nvidia_driver_version }}"
+    nvidia_module_working: "{{ nvidia_module_version.rc == 0 and nvidia_module_version.stdout | length > 0 }}"
+    nvidia_smi_working: "{{ nvidia_smi_binary.stat.exists and nvidia_smi_version.rc == 0 }}"
+    driver_version_current: "{{ nvidia_module_version.stdout | default('none') | trim }}"
+    smi_version_current: "{{ nvidia_smi_version.stdout | default('none') | trim }}"
 
 - name: Display driver status
   ansible.builtin.debug:
     msg: |
-      Current driver: {{ installed_driver_version.stdout | default('not installed') | trim }}
-      Target driver: {{ nvidia_driver_version }}
-      Needs install: {{ driver_needs_install }}
+      Kernel module version: {{ driver_version_current }}
+      nvidia-smi version: {{ smi_version_current }}
+      Module working: {{ nvidia_module_working }}
+      nvidia-smi working: {{ nvidia_smi_working }}
+
+# =============================================================================
+# Install nvidia-smi if missing (Debian package issue workaround)
+# =============================================================================
+
+- name: Download NVIDIA driver for nvidia-smi extraction
+  ansible.builtin.get_url:
+    url: "{{ nvidia_driver_url }}"
+    dest: /tmp/NVIDIA-driver.run
+    mode: "0755"
+  when: nvidia_module_working and not nvidia_smi_working
+
+- name: Extract nvidia-smi from installer
+  ansible.builtin.shell: |
+    cd /tmp
+    ./NVIDIA-driver.run --extract-only
+    cp NVIDIA-Linux-x86_64-{{ nvidia_driver_version }}/nvidia-smi /usr/bin/
+    chmod +x /usr/bin/nvidia-smi
+    rm -rf NVIDIA-Linux-x86_64-{{ nvidia_driver_version }}
+  when: nvidia_module_working and not nvidia_smi_working
+
+- name: Clean up driver installer after extraction
+  ansible.builtin.file:
+    path: /tmp/NVIDIA-driver.run
+    state: absent
+  when: nvidia_module_working and not nvidia_smi_working
+
+# =============================================================================
+# Full driver installation (only if module not working)
+# =============================================================================
 
 - name: Install driver build dependencies
   ansible.builtin.apt:
     name:
       - build-essential
-      - linux-headers-{{ ansible_kernel }}
+      - linux-headers-{{ ansible_facts['kernel'] }}
       - pkg-config
       - libglvnd-dev
       - dkms
     state: present
     update_cache: yes
-  when: driver_needs_install
+  when: not nvidia_module_working
 
 - name: Download NVIDIA driver
   ansible.builtin.get_url:
     url: "{{ nvidia_driver_url }}"
     dest: /tmp/NVIDIA-driver.run
     mode: "0755"
-  when: driver_needs_install
+  when: not nvidia_module_working
 
 - name: Stop display manager if running
   ansible.builtin.systemd:
@@ -97,14 +139,14 @@
     - lightdm
     - sddm
   failed_when: false
-  when: driver_needs_install
+  when: not nvidia_module_working
 
 - name: Unload nouveau driver
   community.general.modprobe:
     name: nouveau
     state: absent
   failed_when: false
-  when: driver_needs_install
+  when: not nvidia_module_working
 
 - name: Install NVIDIA driver
   ansible.builtin.command: >
@@ -113,7 +155,7 @@
     --dkms
     --no-questions
     --ui=none
-  when: driver_needs_install
+  when: not nvidia_module_working
   register: driver_install
 
 - name: Load nvidia kernel modules
@@ -124,15 +166,19 @@
     - nvidia
     - nvidia_uvm
     - nvidia_modeset
-  when: driver_needs_install
+  when: not nvidia_module_working
 
 - name: Clean up driver installer
   ansible.builtin.file:
     path: /tmp/NVIDIA-driver.run
     state: absent
-  when: driver_needs_install
+  when: not nvidia_module_working
 
-- name: Verify driver installation
+# =============================================================================
+# Verify driver is working
+# =============================================================================
+
+- name: Verify nvidia-smi works
   ansible.builtin.command: nvidia-smi
   register: nvidia_smi_verify
   changed_when: false
@@ -179,52 +225,110 @@
 # Configure K3s containerd for NVIDIA runtime
 # =============================================================================
 
-- name: Create containerd config directory
+- name: Symlink K3s runc to system PATH for nvidia-container-runtime
   ansible.builtin.file:
-    path: "{{ k3s_containerd_config | dirname }}"
-    state: directory
-    mode: "0755"
+    src: /var/lib/rancher/k3s/data/current/bin/runc
+    dest: /usr/local/bin/runc
+    state: link
+    force: yes
 
-- name: Configure containerd with nvidia runtime
-  ansible.builtin.template:
-    src: containerd-config.toml.j2
-    dest: "{{ k3s_containerd_config }}"
-    mode: "0644"
-  notify: Restart k3s
-
-- name: Flush handlers to restart k3s
-  ansible.builtin.meta: flush_handlers
-
-- name: Wait for k3s to be ready
-  ansible.builtin.command: kubectl get nodes
-  environment:
-    KUBECONFIG: "{{ k3s_kubeconfig }}"
-  register: k3s_ready
-  until: k3s_ready.rc == 0
-  retries: 30
-  delay: 5
-  changed_when: false
+# NOTE: GPU Operator's toolkit DaemonSet will handle containerd configuration
+# We keep our template for reference but GPU Operator will manage the runtime config
 
 # =============================================================================
-# NVIDIA Device Plugin for Kubernetes
+# NVIDIA GPU Operator
 # =============================================================================
 
-- name: Deploy NVIDIA Device Plugin
-  kubernetes.core.k8s:
-    state: present
-    src: "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/{{ nvidia_device_plugin_version }}/deployments/static/nvidia-device-plugin.yml"
+- name: Add NVIDIA Helm repository
+  kubernetes.core.helm_repository:
+    name: nvidia
+    repo_url: https://helm.ngc.nvidia.com/nvidia
+
+- name: Deploy NVIDIA GPU Operator
+  kubernetes.core.helm:
+    name: gpu-operator
+    chart_ref: nvidia/gpu-operator
+    release_namespace: gpu-operator
+    create_namespace: yes
     kubeconfig: "{{ k3s_kubeconfig }}"
+    values:
+      # Use pre-installed driver on host
+      driver:
+        enabled: false
 
-- name: Wait for device plugin to be ready
+      # Enable toolkit to configure containerd
+      toolkit:
+        enabled: true
+        env:
+          - name: CONTAINERD_CONFIG
+            value: /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
+          - name: CONTAINERD_SOCKET
+            value: /run/k3s/containerd/containerd.sock
+          - name: CONTAINERD_RUNTIME_CLASS
+            value: nvidia
+          - name: CONTAINERD_SET_AS_DEFAULT
+            value: "false"
+
+      # Operator configuration
+      operator:
+        # Use runc runtime for operator pods (not nvidia)
+        # to avoid chicken-and-egg NVML initialization issue where
+        # nvidia runtime tries to initialize NVML before GPU access is available
+        runtimeClass: "runc"
+
+      # Validator configuration
+      validator:
+        # Disable validator since it fails with pre-installed drivers
+        # (can't find nvidia-smi when running with runc runtime)
+        enabled: false
+
+      # Enable device plugin
+      devicePlugin:
+        enabled: true
+
+      # Disable components we don't need
+      migManager:
+        enabled: false
+      gfd:
+        enabled: true
+      dcgm:
+        enabled: false
+      dcgmExporter:
+        enabled: false
+
+      # Node feature discovery (required for GPU node labeling)
+      nfd:
+        enabled: true
+
+- name: Wait for GPU Operator toolkit to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: DaemonSet
+    name: nvidia-container-toolkit-daemonset
+    namespace: gpu-operator
+    kubeconfig: "{{ k3s_kubeconfig }}"
+  register: toolkit_status
+  until: toolkit_status.resources[0].status.numberReady | default(0) > 0
+  retries: 60
+  delay: 10
+
+- name: Create toolkit-ready validation file
+  ansible.builtin.copy:
+    content: "TOOLKIT_READY=true\n"
+    dest: /run/nvidia/validations/toolkit-ready
+    mode: "0644"
+  when: toolkit_status.resources[0].status.numberReady | default(0) > 0
+
+- name: Wait for GPU Operator device plugin to be ready
   kubernetes.core.k8s_info:
     api_version: apps/v1
     kind: DaemonSet
     name: nvidia-device-plugin-daemonset
-    namespace: kube-system
+    namespace: gpu-operator
     kubeconfig: "{{ k3s_kubeconfig }}"
-  register: device_plugin
-  until: device_plugin.resources[0].status.numberReady | default(0) > 0
-  retries: 30
+  register: device_plugin_status
+  until: device_plugin_status.resources[0].status.numberReady | default(0) > 0
+  retries: 60
   delay: 10
 
 - name: Verify GPU is visible to Kubernetes

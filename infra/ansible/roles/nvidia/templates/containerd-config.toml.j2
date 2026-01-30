@@ -2,29 +2,27 @@
 # This file extends K3s default containerd config
 #
 # K3s uses config.toml.tmpl as a template that gets merged with defaults.
-# We add the nvidia runtime configuration here.
-
-version = 2
 
 [plugins."io.containerd.grpc.v1.cri".containerd]
-  default_runtime_name = "runc"
+  default_runtime_name = "kata-clh"
 
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-  runtime_type = "io.containerd.runc.v2"
-
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-  SystemdCgroup = true
-
-# NVIDIA runtime configuration
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
-  runtime_type = "io.containerd.runc.v2"
-  privileged_without_host_devices = false
-
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
-  BinaryName = "/usr/bin/nvidia-container-runtime"
-  SystemdCgroup = true
-
-# Kata runtime configuration (preserve existing setup)
+# Kata Cloud Hypervisor runtime (for sandboxed agents)
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata-clh]
   runtime_type = "io.containerd.kata-clh.v2"
   privileged_without_host_devices = true
+
+# Kata runtime alias for backwards compatibility
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]
+  runtime_type = "io.containerd.kata-clh.v2"
+  privileged_without_host_devices = true
+
+# NVIDIA runtime configuration (for Ollama GPU workloads)
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+  runtime_type = "io.containerd.runc.v2"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+  BinaryName = "/usr/bin/nvidia-container-runtime"
+
+# Regular containerd runtime (non-isolated)
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  runtime_type = "io.containerd.runc.v2"

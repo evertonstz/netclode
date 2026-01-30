@@ -8,11 +8,8 @@ nvidia_enabled: "{{ lookup('env', 'NVIDIA_ENABLED') | default('true', true) | bo
 nvidia_driver_version: "570.86.16"
 nvidia_driver_url: "https://us.download.nvidia.com/XFree86/Linux-x86_64/{{ nvidia_driver_version }}/NVIDIA-Linux-x86_64-{{ nvidia_driver_version }}.run"
 
-# Container toolkit
-nvidia_container_toolkit_version: ""  # Empty = latest
-
 # K3s containerd config path
 k3s_containerd_config: /var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl
 
-# Device plugin version
-nvidia_device_plugin_version: "v0.17.0"
+# GPU Operator
+gpu_operator_version: ""  # Empty = latest from Helm repo

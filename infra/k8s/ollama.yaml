@@ -53,22 +53,12 @@ spec:
     spec:
       # Use regular runtime (not Kata) for GPU access
       # GPU passthrough to Kata VMs requires VFIO which is complex
-      runtimeClassName: ""  # Default containerd runtime
+      runtimeClassName: runc
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
-        fsGroup: 1000
-      initContainers:
-        # Fix permissions on the models volume for non-root user
-        - name: fix-permissions
-          image: busybox:1.37
-          command: ["sh", "-c", "chown -R 1000:1000 /models"]
-          securityContext:
-            runAsUser: 0  # Need root to chown
-          volumeMounts:
-            - name: models
-              mountPath: /models
+        fsGroup: 1000  # This handles permissions for volumes
       containers:
         - name: ollama
           image: ollama/ollama:0.15.2
