@@ -350,11 +350,11 @@ private struct DiffStatsView: View {
     // Simulate some files with diff stats
     Task { @MainActor in
         gitStore.setFiles([
-            GitFileChange(path: "src/App.swift", status: .modified, staged: false, linesAdded: 15, linesRemoved: 8),
-            GitFileChange(path: "src/Models/User.swift", status: .added, staged: false, linesAdded: 104, linesRemoved: 0),
-            GitFileChange(path: "README.md", status: .modified, staged: true, linesAdded: 28, linesRemoved: 5),
-            GitFileChange(path: "old-file.txt", status: .deleted, staged: false, linesAdded: 0, linesRemoved: 2131),
-            GitFileChange(path: "new-feature.swift", status: .untracked, staged: false, linesAdded: 208, linesRemoved: 0),
+            GitFileChange(path: "repo-one/src/App.swift", status: .modified, staged: false, linesAdded: 15, linesRemoved: 8, repo: "repo-one"),
+            GitFileChange(path: "repo-one/src/Models/User.swift", status: .added, staged: false, linesAdded: 104, linesRemoved: 0, repo: "repo-one"),
+            GitFileChange(path: "repo-two/README.md", status: .modified, staged: true, linesAdded: 28, linesRemoved: 5, repo: "repo-two"),
+            GitFileChange(path: "repo-two/old-file.txt", status: .deleted, staged: false, linesAdded: 0, linesRemoved: 2131, repo: "repo-two"),
+            GitFileChange(path: "repo-two/new-feature.swift", status: .untracked, staged: false, linesAdded: 208, linesRemoved: 0, repo: "repo-two"),
         ], for: "preview-session")
     }
     

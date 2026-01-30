@@ -104,7 +104,7 @@ Snapshots use the Kubernetes VolumeSnapshot API with the JuiceFS CSI driver:
 - **Fast**: VolumeSnapshots are typically metadata-only operations
 - **Space-efficient**: Storage only grows when files diverge (copy-on-write)
 - **Full state**: Captures the entire `/agent` directory including:
-  - `/agent/workspace` - the code/repo
+  - `/agent/workspace` - the code/repos
   - `/agent/.claude` - Claude SDK session data
   - `/agent/.session-mapping.json` - SDK session mapping
   - `/agent/.local` - mise/tool data

@@ -68,7 +68,7 @@ public enum Netclode_V1_SdkType: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
   case unspecified // = 0
 
-  /// Anthropic Claude Code SDK
+  /// Anthropic Claude Agent SDK
   case claude // = 1
 
   /// OpenCode SDK (multi-provider)
@@ -295,14 +295,7 @@ public struct Netclode_V1_Session: Sendable {
 
   public var status: Netclode_V1_SessionStatus = .unspecified
 
-  public var repo: String {
-    get {return _repo ?? String()}
-    set {_repo = newValue}
-  }
-  /// Returns true if `repo` has been explicitly set.
-  public var hasRepo: Bool {return self._repo != nil}
-  /// Clears the value of `repo`. Subsequent reads from it will return its default value.
-  public mutating func clearRepo() {self._repo = nil}
+  public var repos: [String] = []
 
   public var repoAccess: Netclode_V1_RepoAccess {
     get {return _repoAccess ?? .unspecified}
@@ -362,7 +355,6 @@ public struct Netclode_V1_Session: Sendable {
 
   public init() {}
 
-  fileprivate var _repo: String? = nil
   fileprivate var _repoAccess: Netclode_V1_RepoAccess? = nil
   fileprivate var _createdAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
   fileprivate var _lastActiveAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
@@ -439,14 +431,10 @@ public struct Netclode_V1_SessionConfig: @unchecked Sendable {
   /// Clears the value of `githubToken`. Subsequent reads from it will return its default value.
   public mutating func clearGithubToken() {_uniqueStorage()._githubToken = nil}
 
-  public var repo: String {
-    get {return _storage._repo ?? String()}
-    set {_uniqueStorage()._repo = newValue}
+  public var repos: [String] {
+    get {return _storage._repos}
+    set {_uniqueStorage()._repos = newValue}
   }
-  /// Returns true if `repo` has been explicitly set.
-  public var hasRepo: Bool {return _storage._repo != nil}
-  /// Clears the value of `repo`. Subsequent reads from it will return its default value.
-  public mutating func clearRepo() {_uniqueStorage()._repo = nil}
 
   public var repoAccess: Netclode_V1_RepoAccess {
     get {return _storage._repoAccess ?? .unspecified}
@@ -823,6 +811,8 @@ public struct Netclode_V1_GitFileChange: Sendable {
   /// Clears the value of `linesRemoved`. Subsequent reads from it will return its default value.
   public mutating func clearLinesRemoved() {self._linesRemoved = nil}
 
+  public var repo: String = String()
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -1004,7 +994,7 @@ extension Netclode_V1_GitFileStatus: SwiftProtobuf._ProtoNameProviding {
 
 extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Session"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}status\0\u{1}repo\0\u{3}repo_access\0\u{3}created_at\0\u{3}last_active_at\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}status\0\u{1}repos\0\u{3}repo_access\0\u{3}created_at\0\u{3}last_active_at\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1015,7 +1005,7 @@ extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
       case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
       case 3: try { try decoder.decodeSingularEnumField(value: &self.status) }()
-      case 4: try { try decoder.decodeSingularStringField(value: &self._repo) }()
+      case 4: try { try decoder.decodeRepeatedStringField(value: &self.repos) }()
       case 5: try { try decoder.decodeSingularEnumField(value: &self._repoAccess) }()
       case 6: try { try decoder.decodeSingularMessageField(value: &self._createdAt) }()
       case 7: try { try decoder.decodeSingularMessageField(value: &self._lastActiveAt) }()
@@ -1041,9 +1031,9 @@ extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     if self.status != .unspecified {
       try visitor.visitSingularEnumField(value: self.status, fieldNumber: 3)
     }
-    try { if let v = self._repo {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
-    } }()
+    if !self.repos.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.repos, fieldNumber: 4)
+    }
     try { if let v = self._repoAccess {
       try visitor.visitSingularEnumField(value: v, fieldNumber: 5)
     } }()
@@ -1069,7 +1059,7 @@ extension Netclode_V1_Session: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
     if lhs.id != rhs.id {return false}
     if lhs.name != rhs.name {return false}
     if lhs.status != rhs.status {return false}
-    if lhs._repo != rhs._repo {return false}
+    if lhs.repos != rhs.repos {return false}
     if lhs._repoAccess != rhs._repoAccess {return false}
     if lhs._createdAt != rhs._createdAt {return false}
     if lhs._lastActiveAt != rhs._lastActiveAt {return false}
@@ -1127,13 +1117,13 @@ extension Netclode_V1_SessionSummary: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SessionConfig"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repo\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}github_copilot_token\0\u{3}codex_access_token\0\u{3}codex_id_token\0\u{3}openai_api_key\0\u{3}codex_refresh_token\0\u{3}reasoning_effort\0\u{3}mistral_api_key\0\u{3}ollama_url\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{3}workspace_dir\0\u{3}github_token\0\u{1}repos\0\u{3}repo_access\0\u{3}control_plane_url\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}github_copilot_token\0\u{3}codex_access_token\0\u{3}codex_id_token\0\u{3}openai_api_key\0\u{3}codex_refresh_token\0\u{3}reasoning_effort\0\u{3}mistral_api_key\0\u{3}ollama_url\0")
 
   fileprivate class _StorageClass {
     var _sessionID: String = String()
     var _workspaceDir: String = String()
     var _githubToken: String? = nil
-    var _repo: String? = nil
+    var _repos: [String] = []
     var _repoAccess: Netclode_V1_RepoAccess? = nil
     var _controlPlaneURL: String = String()
     var _sdkType: Netclode_V1_SdkType? = nil
@@ -1160,7 +1150,7 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
       _sessionID = source._sessionID
       _workspaceDir = source._workspaceDir
       _githubToken = source._githubToken
-      _repo = source._repo
+      _repos = source._repos
       _repoAccess = source._repoAccess
       _controlPlaneURL = source._controlPlaneURL
       _sdkType = source._sdkType
@@ -1195,7 +1185,7 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
         case 1: try { try decoder.decodeSingularStringField(value: &_storage._sessionID) }()
         case 2: try { try decoder.decodeSingularStringField(value: &_storage._workspaceDir) }()
         case 3: try { try decoder.decodeSingularStringField(value: &_storage._githubToken) }()
-        case 4: try { try decoder.decodeSingularStringField(value: &_storage._repo) }()
+        case 4: try { try decoder.decodeRepeatedStringField(value: &_storage._repos) }()
         case 5: try { try decoder.decodeSingularEnumField(value: &_storage._repoAccess) }()
         case 6: try { try decoder.decodeSingularStringField(value: &_storage._controlPlaneURL) }()
         case 7: try { try decoder.decodeSingularEnumField(value: &_storage._sdkType) }()
@@ -1230,9 +1220,9 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
       try { if let v = _storage._githubToken {
         try visitor.visitSingularStringField(value: v, fieldNumber: 3)
       } }()
-      try { if let v = _storage._repo {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 4)
-      } }()
+      if !_storage._repos.isEmpty {
+        try visitor.visitRepeatedStringField(value: _storage._repos, fieldNumber: 4)
+      }
       try { if let v = _storage._repoAccess {
         try visitor.visitSingularEnumField(value: v, fieldNumber: 5)
       } }()
@@ -1284,7 +1274,7 @@ extension Netclode_V1_SessionConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
         if _storage._sessionID != rhs_storage._sessionID {return false}
         if _storage._workspaceDir != rhs_storage._workspaceDir {return false}
         if _storage._githubToken != rhs_storage._githubToken {return false}
-        if _storage._repo != rhs_storage._repo {return false}
+        if _storage._repos != rhs_storage._repos {return false}
         if _storage._repoAccess != rhs_storage._repoAccess {return false}
         if _storage._controlPlaneURL != rhs_storage._controlPlaneURL {return false}
         if _storage._sdkType != rhs_storage._sdkType {return false}
@@ -1702,7 +1692,7 @@ extension Netclode_V1_GitHubRepo: SwiftProtobuf.Message, SwiftProtobuf._MessageI
 
 extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GitFileChange"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}status\0\u{1}staged\0\u{3}lines_added\0\u{3}lines_removed\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}path\0\u{1}status\0\u{1}staged\0\u{3}lines_added\0\u{3}lines_removed\0\u{1}repo\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1715,6 +1705,7 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 3: try { try decoder.decodeSingularBoolField(value: &self.staged) }()
       case 4: try { try decoder.decodeSingularInt32Field(value: &self._linesAdded) }()
       case 5: try { try decoder.decodeSingularInt32Field(value: &self._linesRemoved) }()
+      case 6: try { try decoder.decodeSingularStringField(value: &self.repo) }()
       default: break
       }
     }
@@ -1740,6 +1731,9 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
     try { if let v = self._linesRemoved {
       try visitor.visitSingularInt32Field(value: v, fieldNumber: 5)
     } }()
+    if !self.repo.isEmpty {
+      try visitor.visitSingularStringField(value: self.repo, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1749,6 +1743,7 @@ extension Netclode_V1_GitFileChange: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs.staged != rhs.staged {return false}
     if lhs._linesAdded != rhs._linesAdded {return false}
     if lhs._linesRemoved != rhs._linesRemoved {return false}
+    if lhs.repo != rhs.repo {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

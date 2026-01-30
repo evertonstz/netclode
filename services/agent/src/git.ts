@@ -12,6 +12,19 @@ const stageToProto: Record<string, string> = {
   error: "REPO_CLONE_STAGE_ERROR",
 };
 
+export function repoDirName(repoUrl: string): string {
+  let cleaned = repoUrl.trim();
+  cleaned = cleaned.replace(/^https?:\/\//, "");
+  cleaned = cleaned.replace(/^github\.com\//, "");
+  cleaned = cleaned.replace(/\.git$/, "");
+
+  const parts = cleaned.split("/").filter(Boolean);
+  let name = parts.length >= 2 ? `${parts[parts.length - 2]}__${parts[parts.length - 1]}` : parts[0] || cleaned;
+
+  name = name.replace(/[^A-Za-z0-9_.-]+/g, "_");
+  return name;
+}
+
 interface CloneEventInput {
   repo: string;
   stage: "starting" | "cloning" | "done" | "error";
@@ -254,11 +267,14 @@ export async function getGitStatus(workspaceDir: string): Promise<GitFileChange[
  * Get the git diff for a workspace or specific file.
  * For untracked files, generates a synthetic diff showing all lines as additions.
  */
-export async function getGitDiff(workspaceDir: string, file?: string): Promise<string> {
+export async function getGitDiff(workspaceDir: string, file?: string, pathPrefix?: string): Promise<string> {
   console.log(`[git] Getting git diff for: ${file || "all files"}`);
 
   // First, try regular git diff
   const args = ["diff", "--no-color"];
+  if (pathPrefix) {
+    args.push(`--src-prefix=${pathPrefix}/`, `--dst-prefix=${pathPrefix}/`);
+  }
   if (file) {
     args.push("--", file);
   }
@@ -278,7 +294,7 @@ export async function getGitDiff(workspaceDir: string, file?: string): Promise<s
     // Check if file is untracked (??) or added (A )
     if (statusLine.startsWith("??") || statusLine.startsWith("A ")) {
       console.log(`[git] File is untracked/new, generating synthetic diff for: ${file}`);
-      return generateSyntheticDiff(workspaceDir, file);
+      return generateSyntheticDiff(workspaceDir, file, pathPrefix);
     }
   }
 
@@ -290,8 +306,9 @@ export async function getGitDiff(workspaceDir: string, file?: string): Promise<s
  * Generate a synthetic unified diff for a new/untracked file.
  * Shows all lines as additions.
  */
-function generateSyntheticDiff(workspaceDir: string, file: string): string {
+function generateSyntheticDiff(workspaceDir: string, file: string, pathPrefix?: string): string {
   const filePath = join(workspaceDir, file);
+  const prefixedFile = pathPrefix ? `${pathPrefix}/${file}` : file;
 
   if (!existsSync(filePath)) {
     console.log(`[git] File does not exist: ${filePath}`);
@@ -304,10 +321,10 @@ function generateSyntheticDiff(workspaceDir: string, file: string): string {
 
     // Build unified diff format
     const diffLines: string[] = [
-      `diff --git a/${file} b/${file}`,
+      `diff --git a/${prefixedFile} b/${prefixedFile}`,
       `new file mode 100644`,
       `--- /dev/null`,
-      `+++ b/${file}`,
+      `+++ b/${prefixedFile}`,
       `@@ -0,0 +1,${lines.length} @@`,
     ];
 
@@ -327,7 +344,7 @@ function generateSyntheticDiff(workspaceDir: string, file: string): string {
 
 export async function setupRepository(
   repoUrl: string,
-  workspaceDir: string,
+  repoDir: string,
   sessionId: string,
   githubToken?: string
 ): Promise<void> {
@@ -339,7 +356,7 @@ export async function setupRepository(
     await configureGitCredentials(githubToken);
   }
 
-  const gitDir = `${workspaceDir}/.git`;
+  const gitDir = `${repoDir}/.git`;
   const isExistingRepo = existsSync(gitDir);
 
   if (isExistingRepo) {
@@ -351,9 +368,9 @@ export async function setupRepository(
     });
 
     console.log("[git] Repository already exists, pulling latest changes...");
-    await runGit(["config", "--add", "safe.directory", workspaceDir], workspaceDir);
+    await runGit(["config", "--add", "safe.directory", repoDir], repoDir);
 
-    const result = await runGit(["pull", "--ff-only"], workspaceDir);
+    const result = await runGit(["pull", "--ff-only"], repoDir);
 
     if (result.code === 0) {
       await reportEvent(sessionId, {
@@ -379,10 +396,10 @@ export async function setupRepository(
     });
 
     console.log("[git] Cloning repository...");
-    const result = await runGit(["clone", "--progress", repoUrl, workspaceDir]);
+    const result = await runGit(["clone", "--progress", repoUrl, repoDir]);
 
     if (result.code === 0) {
-      await runGit(["config", "--add", "safe.directory", workspaceDir], workspaceDir);
+      await runGit(["config", "--add", "safe.directory", repoDir], repoDir);
 
       await reportEvent(sessionId, {
         repo: repoUrl,

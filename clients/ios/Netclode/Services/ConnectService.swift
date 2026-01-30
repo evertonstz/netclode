@@ -555,7 +555,7 @@ final class ConnectService {
             id: proto.id,
             name: proto.name,
             status: convertSessionStatus(proto.status),
-            repo: proto.hasRepo ? proto.repo : nil,
+            repos: proto.repos,
             repoAccess: proto.hasRepoAccess ? convertRepoAccess(proto.repoAccess) : nil,
             createdAt: proto.createdAt.date,
             lastActiveAt: proto.lastActiveAt.date,
@@ -631,7 +631,7 @@ final class ConnectService {
             id: session.id,
             name: session.name,
             status: convertSessionStatus(session.status).rawValue,
-            repo: session.hasRepo ? session.repo : nil,
+            repos: session.repos,
             repoAccess: session.hasRepoAccess ? convertRepoAccess(session.repoAccess) : nil,
             createdAt: session.createdAt.date,
             lastActiveAt: session.lastActiveAt.date,
@@ -1057,7 +1057,8 @@ final class ConnectService {
             status: convertGitFileStatus(proto.status),
             staged: proto.staged,
             linesAdded: proto.hasLinesAdded ? Int(proto.linesAdded) : nil,
-            linesRemoved: proto.hasLinesRemoved ? Int(proto.linesRemoved) : nil
+            linesRemoved: proto.hasLinesRemoved ? Int(proto.linesRemoved) : nil,
+            repo: proto.repo
         )
     }
     
@@ -1267,15 +1268,15 @@ final class ConnectService {
         case .sync:
             proto.message = .sync(Netclode_V1_SyncRequest())
             
-        case .sessionCreate(let name, let repo, let repoAccess, let initialPrompt, let sdkType, let model, let copilotBackend, let networkConfig, let resources):
+        case .sessionCreate(let name, let repos, let repoAccess, let initialPrompt, let sdkType, let model, let copilotBackend, let networkConfig, let resources):
             var req = Netclode_V1_CreateSessionRequest()
             if let name = name {
                 req.name = name
             }
-            if let repo = repo {
-                req.repo = repo
+            if let repos = repos, !repos.isEmpty {
+                req.repos = repos
             }
-            if let repoAccess = repoAccess {
+            if let repoAccess = repoAccess, let repos = repos, !repos.isEmpty {
                 req.repoAccess = convertToProtoRepoAccess(repoAccess)
             }
             if let initialPrompt = initialPrompt {

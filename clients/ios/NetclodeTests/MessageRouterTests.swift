@@ -32,6 +32,7 @@ final class MessageRouterTests: XCTestCase {
             id: "sess-1",
             name: "New Session",
             status: .ready,
+            repos: [],
             createdAt: Date(),
             lastActiveAt: Date()
         )
@@ -42,6 +43,7 @@ final class MessageRouterTests: XCTestCase {
             id: "sess-1",
             name: "Auto-Generated Title",
             status: .running,
+            repos: [],
             createdAt: initialSession.createdAt,
             lastActiveAt: Date()
         )
@@ -69,6 +71,7 @@ final class MessageRouterTests: XCTestCase {
             id: "unknown",
             name: "Unknown Session",
             status: .ready,
+            repos: [],
             createdAt: Date(),
             lastActiveAt: Date()
         )
@@ -94,6 +97,7 @@ final class MessageRouterTests: XCTestCase {
             id: "sess-new",
             name: "New Session",
             status: .ready,
+            repos: [],
             createdAt: Date(),
             lastActiveAt: Date()
         )
@@ -126,6 +130,7 @@ final class MessageRouterTests: XCTestCase {
             id: "sess-del",
             name: "To Delete",
             status: .ready,
+            repos: [],
             createdAt: Date(),
             lastActiveAt: Date()
         )

@@ -6,7 +6,7 @@ describe("prompt session initialization logic", () => {
     it("should initialize when sessionId and config are provided", () => {
       const sessionId = "test-session-123";
       const config: PromptConfig = {
-        repo: "https://github.com/owner/repo.git",
+        repos: ["https://github.com/owner/repo.git"],
         githubToken: "test-token",
       };
 
@@ -18,7 +18,7 @@ describe("prompt session initialization logic", () => {
     it("should NOT initialize when sessionId is empty string (the bug we fixed)", () => {
       const sessionId = "";
       const config: PromptConfig = {
-        repo: "https://github.com/owner/repo.git",
+        repos: ["https://github.com/owner/repo.git"],
       };
 
       // When sessionId is empty (falsy), the initialization block should be skipped
@@ -31,7 +31,7 @@ describe("prompt session initialization logic", () => {
     it("should initialize when sessionId is non-empty", () => {
       const sessionId = "test-session-456";
       const config: PromptConfig = {
-        repo: "https://github.com/owner/repo.git",
+        repos: ["https://github.com/owner/repo.git"],
       };
 
       // When sessionId is non-empty, the initialization block should run
@@ -51,40 +51,36 @@ describe("prompt session initialization logic", () => {
   describe("repo clone conditions", () => {
     it("should clone repo when repo is provided in config", () => {
       const config: PromptConfig = {
-        repo: "https://github.com/owner/repo.git",
+        repos: ["https://github.com/owner/repo.git"],
       };
 
-      // The condition in prompt.ts: if (currentGitRepo)
-      // where currentGitRepo = config.repo || null
-      const currentGitRepo = config.repo || null;
-      expect(Boolean(currentGitRepo)).toBe(true);
+      const currentGitRepos = config.repos ?? [];
+      expect(currentGitRepos.length > 0).toBe(true);
     });
 
     it("should NOT clone repo when repo is not in config", () => {
       const config: PromptConfig = {};
 
-      // When repo is not in config, currentGitRepo will be null
-      // and the if (currentGitRepo) check will fail
-      const currentGitRepo = config.repo || null;
-      expect(Boolean(currentGitRepo)).toBe(false);
+      const currentGitRepos = config.repos ?? [];
+      expect(currentGitRepos.length > 0).toBe(false);
     });
 
     it("should NOT clone repo when repo is undefined", () => {
       const config: PromptConfig = {
-        repo: undefined,
+        repos: undefined,
       };
 
-      const currentGitRepo = config.repo || null;
-      expect(Boolean(currentGitRepo)).toBe(false);
+      const currentGitRepos = config.repos ?? [];
+      expect(currentGitRepos.length > 0).toBe(false);
     });
 
     it("should NOT clone repo when repo is empty string", () => {
       const config: PromptConfig = {
-        repo: "",
+        repos: [""],
       };
 
-      const currentGitRepo = config.repo || null;
-      expect(Boolean(currentGitRepo)).toBe(false);
+      const currentGitRepos = (config.repos ?? []).filter(Boolean);
+      expect(currentGitRepos.length > 0).toBe(false);
     });
   });
 });

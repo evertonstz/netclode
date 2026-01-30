@@ -90,7 +90,7 @@ message NetworkConfig {
 message CreateSessionRequest {
   optional string request_id = 1;            // Client-generated ID for request correlation
   optional string name = 2;                  // Initial session name
-  optional string repo = 3;                  // GitHub repository to clone (e.g., "owner/repo")
+  repeated string repos = 3;                 // GitHub repositories to clone (e.g., "owner/repo")
   optional RepoAccess repo_access = 4;       // Permission level for repository
   optional string initial_prompt = 5;        // Optional prompt to send immediately after creation
   optional SdkType sdk_type = 6;             // SDK to use (defaults to CLAUDE)

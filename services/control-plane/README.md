@@ -58,7 +58,7 @@ rpc Connect(stream ClientMessage) returns (stream ServerMessage);
 
 | Message Type | Fields | Description |
 |--------------|--------|-------------|
-| `create_session` | `name`, `repo?`, `repo_access?`, `network_config?` | Create session ([network options](../../docs/network-access.md)) |
+| `create_session` | `name`, `repos?`, `repo_access?`, `network_config?` | Create session ([network options](../../docs/network-access.md)) |
 | `list_sessions` | | List sessions |
 | `open_session` | `session_id`, `last_stream_id?` | Open with history |
 | `resume_session` | `session_id` | Resume paused |
@@ -280,7 +280,7 @@ When `WARM_POOL_ENABLED=true`, the control plane creates `SandboxClaim` resource
 
 Pre-booted VMs are already running and have their JuiceFS PVC mounted, so session start is nearly instant (~1s vs ~30s cold start).
 
-Since warm pool pods are created before we know which session they'll serve, they can't receive per-session env vars at boot. Instead, the agent calls `GET /internal/session-config?pod=<podName>` to fetch its configuration (session ID, API key, git repo) after startup.
+Since warm pool pods are created before we know which session they'll serve, they can't receive per-session env vars at boot. Instead, the agent calls `GET /internal/session-config?pod=<podName>` to fetch its configuration (session ID, API key, git repos) after startup.
 
 ## Development
 

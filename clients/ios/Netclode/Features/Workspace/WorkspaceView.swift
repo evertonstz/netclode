@@ -95,8 +95,13 @@ struct WorkspaceView: View {
                         Section {
                             Label(session.status.displayName, systemImage: session.status.systemImage)
                             
-                            if let repo = session.repo {
-                                Label(repo.replacingOccurrences(of: "https://github.com/", with: ""), systemImage: "arrow.triangle.branch")
+                            if !session.repos.isEmpty {
+                                let displayRepos = session.repos.map {
+                                    $0.replacingOccurrences(of: "https://github.com/", with: "")
+                                        .replacingOccurrences(of: ".git", with: "")
+                                }
+                                let summary = displayRepos.count > 1 ? "\(displayRepos[0]) (+\(displayRepos.count - 1))" : displayRepos[0]
+                                Label(summary, systemImage: "arrow.triangle.branch")
                             }
                             
                             Label(session.createdAt.formatted(.relative(presentation: .named)), systemImage: "clock")
@@ -112,8 +117,8 @@ struct WorkspaceView: View {
                         
                         Divider()
                         
-                        // Repo access picker (only show if session has a repo)
-                        if session.repo != nil {
+                        // Repo access picker (only show if session has repos)
+                        if !session.repos.isEmpty {
                             Menu {
                                 ForEach(RepoAccess.allCases, id: \.self) { access in
                                     Button {

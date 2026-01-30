@@ -42,7 +42,7 @@ enum SessionStatus: String, Codable, CaseIterable, Sendable {
 }
 
 /// Repository access level for GitHub integration.
-/// Only applies when a repo is selected. Write access is scoped to the selected repo only.
+/// Only applies when repos are selected. Write access is scoped to the selected repos only.
 enum RepoAccess: String, Codable, CaseIterable, Sendable {
     case read
     case write
@@ -56,8 +56,8 @@ enum RepoAccess: String, Codable, CaseIterable, Sendable {
 
     var description: String {
         switch self {
-        case .read: "Token scoped to this repo"
-        case .write: "Token scoped to this repo"
+        case .read: "Token scoped to selected repos"
+        case .write: "Token scoped to selected repos"
         }
     }
 
@@ -119,7 +119,7 @@ struct Session: Identifiable, Codable, Hashable, Sendable {
     let id: String
     var name: String
     var status: SessionStatus
-    var repo: String?
+    var repos: [String]
     var repoAccess: RepoAccess?
     let createdAt: Date
     var lastActiveAt: Date
@@ -140,15 +140,15 @@ extension Session {
         id: "abc123def456",
         name: "My Project",
         status: .ready,
-        repo: "https://github.com/user/repo",
+        repos: ["https://github.com/user/repo"],
         createdAt: Date().addingTimeInterval(-3600),
         lastActiveAt: Date()
     )
 
     static let previewList: [Session] = [
-        Session(id: "sess1", name: "Frontend Refactor", status: .running, createdAt: Date().addingTimeInterval(-7200), lastActiveAt: Date()),
-        Session(id: "sess2", name: "API Integration", status: .ready, createdAt: Date().addingTimeInterval(-86400), lastActiveAt: Date().addingTimeInterval(-3600)),
-        Session(id: "sess3", name: "Bug Fix #42", status: .paused, createdAt: Date().addingTimeInterval(-172800), lastActiveAt: Date().addingTimeInterval(-43200)),
-        Session(id: "sess4", name: "New Feature", status: .creating, createdAt: Date(), lastActiveAt: Date()),
+        Session(id: "sess1", name: "Frontend Refactor", status: .running, repos: [], createdAt: Date().addingTimeInterval(-7200), lastActiveAt: Date()),
+        Session(id: "sess2", name: "API Integration", status: .ready, repos: [], createdAt: Date().addingTimeInterval(-86400), lastActiveAt: Date().addingTimeInterval(-3600)),
+        Session(id: "sess3", name: "Bug Fix #42", status: .paused, repos: [], createdAt: Date().addingTimeInterval(-172800), lastActiveAt: Date().addingTimeInterval(-43200)),
+        Session(id: "sess4", name: "New Feature", status: .creating, repos: [], createdAt: Date(), lastActiveAt: Date()),
     ]
 }

@@ -1,13 +1,13 @@
 # GitHub Integration
 
-Netclode provides secure repository access using a GitHub App that generates per-repo scoped tokens on demand. This approach provides the best security by limiting token scope to only the repository being accessed.
+Netclode provides secure repository access using a GitHub App that generates per-repo scoped tokens on demand. This approach provides the best security by limiting token scope to only the repositories being accessed.
 
 ## Overview
 
-When you create a session with a repository:
-1. User selects a repository and access level (read or write)
-2. Control-plane generates a token scoped to **only that repository** via GitHub App
-3. The sandbox clones the repository on startup using that token
+When you create a session with repositories:
+1. User selects one or more repositories and an access level (read or write)
+2. Control-plane generates a token scoped to **only those repositories** via GitHub App
+3. The sandbox clones the repositories on startup using that token
 4. The agent can push commits back to GitHub (if write access is granted)
 5. Access level can be changed mid-session if needed
 
@@ -19,7 +19,7 @@ When you create a session with a repository:
 | Yes | **Read** (default) | GitHub App token (`contents:read`) | Clone only |
 | Yes | **Write** | GitHub App token (`contents:write`) | Clone and push |
 
-**Key point**: Write access is always scoped to the selected repository only. You cannot accidentally push to other repos.
+**Key point**: Write access is always scoped to the selected repositories only. You cannot accidentally push to other repos.
 
 ## Setup
 
@@ -90,27 +90,27 @@ make rollout-control-plane
 
 ## Usage
 
-### Creating a Session with a Repository
+### Creating a Session with Repositories
 
-When creating a session via Connect protocol, include the `repo` and `repo_access` fields:
+When creating a session via Connect protocol, include the `repos` and `repo_access` fields:
 
 ```json
 {
   "type": "session.create",
   "name": "my-feature",
-  "repo": "owner/repo",
+  "repos": ["owner/repo", "owner/other"],
   "repoAccess": "write"
 }
 ```
 
 | Field | Values | Default |
 |-------|--------|---------|
-| `repo` | Repository in `owner/repo` format or full URL | - |
+| `repos` | Repositories in `owner/repo` format or full URL | - |
 | `repoAccess` | `read`, `write` | `read` |
 
 ### Repository URL Formats
 
-The following formats are supported for the `repo` field:
+The following formats are supported for each entry in `repos`:
 
 - `owner/repo` - Short format (recommended)
 - `https://github.com/owner/repo` - Full HTTPS URL
@@ -144,7 +144,7 @@ This is useful when you start a session with read-only access and later decide y
 
 ### Clone Progress Events
 
-When a session starts with a repository, the agent broadcasts progress events:
+When a session starts with repositories, the agent broadcasts progress events:
 
 ```json
 {
@@ -163,7 +163,7 @@ When a session starts with a repository, the agent broadcasts progress events:
 Possible stages:
 - `starting` - Clone is beginning
 - `done` - Clone completed successfully
-- `error` - Clone failed (agent continues without repo)
+- `error` - Clone failed (agent continues without repos)
 
 ## Architecture
 
@@ -172,7 +172,7 @@ Possible stages:
 │     Client      │────▶│  Control Plane   │
 │                 │     │                  │
 │ session.create  │     │ 1. Generate repo-│
-│ {repo, access}  │     │    scoped token  │
+│ {repos, access} │     │    scoped token  │
 └─────────────────┘     │    via GitHub App│
                         └────────┬─────────┘
                                  │
@@ -181,7 +181,7 @@ Possible stages:
                         │   Sandbox Pod    │
                         │                  │
                         │ GITHUB_TOKEN env │
-                        │ GIT_REPO env     │
+                        │ GIT_REPOS env    │
                         │                  │
                         │ entrypoint.sh:   │
                         │ - Configure creds│
@@ -207,7 +207,7 @@ Possible stages:
 
 GitHub App installation tokens:
 - Expire after **1 hour** by default
-- Are scoped to **only the requested repository**
+- Are scoped to **only the requested repositories**
 - Have **only the requested permissions** (read or write)
 
 If a token expires during a long session, the agent may need to request a new token. The control-plane handles this automatically when credentials are updated.
@@ -249,7 +249,7 @@ To fix:
 
 ## Security Considerations
 
-1. **Per-Repo Scoping**: Each token is scoped to only the specific repository being accessed. A token for `owner/repo-a` cannot access `owner/repo-b`.
+1. **Per-Repo Scoping**: Each token is scoped to only the specific repositories being accessed. A token for `owner/repo-a` cannot access `owner/repo-b`.
 
 2. **Minimal Permissions**: Tokens request only the permissions needed (read or write), not full access.
 

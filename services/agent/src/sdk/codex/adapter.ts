@@ -20,7 +20,7 @@
 import { Codex, type Thread, type ThreadEvent, type ModelReasoningEffort } from "@openai/codex-sdk";
 import type { SDKAdapter, SDKConfig, PromptConfig, PromptEvent } from "../types.js";
 import { isSessionInitialized, markSessionInitialized } from "../../services/session.js";
-import { setupRepository } from "../../git.js";
+import { repoDirName, setupRepository } from "../../git.js";
 import {
   createTranslatorState,
   resetTranslatorState,
@@ -45,6 +45,7 @@ export class CodexAdapter implements SDKAdapter {
   private thread: Thread | null = null;
   private interruptSignal = false;
   private currentGitRepo: string | null = null;
+  private currentGitRepos: string[] = [];
   private currentGithubToken: string | null = null;
   private translatorState: TranslatorState = createTranslatorState();
 
@@ -162,30 +163,31 @@ export class CodexAdapter implements SDKAdapter {
       if (!isSessionInitialized(sessionId)) {
         console.log(`[codex-adapter] Initializing session ${sessionId}`);
 
-        this.currentGitRepo = promptConfig.repo || null;
+        this.currentGitRepos = promptConfig.repos?.filter(Boolean) ?? [];
+        this.currentGitRepo = this.currentGitRepos[0] || null;
         this.currentGithubToken = promptConfig.githubToken || null;
 
-        if (this.currentGitRepo) {
-          yield { type: "repoClone", stage: "cloning", repo: this.currentGitRepo, message: "Cloning repository..." };
+        for (const repo of this.currentGitRepos) {
+          yield { type: "repoClone", stage: "cloning", repo, message: "Cloning repository..." };
 
           try {
             await setupRepository(
-              this.currentGitRepo,
-              WORKSPACE_DIR,
+              repo,
+              `${WORKSPACE_DIR}/${repoDirName(repo)}`,
               sessionId,
               this.currentGithubToken || undefined
             );
             yield {
               type: "repoClone",
               stage: "done",
-              repo: this.currentGitRepo,
+              repo,
               message: "Repository cloned successfully",
             };
           } catch (error) {
             yield {
               type: "repoClone",
               stage: "error",
-              repo: this.currentGitRepo,
+              repo,
               message: `Failed to clone: ${error instanceof Error ? error.message : String(error)}`,
             };
           }

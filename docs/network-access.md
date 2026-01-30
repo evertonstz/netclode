@@ -18,8 +18,10 @@ Agent sandboxes have:
 When creating a session with `--tailnet`, the sandbox can reach services on your Tailscale network:
 
 ```bash
-netclode sessions create --repo owner/repo --tailnet
+netclode sessions create --repo owner/repo --repo owner/other --tailnet
 ```
+
+Repeat `--repo` to clone multiple repositories into the same session.
 
 **Allowed:**
 - Tailscale CGNAT range (100.64.0.0/10)

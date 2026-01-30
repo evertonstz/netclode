@@ -251,6 +251,8 @@ netclode sessions create --repo owner/repo --sdk copilot --model claude-sonnet-4
 netclode sessions create --repo owner/repo --sdk codex --model codex-mini-latest
 ```
 
+Use `--repo` multiple times to clone multiple repositories in a single session.
+
 ## Environment Variables Reference
 
 | Variable | SDK | Description |

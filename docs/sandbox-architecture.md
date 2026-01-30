@@ -184,7 +184,7 @@ Since warm pool pods start before session assignment, they can't receive per-ses
 GET /internal/session-config?pod=<podName>
 ```
 
-Returns session ID, API keys, repo URL, etc.
+Returns session ID, API keys, repo URLs (if any), etc.
 
 ## Custom Resources
 
@@ -268,7 +268,7 @@ Sandboxes cannot:
 Enable with `--tailnet` flag when creating a session:
 
 ```bash
-netclode sessions create --repo owner/repo --tailnet
+netclode sessions create --repo owner/repo --repo owner/other --tailnet
 ```
 
 This allows the sandbox to reach other devices on your Tailscale network.

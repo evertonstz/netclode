@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/internal/config"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func setupTestRedis(t *testing.T) (*miniredis.Miniredis, *RedisStorage) {
@@ -33,6 +35,50 @@ func setupTestRedis(t *testing.T) (*miniredis.Miniredis, *RedisStorage) {
 	}
 
 	return mr, storage
+}
+
+func TestSaveSessionReposAndAccess(t *testing.T) {
+	mr, storage := setupTestRedis(t)
+	defer mr.Close()
+	defer storage.Close()
+
+	ctx := context.Background()
+	repoAccess := pb.RepoAccess_REPO_ACCESS_WRITE
+	now := timestamppb.Now()
+
+	session := &pb.Session{
+		Id:           "test-session-repos",
+		Name:         "Repo Session",
+		Status:       pb.SessionStatus_SESSION_STATUS_READY,
+		Repos:        []string{"https://github.com/owner/repo.git", "https://github.com/owner/another.git"},
+		RepoAccess:   &repoAccess,
+		CreatedAt:    now,
+		LastActiveAt: now,
+	}
+
+	if err := storage.SaveSession(ctx, session); err != nil {
+		t.Fatalf("failed to save session: %v", err)
+	}
+
+	loaded, err := storage.GetSession(ctx, session.Id)
+	if err != nil {
+		t.Fatalf("failed to get session: %v", err)
+	}
+	if loaded == nil {
+		t.Fatalf("expected session, got nil")
+	}
+
+	if len(loaded.Repos) != len(session.Repos) {
+		t.Fatalf("expected %d repos, got %d", len(session.Repos), len(loaded.Repos))
+	}
+	for i, repo := range session.Repos {
+		if loaded.Repos[i] != repo {
+			t.Fatalf("expected repo %q, got %q", repo, loaded.Repos[i])
+		}
+	}
+	if loaded.RepoAccess == nil || *loaded.RepoAccess != repoAccess {
+		t.Fatalf("expected repo access %v, got %v", repoAccess, loaded.RepoAccess)
+	}
 }
 
 func TestAppendStreamEntry(t *testing.T) {

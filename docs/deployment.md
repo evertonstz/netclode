@@ -121,7 +121,7 @@ curl http://netclode/health
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key |
 | `SESSION_ID` | Session identifier |
-| `GIT_REPO` | Optional repo to clone |
+| `GIT_REPOS` | Optional JSON array of repos to clone (URL or `owner/repo`) |
 
 ## Troubleshooting
 

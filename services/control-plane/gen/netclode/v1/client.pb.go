@@ -856,7 +856,7 @@ type CreateSessionRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	RequestId      *string                `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3,oneof" json:"request_id,omitempty"`                                                 // Client-generated ID for request correlation
 	Name           *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`                                                                            // Initial session name
-	Repo           *string                `protobuf:"bytes,3,opt,name=repo,proto3,oneof" json:"repo,omitempty"`                                                                            // GitHub repository to clone (e.g., "owner/repo")
+	Repos          []string               `protobuf:"bytes,3,rep,name=repos,proto3" json:"repos,omitempty"`                                                                                // GitHub repositories to clone (e.g., "owner/repo")
 	RepoAccess     *RepoAccess            `protobuf:"varint,4,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"`                 // Permission level for repository
 	InitialPrompt  *string                `protobuf:"bytes,5,opt,name=initial_prompt,json=initialPrompt,proto3,oneof" json:"initial_prompt,omitempty"`                                     // Optional prompt to send immediately after creation
 	SdkType        *SdkType               `protobuf:"varint,6,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`                             // SDK to use (defaults to CLAUDE)
@@ -912,11 +912,11 @@ func (x *CreateSessionRequest) GetName() string {
 	return ""
 }
 
-func (x *CreateSessionRequest) GetRepo() string {
-	if x != nil && x.Repo != nil {
-		return *x.Repo
+func (x *CreateSessionRequest) GetRepos() []string {
+	if x != nil {
+		return x.Repos
 	}
-	return ""
+	return nil
 }
 
 func (x *CreateSessionRequest) GetRepoAccess() RepoAccess {
@@ -3343,24 +3343,23 @@ const file_netclode_v1_client_proto_rawDesc = "" +
 	"\x0fresource_limits\x18\x18 \x01(\v2#.netclode.v1.ResourceLimitsResponseH\x00R\x0eresourceLimitsB\t\n" +
 	"\amessage\"6\n" +
 	"\rNetworkConfig\x12%\n" +
-	"\x0etailnet_access\x18\x01 \x01(\bR\rtailnetAccess\"\x8d\x05\n" +
+	"\x0etailnet_access\x18\x01 \x01(\bR\rtailnetAccess\"\x81\x05\n" +
 	"\x14CreateSessionRequest\x12\"\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tH\x00R\trequestId\x88\x01\x01\x12\x17\n" +
-	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x17\n" +
-	"\x04repo\x18\x03 \x01(\tH\x02R\x04repo\x88\x01\x01\x12=\n" +
-	"\vrepo_access\x18\x04 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x03R\n" +
+	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x14\n" +
+	"\x05repos\x18\x03 \x03(\tR\x05repos\x12=\n" +
+	"\vrepo_access\x18\x04 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x02R\n" +
 	"repoAccess\x88\x01\x01\x12*\n" +
-	"\x0einitial_prompt\x18\x05 \x01(\tH\x04R\rinitialPrompt\x88\x01\x01\x124\n" +
-	"\bsdk_type\x18\x06 \x01(\x0e2\x14.netclode.v1.SdkTypeH\x05R\asdkType\x88\x01\x01\x12\x19\n" +
-	"\x05model\x18\a \x01(\tH\x06R\x05model\x88\x01\x01\x12I\n" +
-	"\x0fcopilot_backend\x18\b \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\aR\x0ecopilotBackend\x88\x01\x01\x12F\n" +
-	"\x0enetwork_config\x18\t \x01(\v2\x1a.netclode.v1.NetworkConfigH\bR\rnetworkConfig\x88\x01\x01\x12@\n" +
+	"\x0einitial_prompt\x18\x05 \x01(\tH\x03R\rinitialPrompt\x88\x01\x01\x124\n" +
+	"\bsdk_type\x18\x06 \x01(\x0e2\x14.netclode.v1.SdkTypeH\x04R\asdkType\x88\x01\x01\x12\x19\n" +
+	"\x05model\x18\a \x01(\tH\x05R\x05model\x88\x01\x01\x12I\n" +
+	"\x0fcopilot_backend\x18\b \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x06R\x0ecopilotBackend\x88\x01\x01\x12F\n" +
+	"\x0enetwork_config\x18\t \x01(\v2\x1a.netclode.v1.NetworkConfigH\aR\rnetworkConfig\x88\x01\x01\x12@\n" +
 	"\tresources\x18\n" +
-	" \x01(\v2\x1d.netclode.v1.SandboxResourcesH\tR\tresources\x88\x01\x01B\r\n" +
+	" \x01(\v2\x1d.netclode.v1.SandboxResourcesH\bR\tresources\x88\x01\x01B\r\n" +
 	"\v_request_idB\a\n" +
-	"\x05_nameB\a\n" +
-	"\x05_repoB\x0e\n" +
+	"\x05_nameB\x0e\n" +
 	"\f_repo_accessB\x11\n" +
 	"\x0f_initial_promptB\v\n" +
 	"\t_sdk_typeB\b\n" +

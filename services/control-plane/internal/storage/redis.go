@@ -91,8 +91,15 @@ func (r *RedisStorage) SaveSession(ctx context.Context, s *pb.Session) error {
 		"createdAt", s.CreatedAt.AsTime().Format(time.RFC3339),
 		"lastActiveAt", s.LastActiveAt.AsTime().Format(time.RFC3339),
 	)
-	if s.Repo != nil {
-		pipe.HSet(ctx, sessionKey(s.Id), "repo", *s.Repo)
+	if len(s.Repos) > 0 {
+		if reposJSON, err := json.Marshal(s.Repos); err == nil {
+			pipe.HSet(ctx, sessionKey(s.Id), "repos", string(reposJSON))
+		} else {
+			slog.Warn("Failed to encode repos for session", "sessionID", s.Id, "error", err)
+		}
+	}
+	if s.RepoAccess != nil {
+		pipe.HSet(ctx, sessionKey(s.Id), "repoAccess", s.RepoAccess.String())
 	}
 	if s.SdkType != nil {
 		pipe.HSet(ctx, sessionKey(s.Id), "sdkType", s.SdkType.String())
@@ -126,8 +133,19 @@ func (r *RedisStorage) GetSession(ctx context.Context, id string) (*pb.Session, 
 	if t, err := time.Parse(time.RFC3339, data["lastActiveAt"]); err == nil {
 		session.LastActiveAt = timestamppb.New(t)
 	}
-	if repo, ok := data["repo"]; ok && repo != "" {
-		session.Repo = &repo
+	if reposJSON, ok := data["repos"]; ok && reposJSON != "" {
+		var repos []string
+		if err := json.Unmarshal([]byte(reposJSON), &repos); err == nil {
+			session.Repos = repos
+		} else {
+			slog.Warn("Failed to decode repos for session", "sessionID", id, "error", err)
+		}
+	}
+	if repoAccessStr, ok := data["repoAccess"]; ok && repoAccessStr != "" {
+		repoAccess := parseRepoAccess(repoAccessStr)
+		if repoAccess != pb.RepoAccess_REPO_ACCESS_UNSPECIFIED {
+			session.RepoAccess = &repoAccess
+		}
 	}
 	if sdkTypeStr, ok := data["sdkType"]; ok && sdkTypeStr != "" {
 		sdkType := parseSdkType(sdkTypeStr)
@@ -174,6 +192,17 @@ func parseSdkType(s string) pb.SdkType {
 	}
 }
 
+func parseRepoAccess(s string) pb.RepoAccess {
+	switch strings.ToLower(s) {
+	case "repo_access_read", "read":
+		return pb.RepoAccess_REPO_ACCESS_READ
+	case "repo_access_write", "write":
+		return pb.RepoAccess_REPO_ACCESS_WRITE
+	default:
+		return pb.RepoAccess_REPO_ACCESS_UNSPECIFIED
+	}
+}
+
 // GetAllSessions retrieves all sessions from Redis.
 func (r *RedisStorage) GetAllSessions(ctx context.Context) ([]*pb.Session, error) {
 	ids, err := r.client.SMembers(ctx, keySessionsAll).Result()
@@ -211,13 +240,24 @@ func (r *RedisStorage) GetAllSessions(ctx context.Context) ([]*pb.Session, error
 		if t, err := time.Parse(time.RFC3339, data["createdAt"]); err == nil {
 			session.CreatedAt = timestamppb.New(t)
 		}
-		if t, err := time.Parse(time.RFC3339, data["lastActiveAt"]); err == nil {
-			session.LastActiveAt = timestamppb.New(t)
+	if t, err := time.Parse(time.RFC3339, data["lastActiveAt"]); err == nil {
+		session.LastActiveAt = timestamppb.New(t)
+	}
+	if reposJSON, ok := data["repos"]; ok && reposJSON != "" {
+		var repos []string
+		if err := json.Unmarshal([]byte(reposJSON), &repos); err == nil {
+			session.Repos = repos
+		} else {
+			slog.Warn("Failed to decode repos for session", "sessionID", id, "error", err)
 		}
-		if repo, ok := data["repo"]; ok && repo != "" {
-			session.Repo = &repo
+	}
+	if repoAccessStr, ok := data["repoAccess"]; ok && repoAccessStr != "" {
+		repoAccess := parseRepoAccess(repoAccessStr)
+		if repoAccess != pb.RepoAccess_REPO_ACCESS_UNSPECIFIED {
+			session.RepoAccess = &repoAccess
 		}
-		sessions = append(sessions, session)
+	}
+	sessions = append(sessions, session)
 	}
 
 	return sessions, nil

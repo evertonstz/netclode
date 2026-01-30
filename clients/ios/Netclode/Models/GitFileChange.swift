@@ -2,13 +2,14 @@ import Foundation
 
 /// Represents a file with changes in the git working directory
 struct GitFileChange: Identifiable, Codable, Equatable, Sendable {
-    var id: String { path }
+    var id: String { "\(repo)::\(path)" }
     
     let path: String
     let status: GitFileStatus
     let staged: Bool
     let linesAdded: Int?
     let linesRemoved: Int?
+    let repo: String
     
     /// Display name (just the filename)
     var fileName: String {

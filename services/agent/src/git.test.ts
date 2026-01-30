@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseGitStatus, type GitFileChange } from "./git.js";
+import { parseGitStatus, repoDirName, type GitFileChange } from "./git.js";
 
 describe("parseGitStatus", () => {
   it("parses unstaged modified files", () => {
@@ -118,5 +118,15 @@ A  added.ts
     expect(result).toEqual([
       { path: "src/both.ts", status: "modified", staged: false },
     ]);
+  });
+});
+
+describe("repoDirName", () => {
+  it("derives a stable directory name from a GitHub URL", () => {
+    expect(repoDirName("https://github.com/owner/repo.git")).toBe("owner__repo");
+  });
+
+  it("derives a stable directory name from owner/repo", () => {
+    expect(repoDirName("owner/repo")).toBe("owner__repo");
   });
 });

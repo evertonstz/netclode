@@ -28,7 +28,7 @@ interface SessionConfigResponse {
   SessionID: string;
   AnthropicAPIKey: string;
   GitHubToken: string;
-  Repo: string;
+  Repos: string[];
   SdkType: number;
   Model: string;
 }

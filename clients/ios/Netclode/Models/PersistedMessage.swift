@@ -217,7 +217,7 @@ struct SessionWithMeta: Codable, Sendable {
     let id: String
     let name: String
     let status: String
-    let repo: String?
+    let repos: [String]
     let repoAccess: RepoAccess?
     let createdAt: Date
     let lastActiveAt: Date
@@ -232,7 +232,7 @@ struct SessionWithMeta: Codable, Sendable {
             id: id,
             name: name,
             status: SessionStatus(rawValue: status) ?? .paused,
-            repo: repo,
+            repos: repos,
             repoAccess: repoAccess,
             createdAt: createdAt,
             lastActiveAt: lastActiveAt,

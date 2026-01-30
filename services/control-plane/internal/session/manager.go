@@ -36,7 +36,7 @@ type AgentSessionConfig struct {
 	MistralAPIKey      string // For OpenCode Mistral models
 	GitHubToken        string // For git credentials (from GitHub App)
 	GitHubCopilotToken string // For Copilot SDK
-	Repo               string
+	Repos              []string
 	RepoAccess         *pb.RepoAccess
 	SdkType            *pb.SdkType
 	Model              string
@@ -88,11 +88,14 @@ func NewManager(store storage.Storage, k8sRuntime k8s.Runtime, cfg *config.Confi
 	}
 }
 
-// createRepoToken generates a GitHub token scoped to the specific repo with the given access level.
+// createRepoToken generates a GitHub token scoped to the specific repos with the given access level.
 // Returns empty string if GitHub App is not configured.
-func (m *Manager) createRepoToken(ctx context.Context, repo string, access *pb.RepoAccess) string {
+func (m *Manager) createRepoToken(ctx context.Context, repos []string, access *pb.RepoAccess) string {
 	if m.githubClient == nil {
 		slog.Warn("GitHub App not configured, cannot create repo-scoped token")
+		return ""
+	}
+	if len(repos) == 0 {
 		return ""
 	}
 
@@ -102,13 +105,36 @@ func (m *Manager) createRepoToken(ctx context.Context, repo string, access *pb.R
 		ghAccess = github.RepoAccessWrite
 	}
 
-	token, err := m.githubClient.CreateRepoToken(ctx, repo, ghAccess)
+	token, err := m.githubClient.CreateRepoToken(ctx, repos, ghAccess)
 	if err != nil {
-		slog.Error("Failed to create repo-scoped token", "repo", repo, "access", access, "error", err)
+		slog.Error("Failed to create repo-scoped token", "repos", repos, "access", access, "error", err)
 		return ""
 	}
 
 	return token.Token
+}
+
+func normalizeRepos(repos []string) []string {
+	if len(repos) == 0 {
+		return nil
+	}
+
+	normalized := make([]string, 0, len(repos))
+	seen := make(map[string]struct{}, len(repos))
+	for _, repo := range repos {
+		repo = strings.TrimSpace(repo)
+		if repo == "" {
+			continue
+		}
+		norm := github.NormalizeRepoURL(repo)
+		if _, exists := seen[norm]; exists {
+			continue
+		}
+		seen[norm] = struct{}{}
+		normalized = append(normalized, norm)
+	}
+
+	return normalized
 }
 
 // SetOnSessionUpdated sets a callback that is called when a session is updated internally.
@@ -210,7 +236,7 @@ func generateID() string {
 
 // Create creates a new session.
 // If resources is provided, validates against host limits (max 50%) and bypasses warm pool.
-func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string, copilotBackend *pb.CopilotBackend, tailnetAccess *bool, resources *pb.SandboxResources) (*pb.Session, error) {
+func (m *Manager) Create(ctx context.Context, name string, repos []string, repoAccess *pb.RepoAccess, sdkType *pb.SdkType, model *string, copilotBackend *pb.CopilotBackend, tailnetAccess *bool, resources *pb.SandboxResources) (*pb.Session, error) {
 	// Validate custom resources if provided
 	if resources != nil {
 		if err := m.validateResources(resources); err != nil {
@@ -232,7 +258,7 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAcc
 		Id:             id,
 		Name:           name,
 		Status:         pb.SessionStatus_SESSION_STATUS_CREATING,
-		Repo:           repo,
+		Repos:          repos,
 		RepoAccess:     repoAccess,
 		CreatedAt:      now,
 		LastActiveAt:   now,
@@ -259,7 +285,7 @@ func (m *Manager) Create(ctx context.Context, name string, repo *string, repoAcc
 	}
 
 	// Start sandbox creation in background
-	go m.createSandbox(context.Background(), id, repo, repoAccess, tailnetEnabled, resources)
+	go m.createSandbox(context.Background(), id, repos, repoAccess, tailnetEnabled, resources)
 
 	return session, nil
 }
@@ -286,18 +312,18 @@ func (m *Manager) validateResources(resources *pb.SandboxResources) error {
 	return nil
 }
 
-func (m *Manager) createSandbox(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool, resources *pb.SandboxResources) {
+func (m *Manager) createSandbox(ctx context.Context, sessionID string, repos []string, repoAccess *pb.RepoAccess, tailnetEnabled bool, resources *pb.SandboxResources) {
 	// If custom resources are requested, bypass warm pool and create directly
 	if resources != nil {
 		slog.Info("Creating sandbox with custom resources (bypassing warm pool)", "sessionID", sessionID, "vcpus", resources.Vcpus, "memoryMB", resources.MemoryMb)
-		m.createSandboxDirect(ctx, sessionID, repo, repoAccess, tailnetEnabled, resources)
+		m.createSandboxDirect(ctx, sessionID, repos, repoAccess, tailnetEnabled, resources)
 		return
 	}
 
 	if m.config.UseWarmPool {
-		m.createSandboxViaClaim(ctx, sessionID, repo, repoAccess, tailnetEnabled)
+		m.createSandboxViaClaim(ctx, sessionID, repos, repoAccess, tailnetEnabled)
 	} else {
-		m.createSandboxDirect(ctx, sessionID, repo, repoAccess, tailnetEnabled, nil)
+		m.createSandboxDirect(ctx, sessionID, repos, repoAccess, tailnetEnabled, nil)
 	}
 }
 
@@ -310,7 +336,7 @@ type createSandboxDirectOptions struct {
 // createSandboxDirect creates a sandbox directly (legacy mode or custom resources mode).
 // If opts.restoreSnapshotID is provided, the PVC is restored from that snapshot BEFORE creating the sandbox.
 // If opts.resources is provided, the sandbox is created with custom VM resources.
-func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool, resources *pb.SandboxResources, restoreSnapshotID ...string) {
+func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, repos []string, repoAccess *pb.RepoAccess, tailnetEnabled bool, resources *pb.SandboxResources, restoreSnapshotID ...string) {
 	var snapID string
 	if len(restoreSnapshotID) > 0 {
 		snapID = restoreSnapshotID[0]
@@ -392,11 +418,16 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 	}
 
 	// Setup GitHub repo access if configured
-	if repo != nil && *repo != "" {
-		env["GIT_REPO"] = github.NormalizeRepoURL(*repo)
+	normalizedRepos := normalizeRepos(repos)
+	if len(normalizedRepos) > 0 {
+		if reposJSON, err := json.Marshal(normalizedRepos); err == nil {
+			env["GIT_REPOS"] = string(reposJSON)
+		} else {
+			slog.Warn("Failed to encode repo list for sandbox env", "sessionID", sessionID, "error", err)
+		}
 
 		// Generate repo-scoped token via GitHub App for git credentials
-		if token := m.createRepoToken(ctx, *repo, repoAccess); token != "" {
+		if token := m.createRepoToken(ctx, normalizedRepos, repoAccess); token != "" {
 			env["GITHUB_TOKEN"] = token
 		}
 	}
@@ -514,7 +545,7 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 }
 
 // createSandboxViaClaim uses SandboxClaim for warm pool allocation
-func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repo *string, repoAccess *pb.RepoAccess, tailnetEnabled bool) {
+func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, repos []string, repoAccess *pb.RepoAccess, tailnetEnabled bool) {
 	// Always use the same template to leverage the warm pool
 	// Network restrictions are applied via ConfigureNetwork() after claiming
 	templateName := m.config.SandboxTemplate
@@ -861,10 +892,10 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 	if restoreSnapshotID != "" {
 		slog.Info("Resuming with snapshot restore", "sessionID", id, "snapshotID", restoreSnapshotID)
 		_ = m.storage.ClearRestoreSnapshotID(ctx, id) // Clear from storage
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false, nil, restoreSnapshotID)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repos, state.Session.RepoAccess, false, nil, restoreSnapshotID)
 	} else {
 		slog.Info("Resuming session", "sessionID", id)
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repo, state.Session.RepoAccess, false, nil)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repos, state.Session.RepoAccess, false, nil)
 	}
 
 	return state.Session, nil
@@ -1474,12 +1505,13 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 	}
 
 	// Setup GitHub repo access if configured
-	if state.Session.Repo != nil && *state.Session.Repo != "" {
-		config.Repo = github.NormalizeRepoURL(*state.Session.Repo)
+	normalizedRepos := normalizeRepos(state.Session.Repos)
+	if len(normalizedRepos) > 0 {
+		config.Repos = normalizedRepos
 		config.RepoAccess = state.Session.RepoAccess
 
 		// Generate repo-scoped token via GitHub App for git credentials
-		if token := m.createRepoToken(ctx, *state.Session.Repo, state.Session.RepoAccess); token != "" {
+		if token := m.createRepoToken(ctx, normalizedRepos, state.Session.RepoAccess); token != "" {
 			config.GitHubToken = token
 		}
 	}
@@ -1498,19 +1530,16 @@ func (m *Manager) UpdateRepoAccess(ctx context.Context, sessionID string, newAcc
 		return fmt.Errorf("session %s not found", sessionID)
 	}
 
-	// Need repo to generate scoped token
-	repo := ""
-	if state.Session.Repo != nil {
-		repo = *state.Session.Repo
-	}
+	// Need repos to generate scoped token
+	repos := normalizeRepos(state.Session.Repos)
 
 	// Update the session's repo access
 	state.Session.RepoAccess = &newAccess
 	m.mu.Unlock()
 
 	// Generate new repo-scoped token for this access level
-	newToken := m.createRepoToken(ctx, repo, &newAccess)
-	if newToken == "" && repo != "" {
+	newToken := m.createRepoToken(ctx, repos, &newAccess)
+	if newToken == "" && len(repos) > 0 {
 		slog.Warn("Failed to create GitHub token (GitHub App not configured?)", "sessionID", sessionID, "access", newAccess)
 	}
 

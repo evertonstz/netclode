@@ -16,7 +16,7 @@ struct SandboxResources: Sendable {
 }
 
 enum ClientMessage: Encodable, Sendable {
-    case sessionCreate(name: String?, repo: String?, repoAccess: RepoAccess?, initialPrompt: String?, sdkType: SdkType?, model: String?, copilotBackend: CopilotBackend?, networkConfig: NetworkConfig?, resources: SandboxResources?)
+    case sessionCreate(name: String?, repos: [String]?, repoAccess: RepoAccess?, initialPrompt: String?, sdkType: SdkType?, model: String?, copilotBackend: CopilotBackend?, networkConfig: NetworkConfig?, resources: SandboxResources?)
     case sessionList
     case sessionResume(id: String)
     case sessionPause(id: String)
@@ -48,18 +48,18 @@ enum ClientMessage: Encodable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case type
-        case name, repo, repoAccess, id, sessionId, text, data, cols, rows, port, lastMessageId, lastNotificationId, initialPrompt, file, sdkType, model, copilotBackend, snapshotId
+        case name, repos, repoAccess, id, sessionId, text, data, cols, rows, port, lastMessageId, lastNotificationId, initialPrompt, file, sdkType, model, copilotBackend, snapshotId
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         switch self {
-        case .sessionCreate(let name, let repo, let repoAccess, let initialPrompt, let sdkType, let model, let copilotBackend, _, _):
+        case .sessionCreate(let name, let repos, let repoAccess, let initialPrompt, let sdkType, let model, let copilotBackend, _, _):
             // Note: networkConfig and resources are handled via proto in ConnectService, not JSON encoding
             try container.encode("session.create", forKey: .type)
             try container.encodeIfPresent(name, forKey: .name)
-            try container.encodeIfPresent(repo, forKey: .repo)
+            try container.encodeIfPresent(repos, forKey: .repos)
             try container.encodeIfPresent(repoAccess?.rawValue, forKey: .repoAccess)
             try container.encodeIfPresent(initialPrompt, forKey: .initialPrompt)
             try container.encodeIfPresent(sdkType?.rawValue, forKey: .sdkType)

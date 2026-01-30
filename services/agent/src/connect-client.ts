@@ -44,7 +44,7 @@ import {
 // Import modular services
 import { handleTerminalInput, resizeTerminal, setTerminalOutputCallback } from "./services/terminal.js";
 import { generateTitle } from "./services/title.js";
-import { getGitStatus, getGitDiff, configureGitCredentials, type GitFileChange } from "./git.js";
+import { getGitStatus, getGitDiff, configureGitCredentials, repoDirName, type GitFileChange } from "./git.js";
 
 // Import SDK abstraction layer
 import {
@@ -301,6 +301,14 @@ interface AgentConnection {
 
 let connection: AgentConnection | null = null;
 
+function getRepoConfigs(): Array<{ repo: string; dir: string; prefix: string }> {
+  const repos = connection?.sessionConfig?.repos ?? [];
+  return repos.map((repo) => {
+    const prefix = repoDirName(repo);
+    return { repo, dir: `${WORKSPACE_DIR}/${prefix}`, prefix };
+  });
+}
+
 /**
  * Connect to the control plane and handle bidirectional communication.
  */
@@ -550,7 +558,7 @@ async function handleExecutePrompt(
     for await (const event of currentAdapter.executePrompt(
       sessionId,
       text,
-      config ? { repo: config.repo, githubToken: config.githubToken } : undefined
+      config ? { repos: config.repos, githubToken: config.githubToken } : undefined
     )) {
       send(promptEventToAgentMessage(event));
       
@@ -626,7 +634,24 @@ async function handleGetGitStatus(
   send: (msg: AgentMessage) => void
 ): Promise<void> {
   try {
-    const files = await getGitStatus(WORKSPACE_DIR);
+    const repoConfigs = getRepoConfigs();
+    const files: Array<GitFileChange & { repo: string }> = [];
+
+    if (repoConfigs.length === 0) {
+      const rootFiles = await getGitStatus(WORKSPACE_DIR);
+      files.push(...rootFiles.map((file) => ({ ...file, repo: "" })));
+    } else {
+      for (const { repo, dir, prefix } of repoConfigs) {
+        const repoFiles = await getGitStatus(dir);
+        files.push(
+          ...repoFiles.map((file) => ({
+            ...file,
+            path: `${prefix}/${file.path}`,
+            repo,
+          }))
+        );
+      }
+    }
     send(
       create(AgentMessageSchema, {
         message: {
@@ -640,6 +665,7 @@ async function handleGetGitStatus(
                 staged: f.staged,
                 linesAdded: f.linesAdded,
                 linesRemoved: f.linesRemoved,
+                repo: f.repo,
               })
             ),
           }),
@@ -668,7 +694,36 @@ async function handleGetGitDiff(
   send: (msg: AgentMessage) => void
 ): Promise<void> {
   try {
-    const diff = await getGitDiff(WORKSPACE_DIR, file);
+    const repoConfigs = getRepoConfigs();
+    let diff = "";
+
+    if (repoConfigs.length === 0) {
+      diff = await getGitDiff(WORKSPACE_DIR, file);
+    } else if (file) {
+      const parts = file.split("/");
+      const prefix = parts[0];
+      let target = repoConfigs.find((repoConfig) => repoConfig.prefix === prefix);
+      let relativeFile = parts.slice(1).join("/");
+
+      if (!target && repoConfigs.length === 1) {
+        target = repoConfigs[0];
+        relativeFile = file;
+      }
+
+      if (target) {
+        const fileArg = relativeFile.length > 0 ? relativeFile : undefined;
+        diff = await getGitDiff(target.dir, fileArg, target.prefix);
+      }
+    } else {
+      const diffs: string[] = [];
+      for (const repoConfig of repoConfigs) {
+        const repoDiff = await getGitDiff(repoConfig.dir, undefined, repoConfig.prefix);
+        if (repoDiff) {
+          diffs.push(repoDiff.trimEnd());
+        }
+      }
+      diff = diffs.join("\n");
+    }
     send(
       create(AgentMessageSchema, {
         message: {

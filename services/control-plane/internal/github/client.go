@@ -107,9 +107,9 @@ type tokenRequest struct {
 	Permissions  map[string]string `json:"permissions,omitempty"`
 }
 
-// CreateRepoToken creates an installation token scoped to a specific repository.
-// The token is scoped to only the specified repo with the given access level.
-func (c *Client) CreateRepoToken(ctx context.Context, repo string, access RepoAccess) (*InstallationToken, error) {
+// CreateRepoToken creates an installation token scoped to specific repositories.
+// The token is scoped to only the specified repos with the given access level.
+func (c *Client) CreateRepoToken(ctx context.Context, repos []string, access RepoAccess) (*InstallationToken, error) {
 	jwt, err := c.createJWT()
 	if err != nil {
 		return nil, fmt.Errorf("create JWT: %w", err)
@@ -128,10 +128,17 @@ func (c *Client) CreateRepoToken(ctx context.Context, repo string, access RepoAc
 		reqBody.Permissions["pull_requests"] = "write"
 	}
 
-	// Scope token to the specific repository
-	repoName := extractRepoName(repo)
-	if repoName != "" {
-		reqBody.Repositories = []string{repoName}
+	// Scope token to the specific repositories
+	var repoNames []string
+	for _, repo := range repos {
+		repoName := extractRepoName(repo)
+		if repoName == "" {
+			continue
+		}
+		repoNames = append(repoNames, repoName)
+	}
+	if len(repoNames) > 0 {
+		reqBody.Repositories = repoNames
 	}
 
 	bodyBytes, err := json.Marshal(reqBody)
@@ -172,7 +179,7 @@ func (c *Client) CreateRepoToken(ctx context.Context, repo string, access RepoAc
 	}
 
 	slog.Info("Created GitHub repo-scoped token",
-		"repo", repo,
+		"repos", repos,
 		"access", access,
 		"expiresAt", token.ExpiresAt,
 	)

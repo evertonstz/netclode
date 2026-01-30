@@ -9,9 +9,8 @@ struct PromptSheet: View {
     @Environment(UnifiedModelsStore.self) private var modelsStore
 
     @State private var promptText = ""
-    @State private var repoURL = ""
+    @State private var selectedRepos: [String] = []
     @State private var repoAccess: RepoAccess = .read
-    @State private var isPrivateRepo = false
     @State private var selectedSdkType: SdkType = .claude
     @State private var selectedClaudeModelId: String = UnifiedModelsStore.defaultClaudeModelId
     @State private var selectedOpenCodeModelId: String = UnifiedModelsStore.defaultOpenCodeModelId
@@ -155,16 +154,13 @@ struct PromptSheet: View {
                                 .scaledToFit()
                                 .frame(width: 14, height: 14)
                                 .foregroundStyle(.secondary)
-                            Text("Repository (optional)")
+                            Text("Repositories (optional)")
                                 .font(.netclodeCaption)
                                 .foregroundStyle(.secondary)
                         }
 
                         InlineRepoPicker(
-                            selectedRepo: $repoURL,
-                            onRepoSelected: { repo in
-                                isPrivateRepo = repo.isPrivate
-                            },
+                            selectedRepos: $selectedRepos,
                             isExpanded: $showRepoDropdown,
                             onSearchFocused: {
                                 withAnimation {
@@ -194,7 +190,7 @@ struct PromptSheet: View {
                         InlineAccessPicker(
                             selectedAccess: $repoAccess,
                             isExpanded: $showAccessDropdown,
-                            hasRepo: !repoURL.isEmpty
+                            hasRepo: !selectedRepos.isEmpty
                         )
                     }
                     .padding(.horizontal, Theme.Spacing.md)
@@ -396,8 +392,8 @@ struct PromptSheet: View {
             .onChange(of: isSubmitting) { _, newValue in
                 canSubmit = !promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !newValue
             }
-            .onChange(of: repoURL) { _, newValue in
-                // Reset to read access when repo is cleared
+            .onChange(of: selectedRepos) { _, newValue in
+                // Reset to read access when repos are cleared
                 if newValue.isEmpty {
                     repoAccess = .read
                 }
@@ -456,9 +452,10 @@ struct PromptSheet: View {
         sessionStore.pendingPromptText = text
 
         // Parse repo URL if provided
-        let repo = repoURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        let repoParam = repo.isEmpty ? nil : repo
-        let accessParam = repoParam != nil ? repoAccess : nil
+        let reposParam = selectedRepos
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let accessParam = reposParam.isEmpty ? nil : repoAccess
 
         // SDK and model params
         let sdkParam = selectedSdkType
@@ -495,7 +492,7 @@ struct PromptSheet: View {
         // Create session
         connectService.send(.sessionCreate(
             name: nil,
-            repo: repoParam,
+            repos: reposParam.isEmpty ? nil : reposParam,
             repoAccess: accessParam,
             initialPrompt: text,
             sdkType: sdkParam,
@@ -535,7 +532,7 @@ struct PromptSheet: View {
 struct InlineAccessPicker: View {
     @Binding var selectedAccess: RepoAccess
     @Binding var isExpanded: Bool
-    var hasRepo: Bool = false  // Whether a repo is selected
+    var hasRepo: Bool = false  // Whether repos are selected
 
     private var availableOptions: [RepoAccess] {
         return RepoAccess.allCases
@@ -563,7 +560,7 @@ struct InlineAccessPicker: View {
                     Text(hasRepo ? selectedAccess.displayName : "Read only")
                         .font(.netclodeBody)
                     Spacer()
-                    Text(hasRepo ? selectedAccess.description : "No token · Select a repo")
+                    Text(hasRepo ? selectedAccess.description : "No token · Select repositories")
                         .font(.netclodeCaption)
                         .foregroundStyle(.tertiary)
                     if hasRepo {
@@ -612,7 +609,7 @@ struct InlineAccessPicker: View {
                                         .font(.netclodeBody)
                                         .foregroundStyle(disabled ? .tertiary : .primary)
                                     Spacer()
-                                    Text(disabled ? "Select a repo first" : access.description)
+                                    Text(disabled ? "Select repositories first" : access.description)
                                         .font(.netclodeCaption)
                                         .foregroundStyle(disabled ? .tertiary : .secondary)
                                 }

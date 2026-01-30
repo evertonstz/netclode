@@ -67,7 +67,7 @@ Session Details
 ID:             9f7c8e64-c84
 Name:           Haptic Feedback App Implementation Analysis
 Status:         ready
-Repo:           angristan/netclode
+Repos:          angristan/netclode
 Created:        23:28:43 (10h ago)
 Last Active:    23:28:43 (10h ago)
 
@@ -82,6 +82,9 @@ Events:         107
 ```bash
 # Basic creation
 netclode sessions create --repo owner/repo --name "My Session"
+
+# Multiple repositories
+netclode sessions create --repo owner/repo --repo owner/other --name "Multi Repo"
 
 # With SDK type (claude, opencode, copilot, codex)
 netclode sessions create --repo owner/repo --sdk opencode --model anthropic/claude-sonnet-4-0

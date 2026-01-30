@@ -72,7 +72,7 @@ The control plane passes `SessionConfig` to the agent on registration. Key field
 | `model` | Model ID (e.g., `claude-sonnet-4-0`, `gpt-4o`) |
 | `reasoning_effort` | Reasoning effort level for Codex SDK: `minimal`, `low`, `medium` (default), `high`, `xhigh` |
 | `github_token` | GitHub token for git operations |
-| `repo` | Repository to clone (e.g., `owner/repo`) |
+| `repos` | Repositories to clone (e.g., `owner/repo`) |
 | `repo_access` | Permission level (`read` or `write`) |
 
 ## API

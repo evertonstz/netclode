@@ -317,7 +317,7 @@ type Session struct {
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Status         SessionStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=netclode.v1.SessionStatus" json:"status,omitempty"`
-	Repo           *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`
+	Repos          []string               `protobuf:"bytes,4,rep,name=repos,proto3" json:"repos,omitempty"`
 	RepoAccess     *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"`
 	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	LastActiveAt   *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_active_at,json=lastActiveAt,proto3" json:"last_active_at,omitempty"`
@@ -379,11 +379,11 @@ func (x *Session) GetStatus() SessionStatus {
 	return SessionStatus_SESSION_STATUS_UNSPECIFIED
 }
 
-func (x *Session) GetRepo() string {
-	if x != nil && x.Repo != nil {
-		return *x.Repo
+func (x *Session) GetRepos() []string {
+	if x != nil {
+		return x.Repos
 	}
-	return ""
+	return nil
 }
 
 func (x *Session) GetRepoAccess() RepoAccess {
@@ -495,7 +495,7 @@ type SessionConfig struct {
 	SessionId          string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	WorkspaceDir       string                 `protobuf:"bytes,2,opt,name=workspace_dir,json=workspaceDir,proto3" json:"workspace_dir,omitempty"`
 	GithubToken        *string                `protobuf:"bytes,3,opt,name=github_token,json=githubToken,proto3,oneof" json:"github_token,omitempty"`
-	Repo               *string                `protobuf:"bytes,4,opt,name=repo,proto3,oneof" json:"repo,omitempty"`
+	Repos              []string               `protobuf:"bytes,4,rep,name=repos,proto3" json:"repos,omitempty"`
 	RepoAccess         *RepoAccess            `protobuf:"varint,5,opt,name=repo_access,json=repoAccess,proto3,enum=netclode.v1.RepoAccess,oneof" json:"repo_access,omitempty"`
 	ControlPlaneUrl    string                 `protobuf:"bytes,6,opt,name=control_plane_url,json=controlPlaneUrl,proto3" json:"control_plane_url,omitempty"`
 	SdkType            *SdkType               `protobuf:"varint,7,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`
@@ -564,11 +564,11 @@ func (x *SessionConfig) GetGithubToken() string {
 	return ""
 }
 
-func (x *SessionConfig) GetRepo() string {
-	if x != nil && x.Repo != nil {
-		return *x.Repo
+func (x *SessionConfig) GetRepos() []string {
+	if x != nil {
+		return x.Repos
 	}
-	return ""
+	return nil
 }
 
 func (x *SessionConfig) GetRepoAccess() RepoAccess {
@@ -1217,6 +1217,7 @@ type GitFileChange struct {
 	Staged        bool                   `protobuf:"varint,3,opt,name=staged,proto3" json:"staged,omitempty"`
 	LinesAdded    *int32                 `protobuf:"varint,4,opt,name=lines_added,json=linesAdded,proto3,oneof" json:"lines_added,omitempty"`
 	LinesRemoved  *int32                 `protobuf:"varint,5,opt,name=lines_removed,json=linesRemoved,proto3,oneof" json:"lines_removed,omitempty"`
+	Repo          string                 `protobuf:"bytes,6,opt,name=repo,proto3" json:"repo,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1284,6 +1285,13 @@ func (x *GitFileChange) GetLinesRemoved() int32 {
 		return *x.LinesRemoved
 	}
 	return 0
+}
+
+func (x *GitFileChange) GetRepo() string {
+	if x != nil {
+		return x.Repo
+	}
+	return ""
 }
 
 // ModelInfo represents an AI model available for use.
@@ -1574,22 +1582,21 @@ var File_netclode_v1_common_proto protoreflect.FileDescriptor
 
 const file_netclode_v1_common_proto_rawDesc = "" +
 	"\n" +
-	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18netclode/v1/events.proto\"\x96\x04\n" +
+	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18netclode/v1/events.proto\"\x8a\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x122\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1a.netclode.v1.SessionStatusR\x06status\x12\x17\n" +
-	"\x04repo\x18\x04 \x01(\tH\x00R\x04repo\x88\x01\x01\x12=\n" +
-	"\vrepo_access\x18\x05 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x01R\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1a.netclode.v1.SessionStatusR\x06status\x12\x14\n" +
+	"\x05repos\x18\x04 \x03(\tR\x05repos\x12=\n" +
+	"\vrepo_access\x18\x05 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x00R\n" +
 	"repoAccess\x88\x01\x01\x129\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12@\n" +
 	"\x0elast_active_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\flastActiveAt\x124\n" +
-	"\bsdk_type\x18\b \x01(\x0e2\x14.netclode.v1.SdkTypeH\x02R\asdkType\x88\x01\x01\x12\x19\n" +
-	"\x05model\x18\t \x01(\tH\x03R\x05model\x88\x01\x01\x12I\n" +
+	"\bsdk_type\x18\b \x01(\x0e2\x14.netclode.v1.SdkTypeH\x01R\asdkType\x88\x01\x01\x12\x19\n" +
+	"\x05model\x18\t \x01(\tH\x02R\x05model\x88\x01\x01\x12I\n" +
 	"\x0fcopilot_backend\x18\n" +
-	" \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x04R\x0ecopilotBackend\x88\x01\x01B\a\n" +
-	"\x05_repoB\x0e\n" +
+	" \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x03R\x0ecopilotBackend\x88\x01\x01B\x0e\n" +
 	"\f_repo_accessB\v\n" +
 	"\t_sdk_typeB\b\n" +
 	"\x06_modelB\x12\n" +
@@ -1599,32 +1606,31 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\rmessage_count\x18\x02 \x01(\x05H\x00R\fmessageCount\x88\x01\x01\x12)\n" +
 	"\x0elast_stream_id\x18\x03 \x01(\tH\x01R\flastStreamId\x88\x01\x01B\x10\n" +
 	"\x0e_message_countB\x11\n" +
-	"\x0f_last_stream_id\"\x8c\b\n" +
+	"\x0f_last_stream_id\"\x80\b\n" +
 	"\rSessionConfig\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12#\n" +
 	"\rworkspace_dir\x18\x02 \x01(\tR\fworkspaceDir\x12&\n" +
-	"\fgithub_token\x18\x03 \x01(\tH\x00R\vgithubToken\x88\x01\x01\x12\x17\n" +
-	"\x04repo\x18\x04 \x01(\tH\x01R\x04repo\x88\x01\x01\x12=\n" +
-	"\vrepo_access\x18\x05 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x02R\n" +
+	"\fgithub_token\x18\x03 \x01(\tH\x00R\vgithubToken\x88\x01\x01\x12\x14\n" +
+	"\x05repos\x18\x04 \x03(\tR\x05repos\x12=\n" +
+	"\vrepo_access\x18\x05 \x01(\x0e2\x17.netclode.v1.RepoAccessH\x01R\n" +
 	"repoAccess\x88\x01\x01\x12*\n" +
 	"\x11control_plane_url\x18\x06 \x01(\tR\x0fcontrolPlaneUrl\x124\n" +
-	"\bsdk_type\x18\a \x01(\x0e2\x14.netclode.v1.SdkTypeH\x03R\asdkType\x88\x01\x01\x12\x19\n" +
-	"\x05model\x18\b \x01(\tH\x04R\x05model\x88\x01\x01\x12I\n" +
-	"\x0fcopilot_backend\x18\t \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x05R\x0ecopilotBackend\x88\x01\x01\x125\n" +
+	"\bsdk_type\x18\a \x01(\x0e2\x14.netclode.v1.SdkTypeH\x02R\asdkType\x88\x01\x01\x12\x19\n" +
+	"\x05model\x18\b \x01(\tH\x03R\x05model\x88\x01\x01\x12I\n" +
+	"\x0fcopilot_backend\x18\t \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x04R\x0ecopilotBackend\x88\x01\x01\x125\n" +
 	"\x14github_copilot_token\x18\n" +
-	" \x01(\tH\x06R\x12githubCopilotToken\x88\x01\x01\x121\n" +
-	"\x12codex_access_token\x18\v \x01(\tH\aR\x10codexAccessToken\x88\x01\x01\x12)\n" +
-	"\x0ecodex_id_token\x18\f \x01(\tH\bR\fcodexIdToken\x88\x01\x01\x12)\n" +
-	"\x0eopenai_api_key\x18\r \x01(\tH\tR\fopenaiApiKey\x88\x01\x01\x123\n" +
-	"\x13codex_refresh_token\x18\x0e \x01(\tH\n" +
-	"R\x11codexRefreshToken\x88\x01\x01\x12.\n" +
-	"\x10reasoning_effort\x18\x0f \x01(\tH\vR\x0freasoningEffort\x88\x01\x01\x12+\n" +
-	"\x0fmistral_api_key\x18\x10 \x01(\tH\fR\rmistralApiKey\x88\x01\x01\x12\"\n" +
+	" \x01(\tH\x05R\x12githubCopilotToken\x88\x01\x01\x121\n" +
+	"\x12codex_access_token\x18\v \x01(\tH\x06R\x10codexAccessToken\x88\x01\x01\x12)\n" +
+	"\x0ecodex_id_token\x18\f \x01(\tH\aR\fcodexIdToken\x88\x01\x01\x12)\n" +
+	"\x0eopenai_api_key\x18\r \x01(\tH\bR\fopenaiApiKey\x88\x01\x01\x123\n" +
+	"\x13codex_refresh_token\x18\x0e \x01(\tH\tR\x11codexRefreshToken\x88\x01\x01\x12.\n" +
+	"\x10reasoning_effort\x18\x0f \x01(\tH\n" +
+	"R\x0freasoningEffort\x88\x01\x01\x12+\n" +
+	"\x0fmistral_api_key\x18\x10 \x01(\tH\vR\rmistralApiKey\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"ollama_url\x18\x11 \x01(\tH\rR\tollamaUrl\x88\x01\x01B\x0f\n" +
-	"\r_github_tokenB\a\n" +
-	"\x05_repoB\x0e\n" +
+	"ollama_url\x18\x11 \x01(\tH\fR\tollamaUrl\x88\x01\x01B\x0f\n" +
+	"\r_github_tokenB\x0e\n" +
 	"\f_repo_accessB\v\n" +
 	"\t_sdk_typeB\b\n" +
 	"\x06_modelB\x12\n" +
@@ -1695,14 +1701,15 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\tfull_name\x18\x02 \x01(\tR\bfullName\x12\x18\n" +
 	"\aprivate\x18\x03 \x01(\bR\aprivate\x12%\n" +
 	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01B\x0e\n" +
-	"\f_description\"\xe1\x01\n" +
+	"\f_description\"\xf5\x01\n" +
 	"\rGitFileChange\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x122\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1a.netclode.v1.GitFileStatusR\x06status\x12\x16\n" +
 	"\x06staged\x18\x03 \x01(\bR\x06staged\x12$\n" +
 	"\vlines_added\x18\x04 \x01(\x05H\x00R\n" +
 	"linesAdded\x88\x01\x01\x12(\n" +
-	"\rlines_removed\x18\x05 \x01(\x05H\x01R\flinesRemoved\x88\x01\x01B\x0e\n" +
+	"\rlines_removed\x18\x05 \x01(\x05H\x01R\flinesRemoved\x88\x01\x01\x12\x12\n" +
+	"\x04repo\x18\x06 \x01(\tR\x04repoB\x0e\n" +
 	"\f_lines_addedB\x10\n" +
 	"\x0e_lines_removed\"\xf8\x02\n" +
 	"\tModelInfo\x12\x0e\n" +

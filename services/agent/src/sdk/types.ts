@@ -40,7 +40,7 @@ export interface SDKConfig {
  * Configuration passed to executePrompt
  */
 export interface PromptConfig {
-  repo?: string;
+  repos?: string[];
   githubToken?: string;
 }
 
@@ -74,7 +74,7 @@ export interface SDKAdapter {
    * Execute a prompt and yield events
    * @param sessionId - Netclode session ID (for session mapping)
    * @param text - The prompt text
-   * @param config - Additional configuration (repo, github token)
+   * @param config - Additional configuration (repos, github token)
    */
   executePrompt(sessionId: string, text: string, config?: PromptConfig): AsyncGenerator<PromptEvent>;
 

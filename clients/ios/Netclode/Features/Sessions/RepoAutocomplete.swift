@@ -2,8 +2,7 @@ import SwiftUI
 
 /// Inline expandable picker for GitHub repository selection (matches InlineModelPicker style).
 struct InlineRepoPicker: View {
-    @Binding var selectedRepo: String
-    var onRepoSelected: ((GitHubRepo) -> Void)?
+    @Binding var selectedRepos: [String]
     @Binding var isExpanded: Bool
     var onSearchFocused: (() -> Void)?
     var onExpanded: (() -> Void)?
@@ -19,13 +18,31 @@ struct InlineRepoPicker: View {
         githubStore.filteredRepos(query: searchText)
     }
 
-    private var selectedRepoObject: GitHubRepo? {
-        githubStore.repos.first { $0.fullName == selectedRepo }
+    private var selectedRepoSet: Set<String> {
+        Set(selectedRepos)
+    }
+
+    private var firstSelectedRepo: String? {
+        selectedRepos.first
+    }
+
+    private var firstSelectedRepoObject: GitHubRepo? {
+        guard let first = firstSelectedRepo else { return nil }
+        return githubStore.repos.first { $0.fullName == first }
+    }
+
+    private var baseSelectionLabel: String? {
+        guard let first = firstSelectedRepo else { return nil }
+        return firstSelectedRepoObject?.fullName ?? first
+    }
+
+    private var extraSelectionCount: Int {
+        max(0, selectedRepos.count - 1)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Collapsed state - shows selected repo
+            // Collapsed state - shows selected repos summary
             Button {
                 withAnimation(.smooth(duration: 0.25)) {
                     isExpanded.toggle()
@@ -39,27 +56,37 @@ struct InlineRepoPicker: View {
                 }
             } label: {
                 HStack(spacing: Theme.Spacing.xs) {
-                    if let repo = selectedRepoObject {
+                    if let repo = firstSelectedRepoObject, let label = baseSelectionLabel {
                         Image(systemName: repo.isPrivate ? "lock.fill" : "globe")
                             .font(.system(size: 16))
                             .frame(width: 20)
                             .foregroundStyle(repo.isPrivate ? Theme.Colors.warning : .secondary)
-                        Text(repo.fullName)
+                        Text(label)
                             .font(.netclodeBody)
                             .lineLimit(1)
                             .contentTransition(.numericText())
-                    } else if !selectedRepo.isEmpty {
+                        if extraSelectionCount > 0 {
+                            Text("+\(extraSelectionCount)")
+                                .font(.netclodeCaption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if let label = baseSelectionLabel {
                         // Manual entry (not in list)
                         Image(systemName: "folder")
                             .font(.system(size: 16))
                             .frame(width: 20)
                             .foregroundStyle(.secondary)
-                        Text(selectedRepo)
+                        Text(label)
                             .font(.netclodeBody)
                             .lineLimit(1)
                             .contentTransition(.numericText())
+                        if extraSelectionCount > 0 {
+                            Text("+\(extraSelectionCount)")
+                                .font(.netclodeCaption)
+                                .foregroundStyle(.secondary)
+                        }
                     } else {
-                        Text("Select a repository")
+                        Text("Select repositories")
                             .font(.netclodeBody)
                             .foregroundStyle(.secondary)
                     }
@@ -72,7 +99,7 @@ struct InlineRepoPicker: View {
                 .padding(Theme.Spacing.sm)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
-                .animation(.smooth(duration: 0.2), value: selectedRepo)
+                .animation(.smooth(duration: 0.2), value: selectedRepos)
             }
             .buttonStyle(.plain)
             .glassEffect(
@@ -141,11 +168,12 @@ struct InlineRepoPicker: View {
                             LazyVStack(spacing: 2) {
                                 ForEach(filteredRepos) { repo in
                                     Button {
-                                        selectRepo(repo)
+                                        toggleRepo(repo)
                                     } label: {
                                         HStack(spacing: Theme.Spacing.xs) {
-                                            Image(systemName: repo.fullName == selectedRepo ? "checkmark.circle.fill" : "circle")
-                                                .foregroundStyle(repo.fullName == selectedRepo ? Theme.Colors.brand : .secondary)
+                                            let isSelected = selectedRepoSet.contains(repo.fullName)
+                                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                                .foregroundStyle(isSelected ? Theme.Colors.brand : .secondary)
                                                 .font(.system(size: 16))
                                                 .contentTransition(.symbolEffect(.replace))
 
@@ -194,17 +222,17 @@ struct InlineRepoPicker: View {
         .animation(.smooth(duration: 0.25), value: isExpanded)
     }
 
-    private func selectRepo(_ repo: GitHubRepo) {
+    private func toggleRepo(_ repo: GitHubRepo) {
         if settingsStore.hapticFeedbackEnabled {
             HapticFeedback.light()
         }
         withAnimation(.smooth(duration: 0.2)) {
-            selectedRepo = repo.fullName
-            isExpanded = false
-            searchText = ""
+            if let index = selectedRepos.firstIndex(of: repo.fullName) {
+                selectedRepos.remove(at: index)
+            } else {
+                selectedRepos.append(repo.fullName)
+            }
         }
-        isSearchFocused = false
-        onRepoSelected?(repo)
     }
 }
 
@@ -213,12 +241,9 @@ struct InlineRepoPicker: View {
 #Preview {
     VStack {
         InlineRepoPicker(
-            selectedRepo: .constant(""),
+            selectedRepos: .constant([]),
             isExpanded: .constant(true)
         )
         .padding()
     }
-    .environment(GitHubStore())
-    .environment(ConnectService())
-    .environment(SettingsStore())
 }

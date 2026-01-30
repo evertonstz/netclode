@@ -118,7 +118,7 @@ Returns:
 {
   "SESSION_ID": "abc123",
   "ANTHROPIC_API_KEY": "sk-ant-xxx",
-  "GIT_REPO": "https://github.com/user/repo"
+  "GIT_REPOS": ["https://github.com/user/repo", "https://github.com/user/other"]
 }
 ```
 

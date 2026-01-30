@@ -15,7 +15,7 @@ final class SessionCache {
         let id: String
         let name: String
         let status: String  // Raw SessionStatus value
-        let repo: String?
+        let repos: [String]
         let repoAccessRaw: String?  // Raw RepoAccess value
         let createdAt: Date
         let lastActiveAt: Date
@@ -28,7 +28,7 @@ final class SessionCache {
             self.id = session.id
             self.name = session.name
             self.status = session.status.rawValue
-            self.repo = session.repo
+            self.repos = session.repos
             self.repoAccessRaw = session.repoAccess?.rawValue
             self.createdAt = session.createdAt
             self.lastActiveAt = session.lastActiveAt
@@ -43,7 +43,7 @@ final class SessionCache {
                 id: id,
                 name: name,
                 status: SessionStatus(rawValue: status) ?? .paused,
-                repo: repo,
+                repos: repos,
                 repoAccess: repoAccessRaw.flatMap { RepoAccess(rawValue: $0) },
                 createdAt: createdAt,
                 lastActiveAt: lastActiveAt,

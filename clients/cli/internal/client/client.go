@@ -28,7 +28,7 @@ func New(baseURL string) *Client {
 // CreateSessionOptions contains options for creating a session.
 type CreateSessionOptions struct {
 	Name          string
-	Repo          string
+	Repos         []string
 	SdkType       pb.SdkType
 	Model         string
 	TailnetAccess bool  // default false
@@ -45,8 +45,8 @@ func (c *Client) CreateSession(ctx context.Context, opts CreateSessionOptions) (
 	if opts.Name != "" {
 		req.Name = &opts.Name
 	}
-	if opts.Repo != "" {
-		req.Repo = &opts.Repo
+	if len(opts.Repos) > 0 {
+		req.Repos = opts.Repos
 	}
 	if opts.SdkType != pb.SdkType_SDK_TYPE_UNSPECIFIED {
 		req.SdkType = &opts.SdkType

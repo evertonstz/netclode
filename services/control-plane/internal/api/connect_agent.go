@@ -92,8 +92,11 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 		SdkType:         config.SdkType,
 		CopilotBackend:  config.CopilotBackend,
 	}
-	if config.Repo != "" {
-		sessionConfig.Repo = &config.Repo
+	if len(config.Repos) > 0 {
+		sessionConfig.Repos = config.Repos
+	}
+	if config.RepoAccess != nil {
+		sessionConfig.RepoAccess = config.RepoAccess
 	}
 	if config.GitHubToken != "" {
 		sessionConfig.GithubToken = &config.GitHubToken

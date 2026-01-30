@@ -489,15 +489,8 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
   /// Clears the value of `name`. Subsequent reads from it will return its default value.
   public mutating func clearName() {self._name = nil}
 
-  /// GitHub repository to clone (e.g., "owner/repo")
-  public var repo: String {
-    get {return _repo ?? String()}
-    set {_repo = newValue}
-  }
-  /// Returns true if `repo` has been explicitly set.
-  public var hasRepo: Bool {return self._repo != nil}
-  /// Clears the value of `repo`. Subsequent reads from it will return its default value.
-  public mutating func clearRepo() {self._repo = nil}
+  /// GitHub repositories to clone (e.g., "owner/repo")
+  public var repos: [String] = []
 
   /// Permission level for repository
   public var repoAccess: Netclode_V1_RepoAccess {
@@ -575,7 +568,6 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
 
   fileprivate var _requestID: String? = nil
   fileprivate var _name: String? = nil
-  fileprivate var _repo: String? = nil
   fileprivate var _repoAccess: Netclode_V1_RepoAccess? = nil
   fileprivate var _initialPrompt: String? = nil
   fileprivate var _sdkType: Netclode_V1_SdkType? = nil
@@ -2531,7 +2523,7 @@ extension Netclode_V1_NetworkConfig: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CreateSessionRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{1}name\0\u{1}repo\0\u{3}repo_access\0\u{3}initial_prompt\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}network_config\0\u{1}resources\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{1}name\0\u{1}repos\0\u{3}repo_access\0\u{3}initial_prompt\0\u{3}sdk_type\0\u{1}model\0\u{3}copilot_backend\0\u{3}network_config\0\u{1}resources\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2541,7 +2533,7 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self._name) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self._repo) }()
+      case 3: try { try decoder.decodeRepeatedStringField(value: &self.repos) }()
       case 4: try { try decoder.decodeSingularEnumField(value: &self._repoAccess) }()
       case 5: try { try decoder.decodeSingularStringField(value: &self._initialPrompt) }()
       case 6: try { try decoder.decodeSingularEnumField(value: &self._sdkType) }()
@@ -2565,9 +2557,9 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
     try { if let v = self._name {
       try visitor.visitSingularStringField(value: v, fieldNumber: 2)
     } }()
-    try { if let v = self._repo {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
-    } }()
+    if !self.repos.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.repos, fieldNumber: 3)
+    }
     try { if let v = self._repoAccess {
       try visitor.visitSingularEnumField(value: v, fieldNumber: 4)
     } }()
@@ -2595,7 +2587,7 @@ extension Netclode_V1_CreateSessionRequest: SwiftProtobuf.Message, SwiftProtobuf
   public static func ==(lhs: Netclode_V1_CreateSessionRequest, rhs: Netclode_V1_CreateSessionRequest) -> Bool {
     if lhs._requestID != rhs._requestID {return false}
     if lhs._name != rhs._name {return false}
-    if lhs._repo != rhs._repo {return false}
+    if lhs.repos != rhs.repos {return false}
     if lhs._repoAccess != rhs._repoAccess {return false}
     if lhs._initialPrompt != rhs._initialPrompt {return false}
     if lhs._sdkType != rhs._sdkType {return false}

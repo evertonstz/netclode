@@ -12,7 +12,7 @@ enum PreviewData {
         id: "active-session",
         name: "My Active Project",
         status: .running,
-        repo: "https://github.com/user/project",
+        repos: ["https://github.com/user/project"],
         createdAt: Date().addingTimeInterval(-3600),
         lastActiveAt: Date()
     )

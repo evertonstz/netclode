@@ -61,7 +61,7 @@ var sessionsResumeCmd = &cobra.Command{
 
 var (
 	createName    string
-	createRepo    string
+	createRepos   []string
 	createSdkType string
 	createModel   string
 
@@ -80,7 +80,7 @@ func init() {
 	sessionsCmd.AddCommand(sessionsResumeCmd)
 
 	sessionsCreateCmd.Flags().StringVar(&createName, "name", "", "Session name")
-	sessionsCreateCmd.Flags().StringVar(&createRepo, "repo", "", "GitHub repository (owner/repo)")
+	sessionsCreateCmd.Flags().StringArrayVar(&createRepos, "repo", nil, "GitHub repository (owner/repo). Can be repeated")
 	sessionsCreateCmd.Flags().StringVar(&createSdkType, "sdk", "claude", "SDK type (claude, opencode, copilot, or codex)")
 	sessionsCreateCmd.Flags().StringVar(&createModel, "model", "", "Model ID for OpenCode (e.g., anthropic/claude-sonnet-4-0)")
 	sessionsCreateCmd.Flags().BoolVar(&createTailnet, "tailnet", false, "Enable Tailnet access (allow 100.64.0.0/10)")
@@ -114,7 +114,7 @@ func printSessionsTable(sessions []*pb.SessionSummary) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
 	// Header
-	_, _ = output.HeaderColor.Fprintf(w, "ID\tNAME\tSTATUS\tREPO\tMSGS\tCREATED\tACTIVE\n")
+	_, _ = output.HeaderColor.Fprintf(w, "ID\tNAME\tSTATUS\tREPOS\tMSGS\tCREATED\tACTIVE\n")
 
 	for _, s := range sessions {
 		sess := s.Session
@@ -122,8 +122,8 @@ func printSessionsTable(sessions []*pb.SessionSummary) {
 		name := output.Truncate(sess.Name, 30)
 		status := formatStatus(sess.Status.String())
 		repo := "-"
-		if sess.Repo != nil {
-			repo = output.Truncate(*sess.Repo, 20)
+		if len(sess.Repos) > 0 {
+			repo = output.Truncate(formatReposSummary(sess.Repos), 20)
 		}
 		msgs := "-"
 		if s.MessageCount != nil {
@@ -151,6 +151,33 @@ func formatStatus(status string) string {
 	s := strings.ToLower(status)
 	s = strings.TrimPrefix(s, "session_status_")
 	return s
+}
+
+func formatReposSummary(repos []string) string {
+	display := formatReposDisplay(repos)
+	if len(display) == 0 {
+		return "-"
+	}
+	if len(display) == 1 {
+		return display[0]
+	}
+	return fmt.Sprintf("%s (+%d)", display[0], len(display)-1)
+}
+
+func formatReposDisplay(repos []string) []string {
+	if len(repos) == 0 {
+		return nil
+	}
+	display := make([]string, 0, len(repos))
+	for _, repo := range repos {
+		repo = strings.TrimPrefix(repo, "https://github.com/")
+		repo = strings.TrimPrefix(repo, "http://github.com/")
+		repo = strings.TrimSuffix(repo, ".git")
+		if repo != "" {
+			display = append(display, repo)
+		}
+	}
+	return display
 }
 
 func runSessionsGet(cmd *cobra.Command, args []string) error {
@@ -192,10 +219,10 @@ func printSessionDetails(state *client.SessionState) {
 	_, _ = output.StatusColor(sess.Status.String()).Println(status)
 
 	repo := "-"
-	if sess.Repo != nil {
-		repo = *sess.Repo
+	if len(sess.Repos) > 0 {
+		repo = strings.Join(formatReposDisplay(sess.Repos), ", ")
 	}
-	fmt.Printf("%-15s %s\n", "Repo:", repo)
+	fmt.Printf("%-15s %s\n", "Repos:", repo)
 
 	fmt.Printf("%-15s %s (%s)\n", "Created:",
 		output.FormatTimestamp(sess.CreatedAt),
@@ -255,7 +282,7 @@ func runSessionsCreate(cmd *cobra.Command, args []string) error {
 
 	opts := client.CreateSessionOptions{
 		Name:          createName,
-		Repo:          createRepo,
+		Repos:         createRepos,
 		SdkType:       sdkType,
 		Model:         createModel,
 		TailnetAccess: createTailnet,

@@ -5,12 +5,14 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
 	"connectrpc.com/connect"
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/gen/netclode/v1/netclodev1connect"
+	"github.com/angristan/netclode/services/control-plane/internal/github"
 	"github.com/angristan/netclode/services/control-plane/internal/session"
 	"github.com/angristan/netclode/services/control-plane/internal/storage"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -315,7 +317,7 @@ func (c *ConnectConnection) unsubscribe(sessionID string) {
 // Handler implementations
 
 func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.CreateSessionRequest) error {
-	var repoPtr *string
+	var repos []string
 	var repoAccessPtr *pb.RepoAccess
 	var sdkTypePtr *pb.SdkType
 	var modelPtr *string
@@ -323,11 +325,26 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 	var tailnetAccessPtr *bool
 	var resourcesPtr *pb.SandboxResources
 
-	if req.Repo != nil {
-		repoPtr = req.Repo
+	if len(req.Repos) > 0 {
+		seen := make(map[string]struct{}, len(req.Repos))
+		for _, repo := range req.Repos {
+			repo = strings.TrimSpace(repo)
+			if repo == "" {
+				continue
+			}
+			normalized := github.NormalizeRepoURL(repo)
+			if _, exists := seen[normalized]; exists {
+				continue
+			}
+			seen[normalized] = struct{}{}
+			repos = append(repos, normalized)
+		}
 	}
 	if req.RepoAccess != nil {
 		repoAccessPtr = req.RepoAccess
+	}
+	if len(repos) == 0 {
+		repoAccessPtr = nil
 	}
 	if req.SdkType != nil {
 		sdkTypePtr = req.SdkType
@@ -350,7 +367,7 @@ func (c *ConnectConnection) handleSessionCreate(ctx context.Context, req *pb.Cre
 		name = *req.Name
 	}
 
-	sess, err := c.manager.Create(ctx, name, repoPtr, repoAccessPtr, sdkTypePtr, modelPtr, copilotBackendPtr, tailnetAccessPtr, resourcesPtr)
+	sess, err := c.manager.Create(ctx, name, repos, repoAccessPtr, sdkTypePtr, modelPtr, copilotBackendPtr, tailnetAccessPtr, resourcesPtr)
 	if err != nil {
 		return err
 	}

@@ -66,7 +66,7 @@ message Session {
   string id = 1;
   string name = 2;
   SessionStatus status = 3;
-  optional string repo = 4;
+  repeated string repos = 4;
   optional RepoAccess repo_access = 5;
   google.protobuf.Timestamp created_at = 6;
   google.protobuf.Timestamp last_active_at = 7;
@@ -87,7 +87,7 @@ message SessionConfig {
   string session_id = 1;
   string workspace_dir = 2;
   optional string github_token = 3;
-  optional string repo = 4;
+  repeated string repos = 4;
   optional RepoAccess repo_access = 5;
   string control_plane_url = 6;
   optional SdkType sdk_type = 7;
@@ -189,6 +189,7 @@ message GitFileChange {
   bool staged = 3;
   optional int32 lines_added = 4;
   optional int32 lines_removed = 5;
+  string repo = 6;
 }
 
 // ============================================================================

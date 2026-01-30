@@ -141,7 +141,7 @@ Configuration passed from control plane to agents on registration:
 | `model` | Model ID (e.g., `claude-sonnet-4-0`, `ollama/qwen2.5-coder:32b`) |
 | `ollama_url` | URL for local Ollama inference (optional) |
 | `github_token` | GitHub token for git operations |
-| `repo` | Repository to clone |
+| `repos` | Repositories to clone |
 
 ### ModelInfo
 
