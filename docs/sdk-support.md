@@ -343,9 +343,3 @@ ssh root@netclode-host nvidia-smi -l 1
 # Pretty TUI
 ssh root@netclode-host nvtop
 ```
-
-### Limitations
-
-**Tool calling is unreliable with local models.** While models can generate responses, structured tool calls (file reads, bash commands) often fail or produce malformed JSON. This is a fundamental limitation of smaller local models compared to cloud APIs.
-
-For production agentic workloads requiring reliable tool use, use cloud providers (Anthropic, OpenAI).
