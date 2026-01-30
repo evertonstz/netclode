@@ -1985,8 +1985,15 @@ func (m *Manager) fetchOpenCodeModels() []*pb.ModelInfo {
 		models = append(models, mistralModels...)
 	}
 
+	// Add Ollama models if OLLAMA_URL is set
+	if m.config.OllamaURL != "" {
+		ollamaModels := m.fetchOllamaModels()
+		slog.Info("Fetched OpenCode Ollama models", "count", len(ollamaModels))
+		models = append(models, ollamaModels...)
+	}
+
 	if len(models) == 0 {
-		slog.Warn("No OpenCode credentials configured (need ANTHROPIC_API_KEY, OPENAI_API_KEY, or MISTRAL_API_KEY)")
+		slog.Warn("No OpenCode credentials configured (need ANTHROPIC_API_KEY, OPENAI_API_KEY, MISTRAL_API_KEY, or OLLAMA_URL)")
 	}
 
 	slog.Info("fetchOpenCodeModels returning", "totalModels", len(models))
@@ -2053,6 +2060,77 @@ func (m *Manager) fetchOpenCodeModelsForProvider(provider string) []*pb.ModelInf
 		}
 	}
 
+	return models
+}
+
+// ollamaTagsResponse represents the response from Ollama /api/tags endpoint
+type ollamaTagsResponse struct {
+	Models []ollamaModel `json:"models"`
+}
+
+type ollamaModel struct {
+	Name       string       `json:"name"`
+	Model      string       `json:"model"`
+	Size       int64        `json:"size"`
+	ModifiedAt string       `json:"modified_at"`
+	Details    ollamaDetail `json:"details"`
+}
+
+type ollamaDetail struct {
+	Family            string `json:"family"`
+	ParameterSize     string `json:"parameter_size"`
+	QuantizationLevel string `json:"quantization_level"`
+}
+
+// fetchOllamaModels fetches models from the configured Ollama instance
+func (m *Manager) fetchOllamaModels() []*pb.ModelInfo {
+	if m.config.OllamaURL == "" {
+		return nil
+	}
+
+	url := strings.TrimSuffix(m.config.OllamaURL, "/") + "/api/tags"
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	resp, err := client.Get(url)
+	if err != nil {
+		slog.Error("Failed to fetch from Ollama", "url", url, "error", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("Ollama API error", "status", resp.StatusCode)
+		return nil
+	}
+
+	var data ollamaTagsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		slog.Error("Failed to decode Ollama response", "error", err)
+		return nil
+	}
+
+	models := make([]*pb.ModelInfo, 0, len(data.Models))
+	for _, model := range data.Models {
+		// Extract display name (remove tag suffix for cleaner display)
+		displayName := model.Name
+		if model.Details.ParameterSize != "" {
+			displayName = model.Name + " (" + model.Details.ParameterSize + ")"
+		}
+
+		// All Ollama models are downloaded (they come from /api/tags)
+		downloaded := true
+
+		models = append(models, &pb.ModelInfo{
+			Id:           "ollama/" + model.Name,
+			Name:         displayName,
+			Provider:     strPtr("Ollama"),
+			Capabilities: []string{"chat", "code"},
+			Downloaded:   &downloaded,
+			SizeBytes:    &model.Size,
+		})
+	}
+
+	slog.Info("Fetched models from Ollama", "url", url, "count", len(models))
 	return models
 }
 
