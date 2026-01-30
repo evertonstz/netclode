@@ -80,9 +80,21 @@ export class OpenCodeAdapter implements SDKAdapter {
 
     if (providerId === "ollama" && this.ollamaUrl) {
       console.log("[opencode-adapter] Configuring Ollama provider with URL:", this.ollamaUrl);
+      // Ollama requires @ai-sdk/openai-compatible with /v1 endpoint
+      const ollamaBaseUrl = this.ollamaUrl.endsWith("/v1") 
+        ? this.ollamaUrl 
+        : this.ollamaUrl.replace(/\/$/, "") + "/v1";
       providerConfig["ollama"] = {
-        ...(providerConfig["ollama"] as Record<string, unknown> || {}),
-        baseURL: this.ollamaUrl,
+        npm: "@ai-sdk/openai-compatible",
+        name: "Ollama",
+        options: {
+          baseURL: ollamaBaseUrl,
+        },
+        models: {
+          [modelName]: {
+            name: modelName,
+          },
+        },
       };
     }
 
