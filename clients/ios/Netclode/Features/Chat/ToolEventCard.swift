@@ -1580,6 +1580,8 @@ struct PortExposedCard: View {
 
 struct RepoCloneCard: View {
     let event: RepoCloneEvent
+    
+    @State private var hasAppeared = false
 
     private var statusColor: Color {
         switch event.stage {
@@ -1594,9 +1596,7 @@ struct RepoCloneCard: View {
 
     private var statusIcon: String {
         switch event.stage {
-        case .starting:
-            return "arrow.down.circle"
-        case .cloning:
+        case .starting, .cloning:
             return "arrow.down.circle"
         case .done:
             return "checkmark.circle.fill"
@@ -1625,14 +1625,9 @@ struct RepoCloneCard: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.sm) {
-            // GitHub icon
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: TypeScale.body, weight: .medium))
-                .foregroundStyle(statusColor)
-                .frame(width: 24, height: 24)
-                .background(statusColor.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-
+            // Animated icon
+            RepoCloneIconView(stage: event.stage, color: statusColor)
+            
             // Repo info
             VStack(alignment: .leading, spacing: 2) {
                 Text(repoDisplayName)
@@ -1644,24 +1639,173 @@ struct RepoCloneCard: View {
                     .font(.system(size: TypeScale.caption))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .contentTransition(.numericText())
             }
+            .animation(.snappy, value: event.message)
 
             Spacer()
 
             // Status indicator
-            if isInProgress {
-                ProgressView()
-                    .scaleEffect(0.7)
-            } else {
-                Image(systemName: statusIcon)
-                    .font(.system(size: TypeScale.body + 1))
-                    .foregroundStyle(statusColor)
-            }
+            RepoCloneStatusIndicator(stage: event.stage, color: statusColor)
         }
         .padding(.horizontal, Theme.Spacing.sm)
         .padding(.vertical, Theme.Spacing.sm)
-        .codeCardBackground()
+        .background {
+            RoundedRectangle(cornerRadius: Theme.Radius.sm)
+                .fill(Theme.Colors.codeBackground)
+                .overlay {
+                    // Animated glow border when in progress
+                    if isInProgress {
+                        RoundedRectangle(cornerRadius: Theme.Radius.sm)
+                            .stroke(statusColor.opacity(0.3), lineWidth: 1)
+                            .pulsing(true)
+                    }
+                }
+        }
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
+        .opacity(hasAppeared ? 1 : 0)
+        .offset(y: hasAppeared ? 0 : 8)
+        .onAppear {
+            withAnimation(.smoothAppear) {
+                hasAppeared = true
+            }
+        }
+        .onChange(of: event.stage) { oldStage, newStage in
+            // Haptic feedback on completion
+            if (oldStage == .starting || oldStage == .cloning) && newStage == .done {
+                HapticFeedback.success()
+            } else if (oldStage == .starting || oldStage == .cloning) && newStage == .error {
+                HapticFeedback.error()
+            }
+        }
+    }
+}
+
+// MARK: - Repo Clone Icon View
+
+private struct RepoCloneIconView: View {
+    let stage: RepoCloneStage
+    let color: Color
+    
+    @State private var arrowOffset: CGFloat = 0
+    
+    private var isInProgress: Bool {
+        stage == .starting || stage == .cloning
+    }
+    
+    var body: some View {
+        ZStack {
+            // Background
+            RoundedRectangle(cornerRadius: 6)
+                .fill(color.opacity(0.15))
+                .frame(width: 24, height: 24)
+            
+            // Icon with animation
+            if isInProgress {
+                // Animated download arrow
+                Image(systemName: "arrow.down")
+                    .font(.system(size: TypeScale.caption, weight: .bold))
+                    .foregroundStyle(color)
+                    .offset(y: arrowOffset)
+            } else {
+                // Static branch icon for completed states
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: TypeScale.body, weight: .medium))
+                    .foregroundStyle(color)
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.bouncy, value: stage)
+        .onAppear {
+            if isInProgress {
+                startArrowAnimation()
+            }
+        }
+        .onChange(of: stage) { _, newStage in
+            if newStage == .starting || newStage == .cloning {
+                startArrowAnimation()
+            } else {
+                arrowOffset = 0
+            }
+        }
+    }
+    
+    private func startArrowAnimation() {
+        withAnimation(
+            .easeInOut(duration: 0.6)
+            .repeatForever(autoreverses: true)
+        ) {
+            arrowOffset = 3
+        }
+    }
+}
+
+// MARK: - Repo Clone Status Indicator
+
+private struct RepoCloneStatusIndicator: View {
+    let stage: RepoCloneStage
+    let color: Color
+    
+    @State private var dotIndex = 0
+    @State private var completionScale: CGFloat = 1.0
+    @State private var animationTimer: Timer?
+    
+    private var isInProgress: Bool {
+        stage == .starting || stage == .cloning
+    }
+    
+    var body: some View {
+        Group {
+            if isInProgress {
+                // Animated dots indicator
+                HStack(spacing: 3) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill(color)
+                            .frame(width: 4, height: 4)
+                            .opacity(dotIndex == index ? 1 : 0.3)
+                    }
+                }
+                .onAppear {
+                    startDotAnimation()
+                }
+                .onDisappear {
+                    stopDotAnimation()
+                }
+            } else {
+                // Completion icon with pop animation
+                Image(systemName: stage == .done ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .font(.system(size: TypeScale.body + 1))
+                    .foregroundStyle(color)
+                    .scaleEffect(completionScale)
+                    .onAppear {
+                        // Pop animation on appear
+                        withAnimation(.bouncy) {
+                            completionScale = 1.15
+                        }
+                        withAnimation(.bouncy.delay(0.15)) {
+                            completionScale = 1.0
+                        }
+                    }
+            }
+        }
+        .animation(.snappy, value: stage)
+    }
+    
+    private func startDotAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
+            MainActor.assumeIsolated {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    dotIndex = (dotIndex + 1) % 3
+                }
+            }
+        }
+    }
+    
+    private func stopDotAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
     }
 }
 
