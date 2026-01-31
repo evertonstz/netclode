@@ -142,6 +142,7 @@ struct DiffLineView: View {
 
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .font(.system(size: 11, design: .monospaced))
         .padding(.horizontal, 6)
         .padding(.vertical, 1)

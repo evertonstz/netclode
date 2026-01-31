@@ -21,11 +21,9 @@ struct UnifiedDiffView: View {
         if files.isEmpty {
             emptyState
         } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyVStack(alignment: .leading, spacing: Theme.Spacing.md) {
-                    ForEach(files) { file in
-                        FileDiffSection(file: file, showHeader: showFileHeaders)
-                    }
+            LazyVStack(alignment: .leading, spacing: Theme.Spacing.md) {
+                ForEach(files) { file in
+                    FileDiffSection(file: file, showHeader: showFileHeaders)
                 }
             }
         }
@@ -199,6 +197,7 @@ struct HunkSection: View {
 
                 Spacer()
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Theme.Spacing.sm)
             .padding(.vertical, Theme.Spacing.xxs)
             .background(DiffColors.hunkHeader.opacity(0.5))
