@@ -108,7 +108,7 @@ spec:
             - name: WARM_POOL_ENABLED
               value: "true"
             - name: MAX_ACTIVE_SESSIONS
-              value: "10"
+              value: "{{ max_active_sessions | default('5') }}"
             # Host resources (used to derive per-session limits: CPU 50%, Memory 25%)
             - name: HOST_CPUS
               value: "{{ ansible_processor_vcpus }}"
