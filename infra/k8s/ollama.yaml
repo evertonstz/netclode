@@ -87,7 +87,9 @@ spec:
             - name: OLLAMA_FLASH_ATTENTION
               value: "1"
             # Context window size (default 2048) - higher uses more VRAM
-            - name: OLLAMA_NUM_CTX
+            # OLLAMA_CONTEXT_LENGTH works with both native and OpenAI-compatible APIs
+            # (OLLAMA_NUM_CTX only works with native API)
+            - name: OLLAMA_CONTEXT_LENGTH
               value: "32768"
             # KV cache quantization - reduces VRAM usage for context
             # q8_0 saves ~27% VRAM with minimal quality loss
