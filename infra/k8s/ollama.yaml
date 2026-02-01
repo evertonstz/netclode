@@ -98,10 +98,10 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: 1
-              memory: 4Gi
+              memory: 8Gi  # devstral-small-2 offloads ~2.6GB to CPU
             requests:
               nvidia.com/gpu: 1
-              memory: 2Gi
+              memory: 4Gi
           volumeMounts:
             - name: models
               mountPath: /models
