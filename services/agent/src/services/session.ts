@@ -7,8 +7,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import { setupRepository, repoDirName } from "../git.js";
 import type { PromptEvent } from "../sdk/types.js";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "../constants.js";
 
 const SESSION_MAPPING_FILE = "/agent/.session-mapping.json";
 

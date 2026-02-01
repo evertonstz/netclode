@@ -12,8 +12,7 @@ import {
   translateEvent,
   type TranslatorState,
 } from "./translator.js";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "../../constants.js";
 const OPENCODE_PORT = 4096;
 const OPENCODE_HOST = "127.0.0.1";
 

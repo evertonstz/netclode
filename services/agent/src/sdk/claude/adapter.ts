@@ -15,8 +15,7 @@ import {
   type TranslatorState,
   type ClaudeMessage,
 } from "./translator.js";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "../../constants.js";
 
 export class ClaudeSDKAdapter implements SDKAdapter {
   private config: SDKConfig | null = null;

@@ -4,8 +4,7 @@
 
 import type { IPty } from "node-pty";
 import * as pty from "node-pty";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "../constants.js";
 
 // Terminal output callback (set by connect-client)
 let globalTerminalOutputCallback: ((data: string) => void) | null = null;

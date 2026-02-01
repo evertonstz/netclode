@@ -31,8 +31,7 @@ import {
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "../../constants.js";
 
 // Codex session ID mapping (Netclode session ID -> Codex thread ID)
 const codexThreadMap = new Map<string, string>();

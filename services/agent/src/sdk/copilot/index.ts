@@ -2,7 +2,7 @@
  * GitHub Copilot SDK adapter
  */
 
-export { CopilotAdapter, type CopilotModelInfo } from "./adapter.js";
+export { CopilotAdapter } from "./adapter.js";
 export {
   createTranslatorState,
   resetTranslatorState,

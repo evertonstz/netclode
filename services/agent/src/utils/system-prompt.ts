@@ -3,8 +3,7 @@
  */
 
 import { repoDirName } from "../git.js";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "../constants.js";
 
 export interface SystemPromptConfig {
   currentGitRepos: string[];

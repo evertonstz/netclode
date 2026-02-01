@@ -49,9 +49,6 @@ import { getGitStatus, getGitDiff, configureGitCredentials, repoDirName, type Gi
 // Import SDK abstraction layer
 import {
   createSDKAdapter,
-  parseSdkType,
-  getAdapter,
-  shutdownAllAdapters,
   type SDKAdapter,
   type PromptEvent,
   type SdkType,
@@ -59,8 +56,7 @@ import {
 } from "./sdk/index.js";
 import { SdkType as ProtoSdkType } from "../gen/netclode/v1/common_pb.js";
 import { initializeSessionRepos } from "./services/session.js";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "./constants.js";
 
 // Track if a prompt is currently running (to prevent concurrent prompts)
 let isPromptRunning = false;

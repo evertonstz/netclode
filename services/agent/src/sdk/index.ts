@@ -25,7 +25,7 @@ export {
 // Adapters
 export { ClaudeSDKAdapter } from "./claude/index.js";
 export { OpenCodeAdapter } from "./opencode/index.js";
-export { CopilotAdapter, type CopilotModelInfo } from "./copilot/index.js";
+export { CopilotAdapter } from "./copilot/index.js";
 export { CodexAdapter } from "./codex/index.js";
 
 // Utilities

@@ -19,7 +19,7 @@
  *    - Access to GPT-4o, Claude models via GitHub Copilot
  */
 
-import { CopilotClient, type CopilotSession, type SessionEvent, type ModelInfo } from "@github/copilot-sdk";
+import { CopilotClient, type CopilotSession, type SessionEvent } from "@github/copilot-sdk";
 import type { SDKAdapter, SDKConfig, PromptConfig, PromptEvent, CopilotBackend } from "../types.js";
 import {
   createTranslatorState,
@@ -29,22 +29,10 @@ import {
   type TranslatorState,
   type CopilotEvent,
 } from "./translator.js";
-
-const WORKSPACE_DIR = "/agent/workspace";
+import { WORKSPACE_DIR } from "../../constants.js";
 
 // Copilot session ID mapping (Netclode session ID -> Copilot session ID)
 const copilotSessionMap = new Map<string, string>();
-
-/**
- * Simplified model info for our API
- */
-export interface CopilotModelInfo {
-  id: string;
-  name: string;
-  provider?: string;
-  billingMultiplier?: number;
-  supportsVision?: boolean;
-}
 
 export class CopilotAdapter implements SDKAdapter {
   private config: SDKConfig | null = null;
@@ -91,96 +79,6 @@ export class CopilotAdapter implements SDKAdapter {
     });
 
     console.log("[copilot-adapter] Client created");
-  }
-
-  /**
-   * Get backend type for this adapter
-   */
-  getBackend(): CopilotBackend {
-    return this.backend;
-  }
-
-/**
-   * List available models from the Copilot SDK
-   * For GitHub backend, this returns models with billing multipliers
-   * For Anthropic backend, this returns hardcoded Anthropic models
-   */
-  async listModels(): Promise<CopilotModelInfo[]> {
-    if (!this.client) {
-      throw new Error("Copilot client not initialized");
-    }
-
-    if (this.backend === "anthropic") {
-      // For Anthropic BYOK, return hardcoded models
-      // The Copilot SDK doesn't provide model listing for BYOK
-      return [
-        {
-          id: "claude-sonnet-4-20250514",
-          name: "Claude Sonnet 4",
-          provider: "anthropic",
-          supportsVision: true,
-        },
-        {
-          id: "claude-3-5-sonnet-20241022",
-          name: "Claude 3.5 Sonnet",
-          provider: "anthropic",
-          supportsVision: true,
-        },
-        {
-          id: "claude-3-5-haiku-20241022",
-          name: "Claude 3.5 Haiku",
-          provider: "anthropic",
-          supportsVision: true,
-        },
-      ];
-    }
-
-    // For GitHub backend, use SDK's listModels
-    try {
-      const models = await this.client.listModels();
-      console.log("[copilot-adapter] Listed models from GitHub:", models.length);
-      
-      // Transform to our simplified format
-      return models.map((m) => ({
-        id: m.id,
-        name: m.name,
-        billingMultiplier: m.billing?.multiplier,
-        supportsVision: m.capabilities?.supports?.vision,
-      }));
-    } catch (error) {
-      console.error("[copilot-adapter] Failed to list models:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get GitHub Copilot authentication status
-   * Only meaningful for GitHub backend
-   */
-  async getAuthStatus(): Promise<{ isAuthenticated: boolean; authType?: string; login?: string }> {
-    if (!this.client) {
-      throw new Error("Copilot client not initialized");
-    }
-
-    if (this.backend === "anthropic") {
-      // For Anthropic BYOK, auth is based on having the API key
-      return {
-        isAuthenticated: Boolean(this.config?.anthropicApiKey),
-        authType: "api-key",
-      };
-    }
-
-    try {
-      const status = await this.client.getAuthStatus();
-      return {
-        isAuthenticated: status.isAuthenticated,
-        authType: status.authType,
-        login: status.login,
-      };
-    } catch (error) {
-      console.error("[copilot-adapter] Failed to get auth status:", error);
-      return { isAuthenticated: false };
-    }
   }
 
   async *executePrompt(sessionId: string, text: string, promptConfig?: PromptConfig): AsyncGenerator<PromptEvent> {
