@@ -222,26 +222,50 @@ enum DiffEngine {
         return (oldHighlights, newHighlights)
     }
     
-    /// Tokenize a string into words and whitespace, preserving positions
+    /// Character category for tokenization (matches git's word-diff behavior)
+    private enum CharCategory {
+        case alphanumeric  // Letters, numbers, underscore
+        case whitespace    // Spaces, tabs, etc.
+        case punctuation   // Everything else (operators, brackets, etc.)
+        
+        init(_ char: Character) {
+            if char.isWhitespace {
+                self = .whitespace
+            } else if char.isLetter || char.isNumber || char == "_" {
+                self = .alphanumeric
+            } else {
+                self = .punctuation
+            }
+        }
+    }
+    
+    /// Tokenize a string into words, whitespace, and punctuation, preserving positions.
+    /// Matches git's word-diff behavior: splits on category boundaries.
+    /// Example: "foo.bar += 1" → ["foo", ".", "bar", " ", "+=", " ", "1"]
     private static func tokenize(_ text: String) -> [Token] {
+        guard !text.isEmpty else { return [] }
+        
         var tokens: [Token] = []
         var currentToken = ""
         var currentStart = 0
-        var isInWord = false
+        var currentCategory: CharCategory?
         
         for (index, char) in text.enumerated() {
-            let charIsWord = !char.isWhitespace
+            let category = CharCategory(char)
             
-            if charIsWord != isInWord {
-                // Transition - save current token if any
+            if let current = currentCategory, current != category {
+                // Category changed - save current token
                 if !currentToken.isEmpty {
                     tokens.append(Token(text: currentToken, start: currentStart))
                 }
                 currentToken = String(char)
                 currentStart = index
-                isInWord = charIsWord
+                currentCategory = category
             } else {
                 currentToken.append(char)
+                if currentCategory == nil {
+                    currentCategory = category
+                }
             }
         }
         
@@ -551,31 +575,46 @@ enum UnifiedDiffParser {
         return result
     }
     
-    /// Enhance diff lines with word-level highlights for adjacent deletion/addition pairs
+    /// Enhance diff lines with word-level highlights for true 1:1 modifications.
+    /// Only highlights when a single deletion is followed by a single addition (not part of a block).
     private static func enhanceWithWordHighlights(_ lines: [DiffLine]) -> [DiffLine] {
         var result: [DiffLine] = []
         var i = 0
         
         while i < lines.count {
-            // Look for deletion followed by addition (modification)
+            // Look for a true 1:1 modification: single deletion followed by single addition
+            // Must verify it's not part of a larger block of deletions/additions
             if i + 1 < lines.count,
                lines[i].type == .deletion,
                lines[i + 1].type == .addition {
                 
-                let (oldHighlights, newHighlights) = DiffEngine.computeWordDiff(
-                    old: lines[i].content,
-                    new: lines[i + 1].content
-                )
+                // Check if this is truly a 1:1 modification:
+                // - Previous line (if any) should NOT be a deletion
+                // - Next line after the addition (if any) should NOT be an addition
+                let prevIsDeletion = i > 0 && lines[i - 1].type == .deletion
+                let nextIsAddition = i + 2 < lines.count && lines[i + 2].type == .addition
                 
-                var deletionLine = lines[i]
-                deletionLine.wordHighlights = oldHighlights
-                
-                var additionLine = lines[i + 1]
-                additionLine.wordHighlights = newHighlights
-                
-                result.append(deletionLine)
-                result.append(additionLine)
-                i += 2
+                if !prevIsDeletion && !nextIsAddition {
+                    // True 1:1 modification - apply word highlighting
+                    let (oldHighlights, newHighlights) = DiffEngine.computeWordDiff(
+                        old: lines[i].content,
+                        new: lines[i + 1].content
+                    )
+                    
+                    var deletionLine = lines[i]
+                    deletionLine.wordHighlights = oldHighlights
+                    
+                    var additionLine = lines[i + 1]
+                    additionLine.wordHighlights = newHighlights
+                    
+                    result.append(deletionLine)
+                    result.append(additionLine)
+                    i += 2
+                } else {
+                    // Part of a larger block - no word highlighting
+                    result.append(lines[i])
+                    i += 1
+                }
             } else {
                 result.append(lines[i])
                 i += 1
