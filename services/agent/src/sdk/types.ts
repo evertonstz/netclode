@@ -96,11 +96,6 @@ export interface SDKAdapter {
   isInterrupted(): boolean;
 
   /**
-   * Get the current git repo (for system prompt)
-   */
-  getCurrentGitRepo(): string | null;
-
-  /**
    * Shutdown the SDK adapter
    * Called when the agent is shutting down
    */

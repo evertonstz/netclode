@@ -6,9 +6,8 @@
 
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKAdapter, SDKConfig, PromptConfig, PromptEvent } from "../types.js";
-import { getSdkSessionId, registerSession, isSessionInitialized, markSessionInitialized } from "../../services/session.js";
+import { getSdkSessionId, registerSession } from "../../services/session.js";
 import { buildSystemPrompt } from "../../utils/system-prompt.js";
-import { repoDirName, setupRepository } from "../../git.js";
 import {
   createTranslatorState,
   resetTranslatorState,
@@ -23,9 +22,6 @@ export class ClaudeSDKAdapter implements SDKAdapter {
   private config: SDKConfig | null = null;
   private interruptSignal = false;
   private abortController: AbortController | null = null;
-  private currentGitRepo: string | null = null;
-  private currentGitRepos: string[] = [];
-  private currentGithubToken: string | null = null;
   private translatorState: TranslatorState = createTranslatorState();
 
   async initialize(config: SDKConfig): Promise<void> {
@@ -38,39 +34,8 @@ export class ClaudeSDKAdapter implements SDKAdapter {
       `[claude-adapter] ExecutePrompt (session=${sessionId}): "${text.slice(0, 100)}${text.length > 100 ? "..." : ""}"`
     );
 
-    // Initialize repo for this session if config provided
-    if (sessionId && promptConfig) {
-      if (!isSessionInitialized(sessionId)) {
-        console.log(`[claude-adapter] Initializing session ${sessionId}`);
-
-        this.currentGitRepos = promptConfig.repos?.filter(Boolean) ?? [];
-        this.currentGitRepo = this.currentGitRepos[0] || null;
-        this.currentGithubToken = promptConfig.githubToken || null;
-
-        for (const repo of this.currentGitRepos) {
-          yield { type: "repoClone", stage: "cloning", repo, message: "Cloning repository..." };
-
-          try {
-            await setupRepository(
-              repo,
-              `${WORKSPACE_DIR}/${repoDirName(repo)}`,
-              sessionId,
-              this.currentGithubToken || undefined
-            );
-            yield { type: "repoClone", stage: "done", repo, message: "Repository cloned successfully" };
-          } catch (error) {
-            yield {
-              type: "repoClone",
-              stage: "error",
-              repo,
-              message: `Failed to clone: ${error instanceof Error ? error.message : String(error)}`,
-            };
-          }
-        }
-
-        markSessionInitialized(sessionId);
-      }
-    }
+    // Get repos from config for system prompt
+    const currentGitRepos = promptConfig?.repos?.filter(Boolean) ?? [];
 
     // Reset translator state for new prompt
     resetTranslatorState(this.translatorState);
@@ -96,7 +61,7 @@ export class ClaudeSDKAdapter implements SDKAdapter {
           persistSession: true,
           includePartialMessages: true,
           maxThinkingTokens: 10000,
-          systemPrompt: buildSystemPrompt({ currentGitRepos: this.currentGitRepos }),
+          systemPrompt: buildSystemPrompt({ currentGitRepos }),
           settingSources: ["user", "project", "local"],
           abortController: this.abortController,
           ...(sdkSessionId && { resume: sdkSessionId }),
@@ -160,10 +125,6 @@ export class ClaudeSDKAdapter implements SDKAdapter {
 
   isInterrupted(): boolean {
     return this.interruptSignal;
-  }
-
-  getCurrentGitRepo(): string | null {
-    return this.currentGitRepo;
   }
 
   async shutdown(): Promise<void> {

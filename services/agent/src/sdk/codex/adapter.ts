@@ -19,8 +19,6 @@
 
 import { Codex, type Thread, type ThreadEvent, type ModelReasoningEffort } from "@openai/codex-sdk";
 import type { SDKAdapter, SDKConfig, PromptConfig, PromptEvent } from "../types.js";
-import { isSessionInitialized, markSessionInitialized } from "../../services/session.js";
-import { repoDirName, setupRepository } from "../../git.js";
 import {
   createTranslatorState,
   resetTranslatorState,
@@ -44,9 +42,6 @@ export class CodexAdapter implements SDKAdapter {
   private codex: Codex | null = null;
   private thread: Thread | null = null;
   private interruptSignal = false;
-  private currentGitRepo: string | null = null;
-  private currentGitRepos: string[] = [];
-  private currentGithubToken: string | null = null;
   private translatorState: TranslatorState = createTranslatorState();
 
   // Cleaned model name (without :api/:oauth/:effort suffixes)
@@ -158,45 +153,6 @@ export class CodexAdapter implements SDKAdapter {
       `[codex-adapter] ExecutePrompt (session=${sessionId}): "${text.slice(0, 100)}${text.length > 100 ? "..." : ""}"`
     );
 
-    // Initialize repo for this session if needed
-    if (sessionId && promptConfig) {
-      if (!isSessionInitialized(sessionId)) {
-        console.log(`[codex-adapter] Initializing session ${sessionId}`);
-
-        this.currentGitRepos = promptConfig.repos?.filter(Boolean) ?? [];
-        this.currentGitRepo = this.currentGitRepos[0] || null;
-        this.currentGithubToken = promptConfig.githubToken || null;
-
-        for (const repo of this.currentGitRepos) {
-          yield { type: "repoClone", stage: "cloning", repo, message: "Cloning repository..." };
-
-          try {
-            await setupRepository(
-              repo,
-              `${WORKSPACE_DIR}/${repoDirName(repo)}`,
-              sessionId,
-              this.currentGithubToken || undefined
-            );
-            yield {
-              type: "repoClone",
-              stage: "done",
-              repo,
-              message: "Repository cloned successfully",
-            };
-          } catch (error) {
-            yield {
-              type: "repoClone",
-              stage: "error",
-              repo,
-              message: `Failed to clone: ${error instanceof Error ? error.message : String(error)}`,
-            };
-          }
-        }
-
-        markSessionInitialized(sessionId);
-      }
-    }
-
     // Clear interrupt signal
     this.clearInterruptSignal();
 
@@ -292,10 +248,6 @@ export class CodexAdapter implements SDKAdapter {
 
   isInterrupted(): boolean {
     return this.interruptSignal;
-  }
-
-  getCurrentGitRepo(): string | null {
-    return this.currentGitRepo;
   }
 
   async shutdown(): Promise<void> {

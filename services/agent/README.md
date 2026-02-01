@@ -192,7 +192,6 @@ interface SDKAdapter {
   setInterruptSignal(): void;
   clearInterruptSignal(): void;
   isInterrupted(): boolean;
-  getCurrentGitRepo(): string | null;
   shutdown(): Promise<void>;
 }
 ```

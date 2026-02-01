@@ -58,6 +58,7 @@ import {
   type CopilotBackend,
 } from "./sdk/index.js";
 import { SdkType as ProtoSdkType } from "../gen/netclode/v1/common_pb.js";
+import { initializeSessionRepos } from "./services/session.js";
 
 const WORKSPACE_DIR = "/agent/workspace";
 
@@ -557,6 +558,13 @@ async function handleExecutePrompt(
   }
 
   try {
+    // Initialize session repos if needed (SDK-agnostic)
+    if (config?.repos && config.repos.length > 0) {
+      for await (const event of initializeSessionRepos(sessionId, config.repos, config.githubToken)) {
+        send(promptEventToAgentMessage(event));
+      }
+    }
+
     for await (const event of currentAdapter.executePrompt(
       sessionId,
       text,

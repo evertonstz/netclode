@@ -5,6 +5,10 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { dirname } from "path";
+import { setupRepository, repoDirName } from "../git.js";
+import type { PromptEvent } from "../sdk/types.js";
+
+const WORKSPACE_DIR = "/agent/workspace";
 
 const SESSION_MAPPING_FILE = "/agent/.session-mapping.json";
 
@@ -90,3 +94,38 @@ export function getInitializedSessionId(): string | null {
 
 // Load session mapping on module initialization
 loadSessionMapping();
+
+/**
+ * Initialize session repositories (clone repos if needed).
+ * This is SDK-agnostic and should be called before executePrompt.
+ */
+export async function* initializeSessionRepos(
+  sessionId: string,
+  repos: string[],
+  githubToken?: string
+): AsyncGenerator<PromptEvent> {
+  if (isSessionInitialized(sessionId)) {
+    return;
+  }
+
+  console.log(`[session] Initializing session ${sessionId}`);
+
+  const filteredRepos = repos.filter(Boolean);
+  for (const repo of filteredRepos) {
+    yield { type: "repoClone", stage: "cloning", repo, message: "Cloning repository..." };
+
+    try {
+      await setupRepository(repo, `${WORKSPACE_DIR}/${repoDirName(repo)}`, sessionId, githubToken);
+      yield { type: "repoClone", stage: "done", repo, message: "Repository cloned successfully" };
+    } catch (error) {
+      yield {
+        type: "repoClone",
+        stage: "error",
+        repo,
+        message: `Failed to clone: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  markSessionInitialized(sessionId);
+}
