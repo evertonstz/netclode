@@ -155,6 +155,8 @@ func (m *Manager) handleAgentEvent(ctx context.Context, sessionID string, state 
 	// Determine if this is a partial (streaming) event based on kind
 	// Tool input/output deltas are partial; start/end events are final
 	partial := false
+	var eventTimestamp time.Time
+
 	switch event.Kind {
 	case pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_INPUT,
 		pb.AgentEventKind_AGENT_EVENT_KIND_TOOL_OUTPUT:
@@ -170,11 +172,27 @@ func (m *Manager) handleAgentEvent(ctx context.Context, sessionID string, state 
 		if event.GetThinking() != nil {
 			partial = event.GetThinking().Partial
 		}
+		// Track when this thinking block started (for correct timestamp ordering)
+		// Use correlation_id as the thinking ID
+		thinkingID := event.CorrelationId
+		if thinkingID != "" {
+			m.mu.Lock()
+			if _, exists := state.ThinkingStartTimes[thinkingID]; !exists {
+				state.ThinkingStartTimes[thinkingID] = time.Now()
+			}
+			eventTimestamp = state.ThinkingStartTimes[thinkingID]
+			m.mu.Unlock()
+		}
 	}
 
 	// Events are persisted and emitted via emitAgentEvent
 	// which writes to the unified stream
-	m.emitAgentEvent(ctx, sessionID, event, partial)
+	// For thinking events, use the start time for correct ordering
+	if !eventTimestamp.IsZero() {
+		m.emitAgentEvent(ctx, sessionID, event, partial, eventTimestamp)
+	} else {
+		m.emitAgentEvent(ctx, sessionID, event, partial)
+	}
 
 	return nil
 }

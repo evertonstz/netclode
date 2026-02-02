@@ -1626,13 +1626,18 @@ func (m *Manager) emitSessionError(ctx context.Context, sessionID, errMsg string
 
 // emitAgentEvent broadcasts an agent event to all subscribers.
 // The partial flag indicates if this is a streaming delta (true) or final event (false).
-func (m *Manager) emitAgentEvent(ctx context.Context, sessionID string, event *pb.AgentEvent, partial bool) {
+// The optional timestamp parameter allows specifying when the event logically started (for correct ordering).
+func (m *Manager) emitAgentEvent(ctx context.Context, sessionID string, event *pb.AgentEvent, partial bool, timestamp ...time.Time) {
+	ts := time.Now()
+	if len(timestamp) > 0 && !timestamp[0].IsZero() {
+		ts = timestamp[0]
+	}
 	payload, _ := protoJsonOpts.Marshal(event)
 	m.publishStreamEntry(ctx, sessionID, &storage.StreamEntry{
 		Type:      storage.StreamEntryTypeEvent,
 		Partial:   partial,
 		Payload:   payload,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Timestamp: ts.UTC().Format(time.RFC3339),
 	})
 }
 

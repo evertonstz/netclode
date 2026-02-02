@@ -21,6 +21,7 @@ type SessionState struct {
 	TitleGenerated          bool
 	OriginalPrompt          string
 	ThinkingBuffers         map[string]string
+	ThinkingStartTimes      map[string]time.Time // When each thinking block started (for correct timestamp ordering)
 
 	// Restore state - when set, next sandbox creation restores from this snapshot
 	RestoreSnapshotID string
@@ -29,8 +30,9 @@ type SessionState struct {
 // NewSessionState creates a new session state.
 func NewSessionState(session *pb.Session) *SessionState {
 	return &SessionState{
-		Session:         session,
-		ThinkingBuffers: make(map[string]string),
+		Session:            session,
+		ThinkingBuffers:    make(map[string]string),
+		ThinkingStartTimes: make(map[string]time.Time),
 	}
 }
 
