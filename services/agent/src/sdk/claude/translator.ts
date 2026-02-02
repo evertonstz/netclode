@@ -172,7 +172,17 @@ export function translateToolResultBlock(
   const durationMs = startTime ? Date.now() - startTime : undefined;
 
   const isError = block.is_error === true;
-  const content = typeof block.content === "string" ? block.content : undefined;
+  // Content can be a string or an array of content blocks
+  let content: string | undefined;
+  if (typeof block.content === "string") {
+    content = block.content;
+  } else if (Array.isArray(block.content)) {
+    // Extract text from content blocks array
+    content = block.content
+      .filter((c): c is { type: "text"; text: string } => typeof c === "object" && c !== null && c.type === "text")
+      .map((c) => c.text)
+      .join("\n");
+  }
 
   return {
     type: "toolEnd",
