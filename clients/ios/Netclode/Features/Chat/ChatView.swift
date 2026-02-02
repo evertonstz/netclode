@@ -150,7 +150,9 @@ struct ChatView: View {
 
     /// Unified timeline combining messages and events, sorted by timestamp
     private func computeTimeline() -> [TimelineItem] {
-        var items: [TimelineItem] = []
+        // Track items with their original insertion order for stable sorting
+        var indexedItems: [(item: TimelineItem, insertionOrder: Int)] = []
+        var insertionOrder = 0
         let repoOrder = repoOrderMap()
 
         // Add messages with turn duration calculation
@@ -182,24 +184,27 @@ struct ChatView: View {
                 turnDuration = endTime.timeIntervalSince(userTime)
             }
 
-            items.append(.message(message, isStreaming: isStreaming, turnDuration: turnDuration))
+            indexedItems.append((.message(message, isStreaming: isStreaming, turnDuration: turnDuration), insertionOrder))
+            insertionOrder += 1
         }
 
         // Add grouped events
         let groupedEvents = groupEvents(events)
         let adjustedEvents = adjustRepoCloneTimestamps(groupedEvents, repoOrder: repoOrder)
         for grouped in adjustedEvents {
-            items.append(.event(grouped))
+            indexedItems.append((.event(grouped), insertionOrder))
+            insertionOrder += 1
         }
 
         // Sort by timestamp with special handling:
         // 1. Repo clone events preserve session repo order
         // 2. Thinking events sort before assistant messages in the same turn
         //    (thinking may arrive after message starts due to SDK streaming order)
-        return items.sorted { lhs, rhs in
+        // 3. Use insertion order as tiebreaker for stable sorting when timestamps are equal
+        let sorted = indexedItems.sorted { lhs, rhs in
             // Handle repo clone ordering
-            if case .event(let lhsGrouped) = lhs,
-               case .event(let rhsGrouped) = rhs,
+            if case .event(let lhsGrouped) = lhs.item,
+               case .event(let rhsGrouped) = rhs.item,
                case .repoClone(let lhsRepo) = lhsGrouped.event,
                case .repoClone(let rhsRepo) = rhsGrouped.event {
                 let lhsIndex = repoOrder[normalizeRepoName(lhsRepo.repo)] ?? Int.max
@@ -211,20 +216,26 @@ struct ChatView: View {
             
             // Ensure thinking events sort before assistant messages in same turn
             // (within 60 seconds = same turn)
-            let timeDiff = abs(lhs.timestamp.timeIntervalSince(rhs.timestamp))
+            let timeDiff = abs(lhs.item.timestamp.timeIntervalSince(rhs.item.timestamp))
             if timeDiff < 60 {
-                let lhsIsThinking = lhs.isThinkingEvent
-                let rhsIsThinking = rhs.isThinkingEvent
-                let lhsIsAssistantMsg = lhs.isAssistantMessage
-                let rhsIsAssistantMsg = rhs.isAssistantMessage
+                let lhsIsThinking = lhs.item.isThinkingEvent
+                let rhsIsThinking = rhs.item.isThinkingEvent
+                let lhsIsAssistantMsg = lhs.item.isAssistantMessage
+                let rhsIsAssistantMsg = rhs.item.isAssistantMessage
                 
                 // Thinking before assistant message
                 if lhsIsThinking && rhsIsAssistantMsg { return true }
                 if lhsIsAssistantMsg && rhsIsThinking { return false }
             }
             
-            return lhs.timestamp < rhs.timestamp
+            // Primary sort by timestamp, secondary by insertion order for stability
+            if lhs.item.timestamp != rhs.item.timestamp {
+                return lhs.item.timestamp < rhs.item.timestamp
+            }
+            return lhs.insertionOrder < rhs.insertionOrder
         }
+        
+        return sorted.map { $0.item }
     }
 
     private func repoOrderMap() -> [String: Int] {
