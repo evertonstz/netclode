@@ -989,6 +989,7 @@ final class ConnectService {
             kind = "tool_end"
             let payload = proto.toolEnd
             toolUseId = correlationId
+            result = payload.hasResult ? payload.result : nil
             error = payload.hasError ? payload.error : nil
             durationMs = payload.hasDurationMs ? payload.durationMs : nil
             

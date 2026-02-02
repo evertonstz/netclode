@@ -88,19 +88,7 @@ export class ClaudeSDKAdapter implements SDKAdapter {
           event: msg.event as ClaudeMessage["event"],
         };
 
-        // Debug: log user messages with tool results
-        if (claudeMessage.type === "user") {
-          console.log(`[claude-adapter] User message received:`, JSON.stringify(claudeMessage.message?.content, null, 2));
-        }
-
         const result = translateMessage(claudeMessage, this.translatorState);
-        
-        // Debug: log toolEnd events
-        for (const event of result.events) {
-          if (event.type === "toolEnd") {
-            console.log(`[claude-adapter] toolEnd event:`, JSON.stringify(event, null, 2));
-          }
-        }
 
         // Handle session registration
         if (result.sessionId && sessionId && !getSdkSessionId(sessionId)) {
