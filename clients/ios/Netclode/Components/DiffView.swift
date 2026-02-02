@@ -64,12 +64,14 @@ struct DiffView: View {
                 .padding(.bottom, Theme.Spacing.xxs)
             }
 
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(displayedLines) { line in
-                    DiffLineView(line: line, showLineNumbers: true, language: language, colorScheme: colorScheme)
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(displayedLines) { line in
+                        DiffLineView(line: line, showLineNumbers: true, language: language, colorScheme: colorScheme)
+                    }
                 }
+                .font(.system(size: 12, design: .monospaced))
             }
-            .font(.system(size: 12, design: .monospaced))
             .background(DiffColors.background)
             .clipShape(RoundedRectangle(cornerRadius: 6))
 
@@ -218,7 +220,7 @@ struct SyntaxHighlightedDiffText: View {
 
     var body: some View {
         Text(buildAttributedString())
-            .fixedSize(horizontal: false, vertical: true)
+            .fixedSize(horizontal: true, vertical: false)
     }
 
     private func buildAttributedString() -> AttributedString {

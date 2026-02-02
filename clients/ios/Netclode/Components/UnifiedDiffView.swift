@@ -202,9 +202,13 @@ struct HunkSection: View {
             .padding(.vertical, Theme.Spacing.xxs)
             .background(DiffColors.hunkHeader.opacity(0.5))
 
-            // Lines with syntax highlighting
-            ForEach(hunk.lines) { line in
-                DiffLineView(line: line, showLineNumbers: true, language: language, colorScheme: colorScheme)
+            // Lines with syntax highlighting (horizontal scroll, no wrap)
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(hunk.lines) { line in
+                        DiffLineView(line: line, showLineNumbers: true, language: language, colorScheme: colorScheme)
+                    }
+                }
             }
         }
     }
