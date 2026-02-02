@@ -273,34 +273,27 @@ final class EventStore {
         }
     }
 
-    /// Load events from server sync response
+    /// Load events from server - replace local state
     func loadEvents(sessionId: String, events: [PersistedEvent]) {
-        // Aggregate events:
-        // 1. Thinking events by thinkingId to avoid fragmented display
-        // 2. tool_input_complete input merged into tool_start events
-        // 3. tool_output content merged into tool_end result
-        var aggregatedEvents: [AgentEvent] = []
-        var thinkingIndex: [String: Int] = [:] // thinkingId -> index in aggregatedEvents
-        var toolStartIndex: [String: Int] = [:] // toolUseId -> index in aggregatedEvents
-        var toolEndIndex: [String: Int] = [:] // toolUseId -> index in aggregatedEvents
-        var accumulatedOutput: [String: String] = [:] // toolUseId -> accumulated output
+        // Aggregate events for display
+        var aggregated: [AgentEvent] = []
+        var thinkingIndex: [String: Int] = [:]
+        var toolStartIndex: [String: Int] = [:]
+        var toolEndIndex: [String: Int] = [:]
+        var accumulatedOutput: [String: String] = [:]
 
         for persistedEvent in events {
             let event = persistedEvent.event.toAgentEvent()
 
             switch event {
             case .thinking(let thinkingEvent):
-                // Skip tool output that was incorrectly converted to thinking events
-                // These have thinkingId like "output_<toolUseId>"
                 if thinkingEvent.thinkingId.hasPrefix("output_") {
-                    // This is actually tool output - accumulate it
                     let toolUseId = String(thinkingEvent.thinkingId.dropFirst("output_".count))
                     let accumulated = (accumulatedOutput[toolUseId] ?? "") + thinkingEvent.content
                     accumulatedOutput[toolUseId] = accumulated
                     
-                    // If we already have the tool_end, update it with the accumulated output
                     if let endIndex = toolEndIndex[toolUseId] {
-                        if case .toolEnd(let existing) = aggregatedEvents[endIndex] {
+                        if case .toolEnd(let existing) = aggregated[endIndex] {
                             let updated = ToolEndEvent(
                                 id: existing.id,
                                 timestamp: existing.timestamp,
@@ -311,35 +304,30 @@ final class EventStore {
                                 error: existing.error,
                                 durationMs: existing.durationMs
                             )
-                            aggregatedEvents[endIndex] = .toolEnd(updated)
+                            aggregated[endIndex] = .toolEnd(updated)
                         }
                     }
                 } else if let existingIndex = thinkingIndex[thinkingEvent.thinkingId] {
-                    // Append content to existing thinking event
-                    if case .thinking(let existing) = aggregatedEvents[existingIndex] {
+                    if case .thinking(let existing) = aggregated[existingIndex] {
                         let updated = ThinkingEvent(
                             id: existing.id,
                             timestamp: existing.timestamp,
                             thinkingId: existing.thinkingId,
                             content: existing.content + thinkingEvent.content,
-                            // Mark as not partial if we receive a final event
                             partial: thinkingEvent.partial && existing.partial
                         )
-                        aggregatedEvents[existingIndex] = .thinking(updated)
+                        aggregated[existingIndex] = .thinking(updated)
                     }
                 } else {
-                    // New thinking event
-                    thinkingIndex[thinkingEvent.thinkingId] = aggregatedEvents.count
-                    aggregatedEvents.append(event)
+                    thinkingIndex[thinkingEvent.thinkingId] = aggregated.count
+                    aggregated.append(event)
                 }
 
             case .toolStart(let toolStartEvent):
-                // Track tool_start events for later input merging
-                toolStartIndex[toolStartEvent.toolUseId] = aggregatedEvents.count
-                aggregatedEvents.append(event)
+                toolStartIndex[toolStartEvent.toolUseId] = aggregated.count
+                aggregated.append(event)
 
             case .toolEnd(let toolEndEvent):
-                // Check if we have accumulated output for this tool
                 let result = accumulatedOutput[toolEndEvent.toolUseId] ?? toolEndEvent.result
                 let updatedEvent: AgentEvent
                 if result != toolEndEvent.result {
@@ -357,13 +345,12 @@ final class EventStore {
                 } else {
                     updatedEvent = event
                 }
-                toolEndIndex[toolEndEvent.toolUseId] = aggregatedEvents.count
-                aggregatedEvents.append(updatedEvent)
+                toolEndIndex[toolEndEvent.toolUseId] = aggregated.count
+                aggregated.append(updatedEvent)
 
             case .toolInputComplete(let inputCompleteEvent):
-                // Merge input into corresponding tool_start event
                 if let existingIndex = toolStartIndex[inputCompleteEvent.toolUseId] {
-                    if case .toolStart(let existing) = aggregatedEvents[existingIndex] {
+                    if case .toolStart(let existing) = aggregated[existingIndex] {
                         let updated = ToolStartEvent(
                             id: existing.id,
                             timestamp: existing.timestamp,
@@ -372,21 +359,20 @@ final class EventStore {
                             parentToolUseId: existing.parentToolUseId,
                             input: inputCompleteEvent.input
                         )
-                        aggregatedEvents[existingIndex] = .toolStart(updated)
+                        aggregated[existingIndex] = .toolStart(updated)
                     }
                 }
-                // Don't add tool_input_complete to aggregatedEvents (it's merged)
 
             case .toolInput:
-                // Skip tool_input events (streaming deltas, not needed in history)
                 break
 
             default:
-                aggregatedEvents.append(event)
+                aggregated.append(event)
             }
         }
 
-        eventsBySession[sessionId] = aggregatedEvents
-        print("[EventStore] loadEvents: session=\(sessionId), loaded=\(events.count) raw, aggregated=\(aggregatedEvents.count)")
+        // Replace local state
+        eventsBySession[sessionId] = aggregated
+        print("[EventStore] loadEvents: \(aggregated.count) events")
     }
 }

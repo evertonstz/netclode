@@ -152,16 +152,27 @@ struct PersistedEvent: Codable, Sendable {
                     output: output
                 ))
 
-            case "thinking":
-                return .thinking(ThinkingEvent(
-                    id: id,
-                    timestamp: timestamp,
-                    thinkingId: thinkingId ?? "thinking_\(id.uuidString)",
-                    content: content ?? "",
-                    partial: partial ?? false
-                ))
+        case "thinking":
+            return .thinking(ThinkingEvent(
+                id: id,
+                timestamp: timestamp,
+                thinkingId: thinkingId ?? "thinking_\(id.uuidString)",
+                content: content ?? "",
+                partial: partial ?? false
+            ))
 
-            case "port_exposed":
+        case "tool_output":
+            // Tool output is converted to thinking with "output_" prefix for aggregation
+            // The EventStore.loadEvents() will recognize this and merge it into tool_end result
+            return .thinking(ThinkingEvent(
+                id: id,
+                timestamp: timestamp,
+                thinkingId: "output_\(toolUseId ?? id.uuidString)",
+                content: result ?? "",
+                partial: false
+            ))
+
+        case "port_exposed":
                 return .portExposed(PortExposedEvent(
                     id: id,
                     timestamp: timestamp,

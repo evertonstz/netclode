@@ -107,21 +107,11 @@ final class ChatStore {
         scheduleSave()
     }
 
-    /// Load messages from server sync response
-    /// Only updates if server has more messages than local, preserving local state
+    /// Load messages from server - replace local state
     func loadMessages(sessionId: String, messages: [PersistedMessage]) {
         let serverMessages = messages.map { $0.toChatMessage() }
-        let existingMessages = messagesBySession[sessionId] ?? []
-        
-        // If we have more local messages than server, keep local state
-        // (we likely have pending messages that haven't synced yet)
-        if existingMessages.count >= serverMessages.count && !existingMessages.isEmpty {
-            return
-        }
-        
-        // Server has more messages - use server state but preserve any pending local messages
-        let pendingMessages = existingMessages.filter { pendingMessageIds.contains($0.id) }
-        messagesBySession[sessionId] = serverMessages + pendingMessages
+        messagesBySession[sessionId] = serverMessages
+        print("[ChatStore] loadMessages: \(serverMessages.count) messages")
         scheduleSave()
     }
 

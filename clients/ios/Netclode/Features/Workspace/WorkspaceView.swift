@@ -214,11 +214,9 @@ struct WorkspaceView: View {
             let isNowConnected = newState.isConnected
 
             if wasDisconnected && isNowConnected && hasOpenedSession {
-                // Reconnected - re-open session with cursor to resume from where we left off
-                // Don't auto-resume: only resume when user sends a new message
-                let cursor = sessionStore.lastNotificationId(for: sessionId)
-                print("[WorkspaceView] Reconnected, reopening session with cursor: \(cursor ?? "nil")")
-                connectService.openSession(id: sessionId, lastNotificationId: cursor, resume: false)
+                // Reconnected - fetch full session state (no cursor = full history)
+                print("[WorkspaceView] Reconnected, reopening session (full refresh)")
+                connectService.openSession(id: sessionId, resume: false)
             }
         }
         .onDisappear {

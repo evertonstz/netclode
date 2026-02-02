@@ -282,26 +282,31 @@ final class MessageRouter {
             sessionStore.setSessions(sessions.map { $0.toSession() })
 
         case .sessionState(let session, let messages, let events, _, let lastNotificationId):
-            // Load session history from server
-            let currentSession = sessionStore.sessions.first { $0.id == session.id }
-            print("[MessageRouter] session.state received: status=\(session.status) (was \(currentSession?.status.rawValue ?? "nil")), \(messages.count) messages, \(events.count) events")
+            print("[MessageRouter] session.state: status=\(session.status), \(messages.count) messages, \(events.count) events")
+            
             sessionStore.updateSession(session)
             
-            // Set processing state based on session status - if session is running,
-            // show the streaming indicator
-            if session.status == .running {
-                sessionStore.setProcessing(for: session.id, processing: true)
-            }
+            // Set processing state based on session status
+            sessionStore.setProcessing(for: session.id, processing: session.status == .running)
             
-            // Always load messages from server - server is authoritative
+            // Replace local state with server state
             chatStore.loadMessages(sessionId: session.id, messages: messages)
-            
             eventStore.loadEvents(sessionId: session.id, events: events)
-            // Store the notification cursor for reconnection
+            
             if let notificationId = lastNotificationId {
                 sessionStore.setLastNotificationId(for: session.id, notificationId: notificationId)
             }
-            print("[MessageRouter] Loaded events for session \(session.id)")
+            
+            // Only load from server if session is NOT currently streaming
+            // (if streaming, real-time events are populating local state)
+            if session.status != .running {
+                chatStore.loadMessages(sessionId: session.id, messages: messages)
+                eventStore.loadEvents(sessionId: session.id, events: events)
+            }
+            
+            if let notificationId = lastNotificationId {
+                sessionStore.setLastNotificationId(for: session.id, notificationId: notificationId)
+            }
 
         // GitHub messages
         case .githubRepos(let repos):

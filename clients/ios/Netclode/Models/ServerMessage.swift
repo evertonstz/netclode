@@ -386,6 +386,17 @@ private struct RawAgentEvent: Decodable {
                 partial: partial ?? false
             ))
 
+        case "tool_output":
+            // Tool output is converted to thinking with "output_" prefix for aggregation
+            // The EventStore.loadEvents() will recognize this and merge it into tool_end result
+            return .thinking(ThinkingEvent(
+                id: id,
+                timestamp: timestamp,
+                thinkingId: "output_\(toolUseId ?? id.uuidString)",
+                content: result ?? "",
+                partial: false
+            ))
+
         case "port_exposed":
             return .portExposed(PortExposedEvent(
                 id: id,
