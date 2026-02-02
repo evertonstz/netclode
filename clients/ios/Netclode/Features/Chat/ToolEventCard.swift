@@ -582,36 +582,37 @@ private struct WriteToolContentSection: View {
             
             // File content with syntax highlighting
             if content != nil {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(displayedLines.enumerated()), id: \.offset) { index, line in
-                        HStack(spacing: 0) {
-                            // Line number
-                            Text("\(index + 1)")
-                                .font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(DiffColors.lineNumber)
-                                .frame(width: 28, alignment: .trailing)
-                                .padding(.trailing, 8)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(displayedLines.enumerated()), id: \.offset) { index, line in
+                            HStack(spacing: 0) {
+                                // Line number
+                                Text("\(index + 1)")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(DiffColors.lineNumber)
+                                    .frame(width: 28, alignment: .trailing)
+                                    .padding(.trailing, 8)
 
-                            // Line content with syntax highlighting
-                            Text("+")
-                                .foregroundStyle(DiffColors.additionText)
-                                .frame(width: 14)
+                                // Line content with syntax highlighting
+                                Text("+")
+                                    .foregroundStyle(DiffColors.additionText)
+                                    .frame(width: 14)
 
-                            SyntaxHighlightedDiffText(
-                                text: line,
-                                language: detectedLanguage,
-                                colorScheme: colorScheme,
-                                wordHighlights: [],
-                                fallbackColor: DiffColors.additionText,
-                                highlightColor: .clear
-                            )
+                                SyntaxHighlightedDiffText(
+                                    text: line,
+                                    language: detectedLanguage,
+                                    colorScheme: colorScheme,
+                                    wordHighlights: [],
+                                    fallbackColor: DiffColors.additionText,
+                                    highlightColor: .clear
+                                )
 
-                            Spacer(minLength: 0)
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(DiffColors.additionBackground)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1)
-                        .background(DiffColors.additionBackground)
                     }
                 }
                 .font(.system(size: 11, design: .monospaced))
