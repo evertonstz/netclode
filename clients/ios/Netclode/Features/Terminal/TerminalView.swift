@@ -22,7 +22,6 @@ struct TerminalView: View {
             #if targetEnvironment(macCatalyst)
             .padding(.leading, 8)
             #endif
-            .ignoresSafeArea(.keyboard)
             .background(terminalBackgroundColor)
             .focusEffectDisabled()
             .opacity(isContentVisible ? 1 : 0)
