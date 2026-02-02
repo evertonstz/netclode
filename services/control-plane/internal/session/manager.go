@@ -506,6 +506,9 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 		// Non-fatal: sandbox still works, just no preview URLs
 	}
 
+	// Restore any previously exposed ports (for resume after pause)
+	m.restoreExposedPorts(ctx, sessionID)
+
 	// Store PVC name for resume after pause
 	if pvcName, err := m.k8s.GetPVCName(ctx, sessionID); err == nil {
 		if err := m.storage.SetPVCName(ctx, sessionID, pvcName); err != nil {
@@ -678,6 +681,9 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 		slog.Warn("Failed to create sandbox service", "sessionID", sessionID, "error", err)
 		// Non-fatal: sandbox still works, just no preview URLs
 	}
+
+	// Restore any previously exposed ports (for resume after pause)
+	m.restoreExposedPorts(ctx, sessionID)
 
 	// Store PVC name for resume after pause
 	// Use GetPVCName which handles warm pool correctly (reads pod-name annotation)
@@ -1065,6 +1071,44 @@ func (m *Manager) ExposePort(ctx context.Context, sessionID string, port int) (s
 	m.emitAgentEvent(ctx, sessionID, event, false)
 
 	return previewURL, nil
+}
+
+// restoreExposedPorts re-exposes ports that were previously exposed for a session.
+// This is called during resume to restore port exposure after sandbox recreation.
+// It reads persisted port_exposed events from the stream and re-applies them to K8s.
+func (m *Manager) restoreExposedPorts(ctx context.Context, sessionID string) {
+	// Read all event entries from the stream
+	entries, err := m.storage.GetStreamEntriesByTypes(ctx, sessionID, "0", 0, []string{storage.StreamEntryTypeEvent})
+	if err != nil {
+		slog.Warn("Failed to read stream entries for port restoration", "sessionID", sessionID, "error", err)
+		return
+	}
+
+	// Collect unique ports that were exposed
+	exposedPorts := make(map[int32]bool)
+	for _, e := range entries {
+		if e.Entry.Partial {
+			continue // Skip partial (streaming) entries
+		}
+		var event pb.AgentEvent
+		if err := json.Unmarshal(e.Entry.Payload, &event); err != nil {
+			continue
+		}
+		if event.Kind == pb.AgentEventKind_AGENT_EVENT_KIND_PORT_EXPOSED {
+			if portPayload := event.GetPortExposed(); portPayload != nil {
+				exposedPorts[portPayload.Port] = true
+			}
+		}
+	}
+
+	// Re-expose each port (only updates K8s, doesn't re-emit events)
+	for port := range exposedPorts {
+		if err := m.k8s.ExposePort(ctx, sessionID, int(port)); err != nil {
+			slog.Warn("Failed to restore exposed port", "sessionID", sessionID, "port", port, "error", err)
+		} else {
+			slog.Info("Restored exposed port", "sessionID", sessionID, "port", port)
+		}
+	}
 }
 
 // List returns all sessions, reconciling with K8s state.
