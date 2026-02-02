@@ -420,6 +420,12 @@ struct ChatView: View {
                 ForEach(cachedTimeline) { item in
                     timelineItemView(item)
                         .id(item.id)
+                        .transition(.asymmetric(
+                            insertion: .opacity
+                                .combined(with: .scale(scale: 0.98, anchor: .bottom))
+                                .combined(with: .offset(y: 8)),
+                            removal: .opacity
+                        ))
                 }
 
                 // Streaming indicator (shows at end when processing)
@@ -680,7 +686,16 @@ struct ChatView: View {
         lastToolInputContentLength = currentToolInputLength
         lastProcessingState = currentProcessing
         lastRepoOrderSignature = currentRepoOrderSignature
-        cachedTimeline = computeTimeline()
+        
+        // Animate when new items are added
+        let newTimeline = computeTimeline()
+        if messageCountChanged || eventCountChanged {
+            withAnimation(.smooth(duration: 0.35)) {
+                cachedTimeline = newTimeline
+            }
+        } else {
+            cachedTimeline = newTimeline
+        }
     }
     
 
