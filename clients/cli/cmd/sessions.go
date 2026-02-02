@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -68,6 +69,9 @@ var (
 	createTailnet  bool
 	createVCPUs    int32
 	createMemoryMB int32
+
+	listSortBy string
+	listDesc   bool
 )
 
 func init() {
@@ -86,6 +90,9 @@ func init() {
 	sessionsCreateCmd.Flags().BoolVar(&createTailnet, "tailnet", false, "Enable Tailnet access (allow 100.64.0.0/10)")
 	sessionsCreateCmd.Flags().Int32Var(&createVCPUs, "vcpus", 0, "Custom vCPUs for VM (bypasses warm pool, max 50% of host)")
 	sessionsCreateCmd.Flags().Int32Var(&createMemoryMB, "memory-mb", 0, "Custom memory in MB for VM (bypasses warm pool, max 50% of host)")
+
+	sessionsListCmd.Flags().StringVar(&listSortBy, "sort", "created", "Sort by field: created, active, name, status")
+	sessionsListCmd.Flags().BoolVar(&listDesc, "desc", true, "Sort descending (newest first)")
 }
 
 func runSessionsList(cmd *cobra.Command, args []string) error {
@@ -96,6 +103,9 @@ func runSessionsList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("list sessions: %w", err)
 	}
+
+	// Sort sessions
+	sortSessions(sessions, listSortBy, listDesc)
 
 	if isJSONOutput() {
 		return output.JSON(sessions)
@@ -108,6 +118,35 @@ func runSessionsList(cmd *cobra.Command, args []string) error {
 
 	printSessionsTable(sessions)
 	return nil
+}
+
+func sortSessions(sessions []*pb.SessionSummary, sortBy string, desc bool) {
+	sort.Slice(sessions, func(i, j int) bool {
+		var less bool
+		switch sortBy {
+		case "created":
+			ti := sessions[i].Session.CreatedAt.AsTime()
+			tj := sessions[j].Session.CreatedAt.AsTime()
+			less = ti.Before(tj)
+		case "active":
+			ti := sessions[i].Session.LastActiveAt.AsTime()
+			tj := sessions[j].Session.LastActiveAt.AsTime()
+			less = ti.Before(tj)
+		case "name":
+			less = sessions[i].Session.Name < sessions[j].Session.Name
+		case "status":
+			less = sessions[i].Session.Status < sessions[j].Session.Status
+		default:
+			// Default to created time
+			ti := sessions[i].Session.CreatedAt.AsTime()
+			tj := sessions[j].Session.CreatedAt.AsTime()
+			less = ti.Before(tj)
+		}
+		if desc {
+			return !less
+		}
+		return less
+	})
 }
 
 func printSessionsTable(sessions []*pb.SessionSummary) {
