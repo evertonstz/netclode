@@ -1496,18 +1496,15 @@ struct ThinkingCard: View {
                     .fontWeight(.medium)
                     .foregroundStyle(Theme.Colors.brandLight)
 
-                if event.partial {
-                    // Pulsing indicator for streaming
-                    Circle()
-                        .fill(Theme.Colors.brandLight)
-                        .frame(width: 6, height: 6)
-                        .opacity(0.8)
-                        .transition(.opacity.combined(with: .scale))
-                }
+                // Pulsing indicator - fixed frame, only opacity animates
+                Circle()
+                    .fill(Theme.Colors.brandLight)
+                    .frame(width: 6, height: 6)
+                    .opacity(event.partial ? 0.8 : 0)
 
                 Spacer()
             }
-            .animation(.smooth(duration: 0.3), value: event.partial)
+            .animation(.smooth(duration: 0.35), value: event.partial)
 
             // Content with markdown rendering
             ThinkingMarkdownView(content: event.content)

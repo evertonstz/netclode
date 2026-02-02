@@ -52,39 +52,40 @@ struct ChatInputBar: View {
             .frame(minHeight: inputHeight)
             .adaptiveGlassInteractive(in: Capsule())
 
-            // Send/Stop button
-            Group {
-                if isProcessing {
-                    // Stop button
-                    Button {
-                        onInterrupt()
-                    } label: {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: TypeScale.body, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: inputHeight, height: inputHeight)
-                            .adaptiveGlassInteractive(tint: Theme.Colors.error, in: Circle())
-                    }
-                    .transition(.scale.combined(with: .opacity))
-                } else {
-                    // Send button
-                    Button {
-                        onSend()
-                    } label: {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: TypeScale.body, weight: .semibold))
-                            .foregroundStyle(canSend ? .white : .secondary)
-                            .frame(width: inputHeight, height: inputHeight)
-                            .adaptiveGlassInteractive(
-                                tint: canSend ? (willQueue ? Color.orange : Theme.Colors.brand) : nil,
-                                in: Circle()
-                            )
-                    }
-                    .disabled(!canSend)
-                    .transition(.scale.combined(with: .opacity))
+            // Send/Stop button - both always present, cross-fade between them
+            ZStack {
+                // Send button
+                Button {
+                    onSend()
+                } label: {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: TypeScale.body, weight: .semibold))
+                        .foregroundStyle(canSend ? .white : .secondary)
+                        .frame(width: inputHeight, height: inputHeight)
+                        .adaptiveGlassInteractive(
+                            tint: canSend ? (willQueue ? Color.orange : Theme.Colors.brand) : nil,
+                            in: Circle()
+                        )
                 }
+                .disabled(!canSend || isProcessing)
+                .opacity(isProcessing ? 0 : 1)
+                .scaleEffect(isProcessing ? 0.8 : 1)
+                
+                // Stop button
+                Button {
+                    onInterrupt()
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: TypeScale.body, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: inputHeight, height: inputHeight)
+                        .adaptiveGlassInteractive(tint: Theme.Colors.error, in: Circle())
+                }
+                .disabled(!isProcessing)
+                .opacity(isProcessing ? 1 : 0)
+                .scaleEffect(isProcessing ? 1 : 0.8)
             }
-            .animation(.snappy, value: isProcessing)
+            .animation(.smooth(duration: 0.25), value: isProcessing)
         }
         .padding(.horizontal, Theme.Spacing.sm)
         .padding(.vertical, Theme.Spacing.xs)
