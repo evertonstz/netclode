@@ -86,6 +86,7 @@ struct WorkspaceView: View {
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 220)
+                .scaleEffect(0.95)
             }
 
             ToolbarItem(placement: .topBarTrailing) {
@@ -94,7 +95,7 @@ struct WorkspaceView: View {
                         // Session info section
                         Section {
                             Label(session.status.displayName, systemImage: session.status.systemImage)
-                            
+
                             if !session.repos.isEmpty {
                                 let displayRepos = session.repos.map {
                                     $0.replacingOccurrences(of: "https://github.com/", with: "")
@@ -103,9 +104,9 @@ struct WorkspaceView: View {
                                 let summary = displayRepos.count > 1 ? "\(displayRepos[0]) (+\(displayRepos.count - 1))" : displayRepos[0]
                                 Label(summary, systemImage: "arrow.triangle.branch")
                             }
-                            
+
                             Label(session.createdAt.formatted(.relative(presentation: .named)), systemImage: "clock")
-                            
+
                             if let modelName = modelDisplayName {
                                 let effort = sessionModel?.reasoningEffort.map { " \($0)" } ?? ""
                                 let provider = sessionModel?.provider.map { " · \($0)" } ?? ""
@@ -114,9 +115,9 @@ struct WorkspaceView: View {
                         } header: {
                             Text(session.name)
                         }
-                        
+
                         Divider()
-                        
+
                         // Repo access picker (only show if session has repos)
                         if !session.repos.isEmpty {
                             Menu {
@@ -134,19 +135,19 @@ struct WorkspaceView: View {
                             } label: {
                                 Label("GitHub Access", systemImage: "lock.shield")
                             }
-                            
+
                             Divider()
                         }
-                        
+
                         // History
                         Button {
                             showSnapshotSheet = true
                         } label: {
                             Label("History", systemImage: "clock.arrow.circlepath")
                         }
-                        
+
                         Divider()
-                        
+
                         // Actions
                         if session.status == .paused {
                             Button {
@@ -161,9 +162,9 @@ struct WorkspaceView: View {
                                 Label("Pause", systemImage: "pause.fill")
                             }
                         }
-                        
+
                         Divider()
-                        
+
                         Button(role: .destructive) {
                             showDeleteConfirmation = true
                         } label: {

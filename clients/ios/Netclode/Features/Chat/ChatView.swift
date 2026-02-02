@@ -82,7 +82,7 @@ struct ChatView: View {
     @State private var isScrollingUp = false
     @State private var hideStatusPillTask: Task<Void, Never>?
     
-    // Track scroll state - hide content until positioned
+    // Track content visibility for fade-in animation
     @State private var isContentVisible = false
     
     // Store scroll proxy for programmatic scrolling
