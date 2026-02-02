@@ -460,12 +460,23 @@ public struct Netclode_V1_ToolEndPayload: Sendable {
   /// Clears the value of `durationMs`. Subsequent reads from it will return its default value.
   public mutating func clearDurationMs() {self._durationMs = nil}
 
+  /// Tool output/result (for successful tools)
+  public var result: String {
+    get {return _result ?? String()}
+    set {_result = newValue}
+  }
+  /// Returns true if `result` has been explicitly set.
+  public var hasResult: Bool {return self._result != nil}
+  /// Clears the value of `result`. Subsequent reads from it will return its default value.
+  public mutating func clearResult() {self._result = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _error: String? = nil
   fileprivate var _durationMs: Int64? = nil
+  fileprivate var _result: String? = nil
 }
 
 /// PortExposedPayload contains data for port exposure events.
@@ -909,7 +920,7 @@ extension Netclode_V1_ToolOutputPayload: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Netclode_V1_ToolEndPayload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ToolEndPayload"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}success\0\u{1}error\0\u{3}duration_ms\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}success\0\u{1}error\0\u{3}duration_ms\0\u{1}result\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -920,6 +931,7 @@ extension Netclode_V1_ToolEndPayload: SwiftProtobuf.Message, SwiftProtobuf._Mess
       case 1: try { try decoder.decodeSingularBoolField(value: &self.success) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self._error) }()
       case 3: try { try decoder.decodeSingularInt64Field(value: &self._durationMs) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self._result) }()
       default: break
       }
     }
@@ -939,6 +951,9 @@ extension Netclode_V1_ToolEndPayload: SwiftProtobuf.Message, SwiftProtobuf._Mess
     try { if let v = self._durationMs {
       try visitor.visitSingularInt64Field(value: v, fieldNumber: 3)
     } }()
+    try { if let v = self._result {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -946,6 +961,7 @@ extension Netclode_V1_ToolEndPayload: SwiftProtobuf.Message, SwiftProtobuf._Mess
     if lhs.success != rhs.success {return false}
     if lhs._error != rhs._error {return false}
     if lhs._durationMs != rhs._durationMs {return false}
+    if lhs._result != rhs._result {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

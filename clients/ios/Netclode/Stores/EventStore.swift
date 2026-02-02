@@ -7,6 +7,9 @@ final class EventStore {
     
     /// Track accumulated inputDelta JSON strings by toolUseId
     private var streamingToolInput: [String: String] = [:]
+    
+    /// Track accumulated tool output by toolUseId (for merging into tool_end result)
+    private var streamingToolOutput: [String: String] = [:]
 
     func events(for sessionId: String) -> [AgentEvent] {
         eventsBySession[sessionId] ?? []
@@ -199,6 +202,48 @@ final class EventStore {
         }
     }
     
+    /// Accumulate tool output for a toolUseId (will be merged into tool_end result)
+    func appendToolOutput(sessionId: String, toolUseId: String, output: String) {
+        let accumulated = (streamingToolOutput[toolUseId] ?? "") + output
+        streamingToolOutput[toolUseId] = accumulated
+    }
+    
+    /// Get accumulated tool output for a toolUseId and clear it
+    func consumeToolOutput(toolUseId: String) -> String? {
+        let output = streamingToolOutput[toolUseId]
+        streamingToolOutput.removeValue(forKey: toolUseId)
+        return output
+    }
+    
+    /// Update a tool_end event with accumulated output (merged into result)
+    func updateToolEndWithResult(sessionId: String, toolUseId: String, result: String?) {
+        guard var events = eventsBySession[sessionId] else { return }
+        
+        // Find the tool_end event with this toolUseId and update its result
+        if let index = events.lastIndex(where: { event in
+            if case .toolEnd(let e) = event, e.toolUseId == toolUseId {
+                return true
+            }
+            return false
+        }) {
+            if case .toolEnd(let existing) = events[index] {
+                // Create updated event with result
+                let updated = ToolEndEvent(
+                    id: existing.id,
+                    timestamp: existing.timestamp,
+                    tool: existing.tool,
+                    toolUseId: existing.toolUseId,
+                    parentToolUseId: existing.parentToolUseId,
+                    result: result ?? existing.result,
+                    error: existing.error,
+                    durationMs: existing.durationMs
+                )
+                events[index] = .toolEnd(updated)
+                eventsBySession[sessionId] = events
+            }
+        }
+    }
+    
     /// Update a tool_start event with complete input (received after streaming started)
     func updateToolInput(sessionId: String, toolUseId: String, input: [String: AnyCodableValue]) {
         // Clear streaming state
@@ -233,16 +278,43 @@ final class EventStore {
         // Aggregate events:
         // 1. Thinking events by thinkingId to avoid fragmented display
         // 2. tool_input_complete input merged into tool_start events
+        // 3. tool_output content merged into tool_end result
         var aggregatedEvents: [AgentEvent] = []
         var thinkingIndex: [String: Int] = [:] // thinkingId -> index in aggregatedEvents
         var toolStartIndex: [String: Int] = [:] // toolUseId -> index in aggregatedEvents
+        var toolEndIndex: [String: Int] = [:] // toolUseId -> index in aggregatedEvents
+        var accumulatedOutput: [String: String] = [:] // toolUseId -> accumulated output
 
         for persistedEvent in events {
             let event = persistedEvent.event.toAgentEvent()
 
             switch event {
             case .thinking(let thinkingEvent):
-                if let existingIndex = thinkingIndex[thinkingEvent.thinkingId] {
+                // Skip tool output that was incorrectly converted to thinking events
+                // These have thinkingId like "output_<toolUseId>"
+                if thinkingEvent.thinkingId.hasPrefix("output_") {
+                    // This is actually tool output - accumulate it
+                    let toolUseId = String(thinkingEvent.thinkingId.dropFirst("output_".count))
+                    let accumulated = (accumulatedOutput[toolUseId] ?? "") + thinkingEvent.content
+                    accumulatedOutput[toolUseId] = accumulated
+                    
+                    // If we already have the tool_end, update it with the accumulated output
+                    if let endIndex = toolEndIndex[toolUseId] {
+                        if case .toolEnd(let existing) = aggregatedEvents[endIndex] {
+                            let updated = ToolEndEvent(
+                                id: existing.id,
+                                timestamp: existing.timestamp,
+                                tool: existing.tool,
+                                toolUseId: existing.toolUseId,
+                                parentToolUseId: existing.parentToolUseId,
+                                result: accumulated,
+                                error: existing.error,
+                                durationMs: existing.durationMs
+                            )
+                            aggregatedEvents[endIndex] = .toolEnd(updated)
+                        }
+                    }
+                } else if let existingIndex = thinkingIndex[thinkingEvent.thinkingId] {
                     // Append content to existing thinking event
                     if case .thinking(let existing) = aggregatedEvents[existingIndex] {
                         let updated = ThinkingEvent(
@@ -265,6 +337,28 @@ final class EventStore {
                 // Track tool_start events for later input merging
                 toolStartIndex[toolStartEvent.toolUseId] = aggregatedEvents.count
                 aggregatedEvents.append(event)
+
+            case .toolEnd(let toolEndEvent):
+                // Check if we have accumulated output for this tool
+                let result = accumulatedOutput[toolEndEvent.toolUseId] ?? toolEndEvent.result
+                let updatedEvent: AgentEvent
+                if result != toolEndEvent.result {
+                    let updated = ToolEndEvent(
+                        id: toolEndEvent.id,
+                        timestamp: toolEndEvent.timestamp,
+                        tool: toolEndEvent.tool,
+                        toolUseId: toolEndEvent.toolUseId,
+                        parentToolUseId: toolEndEvent.parentToolUseId,
+                        result: result,
+                        error: toolEndEvent.error,
+                        durationMs: toolEndEvent.durationMs
+                    )
+                    updatedEvent = .toolEnd(updated)
+                } else {
+                    updatedEvent = event
+                }
+                toolEndIndex[toolEndEvent.toolUseId] = aggregatedEvents.count
+                aggregatedEvents.append(updatedEvent)
 
             case .toolInputComplete(let inputCompleteEvent):
                 // Merge input into corresponding tool_start event

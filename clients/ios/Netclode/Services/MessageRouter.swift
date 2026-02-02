@@ -151,7 +151,17 @@ final class MessageRouter {
         case .agentEvent(let sessionId, let event):
             // Handle thinking events specially for streaming
             if case .thinking(let thinkingEvent) = event {
-                if thinkingEvent.partial {
+                // Check if this is actually tool output disguised as thinking
+                // Tool output has thinkingId like "output_<toolUseId>"
+                if thinkingEvent.thinkingId.hasPrefix("output_") {
+                    let toolUseId = String(thinkingEvent.thinkingId.dropFirst("output_".count))
+                    // Accumulate tool output for later merging into tool_end
+                    eventStore.appendToolOutput(
+                        sessionId: sessionId,
+                        toolUseId: toolUseId,
+                        output: thinkingEvent.content
+                    )
+                } else if thinkingEvent.partial {
                     // Streaming thinking - accumulate content
                     eventStore.appendThinkingPartial(
                         sessionId: sessionId,
@@ -190,6 +200,25 @@ final class MessageRouter {
                     toolUseId: inputEvent.toolUseId,
                     input: inputEvent.input
                 )
+            } else if case .toolEnd(let endEvent) = event {
+                // Consume accumulated tool output and merge into result
+                let accumulatedOutput = eventStore.consumeToolOutput(toolUseId: endEvent.toolUseId)
+                if let output = accumulatedOutput, !output.isEmpty {
+                    // Create updated tool_end with result
+                    let updatedEvent = ToolEndEvent(
+                        id: endEvent.id,
+                        timestamp: endEvent.timestamp,
+                        tool: endEvent.tool,
+                        toolUseId: endEvent.toolUseId,
+                        parentToolUseId: endEvent.parentToolUseId,
+                        result: output,
+                        error: endEvent.error,
+                        durationMs: endEvent.durationMs
+                    )
+                    eventStore.appendEvent(sessionId: sessionId, event: .toolEnd(updatedEvent))
+                } else {
+                    eventStore.appendEvent(sessionId: sessionId, event: event)
+                }
             } else {
                 eventStore.appendEvent(sessionId: sessionId, event: event)
             }

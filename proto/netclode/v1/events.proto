@@ -89,6 +89,7 @@ message ToolEndPayload {
   bool success = 1;                           // Whether tool succeeded
   optional string error = 2;                  // Error message if failed
   optional int64 duration_ms = 3;             // Duration in milliseconds
+  optional string result = 4;                 // Tool output/result (for successful tools)
 }
 
 // PortExposedPayload contains data for port exposure events.

@@ -716,7 +716,7 @@ final class ConnectService {
                 tool: "",  // Tool name comes from toolStart
                 toolUseId: correlationId,
                 parentToolUseId: nil,
-                result: nil,  // Result comes from toolOutput
+                result: payload.hasResult ? payload.result : nil,
                 error: payload.hasError ? payload.error : nil,
                 durationMs: payload.hasDurationMs ? payload.durationMs : nil
             ))

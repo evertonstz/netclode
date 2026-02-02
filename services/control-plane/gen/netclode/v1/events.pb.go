@@ -677,6 +677,7 @@ type ToolEndPayload struct {
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`                               // Whether tool succeeded
 	Error         *string                `protobuf:"bytes,2,opt,name=error,proto3,oneof" json:"error,omitempty"`                              // Error message if failed
 	DurationMs    *int64                 `protobuf:"varint,3,opt,name=duration_ms,json=durationMs,proto3,oneof" json:"duration_ms,omitempty"` // Duration in milliseconds
+	Result        *string                `protobuf:"bytes,4,opt,name=result,proto3,oneof" json:"result,omitempty"`                            // Tool output/result (for successful tools)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -730,6 +731,13 @@ func (x *ToolEndPayload) GetDurationMs() int64 {
 		return *x.DurationMs
 	}
 	return 0
+}
+
+func (x *ToolEndPayload) GetResult() string {
+	if x != nil && x.Result != nil {
+		return *x.Result
+	}
+	return ""
 }
 
 // PortExposedPayload contains data for port exposure events.
@@ -896,14 +904,16 @@ const file_netclode_v1_events_proto_rawDesc = "" +
 	"\x05delta\x18\x01 \x01(\tH\x00R\x05delta\x88\x01\x01\x12\x1b\n" +
 	"\x06output\x18\x02 \x01(\tH\x01R\x06output\x88\x01\x01B\b\n" +
 	"\x06_deltaB\t\n" +
-	"\a_output\"\x85\x01\n" +
+	"\a_output\"\xad\x01\n" +
 	"\x0eToolEndPayload\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x19\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05error\x88\x01\x01\x12$\n" +
 	"\vduration_ms\x18\x03 \x01(\x03H\x01R\n" +
-	"durationMs\x88\x01\x01B\b\n" +
+	"durationMs\x88\x01\x01\x12\x1b\n" +
+	"\x06result\x18\x04 \x01(\tH\x02R\x06result\x88\x01\x01B\b\n" +
 	"\x06_errorB\x0e\n" +
-	"\f_duration_ms\"\x89\x01\n" +
+	"\f_duration_msB\t\n" +
+	"\a_result\"\x89\x01\n" +
 	"\x12PortExposedPayload\x12\x12\n" +
 	"\x04port\x18\x01 \x01(\x05R\x04port\x12\x1d\n" +
 	"\aprocess\x18\x02 \x01(\tH\x00R\aprocess\x88\x01\x01\x12$\n" +

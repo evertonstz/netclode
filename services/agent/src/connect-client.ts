@@ -216,6 +216,7 @@ function promptEventToAgentMessage(event: PromptEvent): AgentMessage {
               success: !event.error,
               error: event.error,
               ...(event.durationMs !== undefined && { durationMs: BigInt(event.durationMs) }),
+              ...(event.result && { result: event.result }),
             }),
           },
         }),
