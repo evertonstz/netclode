@@ -98,6 +98,13 @@ spec:
                   name: netclode-secrets
                   key: opencode-api-key
                   optional: true
+            # Z.AI API key (optional - for GLM-4.7 models)
+            - name: ZAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: zai-api-key
+                  optional: true
             # Ollama local inference (optional - only set if ollama_enabled)
 {% if ollama_enabled | default(false) %}
             - name: OLLAMA_URL

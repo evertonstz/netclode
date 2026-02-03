@@ -126,6 +126,8 @@ export class OpenCodeAdapter implements SDKAdapter {
         ...(this.config?.openCodeApiKey
           ? { OPENCODE_API_KEY: this.config.openCodeApiKey }
           : isZenModel && { OPENCODE_API_KEY: "public" }),
+        // Z.AI API key for GLM-4.7 models
+        ...(this.config?.zaiApiKey && { ZAI_API_KEY: this.config.zaiApiKey }),
         OPENCODE_DISABLE_DEFAULT_PLUGINS: "true",
         // Only disable models fetch if NOT using Zen (Zen needs models.dev to work)
         ...(!isZenModel && { OPENCODE_DISABLE_MODELS_FETCH: "true" }),

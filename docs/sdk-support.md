@@ -39,6 +39,7 @@ Multi-provider support through the OpenCode CLI in server mode.
 ANTHROPIC_API_KEY=sk-ant-xxx
 OPENAI_API_KEY=sk-xxx
 MISTRAL_API_KEY=xxx
+ZAI_API_KEY=xxx  # For Z.AI GLM-4.7 models
 ```
 
 **Models:** Format is `provider/model-name`:
@@ -46,6 +47,7 @@ MISTRAL_API_KEY=xxx
 - `anthropic/claude-sonnet-4-5-20250514` (with thinking)
 - `openai/gpt-4o`
 - `mistral/mistral-large-latest`
+- `zai/GLM-4.7` (via Z.AI - cheaper alternative)
 
 **Thinking budgets:** `high` (16k tokens), `max` (32k tokens)
 
@@ -120,6 +122,7 @@ Or use the iOS app model picker.
 | `ANTHROPIC_API_KEY` | Claude, OpenCode, Copilot (BYOK) | Anthropic API key |
 | `OPENAI_API_KEY` | OpenCode, Codex | OpenAI API key |
 | `MISTRAL_API_KEY` | OpenCode | Mistral API key |
+| `ZAI_API_KEY` | OpenCode | Z.AI API key (for GLM-4.7 models) |
 | `GITHUB_COPILOT_TOKEN` | Copilot | GitHub PAT with copilot scope |
 | `CODEX_ACCESS_TOKEN` | Codex | ChatGPT OAuth access token |
 | `CODEX_ID_TOKEN` | Codex | ChatGPT OAuth ID token |

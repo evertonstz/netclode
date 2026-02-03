@@ -492,6 +492,8 @@ async function handleControlPlaneMessage(
               ollamaUrl: config.ollamaUrl,
               // OpenCode Zen API key
               openCodeApiKey: config.opencodeApiKey,
+              // Z.AI API key for GLM-4.7 models
+              zaiApiKey: config.zaiApiKey,
             });
           } catch (err) {
             console.error("[agent] Failed to initialize SDK adapter:", err);
@@ -620,6 +622,8 @@ async function handleSessionAssigned(
       ollamaUrl: config.ollamaUrl,
       // OpenCode Zen API key
       openCodeApiKey: config.opencodeApiKey,
+      // Z.AI API key for GLM-4.7 models
+      zaiApiKey: config.zaiApiKey,
     });
     console.log("[agent] SDK adapter initialized (warm pool mode)");
   } catch (err) {

@@ -87,6 +87,10 @@ MISTRAL_API_KEY=your-mistral-api-key
 # If set, all Zen models including paid models are available
 OPENCODE_API_KEY=your-opencode-api-key
 
+# Z.AI (optional - for GLM-4.7 models via Anthropic-compatible endpoint)
+# Get API key at https://z.ai/manage-apikey/apikey-list
+ZAI_API_KEY=your-zai-api-key
+
 # Kata VM Resources (optional - defaults shown)
 KATA_VM_CPUS=4
 KATA_VM_MEMORY_MB=4096
@@ -107,7 +111,7 @@ This creates:
 - `tailscale-authkey` - Tailscale auth key (optional)
 
 **Kubernetes secrets** (in `netclode` namespace):
-- `netclode-secrets` - Contains `anthropic-api-key`, and optionally `github-app-id`, `github-app-private-key`, `github-installation-id`, `opencode-api-key`
+- `netclode-secrets` - Contains `anthropic-api-key`, and optionally `github-app-id`, `github-app-private-key`, `github-installation-id`, `opencode-api-key`, `zai-api-key`
 - `juicefs-secret` - Contains S3 credentials and JuiceFS metadata URL
 
 ## Usage

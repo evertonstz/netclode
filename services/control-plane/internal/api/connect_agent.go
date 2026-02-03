@@ -229,6 +229,9 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 	if config.OpenCodeAPIKey != "" {
 		sessionConfig.OpencodeApiKey = &config.OpenCodeAPIKey
 	}
+	if config.ZaiAPIKey != "" {
+		sessionConfig.ZaiApiKey = &config.ZaiAPIKey
+	}
 
 	if err := conn.send(&v1.ControlPlaneMessage{
 		Message: &v1.ControlPlaneMessage_Registered{
@@ -510,6 +513,9 @@ func (c *AgentConnection) AssignSession(sessionID string, config *session.AgentS
 	}
 	if config.OpenCodeAPIKey != "" {
 		sessionConfig.OpencodeApiKey = &config.OpenCodeAPIKey
+	}
+	if config.ZaiAPIKey != "" {
+		sessionConfig.ZaiApiKey = &config.ZaiAPIKey
 	}
 
 	slog.Info("Pushing session assignment to warm agent", "sessionID", sessionID, "podName", c.podName)

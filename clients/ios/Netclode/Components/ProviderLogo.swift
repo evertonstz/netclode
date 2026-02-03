@@ -35,6 +35,8 @@ struct ProviderLogo: View {
                 return Image("mistral-logo")
             } else if modelName.contains("llama") || modelName.contains("qwen") || modelName.contains("deepseek") || modelName.contains("phi") {
                 return Image("ollama-logo")
+            } else if modelName.contains("glm") {
+                return Image("zai-logo")
             }
         }
         
@@ -57,6 +59,8 @@ struct ProviderLogo: View {
             return Image("ollama-logo")
         case "opencode":
             return Image("opencode-logo")
+        case "zai", "z.ai":
+            return Image("zai-logo")
         default:
             // Check for partial matches in provider
             if provider.contains("anthropic") || provider.contains("claude") {
@@ -75,6 +79,8 @@ struct ProviderLogo: View {
                 return Image("ollama-logo")
             } else if provider.contains("opencode") {
                 return Image("opencode-logo")
+            } else if provider.contains("zai") || provider.contains("z.ai") || provider.contains("glm") {
+                return Image("zai-logo")
             }
             return nil
         }
@@ -118,6 +124,10 @@ struct ProviderLogo: View {
                 ProviderLogo(provider: "OpenCode", size: 24)
                 Text("OpenCode").font(.caption)
             }
+            VStack {
+                ProviderLogo(provider: "zai", size: 24)
+                Text("Z.AI").font(.caption)
+            }
         }
 
         HStack(spacing: 16) {
@@ -129,6 +139,7 @@ struct ProviderLogo: View {
             ProviderLogo(provider: "Mistral", size: 16)
             ProviderLogo(provider: "Ollama", size: 16)
             ProviderLogo(provider: "OpenCode", size: 16)
+            ProviderLogo(provider: "zai", size: 16)
         }
         .foregroundStyle(.secondary)
     }

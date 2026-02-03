@@ -47,6 +47,7 @@ type AgentSessionConfig struct {
 	ReasoningEffort    string // For Codex reasoning effort (low, medium, high)
 	OllamaURL          string // For local Ollama inference
 	OpenCodeAPIKey     string // For OpenCode Zen models
+	ZaiAPIKey          string // For Z.AI GLM-4.7 models
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -1538,6 +1539,7 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 		CopilotBackend:     state.Session.CopilotBackend,
 		OllamaURL:          m.config.OllamaURL,
 		OpenCodeAPIKey:     m.config.OpenCodeAPIKey,
+		ZaiAPIKey:          m.config.ZaiAPIKey,
 	}
 
 	if state.Session.Model != nil {
@@ -2129,7 +2131,8 @@ func (m *Manager) fetchOpenCodeModels() []*pb.ModelInfo {
 		"hasAnthropicKey", m.config.AnthropicAPIKey != "",
 		"hasOpenAIKey", m.config.OpenAIAPIKey != "",
 		"hasMistralKey", m.config.MistralAPIKey != "",
-		"hasOpenCodeKey", m.config.OpenCodeAPIKey != "")
+		"hasOpenCodeKey", m.config.OpenCodeAPIKey != "",
+		"hasZaiKey", m.config.ZaiAPIKey != "")
 
 	var models []*pb.ModelInfo
 
@@ -2166,8 +2169,15 @@ func (m *Manager) fetchOpenCodeModels() []*pb.ModelInfo {
 		models = append(models, ollamaModels...)
 	}
 
+	// Add Z.AI models if ZAI_API_KEY is set
+	if m.config.ZaiAPIKey != "" {
+		zaiModels := m.fetchOpenCodeModelsForProvider("zai")
+		slog.Info("Fetched OpenCode Z.AI models", "count", len(zaiModels))
+		models = append(models, zaiModels...)
+	}
+
 	if len(models) == 0 {
-		slog.Warn("No OpenCode credentials configured (need ANTHROPIC_API_KEY, OPENAI_API_KEY, MISTRAL_API_KEY, OPENCODE_API_KEY, or OLLAMA_URL)")
+		slog.Warn("No OpenCode credentials configured (need ANTHROPIC_API_KEY, OPENAI_API_KEY, MISTRAL_API_KEY, OPENCODE_API_KEY, ZAI_API_KEY, or OLLAMA_URL)")
 	}
 
 	slog.Info("fetchOpenCodeModels returning", "totalModels", len(models))

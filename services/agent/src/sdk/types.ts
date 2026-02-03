@@ -36,6 +36,8 @@ export interface SDKConfig {
   ollamaUrl?: string;
   // OpenCode Zen API key (for paid models; empty/"public" = free tier only)
   openCodeApiKey?: string;
+  // Z.AI API key (for GLM-4.7 models via Anthropic-compatible endpoint)
+  zaiApiKey?: string;
 }
 
 /**

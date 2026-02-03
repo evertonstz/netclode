@@ -45,6 +45,9 @@ type Config struct {
 
 	// OpenCode Zen (optional)
 	OpenCodeAPIKey string // OpenCode Zen API key (if empty, only free models available)
+
+	// Z.AI (optional)
+	ZaiAPIKey string // Z.AI API key (for GLM-4.7 models via Anthropic-compatible endpoint)
 }
 
 func Load() *Config {
@@ -82,6 +85,9 @@ func Load() *Config {
 
 		// OpenCode Zen
 		OpenCodeAPIKey: getEnv("OPENCODE_API_KEY", ""),
+
+		// Z.AI
+		ZaiAPIKey: getEnv("ZAI_API_KEY", ""),
 	}
 }
 
