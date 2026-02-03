@@ -232,6 +232,11 @@ func (m *mockRuntime) DeleteNetworkRestriction(ctx context.Context, sessionID st
 	return nil
 }
 
+func (m *mockRuntime) VerifyAgentToken(ctx context.Context, token string) (string, error) {
+	// Mock implementation - return a fake pod name for testing
+	return "mock-pod-" + token[:8], nil
+}
+
 func (m *mockRuntime) Close() {
 }
 

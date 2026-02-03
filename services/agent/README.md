@@ -58,7 +58,7 @@ services/agent/
 | `OPENAI_API_KEY` | OpenAI API key (required for Codex SDK) |
 | `GITHUB_TOKEN` | GitHub token with Copilot scope (required for Copilot SDK) |
 | `CONTROL_PLANE_URL` | Control plane URL (default `http://control-plane.netclode.svc.cluster.local`) |
-| `SESSION_ID` | Session ID (set by control plane, or polled via warm pool) |
+| `SESSION_ID` | Session ID (direct mode only; warm pool mode receives via gRPC) |
 
 ### Session Config
 

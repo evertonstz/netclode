@@ -437,7 +437,8 @@ type AgentRegister struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     *string                `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3,oneof" json:"session_id,omitempty"` // Session this agent is servicing (empty for warm pool mode)
 	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`                            // Agent version for compatibility checking
-	PodName       *string                `protobuf:"bytes,3,opt,name=pod_name,json=podName,proto3,oneof" json:"pod_name,omitempty"`       // Pod name for warm pool mode (used to match agent to session)
+	PodName       *string                `protobuf:"bytes,3,opt,name=pod_name,json=podName,proto3,oneof" json:"pod_name,omitempty"`       // Pod name for warm pool mode (deprecated, use k8s_token)
+	K8SToken      *string                `protobuf:"bytes,4,opt,name=k8s_token,json=k8sToken,proto3,oneof" json:"k8s_token,omitempty"`    // Kubernetes ServiceAccount token for identity verification
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -489,6 +490,13 @@ func (x *AgentRegister) GetVersion() string {
 func (x *AgentRegister) GetPodName() string {
 	if x != nil && x.PodName != nil {
 		return *x.PodName
+	}
+	return ""
+}
+
+func (x *AgentRegister) GetK8SToken() string {
+	if x != nil && x.K8SToken != nil {
+		return *x.K8SToken
 	}
 	return ""
 }
@@ -1562,14 +1570,17 @@ const file_netclode_v1_agent_proto_rawDesc = "" +
 	"\x0fSessionAssigned\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x122\n" +
-	"\x06config\x18\x02 \x01(\v2\x1a.netclode.v1.SessionConfigR\x06config\"\x89\x01\n" +
+	"\x06config\x18\x02 \x01(\v2\x1a.netclode.v1.SessionConfigR\x06config\"\xb9\x01\n" +
 	"\rAgentRegister\x12\"\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tH\x00R\tsessionId\x88\x01\x01\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12\x1e\n" +
-	"\bpod_name\x18\x03 \x01(\tH\x01R\apodName\x88\x01\x01B\r\n" +
+	"\bpod_name\x18\x03 \x01(\tH\x01R\apodName\x88\x01\x01\x12 \n" +
+	"\tk8s_token\x18\x04 \x01(\tH\x02R\bk8sToken\x88\x01\x01B\r\n" +
 	"\v_session_idB\v\n" +
-	"\t_pod_name\"\xbf\x02\n" +
+	"\t_pod_nameB\f\n" +
+	"\n" +
+	"_k8s_token\"\xbf\x02\n" +
 	"\x13AgentStreamResponse\x12<\n" +
 	"\n" +
 	"text_delta\x18\x01 \x01(\v2\x1b.netclode.v1.AgentTextDeltaH\x00R\ttextDelta\x12/\n" +

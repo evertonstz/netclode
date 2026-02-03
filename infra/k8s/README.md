@@ -105,24 +105,16 @@ env:
 
 When enabled, the control-plane creates `SandboxClaim` resources instead of direct `Sandbox` resources. The controller assigns a pre-warmed pod from the pool (or creates a new one if the pool is empty).
 
-**Session Config API:**
+**Session Assignment:**
 
-Since warm pool pods are already running, they cannot receive per-session environment variables dynamically. Instead, agents call the control-plane API to get session configuration:
+Since warm pool pods are already running, they cannot receive per-session environment variables dynamically. Instead, agents connect via gRPC and authenticate using their Kubernetes ServiceAccount token:
 
-```
-GET /internal/session-config?pod=<podName>
-```
+1. Agent reads SA token from `/var/run/secrets/kubernetes.io/serviceaccount/token`
+2. Agent connects to control-plane via gRPC, sending the token in registration
+3. Control-plane validates token via Kubernetes TokenReview API (extracts verified pod name)
+4. When SandboxClaim binds to this pod, control-plane pushes `SessionAssigned` message
 
-Returns:
-```json
-{
-  "SESSION_ID": "abc123",
-  "ANTHROPIC_API_KEY": "sk-ant-xxx",
-  "GIT_REPOS": ["https://github.com/user/repo", "https://github.com/user/other"]
-}
-```
-
-The pod name is extracted to determine the session ID (format: `sess-<sessionID>-<suffix>`).
+This prevents rogue agents from impersonating legitimate pods - identity is cryptographically verified.
 
 ### Storage
 

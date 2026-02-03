@@ -82,7 +82,8 @@ message SessionAssigned {
 message AgentRegister {
   optional string session_id = 1;            // Session this agent is servicing (empty for warm pool mode)
   string version = 2;                        // Agent version for compatibility checking
-  optional string pod_name = 3;              // Pod name for warm pool mode (used to match agent to session)
+  optional string pod_name = 3;              // Pod name for warm pool mode (deprecated, use k8s_token)
+  optional string k8s_token = 4;             // Kubernetes ServiceAccount token for identity verification
 }
 
 // AgentStreamResponse contains streaming output during prompt execution.

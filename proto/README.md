@@ -39,7 +39,7 @@ service AgentService {
 }
 ```
 
-Agents connect TO the control plane (not the reverse), enabling warm pool support where agents poll for session assignment.
+Agents connect TO the control plane (not the reverse) using their Kubernetes ServiceAccount token for authentication. Warm pool agents receive session config via pushed `SessionAssigned` messages.
 
 ## Code Generation
 

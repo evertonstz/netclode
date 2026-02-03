@@ -5,7 +5,7 @@
  * establishing a bidirectional stream for all communication.
  */
 
-import { writeFileSync } from "fs";
+import { writeFileSync, readFileSync, existsSync } from "fs";
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "@connectrpc/connect-node";
 import { create } from "@bufbuild/protobuf";
@@ -312,12 +312,11 @@ function getRepoConfigs(): Array<{ repo: string; dir: string; prefix: string }> 
 
 /**
  * Connect to the control plane and handle bidirectional communication.
- * In warm pool mode (no sessionId), connects with podName and waits for SessionAssigned message.
+ * In warm pool mode (no sessionId), authenticates using Kubernetes ServiceAccount token.
  */
 export async function connectToControlPlane(
   controlPlaneUrl: string,
-  sessionId: string | undefined,
-  podName: string | undefined
+  sessionId: string | undefined
 ): Promise<void> {
   console.log(`[agent] Connecting to control plane at ${controlPlaneUrl}`);
 
@@ -341,15 +340,38 @@ export async function connectToControlPlane(
   };
 
   // Build registration message based on mode
-  const registerValue = sessionId
-    ? create(AgentRegisterSchema, {
-        sessionId,
-        version: "1.0.0",
-      })
-    : create(AgentRegisterSchema, {
-        podName: podName || "",
-        version: "1.0.0",
-      });
+  let registerValue;
+  if (sessionId) {
+    // Direct mode: use session ID
+    registerValue = create(AgentRegisterSchema, {
+      sessionId,
+      version: "1.0.0",
+    });
+  } else {
+    // Warm pool mode: use Kubernetes ServiceAccount token for identity verification
+    const k8sTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+    let k8sToken: string | undefined;
+
+    if (existsSync(k8sTokenPath)) {
+      try {
+        k8sToken = readFileSync(k8sTokenPath, "utf-8").trim();
+        console.log("[agent] Read Kubernetes ServiceAccount token for authentication");
+      } catch (err) {
+        console.error("[agent] Failed to read Kubernetes token:", err);
+      }
+    } else {
+      console.warn("[agent] Kubernetes token not found at", k8sTokenPath);
+    }
+
+    if (!k8sToken) {
+      throw new Error("Kubernetes ServiceAccount token required for warm pool mode");
+    }
+
+    registerValue = create(AgentRegisterSchema, {
+      k8sToken,
+      version: "1.0.0",
+    });
+  }
 
   async function* messageGenerator(): AsyncIterable<AgentMessage> {
     // First, send registration (with sessionId for direct mode, podName for warm pool mode)

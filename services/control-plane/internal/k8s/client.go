@@ -57,6 +57,11 @@ type Runtime interface {
 	WaitForRestoreJob(ctx context.Context, sessionID, snapshotID string, timeout time.Duration) error
 	GetPVCName(ctx context.Context, sessionID string) (string, error)
 
+	// Agent authentication
+	// VerifyAgentToken validates a Kubernetes ServiceAccount token and returns the pod name.
+	// This is used to verify the identity of agents connecting to the control plane.
+	VerifyAgentToken(ctx context.Context, token string) (podName string, err error)
+
 	Close()
 }
 

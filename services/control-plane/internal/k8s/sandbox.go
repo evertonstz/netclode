@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/angristan/netclode/services/control-plane/internal/config"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -1890,6 +1891,44 @@ func mustParseQuantity(s string) corev1.ResourceList {
 		panic(fmt.Sprintf("invalid quantity %q: %v", s, err))
 	}
 	return corev1.ResourceList{corev1.ResourceStorage: q}
+}
+
+// VerifyAgentToken validates a Kubernetes ServiceAccount token and returns the pod name.
+// This is used to verify the identity of agents connecting to the control plane,
+// preventing rogue agents from impersonating legitimate ones.
+func (r *k8sRuntime) VerifyAgentToken(ctx context.Context, token string) (string, error) {
+	review := &authenticationv1.TokenReview{
+		Spec: authenticationv1.TokenReviewSpec{
+			Token: token,
+		},
+	}
+
+	result, err := r.clientset.AuthenticationV1().TokenReviews().Create(ctx, review, metav1.CreateOptions{})
+	if err != nil {
+		return "", fmt.Errorf("token review failed: %w", err)
+	}
+
+	if !result.Status.Authenticated {
+		return "", fmt.Errorf("token not authenticated: %s", result.Status.Error)
+	}
+
+	// Extract pod name from the token's extra claims
+	// The projected service account token includes kubernetes.io/pod/name
+	podNames, ok := result.Status.User.Extra["authentication.kubernetes.io/pod-name"]
+	if !ok || len(podNames) == 0 {
+		return "", fmt.Errorf("pod name not found in token claims")
+	}
+
+	podName := podNames[0]
+
+	// Verify the pod exists in our namespace
+	_, err = r.clientset.CoreV1().Pods(r.namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("pod %s not found in namespace %s: %w", podName, r.namespace, err)
+	}
+
+	slog.Debug("Agent token verified", "podName", podName)
+	return podName, nil
 }
 
 // Ensure k8sRuntime implements Runtime

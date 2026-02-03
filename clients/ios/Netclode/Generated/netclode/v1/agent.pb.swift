@@ -265,7 +265,7 @@ public struct Netclode_V1_AgentRegister: Sendable {
   /// Agent version for compatibility checking
   public var version: String = String()
 
-  /// Pod name for warm pool mode (used to match agent to session)
+  /// Pod name for warm pool mode (deprecated, use k8s_token)
   public var podName: String {
     get {return _podName ?? String()}
     set {_podName = newValue}
@@ -275,12 +275,23 @@ public struct Netclode_V1_AgentRegister: Sendable {
   /// Clears the value of `podName`. Subsequent reads from it will return its default value.
   public mutating func clearPodName() {self._podName = nil}
 
+  /// Kubernetes ServiceAccount token for identity verification
+  public var k8SToken: String {
+    get {return _k8SToken ?? String()}
+    set {_k8SToken = newValue}
+  }
+  /// Returns true if `k8SToken` has been explicitly set.
+  public var hasK8SToken: Bool {return self._k8SToken != nil}
+  /// Clears the value of `k8SToken`. Subsequent reads from it will return its default value.
+  public mutating func clearK8SToken() {self._k8SToken = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _sessionID: String? = nil
   fileprivate var _podName: String? = nil
+  fileprivate var _k8SToken: String? = nil
 }
 
 /// AgentStreamResponse contains streaming output during prompt execution.
@@ -1050,7 +1061,7 @@ extension Netclode_V1_SessionAssigned: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Netclode_V1_AgentRegister: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AgentRegister"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}version\0\u{3}pod_name\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}version\0\u{3}pod_name\0\u{3}k8s_token\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1061,6 +1072,7 @@ extension Netclode_V1_AgentRegister: SwiftProtobuf.Message, SwiftProtobuf._Messa
       case 1: try { try decoder.decodeSingularStringField(value: &self._sessionID) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.version) }()
       case 3: try { try decoder.decodeSingularStringField(value: &self._podName) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self._k8SToken) }()
       default: break
       }
     }
@@ -1080,6 +1092,9 @@ extension Netclode_V1_AgentRegister: SwiftProtobuf.Message, SwiftProtobuf._Messa
     try { if let v = self._podName {
       try visitor.visitSingularStringField(value: v, fieldNumber: 3)
     } }()
+    try { if let v = self._k8SToken {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 4)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1087,6 +1102,7 @@ extension Netclode_V1_AgentRegister: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if lhs._sessionID != rhs._sessionID {return false}
     if lhs.version != rhs.version {return false}
     if lhs._podName != rhs._podName {return false}
+    if lhs._k8SToken != rhs._k8SToken {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

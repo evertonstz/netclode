@@ -1999,6 +1999,12 @@ func (m *Manager) AssignSessionToWarmAgent(podName, sessionID string) bool {
 	return true
 }
 
+// VerifyAgentToken validates a Kubernetes ServiceAccount token and returns the verified pod name.
+// This is used to authenticate agents connecting to the control plane, preventing impersonation attacks.
+func (m *Manager) VerifyAgentToken(ctx context.Context, token string) (string, error) {
+	return m.k8s.VerifyAgentToken(ctx, token)
+}
+
 // ListModels returns available models for the specified SDK type.
 // For Copilot SDK, returns a combined list of GitHub Copilot and Anthropic (BYOK) models.
 // For Codex SDK, returns OpenAI models with "gpt-codex" family.

@@ -141,15 +141,16 @@ env:
 | Cold start (no warm pool) | ~30s |
 | Warm pool | ~1s |
 
-### Session Config API
+### Session Assignment
 
-Since warm pool pods start before session assignment, they can't receive per-session env vars at boot. Instead, agents poll for config:
+Since warm pool pods start before session assignment, they can't receive per-session env vars at boot. Instead, agents connect via gRPC and receive config when a session is assigned:
 
-```
-GET /internal/session-config?pod=<podName>
-```
+1. Agent reads Kubernetes ServiceAccount token from `/var/run/secrets/kubernetes.io/serviceaccount/token`
+2. Agent connects to control-plane via gRPC with the token
+3. Control-plane validates token via Kubernetes TokenReview API (prevents impersonation)
+4. When a SandboxClaim binds to this pod, control-plane pushes `SessionAssigned` message with config
 
-Returns session ID, API keys, repo URLs (if any), etc.
+This provides mutual authentication - the control-plane cryptographically verifies the agent's pod identity.
 
 ## Custom Resources
 
