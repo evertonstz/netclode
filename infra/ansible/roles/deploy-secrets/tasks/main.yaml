@@ -43,6 +43,7 @@
         github_installation_id: "{{ env_content_raw | regex_search('(?m)^GITHUB_INSTALLATION_ID=(.*)$', '\\1') | first | default('') }}"
         kata_vm_cpus: "{{ env_content_raw | regex_search('(?m)^KATA_VM_CPUS=(.*)$', '\\1') | first | default('4') }}"
         kata_vm_memory_mb: "{{ env_content_raw | regex_search('(?m)^KATA_VM_MEMORY_MB=(.*)$', '\\1') | first | default('4096') }}"
+        github_token: "{{ (env_content_raw | regex_search('(?m)^GITHUB_TOKEN=(.*)$', '\\1') or [''])[0] }}"
         github_copilot_token: "{{ (env_content_raw | regex_search('(?m)^GITHUB_COPILOT_TOKEN=(.*)$', '\\1') or [''])[0] }}"
         openai_api_key: "{{ (env_content_raw | regex_search('(?m)^OPENAI_API_KEY=(.*)$', '\\1') or [''])[0] }}"
         codex_access_token: "{{ (env_content_raw | regex_search('(?m)^CODEX_ACCESS_TOKEN=(.*)$', '\\1') or [''])[0] }}"
@@ -109,6 +110,24 @@
     - env_file_stat.stat.exists
     - deploy_k8s_secrets | default(false)
   block:
+    # Build secrets-json for secret-proxy
+    # Maps placeholders to real secrets with allowed hosts
+    - name: Build secrets-json
+      ansible.builtin.set_fact:
+        secrets_json_dict: >-
+          {{
+            {}
+            | combine({'NETCLODE_PLACEHOLDER_anthropic': {'secret': anthropic_api_key, 'hosts': ['api.anthropic.com']}} if anthropic_api_key | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_openai': {'secret': openai_api_key, 'hosts': ['api.openai.com']}} if openai_api_key | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_mistral': {'secret': mistral_api_key, 'hosts': ['api.mistral.ai']}} if mistral_api_key | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_opencode': {'secret': opencode_api_key, 'hosts': ['api.opencode.ai', 'openrouter.ai']}} if opencode_api_key | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_zai': {'secret': zai_api_key, 'hosts': ['api.zai.ai']}} if zai_api_key | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_github_copilot': {'secret': github_copilot_token, 'hosts': ['api.github.com', '*.githubusercontent.com', 'copilot-proxy.githubusercontent.com']}} if github_copilot_token | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_codex_access': {'secret': codex_access_token, 'hosts': ['api.openai.com']}} if codex_access_token | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_codex_id': {'secret': codex_id_token, 'hosts': ['api.openai.com']}} if codex_id_token | length > 0 else {})
+            | combine({'NETCLODE_PLACEHOLDER_codex_refresh': {'secret': codex_refresh_token, 'hosts': ['api.openai.com']}} if codex_refresh_token | length > 0 else {})
+          }}
+
     - name: Create netclode-secrets Kubernetes secret
       kubernetes.core.k8s:
         state: present
@@ -121,19 +140,26 @@
             namespace: netclode
           type: Opaque
           stringData:
-            anthropic-api-key: "{{ anthropic_api_key }}"
+            # Placeholders for agent (real secrets never enter sandbox)
+            anthropic-api-key-placeholder: "NETCLODE_PLACEHOLDER_anthropic"
+            openai-api-key-placeholder: "NETCLODE_PLACEHOLDER_openai"
+            mistral-api-key-placeholder: "NETCLODE_PLACEHOLDER_mistral"
+            opencode-api-key-placeholder: "NETCLODE_PLACEHOLDER_opencode"
+            zai-api-key-placeholder: "NETCLODE_PLACEHOLDER_zai"
+            github-copilot-token-placeholder: "NETCLODE_PLACEHOLDER_github_copilot"
+            codex-access-token-placeholder: "NETCLODE_PLACEHOLDER_codex_access"
+            codex-id-token-placeholder: "NETCLODE_PLACEHOLDER_codex_id"
+            codex-refresh-token-placeholder: "NETCLODE_PLACEHOLDER_codex_refresh"
+            # JSON config for secret-proxy (maps placeholders to real secrets + allowed hosts)
+            secrets-json: "{{ secrets_json_dict | to_json }}"
+            # Non-proxied secrets (used directly, not through proxy)
+            # GITHUB_TOKEN is for git operations (clone/push) - uses credential helper, not HTTP headers
+            github-token: "{{ github_token }}"
+            # Control-plane secrets
             github-app-id: "{{ github_app_id }}"
             github-app-private-key: "{{ github_app_private_key_b64 | b64decode }}"
             github-installation-id: "{{ github_installation_id }}"
             tailscale-authkey: "{{ tailscale_authkey }}"
-            github-copilot-token: "{{ github_copilot_token }}"
-            openai-api-key: "{{ openai_api_key }}"
-            codex-access-token: "{{ codex_access_token }}"
-            codex-id-token: "{{ codex_id_token }}"
-            codex-refresh-token: "{{ codex_refresh_token }}"
-            mistral-api-key: "{{ mistral_api_key }}"
-            opencode-api-key: "{{ opencode_api_key }}"
-            zai-api-key: "{{ zai_api_key }}"
       when: anthropic_api_key | length > 0
 
     - name: Check if juicefs-secret already exists

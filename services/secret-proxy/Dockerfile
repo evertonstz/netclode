@@ -1,0 +1,42 @@
+# Build stage
+FROM golang:1.25-alpine AS builder
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /secret-proxy ./cmd/secret-proxy
+
+# Runtime stage
+FROM alpine:3.21
+
+# Install ca-certificates for HTTPS
+RUN apk --no-cache add ca-certificates
+
+# Create non-root user for the proxy
+# Using UID 65534 (nobody) - must match the UID in iptables rules
+RUN adduser -D -u 65534 proxy
+
+# Copy binary
+COPY --from=builder /secret-proxy /usr/local/bin/secret-proxy
+
+# Create directory for CA certificates
+RUN mkdir -p /etc/secret-proxy && chown proxy:proxy /etc/secret-proxy
+
+# Default environment
+ENV LISTEN_ADDR=:8080
+ENV CA_CERT_PATH=/etc/secret-proxy/ca.crt
+ENV CA_KEY_PATH=/etc/secret-proxy/ca.key
+
+# Run as proxy user
+USER proxy
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/secret-proxy"]

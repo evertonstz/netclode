@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# Trust secret-proxy CA certificate if mounted
+# This allows the agent to make HTTPS requests through the MITM proxy
+PROXY_CA="/usr/local/share/ca-certificates/secret-proxy.crt"
+if [ -f "$PROXY_CA" ]; then
+	echo "[entrypoint] Adding secret-proxy CA to trusted certificates..."
+	update-ca-certificates 2>/dev/null || true
+fi
+
 # Ensure directories exist and are owned by agent
 # /agent is HOME (persisted on JuiceFS)
 # /agent/workspace is for the user's code
@@ -61,11 +69,17 @@ fi
 # Preserve PATH and mise env vars for the agent user
 # Include shims path so mise-installed tools are available
 # Set XDG_CONFIG_HOME to avoid JuiceFS .config file at mount root
+# Set NODE_EXTRA_CA_CERTS if proxy CA exists (Node.js needs this for HTTPS through MITM proxy)
 echo "[entrypoint] Starting agent as user 'agent'..."
+NODE_CA_ENV=""
+if [ -f "$PROXY_CA" ]; then
+	NODE_CA_ENV="export NODE_EXTRA_CA_CERTS=$PROXY_CA"
+fi
 exec su -s /bin/bash agent -c "
     export MISE_DATA_DIR=/agent/.local/share/mise
     export MISE_CACHE_DIR=/agent/.cache/mise
     export XDG_CONFIG_HOME=/agent/.local/config
     export PATH='/agent/.local/share/mise/shims:/opt/mise/bin:/opt/node/bin:/usr/local/bin:/usr/bin:/bin'
+    $NODE_CA_ENV
     cd /opt/agent && /opt/node/bin/node agent.js
 "

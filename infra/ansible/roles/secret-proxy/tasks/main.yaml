@@ -1,0 +1,93 @@
+---
+# Secret Proxy role - Generate CA and configure secrets with placeholders
+#
+# This role:
+# 1. Generates a CA certificate for the MITM proxy (if not exists)
+# 2. Creates the secret-proxy-ca ConfigMap
+# 3. Updates netclode-secrets with placeholders and secrets-json
+
+- name: Check if secret-proxy-ca ConfigMap exists
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    name: secret-proxy-ca
+    namespace: netclode
+    kubeconfig: "{{ k3s_kubeconfig }}"
+  register: existing_ca_configmap
+
+- name: Generate CA certificate
+  when: existing_ca_configmap.resources | length == 0
+  block:
+    - name: Create temp directory for CA generation
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: secret-proxy-ca-
+      register: ca_temp_dir
+      delegate_to: localhost
+      become: no
+
+    - name: Generate EC private key
+      community.crypto.openssl_privatekey:
+        path: "{{ ca_temp_dir.path }}/ca.key"
+        type: ECC
+        curve: secp256r1
+      delegate_to: localhost
+      become: no
+
+    - name: Generate CA certificate
+      community.crypto.x509_certificate:
+        path: "{{ ca_temp_dir.path }}/ca.crt"
+        privatekey_path: "{{ ca_temp_dir.path }}/ca.key"
+        provider: selfsigned
+        selfsigned_not_after: "+365d"
+        subject:
+          O: Netclode Secret Proxy
+          CN: Netclode Secret Proxy CA
+        basic_constraints:
+          - CA:TRUE
+        basic_constraints_critical: yes
+        key_usage:
+          - keyCertSign
+          - cRLSign
+        key_usage_critical: yes
+      delegate_to: localhost
+      become: no
+
+    - name: Read generated CA certificate
+      ansible.builtin.slurp:
+        src: "{{ ca_temp_dir.path }}/ca.crt"
+      register: ca_cert_content
+      delegate_to: localhost
+      become: no
+
+    - name: Read generated CA private key
+      ansible.builtin.slurp:
+        src: "{{ ca_temp_dir.path }}/ca.key"
+      register: ca_key_content
+      delegate_to: localhost
+      become: no
+
+    - name: Create secret-proxy-ca ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ k3s_kubeconfig }}"
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: secret-proxy-ca
+            namespace: netclode
+          data:
+            ca.crt: "{{ ca_cert_content.content | b64decode }}"
+            ca.key: "{{ ca_key_content.content | b64decode }}"
+
+    - name: Clean up temp directory
+      ansible.builtin.file:
+        path: "{{ ca_temp_dir.path }}"
+        state: absent
+      delegate_to: localhost
+      become: no
+
+- name: Log CA ConfigMap status
+  ansible.builtin.debug:
+    msg: "secret-proxy-ca ConfigMap {{ 'already exists' if existing_ca_configmap.resources | length > 0 else 'created' }}"

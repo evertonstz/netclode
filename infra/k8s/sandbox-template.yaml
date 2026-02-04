@@ -12,6 +12,15 @@
 #    devices (/dev/kvm, /dev/sda, etc.) are passed through
 # 4. The VM boundary is the security layer, not container namespaces
 #
+# Secret Proxy Architecture
+# -------------------------
+# The secret-proxy sidecar provides defense-in-depth for API credentials:
+# 1. Agent sees placeholder values (e.g., ANTHROPIC_API_KEY=NETCLODE_PLACEHOLDER_xxx)
+# 2. All HTTP/HTTPS traffic is redirected to the proxy via iptables
+# 3. Proxy replaces placeholders with real secrets ONLY in request headers
+# 4. Proxy only injects secrets for requests to allowed hosts
+# This prevents secret exfiltration even if the agent or LLM-generated code is compromised.
+#
 apiVersion: extensions.agents.x-k8s.io/v1alpha1
 kind: SandboxTemplate
 metadata:
@@ -21,10 +30,10 @@ spec:
   podTemplate:
     spec:
       runtimeClassName: kata-clh
-      # Fix MTU for Cilium + Kata compatibility
-      # Kata VMs don't inherit route MTU from outer namespace, causing fragmentation
-      # See: https://docs.cilium.io/en/stable/network/kubernetes/kata.html#limitations
       initContainers:
+        # Fix MTU for Cilium + Kata compatibility
+        # Kata VMs don't inherit route MTU from outer namespace, causing fragmentation
+        # See: https://docs.cilium.io/en/stable/network/kubernetes/kata.html#limitations
         - name: fix-mtu
           image: busybox:latest
           command:
@@ -41,6 +50,25 @@ spec:
             capabilities:
               add:
                 - NET_ADMIN
+        # Setup iptables to redirect HTTP/HTTPS traffic to secret-proxy
+        # This runs after fix-mtu and before containers start
+        # Uses iptables-legacy because Kata VM kernel lacks nftables support
+        - name: setup-iptables
+          image: alpine:3.21
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache iptables-legacy
+              # Redirect HTTP (80) and HTTPS (443) to proxy on port 8080
+              # Exclude traffic from proxy user (UID 65534) to prevent loops
+              iptables-legacy -t nat -A OUTPUT -p tcp --dport 80 -m owner ! --uid-owner 65534 -j REDIRECT --to-port 8080
+              iptables-legacy -t nat -A OUTPUT -p tcp --dport 443 -m owner ! --uid-owner 65534 -j REDIRECT --to-port 8080
+              echo "iptables redirect configured for secret-proxy"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
       containers:
         - name: agent
           image: ghcr.io/angristan/netclode-agent:latest
@@ -50,11 +78,62 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            # Agent sees PLACEHOLDERS for API keys (real secrets injected by proxy)
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: netclode-secrets
-                  key: anthropic-api-key
+                  key: anthropic-api-key-placeholder
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: openai-api-key-placeholder
+                  optional: true
+            - name: MISTRAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: mistral-api-key-placeholder
+                  optional: true
+            - name: OPENCODE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: opencode-api-key-placeholder
+                  optional: true
+            - name: ZAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: zai-api-key-placeholder
+                  optional: true
+            - name: GITHUB_COPILOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: github-copilot-token-placeholder
+                  optional: true
+            - name: CODEX_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: codex-access-token-placeholder
+                  optional: true
+            - name: CODEX_ID_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: codex-id-token-placeholder
+                  optional: true
+            - name: CODEX_REFRESH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: codex-refresh-token-placeholder
+                  optional: true
+            # GITHUB_TOKEN is NOT proxied - used for git credential helper (clone/push)
+            # Git embeds credentials in URL, doesn't use HTTP Authorization headers
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -70,6 +149,11 @@ spec:
           volumeMounts:
             - name: agent-home
               mountPath: /agent
+            # Mount proxy CA so agent trusts MITM certificates
+            - name: proxy-ca
+              mountPath: /usr/local/share/ca-certificates/secret-proxy.crt
+              subPath: ca.crt
+              readOnly: true
           # Agent connects TO control-plane, no ports exposed
           # Readiness: check for ready file created by agent
           readinessProbe:
@@ -82,6 +166,51 @@ spec:
               command: ["test", "-f", "/tmp/agent-ready"]
             initialDelaySeconds: 30
             periodSeconds: 10
+        # Secret proxy sidecar - intercepts HTTP/HTTPS and injects real secrets
+        - name: secret-proxy
+          image: ghcr.io/angristan/netclode-secret-proxy:latest
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 65534  # nobody - must match iptables exclusion
+            runAsGroup: 65534
+            readOnlyRootFilesystem: true
+          env:
+            - name: LISTEN_ADDR
+              value: ":8080"
+            - name: CA_CERT_PATH
+              value: "/etc/secret-proxy/ca.crt"
+            - name: CA_KEY_PATH
+              value: "/etc/secret-proxy/ca.key"
+            # JSON mapping: placeholder -> {secret, hosts}
+            - name: SECRETS_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: secrets-json
+          volumeMounts:
+            - name: proxy-ca
+              mountPath: /etc/secret-proxy
+              readOnly: true
+          ports:
+            - containerPort: 8080
+              name: proxy
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "64Mi"
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+      volumes:
+        # ConfigMap containing proxy CA certificate and key
+        - name: proxy-ca
+          configMap:
+            name: secret-proxy-ca
   volumeClaimTemplates:
     - metadata:
         name: agent-home
@@ -134,4 +263,3 @@ spec:
             port: 11434
       # NOTE: Internet access (0.0.0.0/0) is NOT included by default.
       # Sessions that need internet get an additional NetworkPolicy added by control-plane.
-
