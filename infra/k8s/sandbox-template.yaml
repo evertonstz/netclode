@@ -16,10 +16,11 @@
 # -------------------------
 # The secret-proxy sidecar provides defense-in-depth for API credentials:
 # 1. Agent sees placeholder values (e.g., ANTHROPIC_API_KEY=NETCLODE_PLACEHOLDER_xxx)
-# 2. All HTTP/HTTPS traffic is redirected to the proxy via iptables
+# 2. HTTP_PROXY/HTTPS_PROXY env vars route traffic through the proxy sidecar
 # 3. Proxy replaces placeholders with real secrets ONLY in request headers
 # 4. Proxy only injects secrets for requests to allowed hosts
 # This prevents secret exfiltration even if the agent or LLM-generated code is compromised.
+# (Inspired by Fly's Tokenizer: https://github.com/superfly/tokenizer)
 #
 apiVersion: extensions.agents.x-k8s.io/v1alpha1
 kind: SandboxTemplate
@@ -50,25 +51,6 @@ spec:
             capabilities:
               add:
                 - NET_ADMIN
-        # Setup iptables to redirect HTTP/HTTPS traffic to secret-proxy
-        # This runs after fix-mtu and before containers start
-        # Uses iptables-legacy because Kata VM kernel lacks nftables support
-        - name: setup-iptables
-          image: alpine:3.21
-          command:
-            - sh
-            - -c
-            - |
-              apk add --no-cache iptables-legacy
-              # Redirect HTTP (80) and HTTPS (443) to proxy on port 8080
-              # Exclude traffic from proxy user (UID 65534) to prevent loops
-              iptables-legacy -t nat -A OUTPUT -p tcp --dport 80 -m owner ! --uid-owner 65534 -j REDIRECT --to-port 8080
-              iptables-legacy -t nat -A OUTPUT -p tcp --dport 443 -m owner ! --uid-owner 65534 -j REDIRECT --to-port 8080
-              echo "iptables redirect configured for secret-proxy"
-          securityContext:
-            capabilities:
-              add:
-                - NET_ADMIN
       containers:
         - name: agent
           image: ghcr.io/angristan/netclode-agent:latest
@@ -78,6 +60,13 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            # Proxy settings for secret injection (secret-proxy sidecar on localhost:8080)
+            - name: HTTP_PROXY
+              value: "http://127.0.0.1:8080"
+            - name: HTTPS_PROXY
+              value: "http://127.0.0.1:8080"
+            - name: NO_PROXY
+              value: "localhost,127.0.0.1,control-plane.netclode.svc.cluster.local"
             # Agent sees PLACEHOLDERS for API keys (real secrets injected by proxy)
             - name: ANTHROPIC_API_KEY
               valueFrom:
