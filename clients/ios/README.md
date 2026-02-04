@@ -21,9 +21,20 @@ Native iOS 26 app for Netclode. Built with SwiftUI and the Liquid Glass API.
 
 ## Building
 
+From repo root:
+
 ```bash
-open Netclode.xcodeproj
-# ⌘R
+# macOS (Catalyst)
+make run-macos
+
+# iOS Simulator (default: iPhone 16 Pro)
+make run-ios
+
+# iOS Simulator with specific device
+make run-ios SIMULATOR="iPhone 16"
+
+# Physical iPhone (requires signing)
+make run-device
 ```
 
 ## Testing

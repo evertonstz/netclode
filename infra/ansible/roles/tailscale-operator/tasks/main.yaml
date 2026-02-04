@@ -77,7 +77,6 @@
       # This image adds h2c support for application/connect+* content types
       # Source: https://github.com/angristan/tailscale (connect-fix branch)
       proxyConfig:
-        defaultTags: "tag:k8s"
         image:
           repository: ghcr.io/angristan/tailscale
           tag: connect-fix

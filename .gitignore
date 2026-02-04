@@ -42,10 +42,11 @@ coverage/
 .direnv/
 .devenv/
 
-# iOS (if added later)
+# iOS
 *.xcworkspace
 *.xcuserdata
 Pods/
+clients/ios/.build/
 
 # Secrets
 *.pem

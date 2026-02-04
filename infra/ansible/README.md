@@ -57,16 +57,14 @@ All secrets are read from the `.env` file at the repo root. Required entries:
 ```bash
 # .env file
 
-# Core
+# LLM provider (at least one required)
 ANTHROPIC_API_KEY=sk-ant-api03-xxx
+# OPENAI_API_KEY=sk-xxx
+# MISTRAL_API_KEY=xxx
 
-# SSH
-SSH_AUTHORIZED_KEYS=ssh-ed25519 AAAA... user@host
-
-# Tailscale
+# Tailscale (OAuth client for k8s ingress)
 TS_OAUTH_CLIENT_ID=your-oauth-client-id
 TS_OAUTH_CLIENT_SECRET=your-oauth-client-secret
-TAILSCALE_AUTHKEY=tskey-auth-xxx  # Optional, for auto-connect
 
 # JuiceFS / S3 storage
 DO_SPACES_ACCESS_KEY=your-spaces-access-key
@@ -79,18 +77,6 @@ GITHUB_APP_ID=123456
 GITHUB_APP_PRIVATE_KEY_B64=base64-encoded-pem-private-key
 GITHUB_INSTALLATION_ID=12345678
 
-# Mistral (optional - for Mistral models via OpenCode)
-MISTRAL_API_KEY=your-mistral-api-key
-
-# OpenCode Zen (optional - for OpenCode Zen models)
-# If not set, only free Zen models are available (gpt-5-nano, big-pickle, etc.)
-# If set, all Zen models including paid models are available
-OPENCODE_API_KEY=your-opencode-api-key
-
-# Z.AI (optional - for GLM-4.7 models via Anthropic-compatible endpoint)
-# Get API key at https://z.ai/manage-apikey/apikey-list
-ZAI_API_KEY=your-zai-api-key
-
 # Kata VM Resources (optional - defaults shown)
 KATA_VM_CPUS=4
 KATA_VM_MEMORY_MB=4096
@@ -99,20 +85,18 @@ KATA_VM_MEMORY_MB=4096
 Deploy secrets:
 
 ```bash
-ENV_FILE=/path/to/.env DEPLOY_HOST=your-server-ip ansible-playbook playbooks/secrets.yaml
+DEPLOY_HOST=my-server ansible-playbook playbooks/secrets.yaml
 ```
 
 This creates:
 
 **Host files** (in `/var/secrets/`):
-- `ssh-authorized-keys` - SSH public key for root
 - `ts-oauth-client-id` - Tailscale OAuth client ID
 - `ts-oauth-client-secret` - Tailscale OAuth client secret
-- `tailscale-authkey` - Tailscale auth key (optional)
 
 **Kubernetes secrets** (in `netclode` namespace):
-- `netclode-secrets` - Contains `anthropic-api-key`, and optionally `github-app-id`, `github-app-private-key`, `github-installation-id`, `opencode-api-key`, `zai-api-key`
-- `juicefs-secret` - Contains S3 credentials and JuiceFS metadata URL
+- `netclode-secrets` - LLM API keys and optional GitHub App credentials
+- `juicefs-secret` - S3 credentials and JuiceFS metadata URL
 
 ## Usage
 

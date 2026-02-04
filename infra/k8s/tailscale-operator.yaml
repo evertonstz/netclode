@@ -3,9 +3,7 @@
 #
 # Prerequisites:
 # 1. Create OAuth client at https://login.tailscale.com/admin/settings/oauth
-#    - Grant "Devices: Write" and "Auth Keys: Write" scopes
+#    - Grant "Devices: Write" scope
 # 2. Add TS_OAUTH_CLIENT_ID and TS_OAUTH_CLIENT_SECRET to .env
-# 3. Run: ./scripts/deploy-secrets.sh
 #
-# The NixOS tailscale.nix module deploys the operator via Helm.
-# Namespace and secrets are created by deploy-secrets.sh
+# Deployed via Helm in infra/ansible/roles/tailscale-operator/
