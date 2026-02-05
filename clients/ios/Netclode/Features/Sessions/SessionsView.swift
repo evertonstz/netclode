@@ -22,8 +22,8 @@ struct SessionsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.Colors.background)
-        .safeAreaInset(edge: .bottom) {
-            PromptInputBar {
+        .overlay(alignment: .bottomTrailing) {
+            NewSessionButton {
                 showPromptSheet = true
             }
         }
@@ -171,33 +171,25 @@ struct SessionsView: View {
     }
 }
 
-// MARK: - Bottom Input Bar
+// MARK: - New Session Button
 
-struct PromptInputBar: View {
+struct NewSessionButton: View {
     let onTap: () -> Void
+    
+    private let buttonSize: CGFloat = 56
 
     var body: some View {
         Button(action: onTap) {
-            HStack {
-                Text("Start a new session...")
-                    .font(.netclodeBody)
-                    .foregroundStyle(.secondary)
-                
-                Spacer()
-                
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, Theme.Spacing.md)
-            .padding(.vertical, Theme.Spacing.sm)
-            .frame(maxWidth: .infinity)
-            .contentShape(Capsule())
-            .glassEffect(.regular.interactive(), in: Capsule())
+            Image(systemName: "plus")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: buttonSize, height: buttonSize)
+                .adaptiveGlassInteractive(in: Circle())
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, Theme.Spacing.md)
-        .padding(.vertical, Theme.Spacing.xs)
+        .padding(.trailing, 20)
+        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 

@@ -41,9 +41,9 @@ final class SettingsStore {
         connectPort = UserDefaults.standard.string(forKey: "netclode_connect_port") ?? ""
 
         if let scheme = UserDefaults.standard.string(forKey: "netclode_color_scheme") {
-            preferredColorScheme = scheme == "light" ? .light : scheme == "dark" ? .dark : nil
+            preferredColorScheme = scheme == "light" ? .light : scheme == "dark" ? .dark : .dark
         } else {
-            preferredColorScheme = nil
+            preferredColorScheme = .dark
         }
 
         hapticFeedbackEnabled = UserDefaults.standard.object(forKey: "netclode_haptic_feedback") as? Bool ?? true

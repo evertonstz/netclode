@@ -12,83 +12,272 @@ struct ChatInputBar: View {
     /// Whether there's already a queued message (only one allowed)
     var hasQueuedMessage: Bool = false
 
-    private let inputHeight: CGFloat = 44
-    private let maxHeight: CGFloat = 100
+    /// Speech service for voice input
+    @State private var speechService = SpeechService()
+    
+    private let buttonSize: CGFloat = 44
+    private let minInputHeight: CGFloat = 22
+    private let maxInputHeight: CGFloat = 120
 
+    private var hasText: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
     private var canSend: Bool {
-        let hasText = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        // Can't send if offline and already have a queued message
         if !isConnected && hasQueuedMessage {
             return false
         }
         return hasText
     }
     
-    /// Whether the message will be queued (not sent immediately)
-    private var willQueue: Bool {
-        !isConnected
+    private var willQueue: Bool { !isConnected }
+    
+    // Speech states
+    private var isRecording: Bool { speechService.state == .recording }
+    private var isTranscribing: Bool { speechService.state == .processing }
+    private var isPreparing: Bool { speechService.state == .preparingModel }
+    
+    /// What to show on the right button
+    private enum RightButtonMode {
+        case mic       // Empty text, not recording
+        case send      // Has text
+        case stop      // Recording
+        case loading   // Transcribing/preparing
+        case interrupt // Agent processing
+    }
+    
+    private var rightButtonMode: RightButtonMode {
+        if isProcessing {
+            return .interrupt
+        } else if isRecording {
+            return .stop
+        } else if isTranscribing || isPreparing {
+            return .loading
+        } else if hasText {
+            return .send
+        } else {
+            return .mic
+        }
     }
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: Theme.Spacing.xs) {
-            // Text input
-            ZStack(alignment: .leading) {
-                if text.isEmpty {
-                    Text(willQueue ? "Reply (queue message)..." : "Reply...")
-                        .foregroundStyle(.secondary)
-                        .padding(.leading, 5)
-                        .allowsHitTesting(false)
-                }
-                
-                TextEditor(text: $text)
-                    .focused(isFocused)
-                    .scrollContentBackground(.hidden)
-                    .tint(Theme.Colors.brand)
-                    .frame(minHeight: 28, maxHeight: maxHeight)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .font(.netclodeBody)
-            .padding(.horizontal, Theme.Spacing.md)
-            .frame(minHeight: inputHeight)
-            .adaptiveGlassInteractive(in: Capsule())
-
-            // Send/Stop button - both always present, cross-fade between them
-            ZStack {
-                // Send button
-                Button {
-                    onSend()
-                } label: {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: TypeScale.body, weight: .semibold))
-                        .foregroundStyle(canSend ? .white : .secondary)
-                        .frame(width: inputHeight, height: inputHeight)
-                        .adaptiveGlassInteractive(
-                            tint: canSend ? (willQueue ? Color.orange : Theme.Colors.brand) : nil,
-                            in: Circle()
-                        )
-                }
-                .disabled(!canSend || isProcessing)
-                .opacity(isProcessing ? 0 : 1)
-                .scaleEffect(isProcessing ? 0.8 : 1)
-                
-                // Stop button
-                Button {
-                    onInterrupt()
-                } label: {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: TypeScale.body, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: inputHeight, height: inputHeight)
-                        .adaptiveGlassInteractive(tint: Theme.Colors.error, in: Circle())
-                }
-                .disabled(!isProcessing)
-                .opacity(isProcessing ? 1 : 0)
-                .scaleEffect(isProcessing ? 1 : 0.8)
-            }
-            .animation(.smooth(duration: 0.25), value: isProcessing)
+        HStack(alignment: .bottom, spacing: 8) {
+            // Input container
+            inputContainer
+            
+            // Button outside
+            rightButton
         }
-        .padding(.horizontal, Theme.Spacing.sm)
-        .padding(.vertical, Theme.Spacing.xs)
+        .padding(.horizontal, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 16)
+        .animation(.smooth(duration: 0.2), value: isRecording)
+        .animation(.smooth(duration: 0.2), value: hasText)
+    }
+    
+    // MARK: - Input Container
+    
+    @ViewBuilder
+    private var inputContainer: some View {
+        ZStack(alignment: .leading) {
+            // Always show text input (keeps keyboard visible)
+            textInputView
+            
+            // Overlay recording waveform when recording
+            if isRecording {
+                recordingOverlay
+            }
+            
+            // Overlay transcribing state
+            if isTranscribing || isPreparing {
+                transcribingOverlay
+            }
+        }
+        .frame(minHeight: buttonSize)
+        .adaptiveGlassInteractive(in: RoundedRectangle(cornerRadius: 22))
+        .overlay {
+            if isRecording {
+                RoundedRectangle(cornerRadius: 22)
+                    .stroke(Theme.Colors.brand, lineWidth: 2)
+            }
+        }
+    }
+    
+    // MARK: - Recording Overlay (Waveform)
+    
+    private var recordingOverlay: some View {
+        HStack(spacing: Theme.Spacing.sm) {
+            // Recording indicator
+            Circle()
+                .fill(Theme.Colors.brand)
+                .frame(width: 8, height: 8)
+                .modifier(PulsingModifier())
+            
+            // Real waveform visualization - takes full width
+            AudioWaveformView(level: speechService.audioLevel)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: buttonSize)
+        .frame(maxWidth: .infinity)
+        .background(Theme.Colors.background.opacity(0.95))
+    }
+    
+    // MARK: - Transcribing Overlay
+    
+    private var transcribingOverlay: some View {
+        HStack(spacing: Theme.Spacing.sm) {
+            ProgressView()
+                .scaleEffect(0.8)
+            
+            Text(isPreparing ? "Preparing..." : "Transcribing...")
+                .font(.netclodeBody)
+                .foregroundStyle(.secondary)
+            
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: buttonSize)
+        .frame(maxWidth: .infinity)
+        .background(Theme.Colors.background.opacity(0.95))
+    }
+    
+    // MARK: - Text Input View
+    
+    private var textInputView: some View {
+        TextField(placeholderText, text: $text, axis: .vertical)
+            .font(.netclodeBody)
+            .focused(isFocused)
+            .tint(Theme.Colors.brand)
+            .lineLimit(1...5)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+    }
+    
+    private var placeholderText: String {
+        if willQueue {
+            return "Reply (queued)..."
+        } else {
+            return "Reply..."
+        }
+    }
+    
+    // MARK: - Right Button
+    
+    private var rightButton: some View {
+        ZStack {
+            // Mic button
+            Button {
+                Task { await startRecording() }
+            } label: {
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .adaptiveGlassInteractive(in: Circle())
+            }
+            .opacity(rightButtonMode == .mic ? 1 : 0)
+            .scaleEffect(rightButtonMode == .mic ? 1 : 0.5)
+            
+            // Send button
+            Button(action: onSend) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .adaptiveGlassInteractive(
+                        tint: canSend ? (willQueue ? .orange : Theme.Colors.brand) : nil,
+                        in: Circle()
+                    )
+            }
+            .disabled(!canSend)
+            .opacity(rightButtonMode == .send ? 1 : 0)
+            .scaleEffect(rightButtonMode == .send ? 1 : 0.5)
+            
+            // Stop recording button
+            Button {
+                Task { await stopRecording() }
+            } label: {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .adaptiveGlassInteractive(tint: Theme.Colors.brand, in: Circle())
+            }
+            .opacity(rightButtonMode == .stop ? 1 : 0)
+            .scaleEffect(rightButtonMode == .stop ? 1 : 0.5)
+            
+            // Loading indicator
+            ProgressView()
+                .tint(.white)
+                .frame(width: buttonSize, height: buttonSize)
+                .adaptiveGlassInteractive(in: Circle())
+                .opacity(rightButtonMode == .loading ? 1 : 0)
+                .scaleEffect(rightButtonMode == .loading ? 1 : 0.5)
+            
+            // Interrupt agent button
+            Button(action: onInterrupt) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .adaptiveGlassInteractive(tint: Theme.Colors.error, in: Circle())
+            }
+            .opacity(rightButtonMode == .interrupt ? 1 : 0)
+            .scaleEffect(rightButtonMode == .interrupt ? 1 : 0.5)
+        }
+        .frame(width: buttonSize, height: buttonSize)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: rightButtonMode)
+    }
+    
+    // MARK: - Actions
+    
+    private func startRecording() async {
+        do {
+            try await speechService.startRecording()
+        } catch {
+            // Error logged by SpeechService
+        }
+    }
+    
+    private func stopRecording() async {
+        await speechService.stopRecording()
+        let transcript = speechService.currentTranscript
+        if !transcript.isEmpty {
+            text = transcript
+        }
+    }
+}
+
+// MARK: - Audio Waveform View
+
+struct AudioWaveformView: View {
+    var level: Float
+    
+    private let barCount = 40
+    private let barWidth: CGFloat = 3
+    private let barSpacing: CGFloat = 2
+    
+    // Keep history of levels for waveform visualization
+    @State private var levelHistory: [CGFloat] = Array(repeating: 0.15, count: 40)
+    
+    var body: some View {
+        GeometryReader { geo in
+            HStack(spacing: barSpacing) {
+                ForEach(0..<levelHistory.count, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Theme.Colors.brand)
+                        .frame(width: barWidth, height: max(4, levelHistory[index] * 20))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+        .frame(height: 24)
+        .onChange(of: level) { _, newLevel in
+            withAnimation(.linear(duration: 0.05)) {
+                levelHistory.removeFirst()
+                levelHistory.append(CGFloat(max(0.15, newLevel)))
+            }
+        }
     }
 }
 
@@ -156,6 +345,21 @@ struct StreamingIndicator: View {
 
         ChatInputBar(
             text: .constant(""),
+            isProcessing: false,
+            isFocused: FocusState<Bool>().projectedValue,
+            onSend: {},
+            onInterrupt: {}
+        )
+    }
+    .background(Theme.Colors.background)
+}
+
+#Preview("With Text") {
+    VStack {
+        Spacer()
+
+        ChatInputBar(
+            text: .constant("Hello, this is a test message"),
             isProcessing: false,
             isFocused: FocusState<Bool>().projectedValue,
             onSend: {},

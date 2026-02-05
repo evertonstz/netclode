@@ -6,6 +6,7 @@ Native iOS 26 app for Netclode. Built with SwiftUI and the Liquid Glass API.
 
 - Session management (create, pause, resume, delete)
 - Real-time chat with streaming responses
+- **Voice input** via SpeechAnalyzer API (iOS 26+) with real-time waveform
 - Session history with rollback (restore workspace and chat to any previous turn)
 - Terminal emulator via [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm)
 - Git changes view with inline unified diffs
@@ -222,6 +223,16 @@ SwiftTerminalView ──► ConnectService ──► Control Plane ──► Age
 ```
 
 `SwiftTermBridge.swift` adapts SwiftTerm's `LocalProcessTerminalView` delegate to work over the Connect stream instead of a local process.
+
+## Voice Input
+
+Uses Apple's `SpeechAnalyzer` API (iOS 26+). Same engine as Notes, Voice Memos, and Journal.
+
+The ML model downloads per-locale on first use via `AssetInventory`. Runs entirely on-device, outside app memory space. Designed for long-form and distant audio (meetings, lectures), not just close-mic dictation.
+
+Audio flows through `AsyncStream<AnalyzerInput>` to `SpeechAnalyzer`, which routes to `SpeechTranscriber`. Results come back via another `AsyncStream`. Input and output are decoupled so we can capture audio and handle results independently.
+
+Results are either "volatile" (immediate rough guesses) or "finalized" (accurate, after more context).
 
 ## License
 

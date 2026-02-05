@@ -26,6 +26,12 @@ struct PromptSheet: View {
     @State private var vcpus: Int32 = 0      // Initialized from server defaults in onAppear
     @State private var memoryMB: Int32 = 0   // Initialized from server defaults in onAppear
     @FocusState private var isFocused: Bool
+    
+    // Speech
+    @State private var speechService = SpeechService()
+    private var isRecording: Bool { speechService.state == .recording }
+    private var isTranscribing: Bool { speechService.state == .processing }
+    private var isPreparing: Bool { speechService.state == .preparingModel }
 
     /// Get available models as PickerModels based on current SDK selection
     private var availablePickerModels: [PickerModel] {
@@ -71,20 +77,99 @@ struct PromptSheet: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(spacing: 0) {
-                    // Text input area
-                    TextField(
-                        "What do you want to build?",
-                        text: $promptText,
-                        axis: .vertical
-                    )
-                    .font(.netclodeBody)
-                    .tint(Theme.Colors.brand)
-                    .lineLimit(3...12)
-                    .padding(Theme.Spacing.md)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.Radius.lg))
+                    // Text input area - replaces with recording UI when recording
+                    ZStack {
+                        // Normal text input with mic button
+                        HStack(alignment: .bottom, spacing: 0) {
+                            TextField(
+                                "What do you want to build?",
+                                text: $promptText,
+                                axis: .vertical
+                            )
+                            .font(.netclodeBody)
+                            .tint(Theme.Colors.brand)
+                            .lineLimit(3...12)
+                            .padding(Theme.Spacing.md)
+                            .padding(.trailing, 0)
+                            .focused($isFocused)
+                            .blur(radius: isRecording || isTranscribing || isPreparing ? 4 : 0)
+                            .opacity(isRecording || isTranscribing || isPreparing ? 0 : 1)
+                            
+                            // Mic button (hidden during recording)
+                            Button {
+                                Task {
+                                    try? await speechService.startRecording()
+                                }
+                            } label: {
+                                Image(systemName: "mic.fill")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 36, height: 36)
+                                    .adaptiveGlassInteractive(in: Circle())
+                            }
+                            .padding(.trailing, 8)
+                            .padding(.bottom, 8)
+                            .scaleEffect(isRecording || isTranscribing || isPreparing ? 0.8 : 1)
+                            .opacity(isRecording || isTranscribing || isPreparing ? 0 : 1)
+                        }
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.lg))
+                        
+                        // Recording overlay - same size as text input
+                        if isRecording || isTranscribing || isPreparing {
+                            HStack(spacing: Theme.Spacing.sm) {
+                                if isTranscribing || isPreparing {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text(isPreparing ? "Preparing..." : "Transcribing...")
+                                        .font(.netclodeBody)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                } else {
+                                    // Recording indicator
+                                    Circle()
+                                        .fill(Theme.Colors.brand)
+                                        .frame(width: 10, height: 10)
+                                        .modifier(PulsingModifier())
+                                    
+                                    // Waveform - takes full width
+                                    AudioWaveformView(level: speechService.audioLevel)
+                                        .frame(maxWidth: .infinity)
+                                }
+                                
+                                // Stop button
+                                Button {
+                                    Task {
+                                        await speechService.stopRecording()
+                                        if !speechService.currentTranscript.isEmpty {
+                                            promptText = speechService.currentTranscript
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "stop.fill")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 36, height: 36)
+                                        .adaptiveGlassInteractive(in: Circle())
+                                }
+                            }
+                            .padding(.horizontal, Theme.Spacing.md)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.lg))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: Theme.Radius.lg)
+                                    .stroke(Theme.Colors.brand.opacity(0.6), lineWidth: 2)
+                            }
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                                removal: .opacity.combined(with: .scale(scale: 1.02))
+                            ))
+                        }
+                    }
+                    .animation(.spring(duration: 0.35, bounce: 0.15), value: isRecording)
+                    .animation(.spring(duration: 0.35, bounce: 0.15), value: isTranscribing)
+                    .animation(.spring(duration: 0.35, bounce: 0.15), value: isPreparing)
                     .padding(.horizontal, Theme.Spacing.md)
                     .padding(.top, Theme.Spacing.md)
-                    .focused($isFocused)
 
                     // SDK and Model section
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
