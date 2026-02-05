@@ -223,13 +223,15 @@ Sandboxes can:
 - Reach the control-plane (for config, events)
 - Reach the secret-proxy (for API requests)
 - Resolve DNS
+- Access the public internet (default)
 
 Sandboxes cannot:
-- Access the internet directly (must go through secret-proxy)
 - Reach other pods (10.42.0.0/16)
 - Reach services (10.43.0.0/16) except control-plane and secret-proxy
 - Reach private networks (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
 - Reach Tailnet (100.64.0.0/10) by default
+
+See `docs/network-access.md` for policy details.
 
 ### Tailnet Access
 

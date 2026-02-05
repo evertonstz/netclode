@@ -297,12 +297,13 @@ control-plane checks SDK type: `SDK_TYPE_CLAUDE`. `api.openai.com` not in Claude
 
 ### NetworkPolicy
 
-Sandboxes can only reach:
+Base policy allows:
 - `control-plane` (for config/events)
 - `secret-proxy` (for API requests)
 - DNS (kube-system)
+- Public internet access (default)
 
-Direct internet access is blocked - all traffic goes through secret-proxy.
+Private networks and tailnet are blocked by default. See `docs/network-access.md`.
 
 ## Troubleshooting
 
