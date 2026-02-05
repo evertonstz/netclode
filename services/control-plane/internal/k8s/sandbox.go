@@ -1928,6 +1928,8 @@ func (r *k8sRuntime) VerifyAgentToken(ctx context.Context, token string) (string
 	review := &authenticationv1.TokenReview{
 		Spec: authenticationv1.TokenReviewSpec{
 			Token: token,
+			// The projected token uses "secret-proxy" audience for proxy authentication
+			Audiences: []string{"secret-proxy"},
 		},
 	}
 
