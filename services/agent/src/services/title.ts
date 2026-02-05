@@ -3,14 +3,24 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import type { ClientOptions } from "@anthropic-ai/sdk/client";
+import { ProxyAgent, fetch as undiciFetch } from "undici";
 
 /**
  * Generate a short title for a session based on the initial prompt
  */
+const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+const proxyDispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : undefined;
+// Use a proxy-aware fetch so the placeholder key is injected by secret-proxy.
+const proxyFetch: ClientOptions["fetch"] = proxyDispatcher
+  ? (input, init) =>
+      undiciFetch(input, { ...(init ?? {}), dispatcher: proxyDispatcher })
+  : undefined;
+
 export async function generateTitle(prompt: string): Promise<string> {
   console.log(`[title] Title generation requested for: "${prompt.slice(0, 50)}..."`);
 
-  const anthropic = new Anthropic();
+  const anthropic = new Anthropic({ fetch: proxyFetch });
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5",
     max_tokens: 30,
