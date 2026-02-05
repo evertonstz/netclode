@@ -112,11 +112,17 @@ struct FloatingActionButton: View {
             }
             action()
         } label: {
-            Image(systemName: icon)
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(tint ?? .white)
+            // Use a white background with very low opacity - this gives the glass effect
+            // something to render while maintaining proper hit testing
+            Circle()
+                .fill(.white.opacity(0.001))
                 .frame(width: 60, height: 60)
-                .adaptiveGlassInteractive(in: Circle())
+                .glassEffect(.regular.interactive(), in: Circle())
+                .overlay {
+                    Image(systemName: icon)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(tint ?? .white)
+                }
         }
     }
 }

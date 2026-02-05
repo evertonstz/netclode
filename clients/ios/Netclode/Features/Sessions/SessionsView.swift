@@ -175,21 +175,12 @@ struct SessionsView: View {
 
 struct NewSessionButton: View {
     let onTap: () -> Void
-    
-    private let buttonSize: CGFloat = 56
 
     var body: some View {
-        Button(action: onTap) {
-            Image(systemName: "plus")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: buttonSize, height: buttonSize)
-                .adaptiveGlassInteractive(in: Circle())
-        }
-        .buttonStyle(.plain)
-        .padding(.trailing, 20)
-        .padding(.bottom, 20)
-        .frame(maxWidth: .infinity, alignment: .trailing)
+        FloatingActionButton(icon: "plus", action: onTap)
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+            .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 

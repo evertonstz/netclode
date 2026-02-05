@@ -101,11 +101,15 @@ struct PromptSheet: View {
                                     try? await speechService.startRecording()
                                 }
                             } label: {
-                                Image(systemName: "mic.fill")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundStyle(.white)
+                                Circle()
+                                    .fill(.white.opacity(0.001))
                                     .frame(width: 36, height: 36)
-                                    .adaptiveGlassInteractive(in: Circle())
+                                    .glassEffect(.regular.interactive(), in: Circle())
+                                    .overlay {
+                                        Image(systemName: "mic.fill")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundStyle(.white)
+                                    }
                             }
                             .padding(.trailing, 8)
                             .padding(.bottom, 8)
@@ -145,11 +149,15 @@ struct PromptSheet: View {
                                         }
                                     }
                                 } label: {
-                                    Image(systemName: "stop.fill")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundStyle(.white)
+                                    Circle()
+                                        .fill(.white.opacity(0.001))
                                         .frame(width: 36, height: 36)
-                                        .adaptiveGlassInteractive(in: Circle())
+                                        .glassEffect(.regular.interactive(), in: Circle())
+                                        .overlay {
+                                            Image(systemName: "stop.fill")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                        }
                                 }
                             }
                             .padding(.horizontal, Theme.Spacing.md)
@@ -169,7 +177,7 @@ struct PromptSheet: View {
                     .animation(.spring(duration: 0.35, bounce: 0.15), value: isTranscribing)
                     .animation(.spring(duration: 0.35, bounce: 0.15), value: isPreparing)
                     .padding(.horizontal, Theme.Spacing.md)
-                    .padding(.top, Theme.Spacing.md)
+                    .padding(.top, Theme.Spacing.xs)
 
                     // SDK and Model section
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
@@ -406,48 +414,62 @@ struct PromptSheet: View {
             .scrollDismissesKeyboard(.interactively)
             }
             .background(Theme.Colors.background)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+            .navigationBarHidden(true)
+            .safeAreaInset(edge: .top) {
+                // Custom header with circular glass buttons
+                HStack {
+                    // Cancel button
                     Button {
                         if settingsStore.hapticFeedbackEnabled {
                             HapticFeedback.light()
                         }
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark")
+                        Circle()
+                            .fill(.white.opacity(0.001))
+                            .frame(width: 44, height: 44)
+                            .glassEffect(.regular.interactive(), in: Circle())
+                            .overlay {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(.white)
+                            }
                     }
-                    .tint(.red)
                     .accessibilityLabel("Cancel")
-                }
-
-                ToolbarItem(placement: .principal) {
+                    
+                    Spacer()
+                    
                     Text("New Session")
                         .font(.netclodeHeadline)
-                }
-
-                ToolbarSpacer(placement: .topBarTrailing)
-
-                ToolbarItem(placement: .confirmationAction) {
+                    
+                    Spacer()
+                    
+                    // Send button
                     Button {
                         submitPrompt()
                     } label: {
-                        if isSubmitting {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "paperplane")
-                                .symbolVariant(canSubmit ? .fill : .none)
-                                .bold()
-                        }
+                        Circle()
+                            .fill(.white.opacity(0.001))
+                            .frame(width: 44, height: 44)
+                            .glassEffect(.regular.interactive().tint(Theme.Colors.brand.glassTint), in: Circle())
+                            .overlay {
+                                if isSubmitting {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "paperplane")
+                                        .symbolVariant(canSubmit ? .fill : .none)
+                                        .font(.system(size: 17, weight: .semibold))
+                                        .foregroundStyle(canSubmit ? .white : .secondary)
+                                }
+                            }
                     }
-                    .buttonStyle(.glassProminent)
-                    .buttonBorderShape(.circle)
-                    .tint(Theme.Colors.brand)
                     .disabled(!canSubmit)
                     .keyboardShortcut(.return, modifiers: .command)
                     .accessibilityLabel("Send")
                 }
+                .padding(.horizontal, Theme.Spacing.md)
+                .padding(.vertical, Theme.Spacing.sm)
             }
             .onAppear {
                 isFocused = true

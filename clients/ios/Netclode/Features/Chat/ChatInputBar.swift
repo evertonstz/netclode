@@ -169,25 +169,33 @@ struct ChatInputBar: View {
             Button {
                 Task { await startRecording() }
             } label: {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(.white)
+                Circle()
+                    .fill(.white.opacity(0.001))
                     .frame(width: buttonSize, height: buttonSize)
-                    .adaptiveGlassInteractive(in: Circle())
+                    .glassEffect(.regular.interactive(), in: Circle())
+                    .overlay {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
             }
             .opacity(rightButtonMode == .mic ? 1 : 0)
             .scaleEffect(rightButtonMode == .mic ? 1 : 0.5)
             
             // Send button
             Button(action: onSend) {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                Circle()
+                    .fill(.white.opacity(0.001))
                     .frame(width: buttonSize, height: buttonSize)
-                    .adaptiveGlassInteractive(
-                        tint: canSend ? (willQueue ? .orange : Theme.Colors.brand) : nil,
+                    .glassEffect(
+                        canSend ? .regular.interactive().tint((willQueue ? Color.orange : Theme.Colors.brand).glassTint) : .regular.interactive(),
                         in: Circle()
                     )
+                    .overlay {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
             }
             .disabled(!canSend)
             .opacity(rightButtonMode == .send ? 1 : 0)
@@ -197,30 +205,42 @@ struct ChatInputBar: View {
             Button {
                 Task { await stopRecording() }
             } label: {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                Circle()
+                    .fill(.white.opacity(0.001))
                     .frame(width: buttonSize, height: buttonSize)
-                    .adaptiveGlassInteractive(tint: Theme.Colors.brand, in: Circle())
+                    .glassEffect(.regular.interactive().tint(Theme.Colors.brand.glassTint), in: Circle())
+                    .overlay {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
             }
             .opacity(rightButtonMode == .stop ? 1 : 0)
             .scaleEffect(rightButtonMode == .stop ? 1 : 0.5)
             
             // Loading indicator
-            ProgressView()
-                .tint(.white)
+            Circle()
+                .fill(.white.opacity(0.001))
                 .frame(width: buttonSize, height: buttonSize)
-                .adaptiveGlassInteractive(in: Circle())
+                .glassEffect(.regular.interactive(), in: Circle())
+                .overlay {
+                    ProgressView()
+                        .tint(.white)
+                }
                 .opacity(rightButtonMode == .loading ? 1 : 0)
                 .scaleEffect(rightButtonMode == .loading ? 1 : 0.5)
             
             // Interrupt agent button
             Button(action: onInterrupt) {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                Circle()
+                    .fill(.white.opacity(0.001))
                     .frame(width: buttonSize, height: buttonSize)
-                    .adaptiveGlassInteractive(tint: Theme.Colors.error, in: Circle())
+                    .glassEffect(.regular.interactive().tint(Theme.Colors.error.glassTint), in: Circle())
+                    .overlay {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
             }
             .opacity(rightButtonMode == .interrupt ? 1 : 0)
             .scaleEffect(rightButtonMode == .interrupt ? 1 : 0.5)
