@@ -25,6 +25,7 @@ I wrote a blog post about how it works: [Building a self-hosted cloud coding age
 - **Live terminal access** - Drop into the sandbox shell from the app
 - **Session history** - Auto-snapshots after each turn. Roll back workspace and chat to any previous point
 - **Multiple SDKs** - Claude Code, OpenCode, Copilot, Codex. Swap anytime
+- **Secrets can't be stolen** - API keys never enter the sandbox. A proxy injects them on the fly for allowed hosts
 
 ## How it works
 
@@ -119,6 +120,7 @@ Quick version:
 - [Session History](docs/session-history.md) - Snapshots and rollback
 - [GitHub Integration](docs/github-integration.md) - Clone repos and push commits
 - [Network Access](docs/network-access.md) - Internet and Tailnet access control
+- [Secret Proxy](docs/secret-proxy.md) - API key protection architecture
 - [Web Previews](docs/web-previews.md) - Port exposure via Tailscale
 - [Terminal](docs/terminal.md) - Live shell access
 - [SDK Support](docs/sdk-support.md) - Claude, OpenCode, Copilot, Codex
