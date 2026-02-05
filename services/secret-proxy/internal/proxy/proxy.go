@@ -87,8 +87,21 @@ func New(cfg Config, logger *slog.Logger) *Proxy {
 		},
 	}
 
-	// Enable MITM for all HTTPS connections
-	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
+	// Custom CONNECT handler to capture Proxy-Authorization header from CONNECT request
+	// This is important because after MITM the request handler sees requests inside
+	// the TLS tunnel, which don't have the original CONNECT headers.
+	proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+		// Extract Proxy-Authorization from CONNECT request
+		if ctx.Req != nil {
+			proxyAuth := ctx.Req.Header.Get("Proxy-Authorization")
+			if proxyAuth != "" {
+				ctx.UserData = proxyAuth
+				logger.Debug("Captured Proxy-Authorization from CONNECT", "host", host)
+			}
+		}
+		// Continue with MITM
+		return goproxy.MitmConnect, host
+	})
 
 	// Add request handler for secret injection
 	proxy.OnRequest().DoFunc(p.handleRequest)
@@ -109,8 +122,18 @@ func (p *Proxy) handleRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.R
 		hostWithoutPort = host[:colonIdx]
 	}
 
-	// Extract Proxy-Authorization header (set by auth-proxy in the sandbox)
-	proxyAuth := req.Header.Get("Proxy-Authorization")
+	// Extract Proxy-Authorization header
+	// First try ctx.UserData (captured from CONNECT request for HTTPS)
+	// Fall back to request header (for plain HTTP proxying)
+	var proxyAuth string
+	if ctx.UserData != nil {
+		if auth, ok := ctx.UserData.(string); ok {
+			proxyAuth = auth
+		}
+	}
+	if proxyAuth == "" {
+		proxyAuth = req.Header.Get("Proxy-Authorization")
+	}
 	if proxyAuth == "" {
 		// No auth header - pass through without injection
 		p.logger.Debug("No Proxy-Authorization header, passing through", "host", hostWithoutPort)
