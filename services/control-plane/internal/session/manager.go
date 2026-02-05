@@ -75,10 +75,11 @@ type Manager struct {
 	config       *config.Config
 	githubClient *github.Client
 
-	sessions   map[string]*SessionState
-	agents     map[string]AgentConnection     // sessionID -> agent connection
-	warmAgents map[string]WarmAgentConnection // podName -> warm agent connection (waiting for session)
-	mu         sync.RWMutex
+	sessions           map[string]*SessionState
+	agents             map[string]AgentConnection     // sessionID -> agent connection
+	warmAgents         map[string]WarmAgentConnection // podName -> warm agent connection (waiting for session)
+	pendingAssignments map[string]string              // podName -> sessionID (for when agent registers late)
+	mu                 sync.RWMutex
 
 	// onSessionUpdated is called when a session is updated internally (e.g., auto-pause).
 	onSessionUpdated SessionUpdateCallback
@@ -88,13 +89,14 @@ type Manager struct {
 // githubClient can be nil if GitHub App is not configured.
 func NewManager(store storage.Storage, k8sRuntime k8s.Runtime, cfg *config.Config, githubClient *github.Client) *Manager {
 	return &Manager{
-		storage:      store,
-		k8s:          k8sRuntime,
-		config:       cfg,
-		githubClient: githubClient,
-		sessions:     make(map[string]*SessionState),
-		agents:       make(map[string]AgentConnection),
-		warmAgents:   make(map[string]WarmAgentConnection),
+		storage:            store,
+		k8s:                k8sRuntime,
+		config:             cfg,
+		githubClient:       githubClient,
+		sessions:           make(map[string]*SessionState),
+		agents:             make(map[string]AgentConnection),
+		warmAgents:         make(map[string]WarmAgentConnection),
+		pendingAssignments: make(map[string]string),
 	}
 }
 
@@ -617,11 +619,7 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 		}
 	}
 
-	if m.AssignSessionToWarmAgent(originalPodName, sessionID) {
-		slog.Info("Session pushed to warm agent", "sessionID", sessionID, "podName", originalPodName)
-	} else {
-		slog.Debug("Warm agent not yet connected, will register normally", "sessionID", sessionID, "podName", originalPodName)
-	}
+	m.AssignSessionToWarmAgent(originalPodName, sessionID)
 
 	// Label the sandbox so the informer can track it
 	if err := m.k8s.LabelSandbox(ctx, sandboxName, sessionID); err != nil {
@@ -1934,19 +1932,27 @@ func (m *Manager) GetAgentConnection(sessionID string) AgentConnection {
 }
 
 // RegisterWarmAgentConnection registers a warm pool agent waiting for session assignment.
-// The agent is identified by pod name and will be assigned a session when a SandboxClaim binds.
 func (m *Manager) RegisterWarmAgentConnection(podName string, conn WarmAgentConnection) {
 	m.mu.Lock()
 	m.warmAgents[podName] = conn
+	sessionID, hasPending := m.pendingAssignments[podName]
+	if hasPending {
+		delete(m.pendingAssignments, podName)
+	}
 	m.mu.Unlock()
 
-	slog.Info("Warm agent connection registered", "podName", podName)
+	slog.Info("Warm agent registered", "podName", podName)
+
+	if hasPending {
+		m.AssignSessionToWarmAgent(podName, sessionID)
+	}
 }
 
 // UnregisterWarmAgentConnection unregisters a warm pool agent connection.
 func (m *Manager) UnregisterWarmAgentConnection(podName string) {
 	m.mu.Lock()
 	delete(m.warmAgents, podName)
+	delete(m.pendingAssignments, podName)
 	m.mu.Unlock()
 
 	slog.Info("Warm agent connection unregistered", "podName", podName)
@@ -1965,8 +1971,9 @@ func (m *Manager) AssignSessionToWarmAgent(podName, sessionID string) bool {
 	m.mu.Lock()
 	warmAgent, ok := m.warmAgents[podName]
 	if !ok {
+		m.pendingAssignments[podName] = sessionID
 		m.mu.Unlock()
-		slog.Warn("Warm agent not found for session assignment", "podName", podName, "sessionID", sessionID)
+		slog.Info("Queued pending session assignment", "podName", podName, "sessionID", sessionID)
 		return false
 	}
 
