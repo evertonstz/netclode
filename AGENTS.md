@@ -66,34 +66,47 @@ kubectl -n netclode get pods
 
 - **control-plane**: API server, Connect protocol handler, session manager
 - **agent**: Runs inside sandboxes created by control-plane (not a separate deployment)
-- **secret-proxy**: MITM proxy sidecar that protects API keys from exfiltration
+- **auth-proxy**: Tiny proxy inside sandbox that adds SA token to requests
+- **secret-proxy**: External MITM proxy that validates tokens and injects real API keys
 
 ### Secret Proxy
 
-The secret-proxy provides defense-in-depth for API credentials:
+Two-tier proxy architecture - real secrets never enter the sandbox:
+
+```
+SDK → auth-proxy (localhost:8080) → secret-proxy (external) → internet
+      inside microVM                outside microVM
+      adds SA token                 injects real secrets
+```
 
 1. Agent sees **placeholder values** (e.g., `ANTHROPIC_API_KEY=NETCLODE_PLACEHOLDER_anthropic`)
-2. All HTTP/HTTPS traffic is redirected to the proxy via iptables
-3. Proxy replaces placeholders with real secrets **only in HTTP headers**, **only for allowed hosts**
-4. Real secrets never enter the sandbox environment
+2. Traffic routed via `HTTP_PROXY=http://127.0.0.1:8080` to auth-proxy
+3. auth-proxy adds ServiceAccount token and forwards to secret-proxy
+4. secret-proxy validates token with control-plane, injects real secrets **only in headers**, **only for allowed hosts**
 
 **Proxied keys** (placeholder injected, real value only sent to allowed hosts):
 - `ANTHROPIC_API_KEY` → `api.anthropic.com`
 - `OPENAI_API_KEY` → `api.openai.com`
 - `MISTRAL_API_KEY` → `api.mistral.ai`
-- `OPENCODE_API_KEY` → `api.opencode.ai`, `openrouter.ai`
-- `ZAI_API_KEY` → `api.zai.ai`
-- `GITHUB_COPILOT_TOKEN` → `api.github.com`, `*.githubusercontent.com`
-- `CODEX_ACCESS_TOKEN`, `CODEX_ID_TOKEN`, `CODEX_REFRESH_TOKEN` → `api.openai.com`
+- `OPENCODE_API_KEY` → `api.opencode.ai`, `openrouter.ai`, `api.openrouter.ai`
+- `ZAI_API_KEY` → `open.bigmodel.cn`
+- `GITHUB_COPILOT_TOKEN` → `api.github.com`, `copilot-proxy.githubusercontent.com`
+- `CODEX_ACCESS_TOKEN` → `api.openai.com`
 
 **Not proxied** (direct value, used by git credential helper):
 - `GITHUB_TOKEN`
 
-The proxy runs as a sidecar in each sandbox pod. To update it, drain the warm pool:
-
+To update auth-proxy (inside sandbox), drain the warm pool:
 ```bash
-make rollout-agent  # Also refreshes secret-proxy sidecar
+make rollout-agent
 ```
+
+To update secret-proxy (external deployment):
+```bash
+kubectl --context netclode -n netclode rollout restart deploy/secret-proxy
+```
+
+See [docs/secret-proxy.md](docs/secret-proxy.md) for full architecture.
 
 ## Tailscale Hostnames
 

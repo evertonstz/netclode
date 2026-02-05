@@ -4,7 +4,7 @@ A two-tier proxy architecture that securely injects API keys into SDK requests w
 
 **Key principle:** Real secrets NEVER enter the sandbox microVM. They are injected by an external proxy only when authorized.
 
-Inspired by [Fly's Tokenizer](https://github.com/superfly/tokenizer).
+Inspired by [Deno Sandbox](https://deno.com/blog/introducing-deno-sandbox).
 
 ## Architecture Overview
 

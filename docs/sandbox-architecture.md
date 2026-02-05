@@ -306,7 +306,7 @@ API keys (Anthropic, OpenAI, etc.) are protected using a two-tier proxy architec
 | SDK Type | Allowed API Hosts |
 |----------|-------------------|
 | Claude | `api.anthropic.com` |
-| OpenCode | `api.anthropic.com`, `api.openai.com`, `api.mistral.ai`, `openrouter.ai` |
+| OpenCode | `api.anthropic.com`, `api.openai.com`, `api.mistral.ai`, `openrouter.ai`, `api.openrouter.ai`, `api.opencode.ai`, `open.bigmodel.cn` |
 | Copilot | `api.github.com`, `copilot-proxy.githubusercontent.com`, `api.anthropic.com` |
 | Codex | `api.openai.com` |
 
