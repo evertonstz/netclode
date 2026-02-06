@@ -477,23 +477,18 @@ async function handleControlPlaneMessage(
               sdkType,
               workspaceDir: WORKSPACE_DIR,
               anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
-              githubCopilotToken: config.githubCopilotToken,
+              githubCopilotToken: process.env.GITHUB_COPILOT_TOKEN || "",
               model: config.model,
               copilotBackend,
-              // Codex credentials (API mode or OAuth mode)
-              openaiApiKey: config.openaiApiKey,
+              openaiApiKey: process.env.OPENAI_API_KEY || "",
               codexAccessToken: config.codexAccessToken,
               codexIdToken: config.codexIdToken,
               codexRefreshToken: config.codexRefreshToken,
               reasoningEffort: config.reasoningEffort,
-              // Mistral API key for OpenCode SDK
-              mistralApiKey: config.mistralApiKey,
-              // Ollama URL for local inference
+              mistralApiKey: process.env.MISTRAL_API_KEY || "",
               ollamaUrl: config.ollamaUrl,
-              // OpenCode Zen API key
-              openCodeApiKey: config.opencodeApiKey,
-              // Z.AI API key for GLM-4.7 models
-              zaiApiKey: config.zaiApiKey,
+              openCodeApiKey: process.env.OPENCODE_API_KEY || "",
+              zaiApiKey: process.env.ZAI_API_KEY || "",
             });
           } catch (err) {
             console.error("[agent] Failed to initialize SDK adapter:", err);
@@ -607,23 +602,18 @@ async function handleSessionAssigned(
       sdkType,
       workspaceDir: WORKSPACE_DIR,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
-      githubCopilotToken: config.githubCopilotToken,
+      githubCopilotToken: process.env.GITHUB_COPILOT_TOKEN || "",
       model: config.model,
       copilotBackend,
-      // Codex credentials (API mode or OAuth mode)
-      openaiApiKey: config.openaiApiKey,
+      openaiApiKey: process.env.OPENAI_API_KEY || "",
       codexAccessToken: config.codexAccessToken,
       codexIdToken: config.codexIdToken,
       codexRefreshToken: config.codexRefreshToken,
       reasoningEffort: config.reasoningEffort,
-      // Mistral API key for OpenCode SDK
-      mistralApiKey: config.mistralApiKey,
-      // Ollama URL for local inference
+      mistralApiKey: process.env.MISTRAL_API_KEY || "",
       ollamaUrl: config.ollamaUrl,
-      // OpenCode Zen API key
-      openCodeApiKey: config.opencodeApiKey,
-      // Z.AI API key for GLM-4.7 models
-      zaiApiKey: config.zaiApiKey,
+      openCodeApiKey: process.env.OPENCODE_API_KEY || "",
+      zaiApiKey: process.env.ZAI_API_KEY || "",
     });
     console.log("[agent] SDK adapter initialized (warm pool mode)");
   } catch (err) {

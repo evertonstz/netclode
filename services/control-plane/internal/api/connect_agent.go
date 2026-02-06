@@ -199,9 +199,6 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 	if config.GitHubToken != "" {
 		sessionConfig.GithubToken = &config.GitHubToken
 	}
-	if config.GitHubCopilotToken != "" {
-		sessionConfig.GithubCopilotToken = &config.GitHubCopilotToken
-	}
 	if config.Model != "" {
 		sessionConfig.Model = &config.Model
 	}
@@ -214,23 +211,11 @@ func (h *ConnectAgentServiceHandler) Connect(ctx context.Context, stream *connec
 	if config.CodexRefreshToken != "" {
 		sessionConfig.CodexRefreshToken = &config.CodexRefreshToken
 	}
-	if config.OpenAIAPIKey != "" {
-		sessionConfig.OpenaiApiKey = &config.OpenAIAPIKey
-	}
-	if config.MistralAPIKey != "" {
-		sessionConfig.MistralApiKey = &config.MistralAPIKey
-	}
 	if config.ReasoningEffort != "" {
 		sessionConfig.ReasoningEffort = &config.ReasoningEffort
 	}
 	if config.OllamaURL != "" {
 		sessionConfig.OllamaUrl = &config.OllamaURL
-	}
-	if config.OpenCodeAPIKey != "" {
-		sessionConfig.OpencodeApiKey = &config.OpenCodeAPIKey
-	}
-	if config.ZaiAPIKey != "" {
-		sessionConfig.ZaiApiKey = &config.ZaiAPIKey
 	}
 
 	if err := conn.send(&v1.ControlPlaneMessage{
@@ -484,9 +469,6 @@ func (c *AgentConnection) AssignSession(sessionID string, config *session.AgentS
 	if config.GitHubToken != "" {
 		sessionConfig.GithubToken = &config.GitHubToken
 	}
-	if config.GitHubCopilotToken != "" {
-		sessionConfig.GithubCopilotToken = &config.GitHubCopilotToken
-	}
 	if config.Model != "" {
 		sessionConfig.Model = &config.Model
 	}
@@ -499,23 +481,11 @@ func (c *AgentConnection) AssignSession(sessionID string, config *session.AgentS
 	if config.CodexRefreshToken != "" {
 		sessionConfig.CodexRefreshToken = &config.CodexRefreshToken
 	}
-	if config.OpenAIAPIKey != "" {
-		sessionConfig.OpenaiApiKey = &config.OpenAIAPIKey
-	}
-	if config.MistralAPIKey != "" {
-		sessionConfig.MistralApiKey = &config.MistralAPIKey
-	}
 	if config.ReasoningEffort != "" {
 		sessionConfig.ReasoningEffort = &config.ReasoningEffort
 	}
 	if config.OllamaURL != "" {
 		sessionConfig.OllamaUrl = &config.OllamaURL
-	}
-	if config.OpenCodeAPIKey != "" {
-		sessionConfig.OpencodeApiKey = &config.OpenCodeAPIKey
-	}
-	if config.ZaiAPIKey != "" {
-		sessionConfig.ZaiApiKey = &config.ZaiAPIKey
 	}
 
 	slog.Info("Pushing session assignment to warm agent", "sessionID", sessionID, "podName", c.podName)

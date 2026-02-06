@@ -30,24 +30,18 @@ type SessionUpdateCallback func(session *pb.Session)
 
 // AgentSessionConfig contains typed configuration for an agent session.
 type AgentSessionConfig struct {
-	SessionID          string
-	AnthropicAPIKey    string
-	OpenAIAPIKey       string // For Codex API mode
-	MistralAPIKey      string // For OpenCode Mistral models
-	GitHubToken        string // For git credentials (from GitHub App)
-	GitHubCopilotToken string // For Copilot SDK
-	Repos              []string
-	RepoAccess         *pb.RepoAccess
-	SdkType            *pb.SdkType
-	Model              string
-	CopilotBackend     *pb.CopilotBackend
-	CodexAccessToken   string // For Codex OAuth mode
-	CodexIdToken       string // For Codex OAuth mode
-	CodexRefreshToken  string // For Codex OAuth mode
-	ReasoningEffort    string // For Codex reasoning effort (low, medium, high)
-	OllamaURL          string // For local Ollama inference
-	OpenCodeAPIKey     string // For OpenCode Zen models
-	ZaiAPIKey          string // For Z.AI GLM-4.7 models
+	SessionID       string
+	GitHubToken     string // For git credentials (from GitHub App) - not proxied, used in git URLs
+	Repos           []string
+	RepoAccess      *pb.RepoAccess
+	SdkType         *pb.SdkType
+	Model           string
+	CopilotBackend  *pb.CopilotBackend
+	CodexAccessToken  string // For Codex OAuth mode - written to ~/.codex/auth.json, can't be proxied
+	CodexIdToken      string // For Codex OAuth mode - written to ~/.codex/auth.json, can't be proxied
+	CodexRefreshToken string // For Codex OAuth mode - written to ~/.codex/auth.json, can't be proxied
+	ReasoningEffort string // For Codex reasoning effort (low, medium, high)
+	OllamaURL       string // For local Ollama inference
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -1528,16 +1522,10 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 	}
 
 	config := &AgentSessionConfig{
-		SessionID:          sessionID,
-		AnthropicAPIKey:    m.config.AnthropicAPIKey,
-		OpenAIAPIKey:       m.config.OpenAIAPIKey,
-		MistralAPIKey:      m.config.MistralAPIKey,
-		GitHubCopilotToken: m.config.GitHubCopilotToken,
-		SdkType:            state.Session.SdkType,
-		CopilotBackend:     state.Session.CopilotBackend,
-		OllamaURL:          m.config.OllamaURL,
-		OpenCodeAPIKey:     m.config.OpenCodeAPIKey,
-		ZaiAPIKey:          m.config.ZaiAPIKey,
+		SessionID:      sessionID,
+		SdkType:        state.Session.SdkType,
+		CopilotBackend: state.Session.CopilotBackend,
+		OllamaURL:      m.config.OllamaURL,
 	}
 
 	if state.Session.Model != nil {
@@ -1581,10 +1569,9 @@ func (m *Manager) GetSessionConfig(ctx context.Context, sessionID string) (*Agen
 					}
 				}
 
-				// Set credentials based on auth mode
-				if authMode == "api" {
-					config.OpenAIAPIKey = m.config.OpenAIAPIKey
-				} else if authMode == "oauth" {
+				// For OAuth mode, send tokens (written to ~/.codex/auth.json, can't be proxied).
+				// API mode uses OPENAI_API_KEY placeholder env var, proxied by secret-proxy.
+				if authMode == "oauth" {
 					config.CodexAccessToken = m.config.CodexAccessToken
 					config.CodexIdToken = m.config.CodexIdToken
 					config.CodexRefreshToken = m.config.CodexRefreshToken
@@ -2105,13 +2092,15 @@ func (m *Manager) getAllowedSecretForHost(sdkType pb.SdkType, host string) (secr
 
 	case pb.SdkType_SDK_TYPE_COPILOT:
 		allowedMappings = []hostMapping{
-			{hosts: []string{"api.github.com", "copilot-proxy.githubusercontent.com"}, secretKey: "github_copilot", placeholder: "NETCLODE_PLACEHOLDER_github_copilot"},
+			{hosts: []string{"api.github.com", "copilot-proxy.githubusercontent.com", "api.individual.githubcopilot.com"}, secretKey: "github_copilot", placeholder: "NETCLODE_PLACEHOLDER_github_copilot"},
 			{hosts: []string{"api.anthropic.com"}, secretKey: "anthropic", placeholder: "NETCLODE_PLACEHOLDER_anthropic"},
 		}
 
 	case pb.SdkType_SDK_TYPE_CODEX:
 		allowedMappings = []hostMapping{
-			{hosts: []string{"api.openai.com"}, secretKey: "codex_access", placeholder: "NETCLODE_PLACEHOLDER_codex_access"},
+			// Codex API mode: agent sends OPENAI_API_KEY placeholder, proxy injects OAuth access token
+			// (OpenAI API accepts OAuth tokens as Bearer tokens)
+			{hosts: []string{"api.openai.com"}, secretKey: "codex_access", placeholder: "NETCLODE_PLACEHOLDER_openai"},
 		}
 
 	default:
