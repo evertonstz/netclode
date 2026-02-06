@@ -13,6 +13,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/angristan/netclode/clients/cli/internal/client"
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -139,8 +140,8 @@ func receiveSessionState(stream *connect.BidiStreamForClient[pb.ClientMessage, p
 }
 
 // shellCreateAndWait creates a new session over the stream and waits for it to become ready.
-// After this returns, the stream is already subscribed to the session (done by the server
-// during CreateSession), so there's no need to send OpenSession.
+// Shows a spinner while waiting. After this returns, the stream is already subscribed to the
+// session (done by the server during CreateSession), so there's no need to send OpenSession.
 func shellCreateAndWait(ctx context.Context, stream *connect.BidiStreamForClient[pb.ClientMessage, pb.ServerMessage]) (string, error) {
 	req := &pb.CreateSessionRequest{
 		SdkType: pb.SdkType_SDK_TYPE_CLAUDE.Enum(),
@@ -165,8 +166,28 @@ func shellCreateAndWait(ctx context.Context, stream *connect.BidiStreamForClient
 		return "", fmt.Errorf("create session: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Creating sandbox...")
+	var sessionID string
+	var waitErr error
 
+	if err := spinner.New().
+		Title("Creating sandbox...").
+		Action(func() {
+			sessionID, waitErr = waitForReady(ctx, stream)
+		}).
+		Run(); err != nil {
+		return "", fmt.Errorf("interrupted")
+	}
+	if waitErr != nil {
+		return "", waitErr
+	}
+
+	fmt.Fprintf(os.Stderr, "Connected to %s\n\n", sessionID)
+	return sessionID, nil
+}
+
+// waitForReady receives messages from the stream until the session is ready.
+// This is the core receive loop used inside the spinner action.
+func waitForReady(ctx context.Context, stream *connect.BidiStreamForClient[pb.ClientMessage, pb.ServerMessage]) (string, error) {
 	var sessionID string
 
 	for {
@@ -176,31 +197,23 @@ func shellCreateAndWait(ctx context.Context, stream *connect.BidiStreamForClient
 		}
 
 		if errResp := msg.GetError(); errResp != nil {
-			fmt.Fprintln(os.Stderr)
 			return "", fmt.Errorf("%s: %s", errResp.Error.Code, errResp.Error.Message)
 		}
 
 		if resp := msg.GetSessionCreated(); resp != nil {
 			sessionID = resp.Session.Id
-			status := resp.Session.Status
-			if status == pb.SessionStatus_SESSION_STATUS_READY {
-				fmt.Fprintf(os.Stderr, " ready (%s)\n", sessionID)
+			if resp.Session.Status == pb.SessionStatus_SESSION_STATUS_READY {
 				return sessionID, nil
 			}
-			fmt.Fprintf(os.Stderr, " %s", strings.TrimPrefix(strings.ToLower(status.String()), "session_status_"))
 		}
 
 		// Top-level SessionUpdated — only process if it's for OUR session.
 		// (Auto-pause of other sessions also sends SessionUpdated via broadcast.)
 		if resp := msg.GetSessionUpdated(); resp != nil && sessionID != "" && resp.Session.Id == sessionID {
-			status := resp.Session.Status
-			fmt.Fprintf(os.Stderr, " %s", strings.TrimPrefix(strings.ToLower(status.String()), "session_status_"))
-			if status == pb.SessionStatus_SESSION_STATUS_READY {
-				fmt.Fprintf(os.Stderr, " (%s)\n", sessionID)
+			if resp.Session.Status == pb.SessionStatus_SESSION_STATUS_READY {
 				return sessionID, nil
 			}
-			if status == pb.SessionStatus_SESSION_STATUS_ERROR {
-				fmt.Fprintln(os.Stderr)
+			if resp.Session.Status == pb.SessionStatus_SESSION_STATUS_ERROR {
 				return "", fmt.Errorf("session failed to start")
 			}
 		}
@@ -209,14 +222,10 @@ func shellCreateAndWait(ctx context.Context, stream *connect.BidiStreamForClient
 		// This is the primary path for warm pool sessions.
 		if entry := msg.GetStreamEntry(); entry != nil && entry.Entry != nil {
 			if sessUpdate := entry.Entry.GetSessionUpdate(); sessUpdate != nil && sessionID != "" && sessUpdate.Id == sessionID {
-				status := sessUpdate.Status
-				fmt.Fprintf(os.Stderr, " %s", strings.TrimPrefix(strings.ToLower(status.String()), "session_status_"))
-				if status == pb.SessionStatus_SESSION_STATUS_READY {
-					fmt.Fprintf(os.Stderr, " (%s)\n", sessionID)
+				if sessUpdate.Status == pb.SessionStatus_SESSION_STATUS_READY {
 					return sessionID, nil
 				}
-				if status == pb.SessionStatus_SESSION_STATUS_ERROR {
-					fmt.Fprintln(os.Stderr)
+				if sessUpdate.Status == pb.SessionStatus_SESSION_STATUS_ERROR {
 					return "", fmt.Errorf("session failed to start")
 				}
 			}
@@ -256,16 +265,6 @@ func shellAttach(ctx context.Context, cancel context.CancelFunc, stream *connect
 			},
 		})
 	}
-
-	// Send an initial newline to trigger PTY output (prompt)
-	_ = stream.Send(&pb.ClientMessage{
-		Message: &pb.ClientMessage_TerminalInput{
-			TerminalInput: &pb.TerminalInputRequest{
-				SessionId: sessionID,
-				Data:      "\n",
-			},
-		},
-	})
 
 	// Watch for terminal resize (SIGWINCH)
 	winchCh := make(chan os.Signal, 1)

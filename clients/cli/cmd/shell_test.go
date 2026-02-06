@@ -79,6 +79,15 @@ func setupShellTestServer(t *testing.T, handler *shellTestHandler) (string, func
 	return url, cleanup
 }
 
+// triggerStream creates a Connect stream and sends a dummy message to trigger the handler.
+func triggerStream(ctx context.Context, url string) *connect.BidiStreamForClient[pb.ClientMessage, pb.ServerMessage] {
+	stream := newH2CClient(url).Connect(ctx)
+	_ = stream.Send(&pb.ClientMessage{
+		Message: &pb.ClientMessage_CreateSession{CreateSession: &pb.CreateSessionRequest{}},
+	})
+	return stream
+}
+
 func newH2CClient(url string) netclodev1connect.ClientServiceClient {
 	httpClient := &http.Client{
 		Transport: &http2.Transport{
@@ -211,7 +220,7 @@ func TestReceiveSessionState(t *testing.T) {
 	})
 }
 
-func TestShellCreateAndWait(t *testing.T) {
+func TestWaitForReady(t *testing.T) {
 	t.Run("returns on immediate ready", func(t *testing.T) {
 		handler := &shellTestHandler{}
 		handler.queueResponse(&pb.ServerMessage{
@@ -231,9 +240,9 @@ func TestShellCreateAndWait(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		stream := newH2CClient(url).Connect(ctx)
+		stream := triggerStream(ctx, url)
 
-		id, err := shellCreateAndWait(ctx, stream)
+		id, err := waitForReady(ctx, stream)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -279,9 +288,9 @@ func TestShellCreateAndWait(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		stream := newH2CClient(url).Connect(ctx)
+		stream := triggerStream(ctx, url)
 
-		id, err := shellCreateAndWait(ctx, stream)
+		id, err := waitForReady(ctx, stream)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -339,9 +348,9 @@ func TestShellCreateAndWait(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		stream := newH2CClient(url).Connect(ctx)
+		stream := triggerStream(ctx, url)
 
-		id, err := shellCreateAndWait(ctx, stream)
+		id, err := waitForReady(ctx, stream)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -387,9 +396,9 @@ func TestShellCreateAndWait(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		stream := newH2CClient(url).Connect(ctx)
+		stream := triggerStream(ctx, url)
 
-		_, err := shellCreateAndWait(ctx, stream)
+		_, err := waitForReady(ctx, stream)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -414,9 +423,9 @@ func TestShellCreateAndWait(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		stream := newH2CClient(url).Connect(ctx)
+		stream := triggerStream(ctx, url)
 
-		_, err := shellCreateAndWait(ctx, stream)
+		_, err := waitForReady(ctx, stream)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
