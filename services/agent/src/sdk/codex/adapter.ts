@@ -190,6 +190,7 @@ export class CodexAdapter implements SDKAdapter {
           approvalPolicy: "never",
           model: this.cleanedModel,
           modelReasoningEffort: this.reasoningEffort as ModelReasoningEffort,
+          skipGitRepoCheck: true, // We handle git setup ourselves
         });
       } else {
         console.log(`[codex-adapter] Creating new Codex thread`);
