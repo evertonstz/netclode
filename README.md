@@ -24,7 +24,8 @@ I wrote a blog post about how it works: [Building a self-hosted cloud coding age
 - **JuiceFS for storage** - Storage offloaded to S3. Paused sessions cost nothing but storage
 - **Live terminal access** - Drop into the sandbox shell from the app
 - **Session history** - Auto-snapshots after each turn. Roll back workspace and chat to any previous point
-- **Multiple SDKs** - Claude Code, OpenCode, Copilot, Codex. Swap anytime
+- **GitHub integration** - Clone private repos, push commits, create PRs. Per-repo scoped tokens generated on demand via a GitHub App
+- **Multiple SDKs & providers** - Claude Code, OpenCode, Copilot, Codex SDKs with Anthropic, OpenAI, Mistral, Ollama, and more
 - **Secrets can't be stolen** - API keys never enter the sandbox. A proxy injects them on the fly for allowed hosts
 
 ## How it works
@@ -78,6 +79,7 @@ When pausing, the VM is deleted but JuiceFS keeps everything in S3: workspace, i
 | **API**           | Protobuf + Connect RPC             | Type-safe, gRPC-like, streams                |
 | **Control Plane** | Go                                 | Session and sandbox orchestration            |
 | **Agent**         | TypeScript/Node.js                 | SDK runner inside sandbox                    |
+| **Secret Proxy**  | Go                                 | Injects API keys outside the sandbox         |
 | **Local LLM**     | Ollama                             | Optional, local models on GPU                |
 | **Client**        | SwiftUI (iOS 26)                   | Native iOS/macOS app                         |
 | **CLI**           | Go                                 | Debug client for development                 |
@@ -91,7 +93,9 @@ netclode/
 │   └── cli/              # Debug CLI (Go)
 ├── services/
 │   ├── control-plane/    # Session orchestration (Go)
-│   └── agent/            # SDK runner (Node.js)
+│   ├── agent/            # SDK runner (Node.js)
+│   │   └── auth-proxy/   # Adds SA token to requests (Go)
+│   └── secret-proxy/     # Injects real API keys (Go)
 ├── proto/                # Protobuf definitions
 ├── infra/
 │   ├── ansible/          # Server provisioning
