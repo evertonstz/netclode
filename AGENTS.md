@@ -140,6 +140,21 @@ ID            NAME                            STATUS   REPO                  MSG
 05965814-225  Protocol Review Request         paused   angristan/netclode    4     10h ago  8h ago
 ```
 
+### Interactive shell
+
+```bash
+# Create a new sandbox and attach a shell (one command)
+go run ./clients/cli shell
+
+# With options
+go run ./clients/cli shell --name "dev box" --repo owner/repo
+
+# Attach to an existing session
+go run ./clients/cli shell <session-id>
+```
+
+Ctrl+D or `exit` exits the shell. Ctrl+] detaches (session stays running).
+
 ### Inspect a session
 
 ```bash

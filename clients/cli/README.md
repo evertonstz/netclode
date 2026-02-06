@@ -105,6 +105,28 @@ netclode sessions create --repo owner/repo --tailnet  # Allow Tailnet access (10
 By default, sessions have internet access but cannot reach private networks (including Tailnet).
 The `--tailnet` flag enables access to internal services exposed via Tailscale.
 
+### Interactive shell
+
+Open an interactive terminal attached to a sandbox's PTY:
+
+```bash
+# Create a new sandbox and attach immediately
+netclode shell
+
+# With options
+netclode shell --name "dev box" --repo owner/repo --tailnet
+
+# Attach to an existing session
+netclode shell <session-id>
+```
+
+The terminal is put into raw mode for full interactivity (colors, vim, etc.).
+
+| Key | Action |
+|-----|--------|
+| Ctrl+D | Exit shell (sends EOF to remote bash) |
+| Ctrl+] | Detach (session stays running, reattach later) |
+
 ### Pause a session
 
 Pauses a session, stopping the agent container but preserving the workspace data.
@@ -323,6 +345,7 @@ clients/cli/
 │   ├── messages.go           # messages command
 │   ├── events.go             # events + events tail
 │   ├── prompt.go             # prompt command
+│   ├── shell.go              # interactive shell (terminal attach)
 │   └── snapshots.go          # snapshots list/restore
 └── internal/
     ├── client/
@@ -348,5 +371,6 @@ The client wrapper (`internal/client/`) provides a simple Go API:
 - `ResumeSession(id)` - Resume a paused session
 - `DeleteSession(id)` - Delete a session
 - `TailEvents(id, handler)` - Stream events in real-time
+- `Stream(ctx)` - Raw bidirectional stream (used by `shell` and `prompt`)
 - `ListSnapshots(id)` - List snapshots for a session
 - `RestoreSnapshot(sessionId, snapshotId)` - Restore a session to a snapshot

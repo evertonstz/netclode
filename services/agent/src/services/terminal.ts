@@ -57,6 +57,17 @@ export function ensureTerminalPty(cols: number = 80, rows: number = 24): IPty {
     terminalPty.onExit(({ exitCode, signal }) => {
       console.log(`[terminal] PTY exited: code=${exitCode}, signal=${signal}`);
       terminalPty = null;
+
+      // Notify all listeners that the PTY exited so clients can detect it.
+      // Uses OSC 9999 private escape sequence — terminals ignore unknown OSC,
+      // but our shell client can detect it and auto-detach.
+      const exitMsg = `\r\n\x1b]9999;pty-exit;${exitCode}\x07`;
+      for (const callback of terminalOutputCallbacks) {
+        callback(exitMsg);
+      }
+      if (globalTerminalOutputCallback) {
+        globalTerminalOutputCallback(exitMsg);
+      }
     });
   }
   return terminalPty;

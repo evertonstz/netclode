@@ -13,9 +13,16 @@ Each session has a PTY running inside the sandbox:
 
 ## Usage
 
+**CLI:**
+```bash
+netclode shell                    # New sandbox + shell
+netclode shell <session-id>       # Attach to existing
+```
+Ctrl+D exits. Ctrl+] detaches (session stays running).
+
 **iOS App:** Tap terminal icon in bottom nav. Supports touch keyboard, copy/paste, pinch-to-zoom.
 
-Terminal I/O flows through Connect streams: iOS App → Control Plane → Agent → node-pty → bash
+Terminal I/O flows through Connect streams: Client → Control Plane → Agent → node-pty → bash
 
 ## Environment
 
@@ -47,6 +54,8 @@ Tools persist across pause/resume (stored on JuiceFS).
 PTY spawns lazily on first terminal interaction. Survives app backgrounding and reconnection.
 
 Destroyed on session pause/delete or shell exit. After resume, new PTY created on first interaction (shell history may be available from `.bash_history`).
+
+When the PTY process exits (e.g., `exit` or Ctrl+D), the agent sends an OSC 9999 escape sequence (`\x1b]9999;pty-exit;<exitCode>\x07`) through the terminal output stream. The CLI shell client detects this and auto-detaches. Regular terminals ignore unknown OSC sequences, so this is invisible to the iOS app.
 
 ## Troubleshooting
 
