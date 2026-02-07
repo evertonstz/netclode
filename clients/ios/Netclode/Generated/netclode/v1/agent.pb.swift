@@ -231,11 +231,11 @@ public struct Netclode_V1_SessionAssigned: Sendable {
 
   /// Full session configuration
   public var config: Netclode_V1_SessionConfig {
-    get {return _config ?? Netclode_V1_SessionConfig()}
+    get {_config ?? Netclode_V1_SessionConfig()}
     set {_config = newValue}
   }
   /// Returns true if `config` has been explicitly set.
-  public var hasConfig: Bool {return self._config != nil}
+  public var hasConfig: Bool {self._config != nil}
   /// Clears the value of `config`. Subsequent reads from it will return its default value.
   public mutating func clearConfig() {self._config = nil}
 
@@ -254,11 +254,11 @@ public struct Netclode_V1_AgentRegister: Sendable {
 
   /// Session this agent is servicing (empty for warm pool mode)
   public var sessionID: String {
-    get {return _sessionID ?? String()}
+    get {_sessionID ?? String()}
     set {_sessionID = newValue}
   }
   /// Returns true if `sessionID` has been explicitly set.
-  public var hasSessionID: Bool {return self._sessionID != nil}
+  public var hasSessionID: Bool {self._sessionID != nil}
   /// Clears the value of `sessionID`. Subsequent reads from it will return its default value.
   public mutating func clearSessionID() {self._sessionID = nil}
 
@@ -267,21 +267,21 @@ public struct Netclode_V1_AgentRegister: Sendable {
 
   /// Pod name for warm pool mode (deprecated, use k8s_token)
   public var podName: String {
-    get {return _podName ?? String()}
+    get {_podName ?? String()}
     set {_podName = newValue}
   }
   /// Returns true if `podName` has been explicitly set.
-  public var hasPodName: Bool {return self._podName != nil}
+  public var hasPodName: Bool {self._podName != nil}
   /// Clears the value of `podName`. Subsequent reads from it will return its default value.
   public mutating func clearPodName() {self._podName = nil}
 
   /// Kubernetes ServiceAccount token for identity verification
   public var k8SToken: String {
-    get {return _k8SToken ?? String()}
+    get {_k8SToken ?? String()}
     set {_k8SToken = newValue}
   }
   /// Returns true if `k8SToken` has been explicitly set.
-  public var hasK8SToken: Bool {return self._k8SToken != nil}
+  public var hasK8SToken: Bool {self._k8SToken != nil}
   /// Clears the value of `k8SToken`. Subsequent reads from it will return its default value.
   public mutating func clearK8SToken() {self._k8SToken = nil}
 
@@ -513,21 +513,21 @@ public struct Netclode_V1_AgentRegistered: Sendable {
 
   /// Error message if registration failed
   public var error: String {
-    get {return _error ?? String()}
+    get {_error ?? String()}
     set {_error = newValue}
   }
   /// Returns true if `error` has been explicitly set.
-  public var hasError: Bool {return self._error != nil}
+  public var hasError: Bool {self._error != nil}
   /// Clears the value of `error`. Subsequent reads from it will return its default value.
   public mutating func clearError() {self._error = nil}
 
   /// Session configuration for the agent
   public var config: Netclode_V1_SessionConfig {
-    get {return _config ?? Netclode_V1_SessionConfig()}
+    get {_config ?? Netclode_V1_SessionConfig()}
     set {_config = newValue}
   }
   /// Returns true if `config` has been explicitly set.
-  public var hasConfig: Bool {return self._config != nil}
+  public var hasConfig: Bool {self._config != nil}
   /// Clears the value of `config`. Subsequent reads from it will return its default value.
   public mutating func clearConfig() {self._config = nil}
 
@@ -606,11 +606,11 @@ public struct Netclode_V1_GetGitDiffRequest: Sendable {
 
   /// Specific file, or all files if empty
   public var file: String {
-    get {return _file ?? String()}
+    get {_file ?? String()}
     set {_file = newValue}
   }
   /// Returns true if `file` has been explicitly set.
-  public var hasFile: Bool {return self._file != nil}
+  public var hasFile: Bool {self._file != nil}
   /// Clears the value of `file`. Subsequent reads from it will return its default value.
   public mutating func clearFile() {self._file = nil}
 

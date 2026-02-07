@@ -41,6 +41,7 @@ message ClientMessage {
     UpdateRepoAccessRequest update_repo_access = 21;
     // Resource limits
     GetResourceLimitsRequest get_resource_limits = 22;
+    UnexposePortRequest unexpose_port = 23;
   }
 }
 
@@ -72,6 +73,7 @@ message ServerMessage {
     RepoAccessUpdatedResponse repo_access_updated = 23;
     // Resource limits
     ResourceLimitsResponse resource_limits = 24;
+    PortUnexposedResponse port_unexposed = 25;
   }
 }
 
@@ -155,6 +157,12 @@ message TerminalResizeRequest {
 }
 
 message ExposePortRequest {
+  optional string request_id = 1;
+  string session_id = 2;
+  int32 port = 3;
+}
+
+message UnexposePortRequest {
   optional string request_id = 1;
   string session_id = 2;
   int32 port = 3;
@@ -265,6 +273,12 @@ message PortExposedResponse {
   int32 port = 2;
   string preview_url = 3;
   optional string request_id = 4;
+}
+
+message PortUnexposedResponse {
+  string session_id = 1;
+  int32 port = 2;
+  optional string request_id = 3;
 }
 
 message GitHubReposResponse {

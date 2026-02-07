@@ -207,6 +207,14 @@ public struct Netclode_V1_ClientMessage: Sendable {
     set {message = .getResourceLimits(newValue)}
   }
 
+  public var unexposePort: Netclode_V1_UnexposePortRequest {
+    get {
+      if case .unexposePort(let v)? = message {return v}
+      return Netclode_V1_UnexposePortRequest()
+    }
+    set {message = .unexposePort(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Message: Equatable, Sendable {
@@ -235,6 +243,7 @@ public struct Netclode_V1_ClientMessage: Sendable {
     case updateRepoAccess(Netclode_V1_UpdateRepoAccessRequest)
     /// Resource limits
     case getResourceLimits(Netclode_V1_GetResourceLimitsRequest)
+    case unexposePort(Netclode_V1_UnexposePortRequest)
 
   }
 
@@ -414,6 +423,14 @@ public struct Netclode_V1_ServerMessage: Sendable {
     set {message = .resourceLimits(newValue)}
   }
 
+  public var portUnexposed: Netclode_V1_PortUnexposedResponse {
+    get {
+      if case .portUnexposed(let v)? = message {return v}
+      return Netclode_V1_PortUnexposedResponse()
+    }
+    set {message = .portUnexposed(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Message: Equatable, Sendable {
@@ -442,6 +459,7 @@ public struct Netclode_V1_ServerMessage: Sendable {
     case repoAccessUpdated(Netclode_V1_RepoAccessUpdatedResponse)
     /// Resource limits
     case resourceLimits(Netclode_V1_ResourceLimitsResponse)
+    case portUnexposed(Netclode_V1_PortUnexposedResponse)
 
   }
 
@@ -471,21 +489,21 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
 
   /// Client-generated ID for request correlation
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
   /// Initial session name
   public var name: String {
-    get {return _name ?? String()}
+    get {_name ?? String()}
     set {_name = newValue}
   }
   /// Returns true if `name` has been explicitly set.
-  public var hasName: Bool {return self._name != nil}
+  public var hasName: Bool {self._name != nil}
   /// Clears the value of `name`. Subsequent reads from it will return its default value.
   public mutating func clearName() {self._name = nil}
 
@@ -494,71 +512,71 @@ public struct Netclode_V1_CreateSessionRequest: Sendable {
 
   /// Permission level for repository
   public var repoAccess: Netclode_V1_RepoAccess {
-    get {return _repoAccess ?? .unspecified}
+    get {_repoAccess ?? .unspecified}
     set {_repoAccess = newValue}
   }
   /// Returns true if `repoAccess` has been explicitly set.
-  public var hasRepoAccess: Bool {return self._repoAccess != nil}
+  public var hasRepoAccess: Bool {self._repoAccess != nil}
   /// Clears the value of `repoAccess`. Subsequent reads from it will return its default value.
   public mutating func clearRepoAccess() {self._repoAccess = nil}
 
   /// Optional prompt to send immediately after creation
   public var initialPrompt: String {
-    get {return _initialPrompt ?? String()}
+    get {_initialPrompt ?? String()}
     set {_initialPrompt = newValue}
   }
   /// Returns true if `initialPrompt` has been explicitly set.
-  public var hasInitialPrompt: Bool {return self._initialPrompt != nil}
+  public var hasInitialPrompt: Bool {self._initialPrompt != nil}
   /// Clears the value of `initialPrompt`. Subsequent reads from it will return its default value.
   public mutating func clearInitialPrompt() {self._initialPrompt = nil}
 
   /// SDK to use (defaults to CLAUDE)
   public var sdkType: Netclode_V1_SdkType {
-    get {return _sdkType ?? .unspecified}
+    get {_sdkType ?? .unspecified}
     set {_sdkType = newValue}
   }
   /// Returns true if `sdkType` has been explicitly set.
-  public var hasSdkType: Bool {return self._sdkType != nil}
+  public var hasSdkType: Bool {self._sdkType != nil}
   /// Clears the value of `sdkType`. Subsequent reads from it will return its default value.
   public mutating func clearSdkType() {self._sdkType = nil}
 
   /// Model ID (e.g., "claude-sonnet-4-0", "gpt-4o")
   public var model: String {
-    get {return _model ?? String()}
+    get {_model ?? String()}
     set {_model = newValue}
   }
   /// Returns true if `model` has been explicitly set.
-  public var hasModel: Bool {return self._model != nil}
+  public var hasModel: Bool {self._model != nil}
   /// Clears the value of `model`. Subsequent reads from it will return its default value.
   public mutating func clearModel() {self._model = nil}
 
   /// Backend for Copilot SDK (GitHub or Anthropic)
   public var copilotBackend: Netclode_V1_CopilotBackend {
-    get {return _copilotBackend ?? .unspecified}
+    get {_copilotBackend ?? .unspecified}
     set {_copilotBackend = newValue}
   }
   /// Returns true if `copilotBackend` has been explicitly set.
-  public var hasCopilotBackend: Bool {return self._copilotBackend != nil}
+  public var hasCopilotBackend: Bool {self._copilotBackend != nil}
   /// Clears the value of `copilotBackend`. Subsequent reads from it will return its default value.
   public mutating func clearCopilotBackend() {self._copilotBackend = nil}
 
   /// Network configuration (defaults to enabled)
   public var networkConfig: Netclode_V1_NetworkConfig {
-    get {return _networkConfig ?? Netclode_V1_NetworkConfig()}
+    get {_networkConfig ?? Netclode_V1_NetworkConfig()}
     set {_networkConfig = newValue}
   }
   /// Returns true if `networkConfig` has been explicitly set.
-  public var hasNetworkConfig: Bool {return self._networkConfig != nil}
+  public var hasNetworkConfig: Bool {self._networkConfig != nil}
   /// Clears the value of `networkConfig`. Subsequent reads from it will return its default value.
   public mutating func clearNetworkConfig() {self._networkConfig = nil}
 
   /// Custom VM resources (bypasses warm pool if set)
   public var resources: Netclode_V1_SandboxResources {
-    get {return _resources ?? Netclode_V1_SandboxResources()}
+    get {_resources ?? Netclode_V1_SandboxResources()}
     set {_resources = newValue}
   }
   /// Returns true if `resources` has been explicitly set.
-  public var hasResources: Bool {return self._resources != nil}
+  public var hasResources: Bool {self._resources != nil}
   /// Clears the value of `resources`. Subsequent reads from it will return its default value.
   public mutating func clearResources() {self._resources = nil}
 
@@ -583,11 +601,11 @@ public struct Netclode_V1_ListSessionsRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -604,11 +622,11 @@ public struct Netclode_V1_OpenSessionRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -616,21 +634,21 @@ public struct Netclode_V1_OpenSessionRequest: Sendable {
 
   /// Cursor: return entries after this stream ID
   public var afterStreamID: String {
-    get {return _afterStreamID ?? String()}
+    get {_afterStreamID ?? String()}
     set {_afterStreamID = newValue}
   }
   /// Returns true if `afterStreamID` has been explicitly set.
-  public var hasAfterStreamID: Bool {return self._afterStreamID != nil}
+  public var hasAfterStreamID: Bool {self._afterStreamID != nil}
   /// Clears the value of `afterStreamID`. Subsequent reads from it will return its default value.
   public mutating func clearAfterStreamID() {self._afterStreamID = nil}
 
   /// Max entries to return (default: all)
   public var limit: Int32 {
-    get {return _limit ?? 0}
+    get {_limit ?? 0}
     set {_limit = newValue}
   }
   /// Returns true if `limit` has been explicitly set.
-  public var hasLimit: Bool {return self._limit != nil}
+  public var hasLimit: Bool {self._limit != nil}
   /// Clears the value of `limit`. Subsequent reads from it will return its default value.
   public mutating func clearLimit() {self._limit = nil}
 
@@ -649,11 +667,11 @@ public struct Netclode_V1_ResumeSessionRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -672,11 +690,11 @@ public struct Netclode_V1_PauseSessionRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -695,11 +713,11 @@ public struct Netclode_V1_DeleteSessionRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -718,11 +736,11 @@ public struct Netclode_V1_DeleteAllSessionsRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -739,11 +757,11 @@ public struct Netclode_V1_SendPromptRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -764,11 +782,11 @@ public struct Netclode_V1_InterruptPromptRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -787,11 +805,11 @@ public struct Netclode_V1_TerminalInputRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -812,11 +830,11 @@ public struct Netclode_V1_TerminalResizeRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -839,11 +857,36 @@ public struct Netclode_V1_ExposePortRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
+  public var sessionID: String = String()
+
+  public var port: Int32 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _requestID: String? = nil
+}
+
+public struct Netclode_V1_UnexposePortRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var requestID: String {
+    get {_requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -864,11 +907,11 @@ public struct Netclode_V1_SyncRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -885,11 +928,11 @@ public struct Netclode_V1_ListGitHubReposRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -906,11 +949,11 @@ public struct Netclode_V1_GitStatusRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -929,11 +972,11 @@ public struct Netclode_V1_GitDiffRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -941,11 +984,11 @@ public struct Netclode_V1_GitDiffRequest: Sendable {
 
   /// Specific file path, or all files if empty
   public var file: String {
-    get {return _file ?? String()}
+    get {_file ?? String()}
     set {_file = newValue}
   }
   /// Returns true if `file` has been explicitly set.
-  public var hasFile: Bool {return self._file != nil}
+  public var hasFile: Bool {self._file != nil}
   /// Clears the value of `file`. Subsequent reads from it will return its default value.
   public mutating func clearFile() {self._file = nil}
 
@@ -963,11 +1006,11 @@ public struct Netclode_V1_ListModelsRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -976,11 +1019,11 @@ public struct Netclode_V1_ListModelsRequest: Sendable {
 
   /// For Copilot: which backend's models to list
   public var copilotBackend: Netclode_V1_CopilotBackend {
-    get {return _copilotBackend ?? .unspecified}
+    get {_copilotBackend ?? .unspecified}
     set {_copilotBackend = newValue}
   }
   /// Returns true if `copilotBackend` has been explicitly set.
-  public var hasCopilotBackend: Bool {return self._copilotBackend != nil}
+  public var hasCopilotBackend: Bool {self._copilotBackend != nil}
   /// Clears the value of `copilotBackend`. Subsequent reads from it will return its default value.
   public mutating func clearCopilotBackend() {self._copilotBackend = nil}
 
@@ -998,11 +1041,11 @@ public struct Netclode_V1_GetCopilotStatusRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1019,11 +1062,11 @@ public struct Netclode_V1_ListSnapshotsRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1042,11 +1085,11 @@ public struct Netclode_V1_RestoreSnapshotRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1067,11 +1110,11 @@ public struct Netclode_V1_UpdateRepoAccessRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1093,11 +1136,11 @@ public struct Netclode_V1_GetResourceLimitsRequest: Sendable {
   // methods supported on all messages.
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1114,21 +1157,21 @@ public struct Netclode_V1_SessionCreatedResponse: Sendable {
   // methods supported on all messages.
 
   public var session: Netclode_V1_Session {
-    get {return _session ?? Netclode_V1_Session()}
+    get {_session ?? Netclode_V1_Session()}
     set {_session = newValue}
   }
   /// Returns true if `session` has been explicitly set.
-  public var hasSession: Bool {return self._session != nil}
+  public var hasSession: Bool {self._session != nil}
   /// Clears the value of `session`. Subsequent reads from it will return its default value.
   public mutating func clearSession() {self._session = nil}
 
   /// Echoed from request for correlation
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1146,11 +1189,11 @@ public struct Netclode_V1_SessionUpdatedResponse: Sendable {
   // methods supported on all messages.
 
   public var session: Netclode_V1_Session {
-    get {return _session ?? Netclode_V1_Session()}
+    get {_session ?? Netclode_V1_Session()}
     set {_session = newValue}
   }
   /// Returns true if `session` has been explicitly set.
-  public var hasSession: Bool {return self._session != nil}
+  public var hasSession: Bool {self._session != nil}
   /// Clears the value of `session`. Subsequent reads from it will return its default value.
   public mutating func clearSession() {self._session = nil}
 
@@ -1169,11 +1212,11 @@ public struct Netclode_V1_SessionDeletedResponse: Sendable {
   public var sessionID: String = String()
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1192,11 +1235,11 @@ public struct Netclode_V1_SessionsDeletedAllResponse: Sendable {
   public var deletedIds: [String] = []
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1215,11 +1258,11 @@ public struct Netclode_V1_SessionListResponse: Sendable {
   public var sessions: [Netclode_V1_Session] = []
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1236,52 +1279,52 @@ public struct Netclode_V1_SessionStateResponse: @unchecked Sendable {
   // methods supported on all messages.
 
   public var session: Netclode_V1_Session {
-    get {return _storage._session ?? Netclode_V1_Session()}
+    get {_storage._session ?? Netclode_V1_Session()}
     set {_uniqueStorage()._session = newValue}
   }
   /// Returns true if `session` has been explicitly set.
-  public var hasSession: Bool {return _storage._session != nil}
+  public var hasSession: Bool {_storage._session != nil}
   /// Clears the value of `session`. Subsequent reads from it will return its default value.
   public mutating func clearSession() {_uniqueStorage()._session = nil}
 
   /// History: partial=false entries only
   public var entries: [Netclode_V1_StreamEntry] {
-    get {return _storage._entries}
+    get {_storage._entries}
     set {_uniqueStorage()._entries = newValue}
   }
 
   /// true if more entries available for pagination
   public var hasMore_p: Bool {
-    get {return _storage._hasMore_p}
+    get {_storage._hasMore_p}
     set {_uniqueStorage()._hasMore_p = newValue}
   }
 
   /// Cursor for subscribing to real-time updates
   public var lastStreamID: String {
-    get {return _storage._lastStreamID ?? String()}
+    get {_storage._lastStreamID ?? String()}
     set {_uniqueStorage()._lastStreamID = newValue}
   }
   /// Returns true if `lastStreamID` has been explicitly set.
-  public var hasLastStreamID: Bool {return _storage._lastStreamID != nil}
+  public var hasLastStreamID: Bool {_storage._lastStreamID != nil}
   /// Clears the value of `lastStreamID`. Subsequent reads from it will return its default value.
   public mutating func clearLastStreamID() {_uniqueStorage()._lastStreamID = nil}
 
   /// Accumulated streaming state if RUNNING
   public var inProgress: Netclode_V1_InProgressState {
-    get {return _storage._inProgress ?? Netclode_V1_InProgressState()}
+    get {_storage._inProgress ?? Netclode_V1_InProgressState()}
     set {_uniqueStorage()._inProgress = newValue}
   }
   /// Returns true if `inProgress` has been explicitly set.
-  public var hasInProgress: Bool {return _storage._inProgress != nil}
+  public var hasInProgress: Bool {_storage._inProgress != nil}
   /// Clears the value of `inProgress`. Subsequent reads from it will return its default value.
   public mutating func clearInProgress() {_uniqueStorage()._inProgress = nil}
 
   public var requestID: String {
-    get {return _storage._requestID ?? String()}
+    get {_storage._requestID ?? String()}
     set {_uniqueStorage()._requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return _storage._requestID != nil}
+  public var hasRequestID: Bool {_storage._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {_uniqueStorage()._requestID = nil}
 
@@ -1300,20 +1343,20 @@ public struct Netclode_V1_SyncResponse: Sendable {
   public var sessions: [Netclode_V1_SessionSummary] = []
 
   public var serverTime: SwiftProtobuf.Google_Protobuf_Timestamp {
-    get {return _serverTime ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    get {_serverTime ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
     set {_serverTime = newValue}
   }
   /// Returns true if `serverTime` has been explicitly set.
-  public var hasServerTime: Bool {return self._serverTime != nil}
+  public var hasServerTime: Bool {self._serverTime != nil}
   /// Clears the value of `serverTime`. Subsequent reads from it will return its default value.
   public mutating func clearServerTime() {self._serverTime = nil}
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1333,16 +1376,16 @@ public struct Netclode_V1_StreamEntryResponse: @unchecked Sendable {
   // methods supported on all messages.
 
   public var sessionID: String {
-    get {return _storage._sessionID}
+    get {_storage._sessionID}
     set {_uniqueStorage()._sessionID = newValue}
   }
 
   public var entry: Netclode_V1_StreamEntry {
-    get {return _storage._entry ?? Netclode_V1_StreamEntry()}
+    get {_storage._entry ?? Netclode_V1_StreamEntry()}
     set {_uniqueStorage()._entry = newValue}
   }
   /// Returns true if `entry` has been explicitly set.
-  public var hasEntry: Bool {return _storage._entry != nil}
+  public var hasEntry: Bool {_storage._entry != nil}
   /// Clears the value of `entry`. Subsequent reads from it will return its default value.
   public mutating func clearEntry() {_uniqueStorage()._entry = nil}
 
@@ -1365,11 +1408,36 @@ public struct Netclode_V1_PortExposedResponse: Sendable {
   public var previewURL: String = String()
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
+  /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestID() {self._requestID = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _requestID: String? = nil
+}
+
+public struct Netclode_V1_PortUnexposedResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var sessionID: String = String()
+
+  public var port: Int32 = 0
+
+  public var requestID: String {
+    get {_requestID ?? String()}
+    set {_requestID = newValue}
+  }
+  /// Returns true if `requestID` has been explicitly set.
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1388,11 +1456,11 @@ public struct Netclode_V1_GitHubReposResponse: Sendable {
   public var repos: [Netclode_V1_GitHubRepo] = []
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1413,11 +1481,11 @@ public struct Netclode_V1_GitStatusResponse: Sendable {
   public var files: [Netclode_V1_GitFileChange] = []
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1438,11 +1506,11 @@ public struct Netclode_V1_GitDiffResponse: Sendable {
   public var diff: String = String()
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1462,21 +1530,21 @@ public struct Netclode_V1_ErrorResponse: Sendable {
 
   /// Structured error details
   public var error: Netclode_V1_Error {
-    get {return _error ?? Netclode_V1_Error()}
+    get {_error ?? Netclode_V1_Error()}
     set {_error = newValue}
   }
   /// Returns true if `error` has been explicitly set.
-  public var hasError: Bool {return self._error != nil}
+  public var hasError: Bool {self._error != nil}
   /// Clears the value of `error`. Subsequent reads from it will return its default value.
   public mutating func clearError() {self._error = nil}
 
   /// Echoed from request for correlation
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1497,21 +1565,21 @@ public struct Netclode_V1_ModelsResponse: Sendable {
   public var models: [Netclode_V1_ModelInfo] = []
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
   /// Which SDK these models are for
   public var sdkType: Netclode_V1_SdkType {
-    get {return _sdkType ?? .unspecified}
+    get {_sdkType ?? .unspecified}
     set {_sdkType = newValue}
   }
   /// Returns true if `sdkType` has been explicitly set.
-  public var hasSdkType: Bool {return self._sdkType != nil}
+  public var hasSdkType: Bool {self._sdkType != nil}
   /// Clears the value of `sdkType`. Subsequent reads from it will return its default value.
   public mutating func clearSdkType() {self._sdkType = nil}
 
@@ -1530,30 +1598,30 @@ public struct Netclode_V1_CopilotStatusResponse: Sendable {
 
   /// GitHub Copilot authentication status
   public var auth: Netclode_V1_CopilotAuthStatus {
-    get {return _auth ?? Netclode_V1_CopilotAuthStatus()}
+    get {_auth ?? Netclode_V1_CopilotAuthStatus()}
     set {_auth = newValue}
   }
   /// Returns true if `auth` has been explicitly set.
-  public var hasAuth: Bool {return self._auth != nil}
+  public var hasAuth: Bool {self._auth != nil}
   /// Clears the value of `auth`. Subsequent reads from it will return its default value.
   public mutating func clearAuth() {self._auth = nil}
 
   /// Premium request quota (only if authenticated)
   public var quota: Netclode_V1_CopilotPremiumQuota {
-    get {return _quota ?? Netclode_V1_CopilotPremiumQuota()}
+    get {_quota ?? Netclode_V1_CopilotPremiumQuota()}
     set {_quota = newValue}
   }
   /// Returns true if `quota` has been explicitly set.
-  public var hasQuota: Bool {return self._quota != nil}
+  public var hasQuota: Bool {self._quota != nil}
   /// Clears the value of `quota`. Subsequent reads from it will return its default value.
   public mutating func clearQuota() {self._quota = nil}
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1575,11 +1643,11 @@ public struct Netclode_V1_SnapshotCreatedResponse: Sendable {
   public var sessionID: String = String()
 
   public var snapshot: Netclode_V1_Snapshot {
-    get {return _snapshot ?? Netclode_V1_Snapshot()}
+    get {_snapshot ?? Netclode_V1_Snapshot()}
     set {_snapshot = newValue}
   }
   /// Returns true if `snapshot` has been explicitly set.
-  public var hasSnapshot: Bool {return self._snapshot != nil}
+  public var hasSnapshot: Bool {self._snapshot != nil}
   /// Clears the value of `snapshot`. Subsequent reads from it will return its default value.
   public mutating func clearSnapshot() {self._snapshot = nil}
 
@@ -1601,11 +1669,11 @@ public struct Netclode_V1_SnapshotListResponse: Sendable {
   public var snapshots: [Netclode_V1_Snapshot] = []
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1630,11 +1698,11 @@ public struct Netclode_V1_SnapshotRestoredResponse: Sendable {
   public var messagesRestored: Int32 = 0
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1657,11 +1725,11 @@ public struct Netclode_V1_RepoAccessUpdatedResponse: Sendable {
   public var repoAccess: Netclode_V1_RepoAccess = .unspecified
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1692,11 +1760,11 @@ public struct Netclode_V1_ResourceLimitsResponse: Sendable {
   public var defaultMemoryMb: Int32 = 0
 
   public var requestID: String {
-    get {return _requestID ?? String()}
+    get {_requestID ?? String()}
     set {_requestID = newValue}
   }
   /// Returns true if `requestID` has been explicitly set.
-  public var hasRequestID: Bool {return self._requestID != nil}
+  public var hasRequestID: Bool {self._requestID != nil}
   /// Clears the value of `requestID`. Subsequent reads from it will return its default value.
   public mutating func clearRequestID() {self._requestID = nil}
 
@@ -1713,7 +1781,7 @@ fileprivate let _protobuf_package = "netclode.v1"
 
 extension Netclode_V1_ClientMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ClientMessage"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}create_session\0\u{3}list_sessions\0\u{3}open_session\0\u{3}resume_session\0\u{3}pause_session\0\u{3}delete_session\0\u{3}delete_all_sessions\0\u{3}send_prompt\0\u{3}interrupt_prompt\0\u{3}terminal_input\0\u{3}terminal_resize\0\u{3}expose_port\0\u{1}sync\0\u{3}list_github_repos\0\u{3}git_status\0\u{3}git_diff\0\u{3}list_models\0\u{3}get_copilot_status\0\u{3}list_snapshots\0\u{3}restore_snapshot\0\u{3}update_repo_access\0\u{3}get_resource_limits\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}create_session\0\u{3}list_sessions\0\u{3}open_session\0\u{3}resume_session\0\u{3}pause_session\0\u{3}delete_session\0\u{3}delete_all_sessions\0\u{3}send_prompt\0\u{3}interrupt_prompt\0\u{3}terminal_input\0\u{3}terminal_resize\0\u{3}expose_port\0\u{1}sync\0\u{3}list_github_repos\0\u{3}git_status\0\u{3}git_diff\0\u{3}list_models\0\u{3}get_copilot_status\0\u{3}list_snapshots\0\u{3}restore_snapshot\0\u{3}update_repo_access\0\u{3}get_resource_limits\0\u{3}unexpose_port\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2007,6 +2075,19 @@ extension Netclode_V1_ClientMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .getResourceLimits(v)
         }
       }()
+      case 23: try {
+        var v: Netclode_V1_UnexposePortRequest?
+        var hadOneofValue = false
+        if let current = self.message {
+          hadOneofValue = true
+          if case .unexposePort(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.message = .unexposePort(v)
+        }
+      }()
       default: break
       }
     }
@@ -2106,6 +2187,10 @@ extension Netclode_V1_ClientMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
       guard case .getResourceLimits(let v)? = self.message else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 22)
     }()
+    case .unexposePort?: try {
+      guard case .unexposePort(let v)? = self.message else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 23)
+    }()
     case nil: break
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -2120,7 +2205,7 @@ extension Netclode_V1_ClientMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
 
 extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ServerMessage"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_created\0\u{3}session_updated\0\u{3}session_deleted\0\u{3}sessions_deleted_all\0\u{3}session_list\0\u{3}session_state\0\u{3}sync_response\0\u{3}stream_entry\0\u{4}\u{5}port_exposed\0\u{3}github_repos\0\u{3}git_status\0\u{3}git_diff\0\u{1}error\0\u{1}models\0\u{3}copilot_status\0\u{3}snapshot_created\0\u{3}snapshot_list\0\u{3}snapshot_restored\0\u{3}repo_access_updated\0\u{3}resource_limits\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_created\0\u{3}session_updated\0\u{3}session_deleted\0\u{3}sessions_deleted_all\0\u{3}session_list\0\u{3}session_state\0\u{3}sync_response\0\u{3}stream_entry\0\u{4}\u{5}port_exposed\0\u{3}github_repos\0\u{3}git_status\0\u{3}git_diff\0\u{1}error\0\u{1}models\0\u{3}copilot_status\0\u{3}snapshot_created\0\u{3}snapshot_list\0\u{3}snapshot_restored\0\u{3}repo_access_updated\0\u{3}resource_limits\0\u{3}port_unexposed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2388,6 +2473,19 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
           self.message = .resourceLimits(v)
         }
       }()
+      case 25: try {
+        var v: Netclode_V1_PortUnexposedResponse?
+        var hadOneofValue = false
+        if let current = self.message {
+          hadOneofValue = true
+          if case .portUnexposed(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.message = .portUnexposed(v)
+        }
+      }()
       default: break
       }
     }
@@ -2478,6 +2576,10 @@ extension Netclode_V1_ServerMessage: SwiftProtobuf.Message, SwiftProtobuf._Messa
     case .resourceLimits?: try {
       guard case .resourceLimits(let v)? = self.message else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 24)
+    }()
+    case .portUnexposed?: try {
+      guard case .portUnexposed(let v)? = self.message else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 25)
     }()
     case nil: break
     }
@@ -3046,6 +3148,50 @@ extension Netclode_V1_ExposePortRequest: SwiftProtobuf.Message, SwiftProtobuf._M
   }
 
   public static func ==(lhs: Netclode_V1_ExposePortRequest, rhs: Netclode_V1_ExposePortRequest) -> Bool {
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.port != rhs.port {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_UnexposePortRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".UnexposePortRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}request_id\0\u{3}session_id\0\u{1}port\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self.port) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 2)
+    }
+    if self.port != 0 {
+      try visitor.visitSingularInt32Field(value: self.port, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_UnexposePortRequest, rhs: Netclode_V1_UnexposePortRequest) -> Bool {
     if lhs._requestID != rhs._requestID {return false}
     if lhs.sessionID != rhs.sessionID {return false}
     if lhs.port != rhs.port {return false}
@@ -3903,6 +4049,50 @@ extension Netclode_V1_PortExposedResponse: SwiftProtobuf.Message, SwiftProtobuf.
     if lhs.sessionID != rhs.sessionID {return false}
     if lhs.port != rhs.port {return false}
     if lhs.previewURL != rhs.previewURL {return false}
+    if lhs._requestID != rhs._requestID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Netclode_V1_PortUnexposedResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PortUnexposedResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}session_id\0\u{1}port\0\u{3}request_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionID) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self.port) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._requestID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.sessionID.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionID, fieldNumber: 1)
+    }
+    if self.port != 0 {
+      try visitor.visitSingularInt32Field(value: self.port, fieldNumber: 2)
+    }
+    try { if let v = self._requestID {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Netclode_V1_PortUnexposedResponse, rhs: Netclode_V1_PortUnexposedResponse) -> Bool {
+    if lhs.sessionID != rhs.sessionID {return false}
+    if lhs.port != rhs.port {return false}
     if lhs._requestID != rhs._requestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
