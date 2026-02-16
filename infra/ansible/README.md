@@ -72,10 +72,13 @@ DO_SPACES_SECRET_KEY=your-spaces-secret-key
 JUICEFS_BUCKET=https://fra1.digitaloceanspaces.com/your-bucket
 JUICEFS_META_URL=redis://redis-juicefs.netclode.svc.cluster.local:6379/0
 
-# GitHub App (optional - for repo picker)
+# GitHub App (optional - for repo picker + github-bot)
 GITHUB_APP_ID=123456
 GITHUB_APP_PRIVATE_KEY_B64=base64-encoded-pem-private-key
 GITHUB_INSTALLATION_ID=12345678
+
+# GitHub Bot webhook (required if using github-bot)
+GITHUB_WEBHOOK_SECRET=your-webhook-secret
 
 # Kata VM Resources (optional - defaults shown)
 KATA_VM_CPUS=4
@@ -413,6 +416,42 @@ kubectl --context netclode -n netclode rollout restart deploy/secret-proxy
 ```
 
 For full architecture details, see [docs/secret-proxy.md](../docs/secret-proxy.md).
+
+## Tailscale Funnel (Public Internet Access)
+
+The GitHub Bot webhook endpoint is exposed to the public internet via [Tailscale Funnel](https://tailscale.com/kb/1223/funnel). This is required for GitHub to deliver webhook events.
+
+### Prerequisites
+
+Funnel must be enabled in your Tailscale ACL policy. Add the following to `nodeAttrs` in your [Tailscale ACL](https://login.tailscale.com/admin/acls):
+
+```jsonc
+"nodeAttrs": [
+    {
+        "target": ["tag:k8s"],
+        "attr":   ["funnel"],
+    },
+],
+```
+
+This grants devices created by the Tailscale K8s operator (tagged `tag:k8s`) permission to use Funnel. Without this, the `tailscale.com/funnel: "true"` annotation on Ingress resources is silently ignored.
+
+### How it works
+
+- The `github-bot` Ingress has `tailscale.com/funnel: "true"` — publicly accessible from the internet
+- The `control-plane` Ingress has `tailscale.com/https: "true"` — accessible only within the tailnet
+
+### Verifying Funnel
+
+```bash
+# Check if Funnel hostname resolves via public DNS (not MagicDNS)
+dig netclode-github-bot-ingress.tail527cb.ts.net @8.8.8.8 +short
+# Should return a public IP
+
+# Verify the control-plane is NOT publicly accessible
+dig netclode-control-plane-ingress.tail527cb.ts.net @8.8.8.8 +short
+# Should return nothing
+```
 
 ## Supported Distributions
 

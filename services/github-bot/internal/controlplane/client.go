@@ -2,13 +2,16 @@ package controlplane
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/gen/netclode/v1/netclodev1connect"
+	"golang.org/x/net/http2"
 )
 
 // Client wraps the Connect protocol client for control-plane communication.
@@ -17,9 +20,19 @@ type Client struct {
 }
 
 // New creates a new control-plane client.
+// Uses h2c (HTTP/2 cleartext) for in-cluster plaintext connections,
+// which is required for Connect protocol bidi streaming.
 func New(baseURL string) *Client {
+	httpClient := &http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+				return (&net.Dialer{}).DialContext(ctx, network, addr)
+			},
+		},
+	}
 	return &Client{
-		client: netclodev1connect.NewClientServiceClient(&http.Client{}, baseURL),
+		client: netclodev1connect.NewClientServiceClient(httpClient, baseURL),
 	}
 }
 
