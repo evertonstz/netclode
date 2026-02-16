@@ -68,6 +68,21 @@ kubectl -n netclode get pods
 - **agent**: Runs inside sandboxes created by control-plane (not a separate deployment)
 - **auth-proxy**: Tiny proxy inside sandbox that adds SA token to requests
 - **secret-proxy**: External MITM proxy that validates tokens and injects real API keys
+- **github-bot**: Receives GitHub webhooks, creates Netclode sessions for @mentions and dependency reviews
+
+### GitHub Bot
+
+Receives GitHub webhooks and creates Netclode sessions automatically:
+
+- **@netclode mentions** on PRs/issues: Spins up a sandbox, provides context (diff, thread), runs agent, posts result as comment
+- **Dependency update PRs** (Dependabot/Renovate): Analyzes dependency diff, finds impacted code, runs tests, posts review
+
+Access control: only users with write/admin access to the repo can trigger @mentions. Dependency reviews are gated by GitHub App installation scope.
+
+Exposed publicly via Tailscale Funnel. Rollout:
+```bash
+make rollout-github-bot
+```
 
 ### Secret Proxy
 

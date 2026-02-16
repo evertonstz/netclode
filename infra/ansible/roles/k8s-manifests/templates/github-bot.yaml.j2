@@ -1,0 +1,88 @@
+# GitHub Bot Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-bot
+  namespace: netclode
+  labels:
+    app: github-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-bot
+  template:
+    metadata:
+      labels:
+        app: github-bot
+    spec:
+      containers:
+        - name: github-bot
+          image: ghcr.io/angristan/netclode-github-bot:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+            - name: CONTROL_PLANE_URL
+              value: "http://control-plane.netclode.svc.cluster.local:80"
+            - name: REDIS_URL
+              value: "redis://redis-sessions.netclode.svc.cluster.local:6379"
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: github-app-id
+            - name: GITHUB_APP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: github-app-private-key
+            - name: GITHUB_INSTALLATION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: github-installation-id
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: netclode-secrets
+                  key: github-webhook-secret
+            - name: SDK_TYPE
+              value: "claude"
+            - name: MODEL
+              value: "claude-sonnet-4-20250514"
+            - name: SESSION_TIMEOUT
+              value: "10m"
+            - name: MAX_CONCURRENT
+              value: "1"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 20
+---
+# GitHub Bot Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: github-bot
+  namespace: netclode
+  labels:
+    app: github-bot
+spec:
+  type: ClusterIP
+  selector:
+    app: github-bot
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http

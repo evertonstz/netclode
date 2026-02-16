@@ -28,6 +28,9 @@ endif
 rollout-control-plane: ## Rollout control-plane
 	kubectl --context $(CONTEXT) -n $(NAMESPACE) rollout restart deployment/control-plane
 
+rollout-github-bot: ## Rollout github-bot
+	kubectl --context $(CONTEXT) -n $(NAMESPACE) rollout restart deployment/github-bot
+
 rollout-agent: ## Rollout agent (drains warm pool to pick up new image)
 	@echo "Scaling warm pool to 0..."
 	kubectl --context $(CONTEXT) -n $(NAMESPACE) patch sandboxwarmpool netclode-agent-pool -p '{"spec":{"replicas":0}}' --type=merge

@@ -52,6 +52,7 @@
         mistral_api_key: "{{ (env_content_raw | regex_search('(?m)^MISTRAL_API_KEY=(.*)$', '\\1') or [''])[0] }}"
         opencode_api_key: "{{ (env_content_raw | regex_search('(?m)^OPENCODE_API_KEY=(.*)$', '\\1') or [''])[0] }}"
         zai_api_key: "{{ (env_content_raw | regex_search('(?m)^ZAI_API_KEY=(.*)$', '\\1') or [''])[0] }}"
+        github_webhook_secret: "{{ (env_content_raw | regex_search('(?m)^GITHUB_WEBHOOK_SECRET=(.*)$', '\\1') or [''])[0] }}"
         max_active_sessions: "{{ env_content_raw | regex_search('(?m)^MAX_ACTIVE_SESSIONS=(.*)$', '\\1') | first | default('5') }}"
 
 # Host secrets - skip if only deploying k8s secrets
@@ -183,6 +184,8 @@
             github-app-id: "{{ github_app_id }}"
             github-app-private-key: "{{ github_app_private_key_b64 | b64decode }}"
             github-installation-id: "{{ github_installation_id }}"
+            # GitHub webhook secret for github-bot
+            github-webhook-secret: "{{ github_webhook_secret }}"
             tailscale-authkey: "{{ tailscale_authkey }}"
       when: anthropic_api_key | length > 0
 

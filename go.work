@@ -4,5 +4,6 @@ use (
 	./clients/cli
 	./services/agent/auth-proxy
 	./services/control-plane
+	./services/github-bot
 	./services/secret-proxy
 )
