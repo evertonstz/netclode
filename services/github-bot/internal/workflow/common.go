@@ -17,7 +17,7 @@ const (
 	// maxCommentSize is the maximum size of a GitHub comment in characters.
 	maxCommentSize = 60000
 	// thinkingMessage is the initial comment posted while the bot is working.
-	thinkingMessage = "Netclode is analyzing this... Please wait."
+	thinkingMessage = "🫡 Looking into it..."
 )
 
 // Deps holds shared dependencies for all workflows.
