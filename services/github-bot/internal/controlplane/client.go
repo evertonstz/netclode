@@ -152,7 +152,8 @@ func (c *Client) RunSession(ctx context.Context, opts RunSessionOpts) (*RunSessi
 					msgPayload := evt.GetMessage()
 					if msgPayload != nil && msgPayload.GetRole() == pb.MessageRole_MESSAGE_ROLE_ASSISTANT {
 						if !entry.GetPartial() {
-							// Final message content
+							// Keep only the last assistant message (discard intermediate narration)
+							responseBuilder.Reset()
 							responseBuilder.WriteString(msgPayload.GetContent())
 						}
 					}
@@ -264,7 +265,7 @@ func (c *Client) RecoverSession(ctx context.Context, sessionID string) (*RunSess
 	status := sess.GetStatus()
 	slog.Info("Recovered session state", "sessionID", sessionID, "status", status.String(), "entries", len(state.GetEntries()))
 
-	// Extract response from existing stream entries
+	// Extract last assistant message from existing stream entries
 	for _, entry := range state.GetEntries() {
 		if entry.GetPartial() {
 			continue
@@ -272,6 +273,7 @@ func (c *Client) RecoverSession(ctx context.Context, sessionID string) (*RunSess
 		if evt := entry.GetEvent(); evt != nil {
 			if evt.GetKind() == pb.AgentEventKind_AGENT_EVENT_KIND_MESSAGE {
 				if msgPayload := evt.GetMessage(); msgPayload != nil && msgPayload.GetRole() == pb.MessageRole_MESSAGE_ROLE_ASSISTANT {
+					responseBuilder.Reset()
 					responseBuilder.WriteString(msgPayload.GetContent())
 				}
 			}
@@ -325,6 +327,7 @@ func (c *Client) RecoverSession(ctx context.Context, sessionID string) (*RunSess
 			case *pb.StreamEntry_Event:
 				if payload.Event.GetKind() == pb.AgentEventKind_AGENT_EVENT_KIND_MESSAGE {
 					if msgPayload := payload.Event.GetMessage(); msgPayload != nil && msgPayload.GetRole() == pb.MessageRole_MESSAGE_ROLE_ASSISTANT && !e.GetPartial() {
+						responseBuilder.Reset()
 						responseBuilder.WriteString(msgPayload.GetContent())
 					}
 				}
