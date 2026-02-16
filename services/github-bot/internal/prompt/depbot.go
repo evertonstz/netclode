@@ -48,9 +48,10 @@ func BuildDepbotPrompt(ctx DepbotContext) string {
 	b.WriteString("Do ALL of the following:\n\n")
 
 	b.WriteString("1. **Identify the update**: dependency name, old version -> new version, bump type (major/minor/patch)\n")
-	b.WriteString("2. **Find impacted code**: search the codebase for imports/usage of the updated dependency. Flag anything that might break.\n")
-	b.WriteString("3. **Run tests**: find the test command (Makefile, package.json, go test, etc.) and run it. Report pass/fail and any new failures.\n")
-	b.WriteString("4. **Verdict**: state one of: **Safe to merge**, **Needs review**, or **Issues found**. Explain briefly.\n\n")
+	b.WriteString("2. **Inspect what changed in the dependency**: look at the actual source code of the dependency to understand what changed between versions. For Go, check the local module cache (`go mod download` then look in `$GOPATH/pkg/mod/`), or clone the dependency repo and `git diff` between version tags. Read changelogs, release notes, or commit history. Summarize what actually changed.\n")
+	b.WriteString("3. **Find impacted code paths**: search the codebase for all imports and usages of the updated dependency. Cross-reference with the changes you found in step 2 — are any changed/removed APIs actually used? Flag concrete risks.\n")
+	b.WriteString("4. **Run tests**: find the test command (Makefile, package.json, go test, etc.) and run it. Report pass/fail and any new failures.\n")
+	b.WriteString("5. **Verdict**: state one of: **Safe to merge**, **Needs review**, or **Issues found**. Explain briefly.\n\n")
 
 	b.WriteString("## Rules\n")
 	b.WriteString("- Actually run the tests. Do not skip this step.\n")
