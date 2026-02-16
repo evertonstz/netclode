@@ -2,10 +2,10 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
 
-# Copy workspace files
-COPY go.work go.work.sum ./
+# Disable go.work so only go.mod replace directives are used
+ENV GOWORK=off
 
-# Copy control-plane (needed for generated proto stubs)
+# Copy control-plane (needed for generated proto stubs via replace directive)
 COPY services/control-plane/go.mod services/control-plane/go.sum ./services/control-plane/
 COPY services/control-plane/gen/ ./services/control-plane/gen/
 
