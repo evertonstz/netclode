@@ -30,18 +30,18 @@ type SessionUpdateCallback func(session *pb.Session)
 
 // AgentSessionConfig contains typed configuration for an agent session.
 type AgentSessionConfig struct {
-	SessionID       string
-	GitHubToken     string // For git credentials (from GitHub App) - not proxied, used in git URLs
-	Repos           []string
-	RepoAccess      *pb.RepoAccess
-	SdkType         *pb.SdkType
-	Model           string
-	CopilotBackend  *pb.CopilotBackend
+	SessionID         string
+	GitHubToken       string // For git credentials (from GitHub App) - not proxied, used in git URLs
+	Repos             []string
+	RepoAccess        *pb.RepoAccess
+	SdkType           *pb.SdkType
+	Model             string
+	CopilotBackend    *pb.CopilotBackend
 	CodexAccessToken  string // For Codex OAuth mode - written to ~/.codex/auth.json, can't be proxied
 	CodexIdToken      string // For Codex OAuth mode - written to ~/.codex/auth.json, can't be proxied
 	CodexRefreshToken string // For Codex OAuth mode - written to ~/.codex/auth.json, can't be proxied
-	ReasoningEffort string // For Codex reasoning effort (low, medium, high)
-	OllamaURL       string // For local Ollama inference
+	ReasoningEffort   string // For Codex reasoning effort (low, medium, high)
+	OllamaURL         string // For local Ollama inference
 }
 
 // AgentConnection represents a connected agent that can receive commands.
@@ -602,7 +602,6 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 
 	slog.Info("Claim bound to sandbox", "sessionID", sessionID, "sandbox", sandboxName)
 
-	// Try to push session to warm agent immediately (instant session start).
 	// The agent connects with its original pod name, but the sandbox gets renamed when claimed.
 	// Get the original pod name from the sandbox annotation.
 	originalPodName := sandboxName // fallback
@@ -613,9 +612,10 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 		}
 	}
 
-	m.AssignSessionToWarmAgent(originalPodName, sessionID)
-
-	// Label the sandbox so the informer can track it
+	// Label the sandbox BEFORE assigning to agent.
+	// ValidateProxyAuth uses GetSessionIDByPodName which needs the netclode.io/session label.
+	// If we assign first, the agent can make API calls before the label exists,
+	// causing the secret-proxy to pass through the placeholder key to Anthropic (401).
 	if err := m.k8s.LabelSandbox(ctx, sandboxName, sessionID); err != nil {
 		slog.Error("Failed to label sandbox", "sessionID", sessionID, "sandbox", sandboxName, "error", err)
 		// Cleanup: delete the claim and sandbox - without label we can't manage it
@@ -720,6 +720,11 @@ func (m *Manager) createSandboxViaClaim(ctx context.Context, sessionID string, r
 			slog.Warn("Failed to add session anchor to PVC", "sessionID", sessionID, "pvc", pvcName, "error", err)
 		}
 	}
+
+	// Now that the sandbox is labeled, network is configured, and infrastructure is ready,
+	// push the session to the warm agent. This MUST happen AFTER LabelSandbox so that
+	// ValidateProxyAuth can look up the session when the agent makes its first API call.
+	m.AssignSessionToWarmAgent(originalPodName, sessionID)
 
 	// Update state and check for pending prompt
 	var pendingPrompt string
