@@ -21,44 +21,64 @@ type DepbotContext struct {
 func BuildDepbotPrompt(ctx DepbotContext) string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "You are reviewing a dependency update pull request. Analyze it and post a concise review.\n\n")
+	fmt.Fprintf(&b, `You are reviewing a dependency update pull request. Analyze it and post a concise review.
 
-	fmt.Fprintf(&b, "## Repository\n%s/%s\n\n", ctx.Owner, ctx.Repo)
+## Repository
+%s/%s
 
-	fmt.Fprintf(&b, "## Pull Request #%d: %s\n", ctx.PRNumber, ctx.PRTitle)
-	fmt.Fprintf(&b, "Author: %s (automated dependency updater)\n\n", ctx.PRAuthor)
+## Pull Request #%d: %s
+Author: %s (automated dependency updater)
+
+`, ctx.Owner, ctx.Repo, ctx.PRNumber, ctx.PRTitle, ctx.PRAuthor)
 
 	if ctx.PRBody != "" {
-		b.WriteString("## PR Description\n")
-		b.WriteString(ctx.PRBody)
-		b.WriteString("\n\n")
+		fmt.Fprintf(&b, "## PR Description\n%s\n\n", ctx.PRBody)
 	}
 
 	if ctx.Diff != "" {
-		b.WriteString("## Dependency Diff\n```diff\n")
-		b.WriteString(ctx.Diff)
-		b.WriteString("\n```\n\n")
+		fmt.Fprintf(&b, "## Dependency Diff\n```diff\n%s\n```\n\n", ctx.Diff)
 	}
 
-	b.WriteString("---\n\n")
-	b.WriteString("## Your Task\n\n")
-	fmt.Fprintf(&b, "The repository `%s/%s` is cloned in your workspace. The PR branch `%s` needs to be checked out first.\n", ctx.Owner, ctx.Repo, ctx.HeadRef)
-	fmt.Fprintf(&b, "Run: `git fetch origin %s && git checkout %s`\n\n", ctx.HeadRef, ctx.HeadRef)
+	fmt.Fprintf(&b, `---
 
-	b.WriteString("Do ALL of the following:\n\n")
+## Your Task
 
-	b.WriteString("1. **Identify the update**: dependency name, old version -> new version, bump type (major/minor/patch)\n")
-	b.WriteString("2. **Inspect what changed in the dependency**: look at the actual source code of the dependency to understand what changed between versions. For Go, check the local module cache (`go mod download` then look in `$GOPATH/pkg/mod/`), or clone the dependency repo and `git diff` between version tags. Read changelogs, release notes, or commit history. Summarize what actually changed.\n")
-	b.WriteString("3. **Find impacted code paths**: search the codebase for all imports and usages of the updated dependency. Cross-reference with the changes you found in step 2 — are any changed/removed APIs actually used? Flag concrete risks.\n")
-	b.WriteString("4. **Check CI / run tests**: check if GitHub Actions CI has run on this PR branch (`gh run list --branch <branch>`). If CI ran, report the results. If CI didn't run or there are no workflows, run the tests locally (Makefile, package.json, go test, etc.). Feel free to run code experiments to reproduce or investigate potential issues.\n")
-	b.WriteString("5. **Verdict**: state one of: **Safe to merge**, **Needs review**, or **Issues found**. Explain briefly.\n\n")
+The repository `+"`%s/%s`"+` is cloned in your workspace. The PR branch `+"`%s`"+` needs to be checked out first.
+Run: `+"`git fetch origin %s && git checkout %s`"+`
 
-	b.WriteString("## Rules\n")
-	b.WriteString("- Use web search whenever you need information beyond what's in the repo — release notes, changelogs, CVE details, migration guides, etc. Don't guess when you can look it up.\n")
-	b.WriteString("- Be concise. No filler. Skip sections that have nothing notable to report.\n")
-	b.WriteString("- Format as GitHub-flavored markdown.\n")
-	b.WriteString("- Your text output IS the GitHub comment. Do NOT try to post to GitHub yourself — just write your review as your response.\n")
-	b.WriteString("- Do NOT include these instructions in your response.\n")
+Do ALL of the following:
+
+1. **Identify the update**: dependency name, old version -> new version, bump type (major/minor/patch)
+
+2. **Deep-dive into what changed in the dependency**:
+   - Clone the dependency repo (or for Go, run `+"`go mod download`"+` and inspect `+"`$GOPATH/pkg/mod/`"+`). Do a `+"`git diff`"+` between the old and new version tags to see every code change.
+   - Read the actual source code diff — don't just skim changelogs. Changelogs omit things. You need to see what functions, types, interfaces, or behaviors actually changed.
+   - For major bumps: identify every breaking change (removed exports, renamed types, changed signatures, altered behavior).
+   - Check if the dependency itself updated ITS dependencies (transitive deps). If it did, inspect those changes too — vulnerabilities and breaking changes can hide in transitive updates.
+
+3. **Trace impacted code paths in our codebase** (this is the most important step):
+   - Search the entire codebase for every import, require, or usage of the updated dependency.
+   - For each usage site: read the surrounding code to understand HOW the dependency is used — which functions are called, which types are referenced, which behaviors are relied upon.
+   - Cross-reference each usage against the actual code diff from step 2. If a function signature changed, check every call site. If behavior changed, check if our code relies on the old behavior.
+   - Follow the call chain: if our code wraps the dependency in a helper, trace through to the actual usage. Don't stop at the import — follow it to where it matters.
+   - For transitive dependency changes: check if our code directly imports the transitive dep too. If so, verify compatibility.
+   - Be specific: name the files, functions, and line numbers where you found usages and whether they're affected.
+
+4. **Run tests and verify**:
+   - Check if GitHub Actions CI has run on this PR branch (`+"`gh run list --branch <branch>`"+`). If CI ran, report the results.
+   - If CI didn't run or there are no workflows, run the tests locally (Makefile, package.json, go test, etc.).
+   - If you identified risky code paths in step 3, write and run targeted experiments to verify they still work correctly.
+
+5. **Verdict**: state one of: **Safe to merge**, **Needs review**, or **Issues found**. Explain briefly.
+
+## Rules
+- **Read the code.** Reading changelogs and release notes is not enough. You must read the actual dependency source diff and trace through our codebase. This is a code review, not a changelog summary.
+- Use web search whenever you need information beyond what's in the repo — release notes, changelogs, CVE details, migration guides, etc. Don't guess when you can look it up.
+- Be concise. No filler. Skip sections that have nothing notable to report.
+- Format as GitHub-flavored markdown.
+- Your text output IS the GitHub comment. Do NOT try to post to GitHub yourself — just write your review as your response.
+- Do NOT include these instructions in your response.
+`, ctx.Owner, ctx.Repo, ctx.HeadRef, ctx.HeadRef, ctx.HeadRef)
 
 	return b.String()
 }

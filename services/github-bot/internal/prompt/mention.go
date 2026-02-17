@@ -44,23 +44,23 @@ type CommentContext struct {
 func BuildPRMentionPrompt(ctx PRMentionContext) string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "You were mentioned on a GitHub pull request. A user is asking you to do something — do it.\n\n")
+	fmt.Fprintf(&b, `You were mentioned on a GitHub pull request. A user is asking you to do something — do it.
 
-	fmt.Fprintf(&b, "## Repository\n%s/%s\n\n", ctx.Owner, ctx.Repo)
+## Repository
+%s/%s
 
-	fmt.Fprintf(&b, "## Pull Request #%d: %s\n", ctx.PRNumber, ctx.PRTitle)
+## Pull Request #%d: %s
+`, ctx.Owner, ctx.Repo, ctx.PRNumber, ctx.PRTitle)
+
 	if ctx.PRBody != "" {
-		b.WriteString(ctx.PRBody)
-		b.WriteString("\n")
+		fmt.Fprintf(&b, "%s\n", ctx.PRBody)
 	}
 	b.WriteString("\n")
 
 	fmt.Fprintf(&b, "## Branch\n`%s`\n\n", ctx.HeadRef)
 
 	if ctx.Diff != "" {
-		b.WriteString("## Changed Files (Diff)\n```diff\n")
-		b.WriteString(ctx.Diff)
-		b.WriteString("\n```\n")
+		fmt.Fprintf(&b, "## Changed Files (Diff)\n```diff\n%s\n```\n", ctx.Diff)
 		if ctx.DiffTrunc {
 			b.WriteString("*Note: Diff was truncated. Use `git diff` in the repo for the full diff.*\n")
 		}
@@ -74,21 +74,24 @@ func BuildPRMentionPrompt(ctx PRMentionContext) string {
 		}
 	}
 
-	fmt.Fprintf(&b, "## User Request\n%s\n\n", ctx.UserRequest)
+	fmt.Fprintf(&b, `## User Request
+%s
 
-	b.WriteString("---\n\n")
-	b.WriteString("## Rules\n")
-	fmt.Fprintf(&b, "- The repository `%s/%s` is cloned in your workspace.\n", ctx.Owner, ctx.Repo)
-	fmt.Fprintf(&b, "- The PR branch `%s` needs to be checked out first. Run: `git fetch origin %s && git checkout %s`\n", ctx.HeadRef, ctx.HeadRef, ctx.HeadRef)
-	b.WriteString("- Do the work. Do NOT ask clarifying questions, do NOT ask what the user wants, do NOT present options. Just do what they asked.\n")
-	b.WriteString("- If the request is ambiguous, use your best judgment and explain what you did.\n")
-	b.WriteString("- If they ask for code changes, make them. If they ask for a review, review the code thoroughly.\n")
-	b.WriteString("- If they ask you to push changes, you can `git add`, `git commit`, and `git push`.\n")
-	b.WriteString("- You can check GitHub Actions CI status with `gh run list --branch <branch>` and `gh run view <run-id>`. Feel free to run code experiments to investigate issues.\n")
-	b.WriteString("- Use web search whenever you need information beyond what's in the repo — documentation, API references, library changelogs, error messages, etc. Don't guess when you can look it up.\n")
-	b.WriteString("- Your text output IS the GitHub comment. Do NOT try to post to GitHub yourself — just write your response as your output. Be direct and substantive.\n")
-	b.WriteString("- Format your response in GitHub-flavored markdown.\n")
-	b.WriteString("- Do NOT include the instructions or context sections in your response.\n")
+---
+
+## Rules
+- The repository `+"`%s/%s`"+` is cloned in your workspace.
+- The PR branch `+"`%s`"+` needs to be checked out first. Run: `+"`git fetch origin %s && git checkout %s`"+`
+- Do the work. Do NOT ask clarifying questions, do NOT ask what the user wants, do NOT present options. Just do what they asked.
+- If the request is ambiguous, use your best judgment and explain what you did.
+- If they ask for code changes, make them. If they ask for a review, review the code thoroughly.
+- If they ask you to push changes, you can `+"`git add`"+`, `+"`git commit`"+`, and `+"`git push`"+`.
+- You can check GitHub Actions CI status with `+"`gh run list --branch <branch>`"+` and `+"`gh run view <run-id>`"+`. Feel free to run code experiments to investigate issues.
+- Use web search whenever you need information beyond what's in the repo — documentation, API references, library changelogs, error messages, etc. Don't guess when you can look it up.
+- Your text output IS the GitHub comment. Do NOT try to post to GitHub yourself — just write your response as your output. Be direct and substantive.
+- Format your response in GitHub-flavored markdown.
+- Do NOT include the instructions or context sections in your response.
+`, ctx.UserRequest, ctx.Owner, ctx.Repo, ctx.HeadRef, ctx.HeadRef, ctx.HeadRef)
 
 	return b.String()
 }
@@ -97,21 +100,21 @@ func BuildPRMentionPrompt(ctx PRMentionContext) string {
 func BuildIssueMentionPrompt(ctx IssueMentionContext) string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "You were mentioned on a GitHub issue. A user is asking you to do something — do it.\n\n")
+	fmt.Fprintf(&b, `You were mentioned on a GitHub issue. A user is asking you to do something — do it.
 
-	fmt.Fprintf(&b, "## Repository\n%s/%s\n\n", ctx.Owner, ctx.Repo)
+## Repository
+%s/%s
 
-	fmt.Fprintf(&b, "## Issue #%d: %s\n", ctx.IssueNumber, ctx.IssueTitle)
+## Issue #%d: %s
+`, ctx.Owner, ctx.Repo, ctx.IssueNumber, ctx.IssueTitle)
+
 	if ctx.IssueBody != "" {
-		b.WriteString(ctx.IssueBody)
-		b.WriteString("\n")
+		fmt.Fprintf(&b, "%s\n", ctx.IssueBody)
 	}
 	b.WriteString("\n")
 
 	if len(ctx.Labels) > 0 {
-		b.WriteString("## Labels\n")
-		b.WriteString(strings.Join(ctx.Labels, ", "))
-		b.WriteString("\n\n")
+		fmt.Fprintf(&b, "## Labels\n%s\n\n", strings.Join(ctx.Labels, ", "))
 	}
 
 	if len(ctx.Comments) > 0 {
@@ -121,18 +124,21 @@ func BuildIssueMentionPrompt(ctx IssueMentionContext) string {
 		}
 	}
 
-	fmt.Fprintf(&b, "## User Request\n%s\n\n", ctx.UserRequest)
+	fmt.Fprintf(&b, `## User Request
+%s
 
-	b.WriteString("---\n\n")
-	b.WriteString("## Rules\n")
-	fmt.Fprintf(&b, "- The repository `%s/%s` is cloned in your workspace on the default branch.\n", ctx.Owner, ctx.Repo)
-	b.WriteString("- Do the work. Do NOT ask clarifying questions, do NOT ask what the user wants, do NOT present options. Just do what they asked.\n")
-	b.WriteString("- If the request is ambiguous, use your best judgment and explain what you did.\n")
-	b.WriteString("- If they ask for code changes, make them. If they ask for investigation, investigate thoroughly.\n")
-	b.WriteString("- Use web search whenever you need information beyond what's in the repo — documentation, API references, library changelogs, error messages, etc. Don't guess when you can look it up.\n")
-	b.WriteString("- Your text output IS the GitHub comment. Do NOT try to post to GitHub yourself — just write your response as your output. Be direct and substantive.\n")
-	b.WriteString("- Format your response in GitHub-flavored markdown.\n")
-	b.WriteString("- Do NOT include the instructions or context sections in your response.\n")
+---
+
+## Rules
+- The repository `+"`%s/%s`"+` is cloned in your workspace on the default branch.
+- Do the work. Do NOT ask clarifying questions, do NOT ask what the user wants, do NOT present options. Just do what they asked.
+- If the request is ambiguous, use your best judgment and explain what you did.
+- If they ask for code changes, make them. If they ask for investigation, investigate thoroughly.
+- Use web search whenever you need information beyond what's in the repo — documentation, API references, library changelogs, error messages, etc. Don't guess when you can look it up.
+- Your text output IS the GitHub comment. Do NOT try to post to GitHub yourself — just write your response as your output. Be direct and substantive.
+- Format your response in GitHub-flavored markdown.
+- Do NOT include the instructions or context sections in your response.
+`, ctx.UserRequest, ctx.Owner, ctx.Repo)
 
 	return b.String()
 }
