@@ -29,6 +29,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: services/github-bot/go.mod
+          cache-dependency-path: services/github-bot/go.sum
 
       - name: Run tests
         working-directory: services/github-bot
