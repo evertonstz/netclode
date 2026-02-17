@@ -41,7 +41,7 @@ Environment variables (set in k8s deployment):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CONTROL_PLANE_URL` | (required) | Control-plane gRPC endpoint |
+| `CONTROL_PLANE_URL` | (required) | Control-plane endpoint (Connect protocol over h2c) |
 | `REDIS_URL` | (required) | Redis for dedup + session tracking |
 | `GITHUB_APP_ID` | (required) | GitHub App ID |
 | `GITHUB_APP_PRIVATE_KEY` | (required) | PEM-encoded private key (raw, not base64) |
@@ -49,7 +49,7 @@ Environment variables (set in k8s deployment):
 | `GITHUB_WEBHOOK_SECRET` | (required) | Webhook signature verification |
 | `MODEL` | `claude-opus-4-6` | LLM model |
 | `SDK_TYPE` | `claude` | SDK: `claude`, `opencode`, `copilot`, `codex` |
-| `MAX_CONCURRENT` | `5` | Max concurrent sessions |
+| `MAX_CONCURRENT` | `5` (deployed as `1`) | Max concurrent sessions |
 | `SESSION_TIMEOUT` | `10m` | Per-session timeout |
 | `PORT` | `8080` | HTTP listen port |
 

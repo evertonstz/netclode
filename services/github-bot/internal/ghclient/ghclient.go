@@ -3,7 +3,6 @@ package ghclient
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -121,24 +120,6 @@ func (c *Client) HasWriteAccess(ctx context.Context, owner, repo, username strin
 	return perm == "admin" || perm == "write", nil
 }
 
-// GetPRReviewComment fetches a specific PR review comment by ID.
-func (c *Client) GetPRReviewComment(ctx context.Context, owner, repo string, commentID int64) (*github.PullRequestComment, error) {
-	comment, _, err := c.gh.PullRequests.GetComment(ctx, owner, repo, commentID)
-	if err != nil {
-		return nil, fmt.Errorf("get PR review comment: %w", err)
-	}
-	return comment, nil
-}
-
-// GetRepoDefaultBranch fetches the default branch of a repository.
-func (c *Client) GetRepoDefaultBranch(ctx context.Context, owner, repo string) (string, error) {
-	r, _, err := c.gh.Repositories.Get(ctx, owner, repo)
-	if err != nil {
-		return "", fmt.Errorf("get repo: %w", err)
-	}
-	return r.GetDefaultBranch(), nil
-}
-
 // DownloadPRDiffTruncated fetches a PR diff, truncated to maxBytes.
 func (c *Client) DownloadPRDiffTruncated(ctx context.Context, owner, repo string, number int, maxBytes int) (string, bool, error) {
 	diff, err := c.GetPRDiff(ctx, owner, repo, number)
@@ -166,38 +147,4 @@ func (c *Client) ReactToComment(ctx context.Context, owner, repo string, comment
 		return nil
 	}
 	return nil
-}
-
-// DownloadFileFromRef downloads a file from a specific git ref.
-func (c *Client) DownloadFileFromRef(ctx context.Context, owner, repo, path, ref string) (string, error) {
-	fileContent, _, resp, err := c.gh.Repositories.GetContents(ctx, owner, repo, path, &github.RepositoryContentGetOptions{
-		Ref: ref,
-	})
-	if err != nil {
-		if resp != nil && resp.StatusCode == http.StatusNotFound {
-			return "", nil // File doesn't exist at this ref
-		}
-		return "", fmt.Errorf("get file contents: %w", err)
-	}
-	if fileContent == nil {
-		return "", nil
-	}
-	content, err := fileContent.GetContent()
-	if err != nil {
-		// If the file is too large for the API, try the raw download
-		if fileContent.GetSize() > 0 {
-			rc, _, err := c.gh.Repositories.DownloadContents(ctx, owner, repo, path, &github.RepositoryContentGetOptions{Ref: ref})
-			if err != nil {
-				return "", fmt.Errorf("download file: %w", err)
-			}
-			defer rc.Close()
-			b, err := io.ReadAll(io.LimitReader(rc, 100*1024)) // 100KB limit
-			if err != nil {
-				return "", fmt.Errorf("read file: %w", err)
-			}
-			return string(b), nil
-		}
-		return "", fmt.Errorf("decode file content: %w", err)
-	}
-	return content, nil
 }

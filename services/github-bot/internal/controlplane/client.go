@@ -95,13 +95,11 @@ func (c *Client) RunSession(ctx context.Context, opts RunSessionOpts) (*RunSessi
 	for {
 		select {
 		case <-ctx.Done():
-			// Timeout or cancellation — return whatever we have
+			// Timeout or cancellation — return partial result alongside the error
+			// so the caller can decide whether to post a partial response
 			result.Response = responseBuilder.String()
-			if result.Response == "" {
-				return result, fmt.Errorf("session timed out: %w", ctx.Err())
-			}
-			slog.Warn("Session timed out, returning partial result", "sessionID", result.SessionID, "responseLen", len(result.Response))
-			return result, nil
+			slog.Warn("Session timed out", "sessionID", result.SessionID, "responseLen", len(result.Response))
+			return result, fmt.Errorf("session timed out: %w", ctx.Err())
 		default:
 		}
 
@@ -301,10 +299,8 @@ func (c *Client) RecoverSession(ctx context.Context, sessionID string) (*RunSess
 		select {
 		case <-ctx.Done():
 			result.Response = responseBuilder.String()
-			if result.Response == "" {
-				return result, fmt.Errorf("recovery timed out: %w", ctx.Err())
-			}
-			return result, nil
+			slog.Warn("Recovery timed out", "sessionID", sessionID, "responseLen", len(result.Response))
+			return result, fmt.Errorf("recovery timed out: %w", ctx.Err())
 		default:
 		}
 

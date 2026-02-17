@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -86,11 +85,6 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// SdkTypeProto returns the protobuf SdkType value based on configuration.
-func (c *Config) SdkTypeProto() string {
-	return strings.ToLower(c.SdkType)
 }
 
 func envOrDefault(key, defaultVal string) string {

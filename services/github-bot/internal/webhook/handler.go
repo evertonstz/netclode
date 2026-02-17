@@ -113,7 +113,9 @@ func (h *Handler) handleIssueComment(deliveryID string, payload []byte) {
 	userLogin := comment.GetUser().GetLogin()
 
 	// Access control: check if user has write access
-	hasAccess, err := h.deps.GH.HasWriteAccess(context.Background(), owner, repo, userLogin)
+	accessCtx, accessCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer accessCancel()
+	hasAccess, err := h.deps.GH.HasWriteAccess(accessCtx, owner, repo, userLogin)
 	if err != nil {
 		slog.Error("Failed to check user permission", "error", err, "user", userLogin, "owner", owner, "repo", repo)
 		return
@@ -202,7 +204,9 @@ func (h *Handler) handlePRReviewComment(deliveryID string, payload []byte) {
 	userLogin := comment.GetUser().GetLogin()
 
 	// Access control
-	hasAccess, err := h.deps.GH.HasWriteAccess(context.Background(), owner, repo, userLogin)
+	accessCtx, accessCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer accessCancel()
+	hasAccess, err := h.deps.GH.HasWriteAccess(accessCtx, owner, repo, userLogin)
 	if err != nil {
 		slog.Error("Failed to check user permission", "error", err, "user", userLogin)
 		return

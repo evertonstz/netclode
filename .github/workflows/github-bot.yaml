@@ -19,7 +19,23 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/netclode-github-bot
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: services/github-bot/go.mod
+
+      - name: Run tests
+        working-directory: services/github-bot
+        run: go test ./...
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
