@@ -2121,9 +2121,14 @@ func (m *Manager) ValidateProxyAuth(ctx context.Context, token, targetHost strin
 		// Try loading from storage
 		session, err := m.storage.GetSession(ctx, sessionID)
 		if err != nil {
-			return nil, fmt.Errorf("session %s not found: %w", sessionID, err)
+			return nil, fmt.Errorf("session %s not found in memory or storage: %w", sessionID, err)
 		}
 		state = &SessionState{Session: session}
+		slog.Info("ValidateProxyAuth: loaded session from storage (not in memory)",
+			"sessionID", sessionID,
+			"podName", podName,
+			"targetHost", targetHost,
+		)
 	}
 
 	// Get allowed hosts based on SDK type
@@ -2135,12 +2140,24 @@ func (m *Manager) ValidateProxyAuth(ctx context.Context, token, targetHost strin
 	// Check if target host is allowed and get the secret key
 	secretKey, placeholder := m.getAllowedSecretForHost(sdkType, targetHost)
 	if secretKey == "" {
+		slog.Warn("ValidateProxyAuth: host not in allowlist",
+			"sessionID", sessionID,
+			"podName", podName,
+			"targetHost", targetHost,
+			"sdkType", sdkType.String(),
+		)
 		return &ProxyAuthResult{
 			Allowed:   false,
 			SessionID: sessionID,
 		}, nil
 	}
 
+	slog.Debug("ValidateProxyAuth: allowed",
+		"sessionID", sessionID,
+		"podName", podName,
+		"targetHost", targetHost,
+		"secretKey", secretKey,
+	)
 	return &ProxyAuthResult{
 		Allowed:     true,
 		SecretKey:   secretKey,

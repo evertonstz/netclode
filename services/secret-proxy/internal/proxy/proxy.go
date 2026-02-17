@@ -241,26 +241,36 @@ func (p *Proxy) handleRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.R
 	// Validate with control-plane using token
 	authResult, err := p.validateWithControlPlane(token, targetHost)
 	if err != nil {
-		p.logger.Warn("Control-plane validation failed", "host", targetHost, "error", err)
-		return req, nil // Pass through without injection on error
+		p.logger.Error("Control-plane validation failed", "host", targetHost, "error", err)
+		// Block the request — passing through would leak the placeholder key upstream.
+		return req, goproxy.NewResponse(req, goproxy.ContentTypeText, http.StatusProxyAuthRequired,
+			fmt.Sprintf("secret-proxy: validation failed (%v)", err))
 	}
 
 	if !authResult.Allowed {
-		p.logger.Debug("Request not allowed for secret injection",
+		p.logger.Warn("Request not allowed for secret injection",
 			"host", targetHost,
 			"sessionID", authResult.SessionID,
+			"error", authResult.Error,
 		)
-		return req, nil
+		// Block the request instead of passing through with the placeholder key.
+		// Passing through would send the placeholder (e.g., NETCLODE_PLACEHOLDER_anthropic)
+		// to the upstream API, which sees it as an invalid API key.
+		return req, goproxy.NewResponse(req, goproxy.ContentTypeText, http.StatusProxyAuthRequired,
+			fmt.Sprintf("secret-proxy: request not allowed (session=%s, error=%s)", authResult.SessionID, authResult.Error))
 	}
 
 	// Get the actual secret value
 	secretValue, ok := p.config.Secrets[authResult.SecretKey]
 	if !ok {
-		p.logger.Warn("Secret key not found in config",
+		p.logger.Error("Secret key not found in config",
 			"secretKey", authResult.SecretKey,
 			"host", targetHost,
+			"sessionID", authResult.SessionID,
 		)
-		return req, nil
+		// Block — the placeholder is still in the headers and we can't inject the real secret.
+		return req, goproxy.NewResponse(req, goproxy.ContentTypeText, http.StatusProxyAuthRequired,
+			fmt.Sprintf("secret-proxy: secret key %q not configured", authResult.SecretKey))
 	}
 
 	// Replace placeholder in headers ONLY (not in body - prevents reflection attacks)

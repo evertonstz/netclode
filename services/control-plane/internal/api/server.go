@@ -206,7 +206,11 @@ func (s *Server) handleValidateProxyAuth(w http.ResponseWriter, r *http.Request)
 
 	result, err := s.manager.ValidateProxyAuth(r.Context(), req.Token, req.TargetHost)
 	if err != nil {
-		slog.Debug("Proxy auth validation failed", "targetHost", req.TargetHost, "error", err)
+		slog.Warn("Proxy auth validation failed",
+			"targetHost", req.TargetHost,
+			"error", err,
+			"tokenLen", len(req.Token),
+		)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(validateProxyAuthResponse{Allowed: false, Error: err.Error()})
