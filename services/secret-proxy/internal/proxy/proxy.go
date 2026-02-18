@@ -366,7 +366,14 @@ func (p *Proxy) validateWithControlPlane(token, targetHost string) (*validatePro
 			return nil, fmt.Errorf("unmarshal response: %w", err)
 		}
 
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusUnauthorized {
+		// 401 = auth validation failed (bad token, session not found, etc.).
+		// Return an error so the caller BLOCKS the request instead of passing through.
+		// Passing through would leak the placeholder key to the upstream API.
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, fmt.Errorf("auth validation failed: %s", result.Error)
+		}
+
+		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, result.Error)
 		}
 

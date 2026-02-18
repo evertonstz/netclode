@@ -166,7 +166,19 @@ func (r *k8sRuntime) onSandboxUpdate(oldObj, newObj any) {
 	sessionID := r.getSessionID(sandbox)
 	slog.Debug("Sandbox updated", "sessionID", sessionID, "ready", sandbox.IsReady(), "fqdn", sandbox.Status.ServiceFQDN)
 
+	// If the session ID changed (e.g., warm pool sandbox got labeled), delete the old cache entry.
+	// Without this, GetSessionIDByPodName can find the stale entry (keyed by "") and return
+	// an empty session ID, causing ValidateProxyAuth to fail and placeholder keys to leak.
+	oldSandbox := r.unstructuredToSandbox(oldObj)
+	oldSessionID := ""
+	if oldSandbox != nil {
+		oldSessionID = r.getSessionID(oldSandbox)
+	}
+
 	r.cacheMu.Lock()
+	if oldSessionID != sessionID {
+		delete(r.sandboxCache, oldSessionID)
+	}
 	r.sandboxCache[sessionID] = sandbox
 	r.cacheMu.Unlock()
 
@@ -1539,9 +1551,14 @@ func (r *k8sRuntime) GetSandboxByName(ctx context.Context, name string) (*Sandbo
 // This is used by warm pool agents which don't have session ID in their pod name.
 // It searches sandboxes for one with the agents.x-k8s.io/pod-name annotation matching the given pod name.
 func (r *k8sRuntime) GetSessionIDByPodName(ctx context.Context, podName string) (string, error) {
-	// First check the cache for efficiency
+	// First check the cache for efficiency.
+	// Skip entries with empty session ID — these are warm pool sandboxes that haven't been
+	// labeled yet. Returning "" would cause ValidateProxyAuth to fail silently.
 	r.cacheMu.RLock()
 	for sessionID, sandbox := range r.sandboxCache {
+		if sessionID == "" {
+			continue
+		}
 		if sandbox.Annotations != nil {
 			if sandbox.Annotations["agents.x-k8s.io/pod-name"] == podName {
 				r.cacheMu.RUnlock()
