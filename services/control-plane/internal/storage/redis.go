@@ -53,16 +53,13 @@ func NewRedisStorage(ctx context.Context, cfg *config.Config) (*RedisStorage, er
 
 	// Retry connection with backoff
 	var lastErr error
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		if err := client.Ping(ctx).Err(); err == nil {
 			slog.Info("connected to Redis", "url", ParseRedisURL(cfg.RedisURL))
 			return &RedisStorage{client: client, config: cfg}, nil
 		} else {
 			lastErr = err
-			backoff := time.Duration(100*(i+1)) * time.Millisecond
-			if backoff > 3*time.Second {
-				backoff = 3 * time.Second
-			}
+			backoff := min(time.Duration(100*(i+1))*time.Millisecond, 3*time.Second)
 			slog.Warn("Redis connection failed, retrying", "attempt", i+1, "error", err, "backoff", backoff)
 			time.Sleep(backoff)
 		}
@@ -240,24 +237,24 @@ func (r *RedisStorage) GetAllSessions(ctx context.Context) ([]*pb.Session, error
 		if t, err := time.Parse(time.RFC3339, data["createdAt"]); err == nil {
 			session.CreatedAt = timestamppb.New(t)
 		}
-	if t, err := time.Parse(time.RFC3339, data["lastActiveAt"]); err == nil {
-		session.LastActiveAt = timestamppb.New(t)
-	}
-	if reposJSON, ok := data["repos"]; ok && reposJSON != "" {
-		var repos []string
-		if err := json.Unmarshal([]byte(reposJSON), &repos); err == nil {
-			session.Repos = repos
-		} else {
-			slog.Warn("Failed to decode repos for session", "sessionID", id, "error", err)
+		if t, err := time.Parse(time.RFC3339, data["lastActiveAt"]); err == nil {
+			session.LastActiveAt = timestamppb.New(t)
 		}
-	}
-	if repoAccessStr, ok := data["repoAccess"]; ok && repoAccessStr != "" {
-		repoAccess := parseRepoAccess(repoAccessStr)
-		if repoAccess != pb.RepoAccess_REPO_ACCESS_UNSPECIFIED {
-			session.RepoAccess = &repoAccess
+		if reposJSON, ok := data["repos"]; ok && reposJSON != "" {
+			var repos []string
+			if err := json.Unmarshal([]byte(reposJSON), &repos); err == nil {
+				session.Repos = repos
+			} else {
+				slog.Warn("Failed to decode repos for session", "sessionID", id, "error", err)
+			}
 		}
-	}
-	sessions = append(sessions, session)
+		if repoAccessStr, ok := data["repoAccess"]; ok && repoAccessStr != "" {
+			repoAccess := parseRepoAccess(repoAccessStr)
+			if repoAccess != pb.RepoAccess_REPO_ACCESS_UNSPECIFIED {
+				session.RepoAccess = &repoAccess
+			}
+		}
+		sessions = append(sessions, session)
 	}
 
 	return sessions, nil
@@ -342,7 +339,7 @@ func (r *RedisStorage) AppendStreamEntry(ctx context.Context, sessionID string, 
 
 	id, err := r.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: StreamKey(sessionID),
-		Values: map[string]interface{}{
+		Values: map[string]any{
 			"data": string(data),
 		},
 	}).Result()

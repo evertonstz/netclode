@@ -136,7 +136,7 @@ func (r *k8sRuntime) setupInformer() error {
 	return nil
 }
 
-func (r *k8sRuntime) onSandboxAdd(obj interface{}) {
+func (r *k8sRuntime) onSandboxAdd(obj any) {
 	sandbox := r.unstructuredToSandbox(obj)
 	if sandbox == nil {
 		return
@@ -152,7 +152,7 @@ func (r *k8sRuntime) onSandboxAdd(obj interface{}) {
 	r.checkAndNotify(sessionID, sandbox)
 }
 
-func (r *k8sRuntime) onSandboxUpdate(oldObj, newObj interface{}) {
+func (r *k8sRuntime) onSandboxUpdate(oldObj, newObj any) {
 	sandbox := r.unstructuredToSandbox(newObj)
 	if sandbox == nil {
 		return
@@ -168,7 +168,7 @@ func (r *k8sRuntime) onSandboxUpdate(oldObj, newObj interface{}) {
 	r.checkAndNotify(sessionID, sandbox)
 }
 
-func (r *k8sRuntime) onSandboxDelete(obj interface{}) {
+func (r *k8sRuntime) onSandboxDelete(obj any) {
 	sandbox := r.unstructuredToSandbox(obj)
 	if sandbox == nil {
 		// Handle DeletedFinalStateUnknown
@@ -188,7 +188,7 @@ func (r *k8sRuntime) onSandboxDelete(obj interface{}) {
 	r.cacheMu.Unlock()
 }
 
-func (r *k8sRuntime) unstructuredToSandbox(obj interface{}) *Sandbox {
+func (r *k8sRuntime) unstructuredToSandbox(obj any) *Sandbox {
 	u, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return nil
@@ -215,8 +215,8 @@ func (r *k8sRuntime) getSessionID(sandbox *Sandbox) string {
 	}
 	// Fallback: extract from name
 	name := sandbox.Name
-	if strings.HasPrefix(name, "sess-") {
-		return strings.TrimPrefix(name, "sess-")
+	if after, ok := strings.CutPrefix(name, "sess-"); ok {
+		return after
 	}
 	return ""
 }
@@ -481,20 +481,18 @@ func (r *k8sRuntime) buildContainerResources(resources *SandboxResourceConfig) *
 	if resources.VCPUs > 0 {
 		cpuRequest := int(resources.VCPUs)
 		if r.config.CPUOvercommitRatio > 1 {
-			cpuRequest = int(resources.VCPUs) / r.config.CPUOvercommitRatio
-			if cpuRequest < 1 {
-				cpuRequest = 1 // Minimum 1 CPU request
-			}
+			cpuRequest = max(int(resources.VCPUs)/r.config.CPUOvercommitRatio,
+				// Minimum 1 CPU request
+				1)
 		}
 		requests["cpu"] = fmt.Sprintf("%d", cpuRequest)
 	}
 	if resources.MemoryMB > 0 {
 		memRequest := int(resources.MemoryMB)
 		if r.config.MemoryOvercommitRatio > 1 {
-			memRequest = int(resources.MemoryMB) / r.config.MemoryOvercommitRatio
-			if memRequest < 512 {
-				memRequest = 512 // Minimum 512Mi request
-			}
+			memRequest = max(int(resources.MemoryMB)/r.config.MemoryOvercommitRatio,
+				// Minimum 512Mi request
+				512)
 		}
 		requests["memory"] = fmt.Sprintf("%dMi", memRequest)
 	}
@@ -1220,7 +1218,7 @@ func (r *k8sRuntime) setupClaimInformer() error {
 	return nil
 }
 
-func (r *k8sRuntime) onClaimAdd(obj interface{}) {
+func (r *k8sRuntime) onClaimAdd(obj any) {
 	claim := r.unstructuredToClaim(obj)
 	if claim == nil {
 		return
@@ -1236,7 +1234,7 @@ func (r *k8sRuntime) onClaimAdd(obj interface{}) {
 	r.checkAndNotifyClaim(sessionID, claim)
 }
 
-func (r *k8sRuntime) onClaimUpdate(oldObj, newObj interface{}) {
+func (r *k8sRuntime) onClaimUpdate(oldObj, newObj any) {
 	claim := r.unstructuredToClaim(newObj)
 	if claim == nil {
 		return
@@ -1253,7 +1251,7 @@ func (r *k8sRuntime) onClaimUpdate(oldObj, newObj interface{}) {
 	r.checkAndNotifyClaim(sessionID, claim)
 }
 
-func (r *k8sRuntime) onClaimDelete(obj interface{}) {
+func (r *k8sRuntime) onClaimDelete(obj any) {
 	claim := r.unstructuredToClaim(obj)
 	if claim == nil {
 		if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
@@ -1272,7 +1270,7 @@ func (r *k8sRuntime) onClaimDelete(obj interface{}) {
 	r.cacheMu.Unlock()
 }
 
-func (r *k8sRuntime) unstructuredToClaim(obj interface{}) *SandboxClaim {
+func (r *k8sRuntime) unstructuredToClaim(obj any) *SandboxClaim {
 	u, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return nil
@@ -1299,8 +1297,8 @@ func (r *k8sRuntime) getSessionIDFromClaim(claim *SandboxClaim) string {
 	}
 	// Fallback: extract from name
 	name := claim.Name
-	if strings.HasPrefix(name, "sess-") {
-		return strings.TrimPrefix(name, "sess-")
+	if after, ok := strings.CutPrefix(name, "sess-"); ok {
+		return after
 	}
 	return ""
 }
@@ -1502,7 +1500,7 @@ func (r *k8sRuntime) GetSessionIDByPodIP(ctx context.Context, podIP string) (str
 
 // LabelSandbox adds the netclode.io/session label to a sandbox so the informer can track it.
 func (r *k8sRuntime) LabelSandbox(ctx context.Context, sandboxName string, sessionID string) error {
-	patch := []byte(fmt.Sprintf(`{"metadata":{"labels":{"netclode.io/session":"%s"}}}`, sessionID))
+	patch := fmt.Appendf(nil, `{"metadata":{"labels":{"netclode.io/session":"%s"}}}`, sessionID)
 
 	_, err := r.dynamicClient.Resource(SandboxGVR).Namespace(r.namespace).Patch(
 		ctx, sandboxName, types.MergePatchType, patch, metav1.PatchOptions{},

@@ -421,7 +421,7 @@ func contains(s, substr string) bool {
 
 func BenchmarkListSessions(b *testing.B) {
 	sessions := make([]*pb.Session, 100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		sessions[i] = &pb.Session{
 			Id:           "sess-" + string(rune('0'+i%10)),
 			Name:         "Test Session",

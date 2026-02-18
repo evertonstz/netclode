@@ -117,8 +117,8 @@ func printMessages(messages []MessageInfo) {
 		_, _ = output.TimeColor.Printf("%s\n", timestamp)
 
 		// Message content (indented)
-		lines := strings.Split(msg.Content, "\n")
-		for _, line := range lines {
+		lines := strings.SplitSeq(msg.Content, "\n")
+		for line := range lines {
 			fmt.Printf("  %s\n", line)
 		}
 	}

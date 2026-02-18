@@ -25,21 +25,21 @@ var SandboxGVK = schema.GroupVersionKind{
 // Sandbox represents the Sandbox CRD
 type Sandbox struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              SandboxSpec   `json:"spec,omitempty"`
-	Status            SandboxStatus `json:"status,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              SandboxSpec   `json:"spec"`
+	Status            SandboxStatus `json:"status"`
 }
 
 // SandboxSpec defines the desired state
 type SandboxSpec struct {
-	PodTemplate          PodTemplateSpec `json:"podTemplate,omitempty"`
+	PodTemplate          PodTemplateSpec `json:"podTemplate"`
 	VolumeClaimTemplates []PVCTemplate   `json:"volumeClaimTemplates,omitempty"`
 }
 
 // PodTemplateSpec is a simplified pod template
 type PodTemplateSpec struct {
-	Metadata PodMetadata `json:"metadata,omitempty"`
-	Spec     PodSpec     `json:"spec,omitempty"`
+	Metadata PodMetadata `json:"metadata"`
+	Spec     PodSpec     `json:"spec"`
 }
 
 // PodMetadata is pod metadata with annotations support for Kata VM sizing
@@ -147,15 +147,15 @@ type ExecAction struct {
 
 // PVCTemplate defines a PVC template
 type PVCTemplate struct {
-	Metadata metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec     PVCSpec           `json:"spec,omitempty"`
+	Metadata metav1.ObjectMeta `json:"metadata"`
+	Spec     PVCSpec           `json:"spec"`
 }
 
 // PVCSpec defines PVC spec
 type PVCSpec struct {
 	AccessModes      []string             `json:"accessModes,omitempty"`
 	StorageClassName string               `json:"storageClassName,omitempty"`
-	Resources        ResourceRequirements `json:"resources,omitempty"`
+	Resources        ResourceRequirements `json:"resources"`
 	DataSource       *DataSource          `json:"dataSource,omitempty"`
 }
 
@@ -183,13 +183,13 @@ type SandboxCondition struct {
 	Status             string      `json:"status"`
 	Reason             string      `json:"reason,omitempty"`
 	Message            string      `json:"message,omitempty"`
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 }
 
 // SandboxList is a list of Sandbox resources
 type SandboxList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []Sandbox `json:"items"`
 }
 
@@ -306,9 +306,9 @@ var SandboxClaimGVR = schema.GroupVersionResource{
 // SandboxClaim represents a claim for a sandbox from the warm pool
 type SandboxClaim struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              SandboxClaimSpec   `json:"spec,omitempty"`
-	Status            SandboxClaimStatus `json:"status,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              SandboxClaimSpec   `json:"spec"`
+	Status            SandboxClaimStatus `json:"status"`
 }
 
 // SandboxClaimSpec defines the desired state of a SandboxClaim
@@ -384,8 +384,8 @@ var VolumeSnapshotClassGVR = schema.GroupVersionResource{
 // VolumeSnapshot represents a K8s VolumeSnapshot
 type VolumeSnapshot struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              VolumeSnapshotSpec    `json:"spec,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              VolumeSnapshotSpec    `json:"spec"`
 	Status            *VolumeSnapshotStatus `json:"status,omitempty"`
 }
 

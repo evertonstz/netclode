@@ -50,7 +50,7 @@ var (
 )
 
 // JSON outputs the value as JSON.
-func JSON(v interface{}) error {
+func JSON(v any) error {
 	// Check if it's a proto message
 	if pm, ok := v.(proto.Message); ok {
 		data, err := protojson.MarshalOptions{
@@ -70,7 +70,7 @@ func JSON(v interface{}) error {
 }
 
 // JSONLine outputs the value as a single line of JSON (for streaming).
-func JSONLine(v interface{}) error {
+func JSONLine(v any) error {
 	if pm, ok := v.(proto.Message); ok {
 		data, err := protojson.MarshalOptions{
 			EmitUnpopulated: false,

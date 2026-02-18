@@ -267,9 +267,7 @@ func (h *Handler) handlePullRequest(deliveryID string, payload []byte) {
 
 // runAsync runs a workflow function asynchronously with concurrency limiting.
 func (h *Handler) runAsync(deliveryID string, fn func(ctx context.Context)) {
-	h.wg.Add(1)
-	go func() {
-		defer h.wg.Done()
+	h.wg.Go(func() {
 
 		// Acquire semaphore
 		h.sem <- struct{}{}
@@ -281,7 +279,7 @@ func (h *Handler) runAsync(deliveryID string, fn func(ctx context.Context)) {
 		slog.Info("Starting workflow", "delivery", deliveryID)
 		fn(ctx)
 		slog.Info("Workflow completed", "delivery", deliveryID)
-	}()
+	})
 }
 
 // Wait waits for all in-flight workflows to complete.

@@ -230,7 +230,7 @@ func runSessionsGet(cmd *cobra.Command, args []string) error {
 	}
 
 	if isJSONOutput() {
-		return output.JSON(map[string]interface{}{
+		return output.JSON(map[string]any{
 			"session":    state.Session,
 			"entryCount": len(state.Entries),
 			"hasMore":    state.HasMore,

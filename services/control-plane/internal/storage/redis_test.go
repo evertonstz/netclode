@@ -131,7 +131,7 @@ func TestGetStreamEntries(t *testing.T) {
 
 	// Append 3 entries
 	var ids []string
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		entry := &StreamEntry{
 			Type:      StreamEntryTypeEvent,
 			Payload:   json.RawMessage(`{"kind":1}`), // MESSAGE kind
@@ -200,7 +200,7 @@ func TestGetLastStreamID(t *testing.T) {
 
 	// Append some entries
 	var lastID string
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		entry := &StreamEntry{
 			Type:      StreamEntryTypeEvent,
 			Payload:   json.RawMessage(`{}`),
@@ -229,7 +229,7 @@ func TestGetStreamEntries_Limit(t *testing.T) {
 	sessionID := "test-session-4"
 
 	// Append 10 entries
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		entry := &StreamEntry{
 			Type:      StreamEntryTypeEvent,
 			Payload:   json.RawMessage(`{"kind":1}`), // MESSAGE kind

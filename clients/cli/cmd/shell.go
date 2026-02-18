@@ -296,22 +296,18 @@ func shellAttach(ctx context.Context, cancel context.CancelFunc, stream *connect
 	errCh := make(chan error, 2)
 
 	// Goroutine: read from stream, write terminal output to stdout
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := shellReceiveLoop(ctx, cancel, stream); err != nil {
 			errCh <- err
 		}
-	}()
+	})
 
 	// Goroutine: read from stdin, send as terminal input
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := shellInputLoop(ctx, cancel, stream, sessionID); err != nil {
 			errCh <- err
 		}
-	}()
+	})
 
 	wg.Wait()
 	_ = stream.CloseRequest()
@@ -393,7 +389,7 @@ func shellInputLoop(ctx context.Context, cancel context.CancelFunc, stream *conn
 		}
 
 		// Check for escape character: Ctrl+] (0x1d)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if buf[i] == 0x1d {
 				cancel()
 				return nil

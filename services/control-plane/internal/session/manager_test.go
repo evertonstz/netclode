@@ -537,7 +537,7 @@ func TestEnsureActiveSlot_NoLimitWhenZero(t *testing.T) {
 
 	// Add many running sessions
 	now := time.Now()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		addSession(manager, "sess-"+string(rune('A'+i)), pb.SessionStatus_SESSION_STATUS_RUNNING, now.Add(time.Duration(-i)*time.Hour))
 	}
 

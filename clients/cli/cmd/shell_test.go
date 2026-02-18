@@ -117,8 +117,7 @@ func TestReceiveSessionState(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := newH2CClient(url).Connect(ctx)
 		// Send OpenSession to trigger the handler
@@ -168,8 +167,7 @@ func TestReceiveSessionState(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := newH2CClient(url).Connect(ctx)
 		_ = stream.Send(&pb.ClientMessage{
@@ -200,8 +198,7 @@ func TestReceiveSessionState(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := newH2CClient(url).Connect(ctx)
 		_ = stream.Send(&pb.ClientMessage{
@@ -237,8 +234,7 @@ func TestWaitForReady(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := triggerStream(ctx, url)
 
@@ -285,8 +281,7 @@ func TestWaitForReady(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := triggerStream(ctx, url)
 
@@ -345,8 +340,7 @@ func TestWaitForReady(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := triggerStream(ctx, url)
 
@@ -393,8 +387,7 @@ func TestWaitForReady(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := triggerStream(ctx, url)
 
@@ -420,8 +413,7 @@ func TestWaitForReady(t *testing.T) {
 		url, cleanup := setupShellTestServer(t, handler)
 		defer cleanup()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		stream := triggerStream(ctx, url)
 

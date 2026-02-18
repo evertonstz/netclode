@@ -307,10 +307,10 @@ func (c *Client) ListRepos(ctx context.Context) ([]Repo, error) {
 func extractRepoName(input string) string {
 	input = strings.TrimSuffix(input, ".git")
 
-	if strings.HasPrefix(input, "https://github.com/") {
-		input = strings.TrimPrefix(input, "https://github.com/")
-	} else if strings.HasPrefix(input, "http://github.com/") {
-		input = strings.TrimPrefix(input, "http://github.com/")
+	if after, ok := strings.CutPrefix(input, "https://github.com/"); ok {
+		input = after
+	} else if after, ok := strings.CutPrefix(input, "http://github.com/"); ok {
+		input = after
 	}
 
 	// Now we should have "owner/repo" - return just the repo name

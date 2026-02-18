@@ -60,7 +60,7 @@ func NewServer(manager *session.Manager) *Server {
 
 // BroadcastToAllConnect sends a message to all connected Connect clients except the sender.
 func (s *Server) BroadcastToAllConnect(msg *pb.ServerMessage, exclude *ConnectConnection) {
-	s.connectConnections.Range(func(key, value interface{}) bool {
+	s.connectConnections.Range(func(key, value any) bool {
 		if conn, ok := key.(*ConnectConnection); ok && conn != exclude {
 			// Non-blocking send to avoid blocking broadcast
 			select {
@@ -149,7 +149,7 @@ func (s *Server) gracefulShutdown() error {
 		slog.Warn("Timeout waiting for connections, forcing close",
 			"remainingConnections", s.connCount.Load())
 		// Force close remaining Connect connections
-		s.connectConnections.Range(func(key, value interface{}) bool {
+		s.connectConnections.Range(func(key, value any) bool {
 			if conn, ok := key.(*ConnectConnection); ok {
 				conn.close()
 			}
