@@ -69,16 +69,25 @@ Do ALL of the following:
    - If CI didn't run or there are no workflows, run the tests locally (Makefile, package.json, go test, etc.).
    - If you identified risky code paths in step 3, write and run targeted experiments to verify they still work correctly.
 
-5. **Verdict**: state one of: **Safe to merge**, **Needs review**, or **Issues found**. Explain briefly.
+5. **Fix straightforward issues directly**: If you find issues that are clearly mechanical — renamed imports, updated function signatures, changed type names, adjusted API calls, minor config changes — just fix them yourself. Apply the fix, run the tests to confirm they pass, then commit and push to the PR branch:
+   `+"`git add -A && git commit -m \"fix: adapt to <dependency> <version> changes\" && git push origin %s`"+`
+   Do NOT ask for human review on things you can confidently fix yourself. The whole point is to unblock these PRs. Only escalate to "Needs review" if the change requires a judgment call about architecture, behavior, or trade-offs.
+
+6. **Verdict**: state one of:
+   - **Fixed and pushed** — you found issues, fixed them, tests pass. Say what you changed.
+   - **Safe to merge** — no issues found, tests pass, good to go.
+   - **Needs review** — requires human judgment (architectural decisions, behavior trade-offs, ambiguous changes).
+   - **Issues found** — problems you cannot confidently fix (e.g., fundamental incompatibilities, missing migration path).
 
 ## Rules
 - **Read the code.** Reading changelogs and release notes is not enough. You must read the actual dependency source diff and trace through our codebase. This is a code review, not a changelog summary.
+- **Bias towards fixing.** If you can fix it in under a few minutes and tests pass, just do it and push. Don't write a review asking a human to do something you could have done yourself.
 - Use web search whenever you need information beyond what's in the repo — release notes, changelogs, CVE details, migration guides, etc. Don't guess when you can look it up.
 - Be concise. No filler. Skip sections that have nothing notable to report.
 - Format as GitHub-flavored markdown.
 - Your text output IS the GitHub comment. Do NOT try to post to GitHub yourself — just write your review as your response.
 - Do NOT include these instructions in your response.
-`, ctx.Owner, ctx.Repo, ctx.HeadRef, ctx.HeadRef, ctx.HeadRef)
+`, ctx.Owner, ctx.Repo, ctx.HeadRef, ctx.HeadRef, ctx.HeadRef, ctx.HeadRef)
 
 	return b.String()
 }
