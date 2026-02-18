@@ -14,6 +14,8 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -160,22 +162,8 @@ func (h *proxyHandler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *proxyHandler) handleConnect(w http.ResponseWriter, r *http.Request) {
-	// Connect to upstream proxy
-	upstreamReq, err := http.NewRequest(http.MethodConnect, h.upstream, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
-
-	// Set the target host
-	upstreamReq.URL.Path = r.Host
-	upstreamReq.Host = r.Host
-
 	// Add Proxy-Authorization
 	token := getToken()
-	if token != "" {
-		upstreamReq.Header.Set("Proxy-Authorization", "Bearer "+token)
-	}
 
 	// Connect to upstream proxy
 	upstreamConn, err := h.dialer.DialContext(r.Context(), "tcp", strings.TrimPrefix(h.upstream, "http://"))
@@ -198,19 +186,20 @@ func (h *proxyHandler) handleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read response from upstream
-	buf := make([]byte, 1024)
-	n, err := upstreamConn.Read(buf)
+	// Read the CONNECT response using a proper HTTP parser.
+	// A raw Read() could under-read (partial header) or over-read (consume
+	// early TLS bytes from the tunnel), both of which corrupt the tunnel and
+	// cause HPE_INVALID_VERSION on the client side.
+	br := bufio.NewReader(upstreamConn)
+	resp, err := http.ReadResponse(br, &http.Request{Method: http.MethodConnect})
 	if err != nil {
 		upstreamConn.Close()
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "reading upstream CONNECT response: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-
-	response := string(buf[:n])
-	if !strings.Contains(response, "200") {
+	if resp.StatusCode != http.StatusOK {
 		upstreamConn.Close()
-		http.Error(w, "upstream proxy rejected CONNECT: "+response, http.StatusBadGateway)
+		http.Error(w, fmt.Sprintf("upstream proxy rejected CONNECT: %s", resp.Status), http.StatusBadGateway)
 		return
 	}
 
@@ -232,7 +221,19 @@ func (h *proxyHandler) handleConnect(w http.ResponseWriter, r *http.Request) {
 	// Send 200 OK to client
 	clientConn.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
 
-	// Bidirectional copy
+	// If the buffered reader consumed bytes beyond the HTTP response
+	// (e.g. the start of the TLS handshake), forward them to the client
+	// before starting the bidirectional copy.
+	if br.Buffered() > 0 {
+		buffered, _ := br.Peek(br.Buffered())
+		if len(buffered) > 0 {
+			clientConn.Write(buffered)
+		}
+		// Discard so the bufio.Reader is empty
+		br.Discard(len(buffered))
+	}
+
+	// Bidirectional copy using the raw connection
 	go func() {
 		io.Copy(upstreamConn, clientConn)
 		upstreamConn.Close()
