@@ -6,6 +6,8 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -228,16 +230,15 @@ func TestHandleConnect_ProxyAuthHeader(t *testing.T) {
 		}
 	}()
 
-	// Set a test token
-	tokenMu.Lock()
-	oldToken := tokenCache
-	tokenCache = "test-sa-token-123"
-	tokenMu.Unlock()
-	defer func() {
-		tokenMu.Lock()
-		tokenCache = oldToken
-		tokenMu.Unlock()
-	}()
+	// Write a test token file and point tokenPath at it
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "token")
+	if err := os.WriteFile(tmpFile, []byte("test-sa-token-123"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	oldPath := tokenPath
+	tokenPath = tmpFile
+	defer func() { tokenPath = oldPath }()
 
 	proxyAddr := startAuthProxy(t, ln.Addr().String())
 	conn := sendCONNECT(t, proxyAddr, "api.anthropic.com:443")

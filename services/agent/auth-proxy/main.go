@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -31,27 +30,13 @@ var (
 	tokenPath     = getEnv("TOKEN_PATH", "/var/run/secrets/proxy-auth/token")
 	upstreamProxy = getEnv("UPSTREAM_PROXY", "http://secret-proxy.netclode.svc.cluster.local:8080")
 	listenAddr    = getEnv("LISTEN_ADDR", ":8080")
-
-	// Token cache (refreshed periodically)
-	tokenMu    sync.RWMutex
-	tokenCache string
 )
 
 func main() {
-	// Initial token load
-	if err := refreshToken(); err != nil {
-		log.Printf("Warning: initial token load failed: %v", err)
+	// Verify token is readable at startup
+	if _, err := readToken(); err != nil {
+		log.Printf("Warning: initial token read failed: %v", err)
 	}
-
-	// Refresh token periodically (tokens can be rotated)
-	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		for range ticker.C {
-			if err := refreshToken(); err != nil {
-				log.Printf("Warning: token refresh failed: %v", err)
-			}
-		}
-	}()
 
 	// Create dialer for upstream connections
 	dialer := &net.Dialer{
@@ -77,22 +62,23 @@ func main() {
 	}
 }
 
-func refreshToken() error {
+// readToken reads the SA token fresh from disk on every call.
+// The projected volume is a tmpfs, so this is effectively a memory read.
+func readToken() (string, error) {
 	data, err := os.ReadFile(tokenPath)
 	if err != nil {
-		return err
+		return "", err
 	}
-	tokenMu.Lock()
-	tokenCache = strings.TrimSpace(string(data))
-	tokenMu.Unlock()
-	log.Printf("Token loaded from %s (%d bytes)", tokenPath, len(tokenCache))
-	return nil
+	return strings.TrimSpace(string(data)), nil
 }
 
 func getToken() string {
-	tokenMu.RLock()
-	defer tokenMu.RUnlock()
-	return tokenCache
+	token, err := readToken()
+	if err != nil {
+		log.Printf("Warning: failed to read token: %v", err)
+		return ""
+	}
+	return token
 }
 
 type proxyHandler struct {
