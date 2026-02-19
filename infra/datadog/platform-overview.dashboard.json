@@ -616,17 +616,17 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.http.request.duration{$env,service:control-plane}"
+                      "query": "p95:trace.http.request{$env,service:control-plane}"
                     },
                     {
                       "data_source": "metrics",
                       "name": "b",
-                      "query": "p95:trace.http.request.duration{$env,service:secret-proxy}"
+                      "query": "p95:trace.http.request{$env,service:secret-proxy}"
                     },
                     {
                       "data_source": "metrics",
                       "name": "c",
-                      "query": "p95:trace.http.request.duration{$env,service:github-bot}"
+                      "query": "p95:trace.http.request{$env,service:github-bot}"
                     }
                   ],
                   "formulas": [
@@ -675,7 +675,7 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.http.request.duration{$env,service:control-plane} by {resource_name}",
+                      "query": "p95:trace.http.request{$env,service:control-plane} by {resource_name}",
                       "aggregator": "avg"
                     }
                   ],
@@ -793,7 +793,7 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.http.request.duration{$env,service:kubernetes-api}"
+                      "query": "p95:trace.http.request{$env,service:kubernetes-api}"
                     }
                   ],
                   "formulas": [
@@ -869,7 +869,7 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.http.request.duration{$env,service:kubernetes-api} by {resource_name}",
+                      "query": "p95:trace.http.request{$env,service:kubernetes-api} by {resource_name}",
                       "aggregator": "avg"
                     }
                   ],
@@ -1584,12 +1584,12 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "sum:trace.redis.command.hits{$env,service:control-plane}.as_rate()"
+                      "query": "sum:trace.redis.command.hits{$env,service:control-plane-redis}.as_rate()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "b",
-                      "query": "sum:trace.redis.command.hits{$env,service:github-bot}.as_rate()"
+                      "query": "sum:trace.redis.command.hits{$env,service:github-bot-redis}.as_rate()"
                     }
                   ],
                   "formulas": [
@@ -1633,12 +1633,12 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.redis.command.duration{$env,service:control-plane}"
+                      "query": "p95:trace.redis.command{$env,service:control-plane-redis}"
                     },
                     {
                       "data_source": "metrics",
                       "name": "b",
-                      "query": "p95:trace.redis.command.duration{$env,service:github-bot}"
+                      "query": "p95:trace.redis.command{$env,service:github-bot-redis}"
                     }
                   ],
                   "formulas": [
