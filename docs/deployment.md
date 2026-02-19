@@ -37,7 +37,7 @@ Your server is now accessible via its Tailscale hostname (e.g., `my-server`).
 
 ## 4. Configure Tailscale for k8s ingress
 
-1. Create an [OAuth client](https://login.tailscale.com/admin/settings/oauth) with **Devices: Write** scope
+1. Create an [OAuth client](https://login.tailscale.com/admin/settings/oauth) with **Devices: Write** and **Auth Keys: Write** scopes
 2. Enable [MagicDNS](https://login.tailscale.com/admin/dns)
 
 ## 5. Configure secrets
@@ -54,6 +54,10 @@ ANTHROPIC_API_KEY=sk-ant-api03-xxx
 TS_OAUTH_CLIENT_ID=your-oauth-client-id
 TS_OAUTH_CLIENT_SECRET=your-oauth-client-secret
 
+# Tailscale auth key for host access (optional)
+# If not set, authenticate manually on the host: tailscale up --ssh
+# TAILSCALE_AUTHKEY=tskey-auth-xxx
+
 # JuiceFS / S3 storage
 DO_SPACES_ACCESS_KEY=your-spaces-access-key
 DO_SPACES_SECRET_KEY=your-spaces-secret-key
@@ -61,12 +65,24 @@ JUICEFS_BUCKET=https://fra1.digitaloceanspaces.com/your-bucket
 JUICEFS_META_URL=redis://redis-juicefs.netclode.svc.cluster.local:6379/0
 
 # Deployment target (Tailscale hostname from step 3)
-DEPLOY_HOST=my-server
+DEPLOY_HOST=your-server
 
-# GitHub App (optional - for repo picker)
+# GitHub App (optional - for repo picker and github-bot)
 GITHUB_APP_ID=123456
 GITHUB_APP_PRIVATE_KEY_B64=base64-encoded-pem-private-key
 GITHUB_INSTALLATION_ID=12345678
+
+# GitHub Bot webhook secret (required if using github-bot)
+# GITHUB_WEBHOOK_SECRET=your-webhook-secret
+
+# Kata VM resources (optional, defaults shown)
+# KATA_VM_CPUS=4
+# KATA_VM_MEMORY_MB=4096
+
+# Datadog observability (optional)
+# DD_API_KEY=your-datadog-api-key
+# DD_APP_KEY=your-datadog-app-key
+# DD_SITE=datadoghq.com
 ```
 
 Create a bucket (e.g., `netclode-juicefs`) with read/write credentials.

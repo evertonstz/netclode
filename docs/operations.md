@@ -105,11 +105,10 @@ Images are built by CI on push to master.
 # Wait for CI
 gh run watch
 
-# Rollout all
-./scripts/rollout.sh
-
-# Or specific
-./scripts/rollout.sh control-plane
+# Rollout specific services
+make rollout-control-plane
+make rollout-agent
+make rollout-github-bot
 ```
 
 Manual trigger:
