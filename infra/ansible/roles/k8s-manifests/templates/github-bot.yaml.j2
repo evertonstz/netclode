@@ -59,8 +59,8 @@ spec:
               value: "claude-opus-4-6"
             - name: SESSION_TIMEOUT
               value: "10m"
-            - name: MAX_CONCURRENT
-              value: "1"
+            - name: MAX_CONCURRENT_GITHUB_SESSIONS
+              value: "{{ max_concurrent_github_sessions | default('5') }}"
 {% if dd_api_key | default('') | length > 0 %}
             # Datadog APM + Observability
             - name: DD_ENV

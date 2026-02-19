@@ -78,10 +78,10 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("SESSION_TIMEOUT invalid duration: %w", err)
 	}
 
-	maxConcStr := envOrDefault("MAX_CONCURRENT", "5")
+	maxConcStr := envOrDefault("MAX_CONCURRENT_GITHUB_SESSIONS", "5")
 	cfg.MaxConcurrent, err = strconv.Atoi(maxConcStr)
 	if err != nil {
-		return nil, fmt.Errorf("MAX_CONCURRENT must be a number: %w", err)
+		return nil, fmt.Errorf("MAX_CONCURRENT_GITHUB_SESSIONS must be a number: %w", err)
 	}
 
 	return cfg, nil

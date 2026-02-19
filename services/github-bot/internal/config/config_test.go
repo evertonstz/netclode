@@ -54,7 +54,7 @@ func TestLoad_Defaults(t *testing.T) {
 	t.Setenv("GITHUB_WEBHOOK_SECRET", "secret")
 	t.Setenv("REDIS_URL", "redis://localhost:6379")
 	t.Setenv("PORT", "")
-	t.Setenv("MAX_CONCURRENT", "")
+	t.Setenv("MAX_CONCURRENT_GITHUB_SESSIONS", "")
 	t.Setenv("SDK_TYPE", "")
 	t.Setenv("MODEL", "")
 	t.Setenv("SESSION_TIMEOUT", "")
@@ -90,11 +90,11 @@ func TestLoad_InvalidMaxConcurrent(t *testing.T) {
 	t.Setenv("GITHUB_INSTALLATION_ID", "456")
 	t.Setenv("GITHUB_WEBHOOK_SECRET", "secret")
 	t.Setenv("REDIS_URL", "redis://localhost:6379")
-	t.Setenv("MAX_CONCURRENT", "not-a-number")
+	t.Setenv("MAX_CONCURRENT_GITHUB_SESSIONS", "not-a-number")
 
 	_, err := Load()
 	if err == nil {
-		t.Error("expected error for non-numeric MAX_CONCURRENT")
+		t.Error("expected error for non-numeric MAX_CONCURRENT_GITHUB_SESSIONS")
 	}
 }
 
@@ -121,7 +121,7 @@ func TestLoad_CustomValues(t *testing.T) {
 	t.Setenv("GITHUB_WEBHOOK_SECRET", "s3cret")
 	t.Setenv("REDIS_URL", "redis://redis:6379")
 	t.Setenv("PORT", "9090")
-	t.Setenv("MAX_CONCURRENT", "3")
+	t.Setenv("MAX_CONCURRENT_GITHUB_SESSIONS", "3")
 	t.Setenv("SDK_TYPE", "opencode")
 	t.Setenv("MODEL", "gpt-4")
 	t.Setenv("SESSION_TIMEOUT", "5m")

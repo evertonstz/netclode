@@ -49,7 +49,7 @@ Environment variables (set in k8s deployment):
 | `GITHUB_WEBHOOK_SECRET` | (required) | Webhook signature verification |
 | `MODEL` | `claude-opus-4-6` | LLM model |
 | `SDK_TYPE` | `claude` | SDK: `claude`, `opencode`, `copilot`, `codex` |
-| `MAX_CONCURRENT` | `5` (deployed as `1`) | Max concurrent sessions |
+| `MAX_CONCURRENT_GITHUB_SESSIONS` | `5` | Max concurrent sessions |
 | `SESSION_TIMEOUT` | `10m` | Per-session timeout |
 | `PORT` | `8080` | HTTP listen port |
 
