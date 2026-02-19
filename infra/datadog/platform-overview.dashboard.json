@@ -474,17 +474,17 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "sum:trace.http.request.hits{$env,service:control-plane}.as_rate()"
+                      "query": "sum:trace.http.request.hits{$env,service:control-plane,type:web}.as_rate()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "b",
-                      "query": "sum:trace.http.request.hits{$env,service:secret-proxy}.as_rate()"
+                      "query": "sum:trace.http.request.hits{$env,service:secret-proxy,type:web}.as_rate()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "c",
-                      "query": "sum:trace.http.request.hits{$env,service:github-bot}.as_rate()"
+                      "query": "sum:trace.http.request.hits{$env,service:github-bot,type:web}.as_rate()"
                     }
                   ],
                   "formulas": [
@@ -534,32 +534,32 @@
                     {
                       "data_source": "metrics",
                       "name": "hits_cp",
-                      "query": "sum:trace.http.request.hits{$env,service:control-plane}.as_count()"
+                      "query": "sum:trace.http.request.hits{$env,service:control-plane,type:web}.as_count()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "err_cp",
-                      "query": "sum:trace.http.request.errors{$env,service:control-plane}.as_count()"
+                      "query": "sum:trace.http.request.errors{$env,service:control-plane,type:web}.as_count()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "hits_sp",
-                      "query": "sum:trace.http.request.hits{$env,service:secret-proxy}.as_count()"
+                      "query": "sum:trace.http.request.hits{$env,service:secret-proxy,type:web}.as_count()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "err_sp",
-                      "query": "sum:trace.http.request.errors{$env,service:secret-proxy}.as_count()"
+                      "query": "sum:trace.http.request.errors{$env,service:secret-proxy,type:web}.as_count()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "hits_gb",
-                      "query": "sum:trace.http.request.hits{$env,service:github-bot}.as_count()"
+                      "query": "sum:trace.http.request.hits{$env,service:github-bot,type:web}.as_count()"
                     },
                     {
                       "data_source": "metrics",
                       "name": "err_gb",
-                      "query": "sum:trace.http.request.errors{$env,service:github-bot}.as_count()"
+                      "query": "sum:trace.http.request.errors{$env,service:github-bot,type:web}.as_count()"
                     }
                   ],
                   "formulas": [
@@ -616,17 +616,17 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.http.request.duration{$env,service:control-plane}"
+                      "query": "p95:trace.http.request.duration{$env,service:control-plane,type:web}"
                     },
                     {
                       "data_source": "metrics",
                       "name": "b",
-                      "query": "p95:trace.http.request.duration{$env,service:secret-proxy}"
+                      "query": "p95:trace.http.request.duration{$env,service:secret-proxy,type:web}"
                     },
                     {
                       "data_source": "metrics",
                       "name": "c",
-                      "query": "p95:trace.http.request.duration{$env,service:github-bot}"
+                      "query": "p95:trace.http.request.duration{$env,service:github-bot,type:web}"
                     }
                   ],
                   "formulas": [
@@ -675,7 +675,7 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "p95:trace.http.request.duration{$env,service:control-plane} by {resource_name}",
+                      "query": "p95:trace.http.request.duration{$env,service:control-plane,type:web} by {resource_name}",
                       "aggregator": "avg"
                     }
                   ],
@@ -710,7 +710,7 @@
                     {
                       "data_source": "metrics",
                       "name": "a",
-                      "query": "sum:trace.http.request.hits{$env,service:control-plane} by {resource_name}.as_rate()",
+                      "query": "sum:trace.http.request.hits{$env,service:control-plane,type:web} by {resource_name}.as_rate()",
                       "aggregator": "avg"
                     }
                   ],
