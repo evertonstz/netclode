@@ -273,29 +273,31 @@ struct ChatInputBar: View {
 struct AudioWaveformView: View {
     var level: Float
     
-    private let barCount = 40
-    private let barWidth: CGFloat = 3
-    private let barSpacing: CGFloat = 2
+    private let barCount = 65
+    private let barWidth: CGFloat = 2
+    private let barSpacing: CGFloat = 1.5
     
     // Keep history of levels for waveform visualization
-    @State private var levelHistory: [CGFloat] = Array(repeating: 0.15, count: 40)
+    @State private var levelHistory: [CGFloat] = Array(repeating: 0.15, count: 65)
     
     var body: some View {
-        GeometryReader { geo in
-            HStack(spacing: barSpacing) {
-                ForEach(0..<levelHistory.count, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(Theme.Colors.brand)
-                        .frame(width: barWidth, height: max(4, levelHistory[index] * 20))
+        TimelineView(.periodic(from: .now, by: 0.2)) { context in
+            GeometryReader { geo in
+                HStack(spacing: barSpacing) {
+                    ForEach(0..<levelHistory.count, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(Theme.Colors.brand)
+                            .frame(width: barWidth, height: max(3, levelHistory[index] * 24))
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        }
-        .frame(height: 24)
-        .onChange(of: level) { _, newLevel in
-            withAnimation(.linear(duration: 0.05)) {
-                levelHistory.removeFirst()
-                levelHistory.append(CGFloat(max(0.15, newLevel)))
+            .frame(height: 28)
+            .onChange(of: context.date) { _, _ in
+                withAnimation(.linear(duration: 0.2)) {
+                    levelHistory.removeFirst()
+                    levelHistory.append(CGFloat(max(0.15, level)))
+                }
             }
         }
     }
