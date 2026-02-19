@@ -87,14 +87,18 @@
     regexp: '^default_vcpus\s*='
     line: 'default_vcpus = {{ kata_vm_cpus }}'
 
-# virtiofs cache mode - "always" caches metadata, data, and pathname lookup
-# in guest permanently, improving IOPS by ~60% compared to "auto"
+# virtiofs cache mode - "auto" revalidates cached entries with the host before use.
+# "always" is faster (~60% IOPS improvement) but breaks projected volume updates
+# because the guest caches stale data indefinitely, preventing SA token rotation.
+# Since workspace I/O goes through JuiceFS (virtio-blk), virtiofs only serves
+# the container rootfs and small projected/configmap mounts — the performance
+# difference is negligible.
 # Note: DAX (virtio_fs_cache_size > 0) is not supported with Cloud Hypervisor
 - name: Configure virtiofs cache mode
   ansible.builtin.lineinfile:
     path: "{{ kata_dir }}/share/defaults/kata-containers/configuration-clh.toml"
     regexp: '^virtio_fs_cache\s*='
-    line: 'virtio_fs_cache = "always"'
+    line: 'virtio_fs_cache = "auto"'
 
 # Memory optimization settings
 # virtio-mem allows dynamic memory resize - VMs can grow/shrink based on actual
