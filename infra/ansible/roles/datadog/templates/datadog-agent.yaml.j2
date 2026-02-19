@@ -63,7 +63,9 @@ spec:
       mutateUnlabelled: false
 
   override:
-    # Node Agent tolerations (single-node cluster, schedule everywhere)
+    # Node Agent: hostNetwork required because Cilium CNI does not support
+    # hostPort via portmap. Without it, pods cannot reach the Agent via hostIP.
     nodeAgent:
+      hostNetwork: true
       tolerations:
         - operator: Exists
