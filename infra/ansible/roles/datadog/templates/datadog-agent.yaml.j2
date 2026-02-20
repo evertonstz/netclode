@@ -69,3 +69,8 @@ spec:
       hostNetwork: true
       tolerations:
         - operator: Exists
+      # Unconfined AppArmor so the agent can use ptrace for live process
+      # collection without flooding dmesg with audit denials.
+      containers:
+        agent:
+          appArmorProfileName: unconfined
