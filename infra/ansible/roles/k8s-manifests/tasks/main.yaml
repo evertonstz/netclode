@@ -40,6 +40,12 @@
     definition: "{{ lookup('file', k8s_manifest_dir ~ '/namespace.yaml') | from_yaml_all }}"
     kubeconfig: "{{ k3s_kubeconfig }}"
 
+- name: Deploy priority classes
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', k8s_manifest_dir ~ '/priority-classes.yaml') | from_yaml_all }}"
+    kubeconfig: "{{ k3s_kubeconfig }}"
+
 - name: Deploy RBAC
   kubernetes.core.k8s:
     state: present
@@ -124,12 +130,55 @@
     state: present
     definition: "{{ lookup('template', 'github-bot.yaml.j2') | from_yaml_all }}"
     kubeconfig: "{{ k3s_kubeconfig }}"
+  when:
+    - github_app_id | default('') | length > 0
+    - github_app_private_key_b64 | default('') | length > 0
+    - github_installation_id | default('') | length > 0
+    - github_webhook_secret | default('') | length > 0
+
+- name: Remove github-bot deployment when GitHub App config is absent
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    name: github-bot
+    namespace: netclode
+    kubeconfig: "{{ k3s_kubeconfig }}"
+  when:
+    - github_app_id | default('') | length == 0 or github_app_private_key_b64 | default('') | length == 0 or github_installation_id | default('') | length == 0 or github_webhook_secret | default('') | length == 0
+
+- name: Remove github-bot service when GitHub App config is absent
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    name: github-bot
+    namespace: netclode
+    kubeconfig: "{{ k3s_kubeconfig }}"
+  when:
+    - github_app_id | default('') | length == 0 or github_app_private_key_b64 | default('') | length == 0 or github_installation_id | default('') | length == 0 or github_webhook_secret | default('') | length == 0
 
 - name: Deploy github-bot ingress (Tailscale Funnel)
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('file', k8s_manifest_dir ~ '/github-bot-ingress.yaml') | from_yaml_all }}"
     kubeconfig: "{{ k3s_kubeconfig }}"
+  when:
+    - github_app_id | default('') | length > 0
+    - github_app_private_key_b64 | default('') | length > 0
+    - github_installation_id | default('') | length > 0
+    - github_webhook_secret | default('') | length > 0
+
+- name: Remove github-bot ingress when GitHub App config is absent
+  kubernetes.core.k8s:
+    state: absent
+    api_version: networking.k8s.io/v1
+    kind: Ingress
+    name: github-bot
+    namespace: netclode
+    kubeconfig: "{{ k3s_kubeconfig }}"
+  when:
+    - github_app_id | default('') | length == 0 or github_app_private_key_b64 | default('') | length == 0 or github_installation_id | default('') | length == 0 or github_webhook_secret | default('') | length == 0
 
 # Deploy Ollama (optional, for local GPU inference)
 - name: Deploy Ollama
