@@ -67,7 +67,7 @@ spec:
                 - NET_ADMIN
       containers:
         - name: agent
-          image: ghcr.io/angristan/netclode-agent:latest
+          image: ghcr.io/evertonstz/netclode-agent:latest
           imagePullPolicy: Always
           securityContext:
             privileged: true  # See security note above
