@@ -40,17 +40,22 @@ export class OpenCodeAdapter implements SDKAdapter {
     await this.startServer();
   }
 
-  private async writeOpencodeAuthFile(token: string): Promise<void> {
-    const homeDir = process.env.HOME || "/root";
-    const authDir = path.join(homeDir, ".local", "share", "opencode");
+  private async writeOpencodeAuthFile(): Promise<void> {
+    const refreshToken = process.env.GITHUB_COPILOT_OAUTH_REFRESH_TOKEN;
+    if (!refreshToken) return;
+
+    const accessToken = process.env.GITHUB_COPILOT_OAUTH_ACCESS_TOKEN || refreshToken;
+    const expires = parseInt(process.env.GITHUB_COPILOT_OAUTH_TOKEN_EXPIRES || "0", 10);
+
+    const authDir = "/agent/.local/share/opencode";
     const authFile = path.join(authDir, "auth.json");
 
     const authContent = {
       "github-copilot": {
         type: "oauth",
-        refresh: token,
-        access: token,
-        expires: 0,
+        refresh: refreshToken,
+        access: accessToken,
+        expires,
       },
     };
 
@@ -69,9 +74,7 @@ export class OpenCodeAdapter implements SDKAdapter {
       return;
     }
 
-    if (this.config?.githubCopilotToken) {
-      await this.writeOpencodeAuthFile(this.config.githubCopilotToken);
-    }
+    await this.writeOpencodeAuthFile();
 
     const startTime = Date.now();
     console.log("[opencode-adapter] Starting opencode serve...");
@@ -83,8 +86,8 @@ export class OpenCodeAdapter implements SDKAdapter {
     const [providerId, modelName] = model.includes("/") ? model.split("/", 2) : ["anthropic", model];
     const thinkingBudget = thinkingLevel === "max" ? 32000 : thinkingLevel === "high" ? 16000 : 0;
 
-    // Check if this is a Zen model (provider ID is "opencode")
     const isZenModel = providerId === "opencode";
+    const isCopilotModel = providerId === "github-copilot";
 
     let providerConfig: Record<string, unknown> = {};
 
@@ -156,8 +159,8 @@ export class OpenCodeAdapter implements SDKAdapter {
         // GitHub Copilot token for Copilot provider support
         ...(this.config?.githubCopilotToken && { GITHUB_COPILOT_TOKEN: this.config.githubCopilotToken }),
         OPENCODE_DISABLE_DEFAULT_PLUGINS: "true",
-        // Only disable models fetch if NOT using Zen (Zen needs models.dev to work)
-        ...(!isZenModel && { OPENCODE_DISABLE_MODELS_FETCH: "true" }),
+        // Disable models fetch except for providers that discover models dynamically
+        ...(!isZenModel && !isCopilotModel && { OPENCODE_DISABLE_MODELS_FETCH: "true" }),
       },
       stdio: ["pipe", "pipe", "pipe"],
       cwd: WORKSPACE_DIR,
