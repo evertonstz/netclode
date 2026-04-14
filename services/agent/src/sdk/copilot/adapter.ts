@@ -76,8 +76,9 @@ export class CopilotAdapter implements NetclodePromptBackend {
       ...process.env,
     };
 
-    // For GitHub backend, set GITHUB_TOKEN for Copilot API auth
-    if (this.backend === "github" && config.githubCopilotToken) {
+    // The Copilot SDK always uses GITHUB_TOKEN internally regardless of backend.
+    // Map our GITHUB_COPILOT_TOKEN placeholder so BoxLite can substitute the real PAT in-flight.
+    if (config.githubCopilotToken) {
       clientEnv.GITHUB_TOKEN = config.githubCopilotToken;
     }
 
