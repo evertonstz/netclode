@@ -1,5 +1,4 @@
-# Netclode
-
+# Netclodinho
 <p align="center">
   <img src="clients/ios/Netclode/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="netclode" width="120" height="120">
 </p>
@@ -11,6 +10,38 @@ Self-hosted coding agent with microVM sandboxes and a native iOS and macOS app.
   <img src="docs/images/ios-netclode.png" alt="Netclode iOS App" height="500">
   <img src="docs/images/macos-netclode.png" alt="Netclode macOS App" height="520">
 </p>
+
+## Notes on the fork
+
+This fork exists to make Netclode easier to self-host and operate on a single server. It' being heavilly developped, so expect bugs.
+
+### Why this fork exists
+
+- **Simpler deployment**: replaces the original Kubernetes+Ansible-oriented deployment path with a **Docker Compose** workflow that is easier to understand, debug, and maintain.
+- **BoxLite-based sandboxes**: runs sandboxes with BoxLite in direct Docker/host deployments, avoiding the operational overhead of a full K8scluster.
+- **Client compatibility**: keeps the control-plane protocol and core behavior aligned so existing upstream-style clients can still work against this fork.
+
+
+### Sandbox security notes
+
+Sandboxing in this fork is based on **BoxLite microVMs**, with the current tradeoffs documented here:
+
+- [`docs/boxlite-sandbox/network-access.md`](docs/boxlite-sandbox/network-access.md)
+- [`docs/boxlite-sandbox/storage.md`](docs/boxlite-sandbox/storage.md)
+
+In short:
+
+- sandboxes run inside BoxLite VMs (you still need virtualization enabled!)
+- storage is backed by QCOW2 disks
+- pause/continue is currently a VM turn on/off with persistent volume (to be turned into a real snapshop once the Boxlite Go SDK matures)
+- snapshots don't currently work (also TBD when Boxlite Go SDK matures)
+- network isolation is designed for practical self-hosted hygiene, not hostile multi-tenant strong isolation, *tailnet isolation currently doesn't work*, this could change depending on future Boxlite features
+
+If you are evaluating this fork for production use, read the BoxLite sandbox docs first.
+
+
+
+# Upstream readme starts from here
 
 ## Why I built this
 
