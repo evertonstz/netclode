@@ -102,10 +102,13 @@ func sanitizeLog(log string) string {
 	})
 }
 
-// persistStartupLog writes the log to the session workspace and enforces retention.
+func (s *Server) startupLogSessionDir(sessionID string) string {
+	return filepath.Join(s.manager.Config().EffectiveBoxliteHomeDir(), "startup-logs", sessionID)
+}
+
+// persistStartupLog writes the log to the BoxLite startup-log directory and enforces retention.
 func (s *Server) persistStartupLog(sessionID, log, timestamp string) error {
-	workspaceRoot := s.manager.Config().BoxliteWorkspaceRoot
-	sessionDir := filepath.Join(workspaceRoot, sessionID)
+	sessionDir := s.startupLogSessionDir(sessionID)
 	if err := os.MkdirAll(sessionDir, 0o700); err != nil {
 		return fmt.Errorf("create session dir: %w", err)
 	}
@@ -156,8 +159,7 @@ func (s *Server) handleAgentStartupLogGet(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	workspaceRoot := s.manager.Config().BoxliteWorkspaceRoot
-	sessionDir := filepath.Join(workspaceRoot, sessionID)
+	sessionDir := s.startupLogSessionDir(sessionID)
 	entries, _ := filepath.Glob(filepath.Join(sessionDir, "agent-startup-*.log"))
 	sort.Strings(entries)
 

@@ -324,7 +324,6 @@ type Session struct {
 	SdkType        *SdkType               `protobuf:"varint,8,opt,name=sdk_type,json=sdkType,proto3,enum=netclode.v1.SdkType,oneof" json:"sdk_type,omitempty"`
 	Model          *string                `protobuf:"bytes,9,opt,name=model,proto3,oneof" json:"model,omitempty"`
 	CopilotBackend *CopilotBackend        `protobuf:"varint,10,opt,name=copilot_backend,json=copilotBackend,proto3,enum=netclode.v1.CopilotBackend,oneof" json:"copilot_backend,omitempty"`
-	TailnetEnabled bool                   `protobuf:"varint,11,opt,name=tailnet_enabled,json=tailnetEnabled,proto3" json:"tailnet_enabled,omitempty"` // Whether this session has Tailscale network access enabled
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -427,13 +426,6 @@ func (x *Session) GetCopilotBackend() CopilotBackend {
 		return *x.CopilotBackend
 	}
 	return CopilotBackend_COPILOT_BACKEND_UNSPECIFIED
-}
-
-func (x *Session) GetTailnetEnabled() bool {
-	if x != nil {
-		return x.TailnetEnabled
-	}
-	return false
 }
 
 // SessionSummary includes session data plus metadata for list views.
@@ -1579,6 +1571,7 @@ type SandboxResources struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vcpus         int32                  `protobuf:"varint,1,opt,name=vcpus,proto3" json:"vcpus,omitempty"`
 	MemoryMb      int32                  `protobuf:"varint,2,opt,name=memory_mb,json=memoryMb,proto3" json:"memory_mb,omitempty"`
+	DiskSizeGb    *int32                 `protobuf:"varint,3,opt,name=disk_size_gb,json=diskSizeGb,proto3,oneof" json:"disk_size_gb,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1627,11 +1620,18 @@ func (x *SandboxResources) GetMemoryMb() int32 {
 	return 0
 }
 
+func (x *SandboxResources) GetDiskSizeGb() int32 {
+	if x != nil && x.DiskSizeGb != nil {
+		return *x.DiskSizeGb
+	}
+	return 0
+}
+
 var File_netclode_v1_common_proto protoreflect.FileDescriptor
 
 const file_netclode_v1_common_proto_rawDesc = "" +
 	"\n" +
-	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18netclode/v1/events.proto\"\xb3\x04\n" +
+	"\x18netclode/v1/common.proto\x12\vnetclode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18netclode/v1/events.proto\"\x8a\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x122\n" +
@@ -1645,8 +1645,7 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\bsdk_type\x18\b \x01(\x0e2\x14.netclode.v1.SdkTypeH\x01R\asdkType\x88\x01\x01\x12\x19\n" +
 	"\x05model\x18\t \x01(\tH\x02R\x05model\x88\x01\x01\x12I\n" +
 	"\x0fcopilot_backend\x18\n" +
-	" \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x03R\x0ecopilotBackend\x88\x01\x01\x12'\n" +
-	"\x0ftailnet_enabled\x18\v \x01(\bR\x0etailnetEnabledB\x0e\n" +
+	" \x01(\x0e2\x1b.netclode.v1.CopilotBackendH\x03R\x0ecopilotBackend\x88\x01\x01B\x0e\n" +
 	"\f_repo_accessB\v\n" +
 	"\t_sdk_typeB\b\n" +
 	"\x06_modelB\x12\n" +
@@ -1801,10 +1800,13 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x1c\n" +
 	"\tremaining\x18\x03 \x01(\x05R\tremaining\x12\x1e\n" +
 	"\breset_at\x18\x04 \x01(\tH\x00R\aresetAt\x88\x01\x01B\v\n" +
-	"\t_reset_at\"E\n" +
+	"\t_reset_at\"}\n" +
 	"\x10SandboxResources\x12\x14\n" +
 	"\x05vcpus\x18\x01 \x01(\x05R\x05vcpus\x12\x1b\n" +
-	"\tmemory_mb\x18\x02 \x01(\x05R\bmemoryMb*V\n" +
+	"\tmemory_mb\x18\x02 \x01(\x05R\bmemoryMb\x12%\n" +
+	"\fdisk_size_gb\x18\x03 \x01(\x05H\x00R\n" +
+	"diskSizeGb\x88\x01\x01B\x0f\n" +
+	"\r_disk_size_gb*V\n" +
 	"\n" +
 	"RepoAccess\x12\x1b\n" +
 	"\x17REPO_ACCESS_UNSPECIFIED\x10\x00\x12\x14\n" +
@@ -1934,6 +1936,7 @@ func file_netclode_v1_common_proto_init() {
 	file_netclode_v1_common_proto_msgTypes[11].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[12].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[13].OneofWrappers = []any{}
+	file_netclode_v1_common_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

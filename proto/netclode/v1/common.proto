@@ -73,7 +73,6 @@ message Session {
   optional SdkType sdk_type = 8;
   optional string model = 9;
   optional CopilotBackend copilot_backend = 10;
-  bool tailnet_enabled = 11; // Whether this session has Tailscale network access enabled
 }
 
 // SessionSummary includes session data plus metadata for list views.
@@ -234,4 +233,5 @@ message CopilotPremiumQuota {
 message SandboxResources {
   int32 vcpus = 1;
   int32 memory_mb = 2;
+  optional int32 disk_size_gb = 3;
 }

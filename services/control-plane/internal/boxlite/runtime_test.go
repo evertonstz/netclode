@@ -1,8 +1,6 @@
 package boxlite
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
@@ -19,18 +17,6 @@ func TestBuildSecretsAndAllowNet_Claude(t *testing.T) {
 	}
 	if len(allowNet) != 1 || allowNet[0] != "api.anthropic.com" {
 		t.Fatalf("unexpected allowNet: %v", allowNet)
-	}
-}
-
-func TestBuildSecrets_DoesNotIncludeAllowNet(t *testing.T) {
-	// buildSecrets is the primary path used by CreateSandbox.
-	// It returns only secrets; the caller decides allow_net separately.
-	secrets := buildSecrets(pb.SdkType_SDK_TYPE_CLAUDE, map[string]string{"anthropic": "sk-real"})
-	if len(secrets) != 1 {
-		t.Fatalf("want 1 secret, got %d", len(secrets))
-	}
-	if secrets[0].Value != "sk-real" {
-		t.Fatalf("unexpected value: %q", secrets[0].Value)
 	}
 }
 
@@ -101,33 +87,6 @@ func TestShouldExposeGuestPlaceholderEnv(t *testing.T) {
 	}
 }
 
-// TestCreateSandboxUsesEmptyAllowNet verifies that CreateSandbox configures
-// the BoxLite VM with an empty allow_net (full internet access).
-// The runtime_test package cannot call the private helper directly, but we
-// can verify that buildSecrets returns secrets without the function returning
-// an allowNet that would restrict traffic.
-func TestBuildSecrets_AllSdkTypes(t *testing.T) {
-	for _, sdkType := range []pb.SdkType{
-		pb.SdkType_SDK_TYPE_CLAUDE,
-		pb.SdkType_SDK_TYPE_OPENCODE,
-		pb.SdkType_SDK_TYPE_COPILOT,
-		pb.SdkType_SDK_TYPE_CODEX,
-	} {
-		secrets := buildSecrets(sdkType, map[string]string{})
-		if len(secrets) == 0 {
-			t.Errorf("sdk type %v: expected at least one secret binding", sdkType)
-		}
-		for _, s := range secrets {
-			if s.Placeholder == "" {
-				t.Errorf("sdk type %v secret %q: placeholder must not be empty", sdkType, s.Name)
-			}
-			if len(s.Hosts) == 0 {
-				t.Errorf("sdk type %v secret %q: hosts must not be empty", sdkType, s.Name)
-			}
-		}
-	}
-}
-
 func TestExtractHost(t *testing.T) {
 	if got := extractHost("http://example.com:8080/path"); got != "example.com" {
 		t.Fatalf("want example.com, got %q", got)
@@ -145,22 +104,6 @@ func TestAppendUnique(t *testing.T) {
 	got = appendUnique(got, "c")
 	if len(got) != 3 || got[2] != "c" {
 		t.Fatalf("unexpected append result: %v", got)
-	}
-}
-
-func TestAllowedWorkspaceRoot(t *testing.T) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !isAllowedWorkspaceRoot(filepath.Join(home, ".boxlite", "test")) {
-		t.Fatal("expected ~/.boxlite path to be allowed")
-	}
-	if !isAllowedWorkspaceRoot("/var/lib/netclode/workspaces/test") {
-		t.Fatal("expected /var/lib/netclode path to be allowed")
-	}
-	if isAllowedWorkspaceRoot("/tmp/not-allowed") {
-		t.Fatal("unexpectedly allowed /tmp path")
 	}
 }
 

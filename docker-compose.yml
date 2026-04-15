@@ -75,15 +75,13 @@ services:
       tailscale:
         condition: service_healthy
     volumes:
-      - ${BOXLITE_WORKSPACE_ROOT:-/var/lib/netclode/workspaces}:${BOXLITE_WORKSPACE_ROOT:-/var/lib/netclode/workspaces}
       - boxlite-home:/var/lib/boxlite
     environment:
       PORT: "3000"
       RUNTIME_MODE: docker
       BOXLITE_HOME_DIR: /var/lib/boxlite
-      BOXLITE_WORKSPACE_ROOT: ${BOXLITE_WORKSPACE_ROOT:-/var/lib/netclode/workspaces}
       BOXLITE_AGENT_CP_URL: ${BOXLITE_AGENT_CP_URL:-}
-      BOXLITE_PERSISTENT_DISK_SIZE_GB: ${BOXLITE_PERSISTENT_DISK_SIZE_GB:-0}
+      BOXLITE_DEFAULT_DISK_SIZE_GB: ${BOXLITE_DEFAULT_DISK_SIZE_GB:-20}
       BOXLITE_SNAPSHOT_RETENTION: ${BOXLITE_SNAPSHOT_RETENTION:-5}
       BOXLITE_STARTUP_LOG_RETENTION: ${BOXLITE_STARTUP_LOG_RETENTION:-5}
       AGENT_IMAGE: ${AGENT_IMAGE:-ghcr.io/angristan/netclode-agent:latest}

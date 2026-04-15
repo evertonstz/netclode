@@ -13,6 +13,7 @@ type boxOptionsWire struct {
 	Rootfs     any          `json:"rootfs"`
 	CPUs       *int         `json:"cpus,omitempty"`
 	MemoryMiB  *int         `json:"memory_mib,omitempty"`
+	DiskSizeGb *int         `json:"disk_size_gb,omitempty"`
 	Env        [][2]string  `json:"env"`
 	Volumes    []wireVol    `json:"volumes"`
 	Network    any          `json:"network"`
@@ -115,6 +116,9 @@ func buildOptionsJSON(image string, cfg *boxConfig) (boxOptionsWire, error) {
 	}
 	if cfg.memoryMiB > 0 {
 		w.MemoryMiB = &cfg.memoryMiB
+	}
+	if cfg.diskSizeGb > 0 {
+		w.DiskSizeGb = &cfg.diskSizeGb
 	}
 	if cfg.workDir != "" {
 		w.WorkDir = cfg.workDir
