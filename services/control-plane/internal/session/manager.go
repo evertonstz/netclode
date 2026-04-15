@@ -168,6 +168,26 @@ func normalizeRepos(repos []string) []string {
 	return normalized
 }
 
+func inferSdkTypeFromModel(model string) (pb.SdkType, bool) {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if model == "" {
+		return pb.SdkType_SDK_TYPE_UNSPECIFIED, false
+	}
+
+	switch {
+	case strings.HasPrefix(model, "opencode") || strings.Contains(model, "openrouter"):
+		return pb.SdkType_SDK_TYPE_OPENCODE, true
+	case strings.HasPrefix(model, "github-copilot"):
+		return pb.SdkType_SDK_TYPE_COPILOT, true
+	case strings.HasPrefix(model, "gpt-5-codex") || strings.HasPrefix(model, "codex"):
+		return pb.SdkType_SDK_TYPE_CODEX, true
+	case strings.Contains(model, "claude") || strings.Contains(model, "anthropic"):
+		return pb.SdkType_SDK_TYPE_CLAUDE, true
+	default:
+		return pb.SdkType_SDK_TYPE_UNSPECIFIED, false
+	}
+}
+
 // SetOnSessionUpdated sets a callback that is called when a session is updated internally.
 // This is used for broadcasting auto-pause events to connected clients.
 func (m *Manager) SetOnSessionUpdated(cb SessionUpdateCallback) {
@@ -308,6 +328,19 @@ func (m *Manager) Create(ctx context.Context, name string, repos []string, repoA
 		name = "Session " + id[:6]
 	}
 
+	// Determine tailnet setting (default: disabled) and persist it with the session.
+	tailnetEnabled := false
+	if tailnetAccess != nil {
+		tailnetEnabled = *tailnetAccess
+	}
+
+	persistedSdkType := sdkType
+	if persistedSdkType == nil && model != nil {
+		if inferred, ok := inferSdkTypeFromModel(*model); ok {
+			persistedSdkType = &inferred
+		}
+	}
+
 	session := &pb.Session{
 		Id:             id,
 		Name:           name,
@@ -316,9 +349,11 @@ func (m *Manager) Create(ctx context.Context, name string, repos []string, repoA
 		RepoAccess:     repoAccess,
 		CreatedAt:      now,
 		LastActiveAt:   now,
-		SdkType:        sdkType,
+		SdkType:        persistedSdkType,
 		Model:          model,
 		CopilotBackend: copilotBackend,
+		TailnetEnabled: tailnetEnabled,
+		Resources:      resources,
 	}
 
 	// Save to storage
@@ -342,12 +377,6 @@ func (m *Manager) Create(ctx context.Context, name string, repos []string, repoA
 	activeCount := m.countActiveSessionsLocked("")
 	m.mu.RUnlock()
 	metrics.Gauge("sessions.active", float64(activeCount), nil)
-
-	// Determine tailnet setting (default: disabled)
-	tailnetEnabled := false
-	if tailnetAccess != nil {
-		tailnetEnabled = *tailnetAccess
-	}
 
 	// Start sandbox creation in background
 	go m.createSandbox(context.Background(), id, repos, repoAccess, tailnetEnabled, resources)
@@ -415,27 +444,24 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 	var state *SessionState
 	if s := m.getOrLoadState(ctx, sessionID); s != nil {
 		state = s
-		if s.Session.SdkType != nil {
+		persistSdkType := false
+		switch {
+		case s.Session.SdkType != nil:
 			sdkType = *s.Session.SdkType
-		} else if s.Session.Model != nil {
-			// Fallback: infer SDK type from model string if SdkType wasn't persisted
-			model := *s.Session.Model
-			if strings.HasPrefix(model, "opencode") || strings.Contains(model, "openrouter") {
-				sdkType = pb.SdkType_SDK_TYPE_OPENCODE
-			} else if strings.HasPrefix(model, "github-copilot") {
-				sdkType = pb.SdkType_SDK_TYPE_COPILOT
-			} else if strings.HasPrefix(model, "gpt-5-codex") || strings.HasPrefix(model, "codex") {
-				sdkType = pb.SdkType_SDK_TYPE_CODEX
-			} else if strings.Contains(model, "claude") || strings.Contains(model, "anthropic") {
-				sdkType = pb.SdkType_SDK_TYPE_CLAUDE
+		case s.Session.Model != nil:
+			if inferred, ok := inferSdkTypeFromModel(*s.Session.Model); ok {
+				sdkType = inferred
 			}
-			// Persist the inferred SdkType back to the session if it wasn't previously set
-		if s.Session.SdkType == nil {
-				s.Session.SdkType = &sdkType
-				if err := m.storage.SaveSession(ctx, s.Session); err != nil {
-					slog.WarnContext(ctx, "Failed to persist inferred SdkType", "sessionID", sessionID, "sdkType", sdkType, "error", err)
-				}
+			persistSdkType = true
+		default:
+			slog.WarnContext(ctx, "Session missing persisted SDK metadata, defaulting to Claude", "sessionID", sessionID)
+			persistSdkType = true
 		}
+		if persistSdkType && s.Session.SdkType == nil {
+			s.Session.SdkType = &sdkType
+			if err := m.storage.SaveSession(ctx, s.Session); err != nil {
+				slog.WarnContext(ctx, "Failed to persist inferred SdkType", "sessionID", sessionID, "sdkType", sdkType, "error", err)
+			}
 		}
 	}
 
@@ -529,6 +555,10 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 			slog.InfoContext(ctx, "Resuming with existing PVC", "sessionID", sessionID, "pvc", existingPVC)
 			env[k8s.ExistingPVCEnvKey] = existingPVC
 		}
+	}
+
+	if tailnetEnabled {
+		env["_BOXLITE_TAILNET"] = "true"
 	}
 
 	// Pass GitHub Copilot token if configured (for Copilot SDK)
@@ -1011,6 +1041,12 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 		return state.Session, nil
 	}
 
+	if !status.Exists && state.Session.Resources != nil {
+		if err := m.validateResources(state.Session.Resources); err != nil {
+			return nil, fmt.Errorf("resources (%d vCPU, %d MB) exceed available capacity; recreate with smaller allocation: %w", state.Session.Resources.Vcpus, state.Session.Resources.MemoryMb, err)
+		}
+	}
+
 	// Sandbox doesn't exist or isn't ready - ensure we have a slot before creating/waiting
 	m.ensureActiveSlot(ctx, id)
 
@@ -1039,16 +1075,15 @@ func (m *Manager) Resume(ctx context.Context, id string) (*pb.Session, error) {
 
 	// Always use direct sandbox creation for resume (bypasses warm pool).
 	// This ensures we use the session's existing PVC instead of getting a fresh warm pool PVC.
-	// createSandboxDirect will automatically use the stored PVC name if available.
-	// Note: Resume always uses default tailnetEnabled=false since we don't store network config
-	// Note: Resume doesn't support custom resources - uses nil to get default resources
+	// createSandboxDirect will automatically use the stored PVC name if available and
+	// will reuse the persisted tailnet and resource configuration saved with the session.
 	if restoreSnapshotID != "" {
 		slog.InfoContext(ctx, "Resuming with snapshot restore", "sessionID", id, "snapshotID", restoreSnapshotID)
 		_ = m.storage.ClearRestoreSnapshotID(ctx, id) // Clear from storage
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repos, state.Session.RepoAccess, state.Session.TailnetEnabled, nil, restoreSnapshotID)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repos, state.Session.RepoAccess, state.Session.TailnetEnabled, state.Session.Resources, restoreSnapshotID)
 	} else {
 		slog.InfoContext(ctx, "Resuming session", "sessionID", id)
-		go m.createSandboxDirect(context.Background(), id, state.Session.Repos, state.Session.RepoAccess, state.Session.TailnetEnabled, nil)
+		go m.createSandboxDirect(context.Background(), id, state.Session.Repos, state.Session.RepoAccess, state.Session.TailnetEnabled, state.Session.Resources)
 	}
 
 	return state.Session, nil
@@ -1280,7 +1315,7 @@ func (m *Manager) restoreExposedPorts(ctx context.Context, sessionID string) {
 }
 
 // List returns all sessions, reconciling with K8s state.
-func (m *Manager) List(ctx context.Context) ([]pb.Session, error) {
+func (m *Manager) List(ctx context.Context) ([]*pb.Session, error) {
 	// Reconcile with K8s
 	sandboxes, err := m.k8s.ListSandboxes(ctx)
 	if err != nil {
@@ -1295,7 +1330,7 @@ func (m *Manager) List(ctx context.Context) ([]pb.Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	sessions := make([]pb.Session, 0, len(m.sessions))
+	sessions := make([]*pb.Session, 0, len(m.sessions))
 	for id, state := range m.sessions {
 		sb, exists := sandboxMap[id]
 		if !exists && (state.Session.Status == pb.SessionStatus_SESSION_STATUS_RUNNING || state.Session.Status == pb.SessionStatus_SESSION_STATUS_CREATING) {
@@ -1304,7 +1339,7 @@ func (m *Manager) List(ctx context.Context) ([]pb.Session, error) {
 		} else if exists && sb.Ready {
 			state.ServiceFQDN = sb.ServiceFQDN
 		}
-		sessions = append(sessions, *state.Session)
+		sessions = append(sessions, state.Session)
 	}
 
 	return sessions, nil
@@ -1379,13 +1414,13 @@ func (m *Manager) GetWithHistory(ctx context.Context, id string, afterStreamID s
 }
 
 // GetAllWithMeta returns all sessions with metadata.
-func (m *Manager) GetAllWithMeta(ctx context.Context) ([]pb.SessionSummary, error) {
+func (m *Manager) GetAllWithMeta(ctx context.Context) ([]*pb.SessionSummary, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	result := make([]pb.SessionSummary, 0, len(m.sessions))
+	result := make([]*pb.SessionSummary, 0, len(m.sessions))
 	for id, state := range m.sessions {
-		meta := pb.SessionSummary{Session: state.Session}
+		meta := &pb.SessionSummary{Session: state.Session}
 
 		count, err := m.storage.GetMessageCount(ctx, id)
 		if err == nil {

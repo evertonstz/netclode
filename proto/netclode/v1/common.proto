@@ -74,6 +74,7 @@ message Session {
   optional string model = 9;
   optional CopilotBackend copilot_backend = 10;
   bool tailnet_enabled = 11; // Whether this session has Tailscale network access enabled
+  optional SandboxResources resources = 12;
 }
 
 // SessionSummary includes session data plus metadata for list views.
