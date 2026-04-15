@@ -45,6 +45,7 @@ type boxConfig struct {
 	name       string
 	cpus       int
 	memoryMiB  int
+	diskSizeGb int
 	env        [][2]string
 	volumes    []volumeEntry
 	workDir    string
@@ -82,6 +83,11 @@ func WithEnv(key, value string) BoxOption {
 	return func(c *boxConfig) {
 		c.env = append(c.env, [2]string{key, value})
 	}
+}
+
+// WithDiskSizeGb attaches a persistent QCOW2 disk of the given size in GiB.
+func WithDiskSizeGb(sizeGb int) BoxOption {
+	return func(c *boxConfig) { c.diskSizeGb = sizeGb }
 }
 
 // WithVolume mounts a host path into the box.

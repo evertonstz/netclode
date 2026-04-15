@@ -3,7 +3,9 @@ package config
 import (
 	"encoding/base64"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -60,12 +62,11 @@ type Config struct {
 	RuntimeMode string
 
 	// Boxlite runtime settings (only used when RuntimeMode == "docker")
-	BoxliteHomeDir              string // BoxLite home directory for the embedded runtime
-	BoxliteWorkspaceRoot        string // Host path for workspace directories, default /var/lib/netclode/workspaces
-	BoxliteAgentCPURL           string // URL agents inside Boxlite VMs use to reach control-plane
-	BoxlitePersistentDiskSizeGB int    // Per-session persistent disk size in GB (0 = disabled)
-	BoxliteSnapshotRetention    int    // Number of snapshots to retain per session (default 5)
-	BoxliteStartupLogRetention  int    // Number of agent startup logs to retain per session (default 5)
+	BoxliteHomeDir             string // BoxLite home directory for the embedded runtime
+	BoxliteAgentCPURL          string // URL agents inside Boxlite VMs use to reach control-plane
+	BoxliteDefaultDiskSizeGb   int    // Default QCOW2 disk size in GB for BoxLite sessions
+	BoxliteSnapshotRetention   int    // Number of snapshots to retain per session (default 5)
+	BoxliteStartupLogRetention int    // Number of agent startup logs to retain per session (default 5)
 }
 
 func Load() *Config {
@@ -116,12 +117,11 @@ func Load() *Config {
 		RuntimeMode: getEnv("RUNTIME_MODE", "kubernetes"),
 
 		// Boxlite runtime settings
-		BoxliteHomeDir:              getEnv("BOXLITE_HOME_DIR", ""),
-		BoxliteWorkspaceRoot:        getEnv("BOXLITE_WORKSPACE_ROOT", "/var/lib/netclode/workspaces"),
-		BoxliteAgentCPURL:           getEnv("BOXLITE_AGENT_CP_URL", ""),
-		BoxlitePersistentDiskSizeGB: getEnvInt("BOXLITE_PERSISTENT_DISK_SIZE_GB", 0), // 0 = disabled
-		BoxliteSnapshotRetention:    getEnvInt("BOXLITE_SNAPSHOT_RETENTION", 5),      // keep last 5 snapshots
-		BoxliteStartupLogRetention:  getEnvInt("BOXLITE_STARTUP_LOG_RETENTION", 5),   // keep last 5 startup logs
+		BoxliteHomeDir:             getEnv("BOXLITE_HOME_DIR", ""),
+		BoxliteAgentCPURL:          getEnv("BOXLITE_AGENT_CP_URL", ""),
+		BoxliteDefaultDiskSizeGb:   getEnvInt("BOXLITE_DEFAULT_DISK_SIZE_GB", 20), // thin-provisioned QCOW2 default
+		BoxliteSnapshotRetention:   getEnvInt("BOXLITE_SNAPSHOT_RETENTION", 5),    // keep last 5 snapshots
+		BoxliteStartupLogRetention: getEnvInt("BOXLITE_STARTUP_LOG_RETENTION", 5), // keep last 5 startup logs
 	}
 }
 
@@ -138,6 +138,17 @@ func getGitHubPrivateKey() string {
 	}
 	// Fall back to raw PEM
 	return os.Getenv("GITHUB_APP_PRIVATE_KEY")
+}
+
+// EffectiveBoxliteHomeDir returns the home directory used by the embedded BoxLite runtime.
+func (c *Config) EffectiveBoxliteHomeDir() string {
+	if dir := strings.TrimSpace(c.BoxliteHomeDir); dir != "" {
+		return dir
+	}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		return filepath.Join(home, ".boxlite")
+	}
+	return "/var/lib/boxlite"
 }
 
 // IsDockerMode returns true if the runtime is Boxlite/Docker mode.

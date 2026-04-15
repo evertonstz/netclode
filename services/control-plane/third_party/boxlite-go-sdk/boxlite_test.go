@@ -175,13 +175,7 @@ func TestBuildOptionsJSON(t *testing.T) {
 	if wire.WorkDir != "/work" {
 		t.Errorf("WorkDir: got %q", wire.WorkDir)
 	}
-	network, ok := wire.Network.(wireNetworkSpec)
-	if !ok {
-		t.Fatalf("Network type: got %T", wire.Network)
-	}
-	if network.Mode != string(NetworkModeEnabled) {
-		t.Errorf("Network.Mode: got %q", network.Mode)
-	}
+	network := requireEnabledNetwork(t, wire.Network)
 	if len(network.AllowNet) != 0 {
 		t.Errorf("AllowNet should default to empty, got %v", network.AllowNet)
 	}
@@ -212,13 +206,7 @@ func TestBuildOptionsJSON_Defaults(t *testing.T) {
 	if wire.Secrets == nil {
 		t.Error("Secrets should be non-nil empty slice")
 	}
-	network, ok := wire.Network.(wireNetworkSpec)
-	if !ok {
-		t.Fatalf("Network type: got %T", wire.Network)
-	}
-	if network.Mode != string(NetworkModeEnabled) {
-		t.Errorf("Network.Mode: got %q", network.Mode)
-	}
+	_ = requireEnabledNetwork(t, wire.Network)
 }
 
 func TestBoxInfoWire_ToBoxInfo(t *testing.T) {
@@ -333,6 +321,22 @@ func TestBuildOptionsJSON_AutoRemoveDetach(t *testing.T) {
 	}
 }
 
+func TestWithDiskSizeGb(t *testing.T) {
+	cfg := &boxConfig{}
+	WithDiskSizeGb(20)(cfg)
+	if cfg.diskSizeGb != 20 {
+		t.Fatalf("diskSizeGb = %d, want 20", cfg.diskSizeGb)
+	}
+
+	wire, err := buildOptionsJSON("alpine:latest", cfg)
+	if err != nil {
+		t.Fatalf("buildOptionsJSON: %v", err)
+	}
+	if wire.DiskSizeGb == nil || *wire.DiskSizeGb != 20 {
+		t.Fatalf("DiskSizeGb wire = %v, want 20", wire.DiskSizeGb)
+	}
+}
+
 func TestWithNetwork(t *testing.T) {
 	cfg := &boxConfig{}
 	WithNetwork(NetworkSpec{
@@ -368,13 +372,7 @@ func TestBuildOptionsJSON_AllowNetAndSecrets(t *testing.T) {
 		t.Fatalf("buildOptionsJSON: %v", err)
 	}
 
-	network, ok := wire.Network.(wireNetworkSpec)
-	if !ok {
-		t.Fatalf("Network type: got %T", wire.Network)
-	}
-	if network.Mode != string(NetworkModeEnabled) {
-		t.Errorf("Network.Mode: got %q", network.Mode)
-	}
+	network := requireEnabledNetwork(t, wire.Network)
 	if len(network.AllowNet) != 2 {
 		t.Fatalf("AllowNet length: got %d", len(network.AllowNet))
 	}
@@ -397,16 +395,7 @@ func TestBuildOptionsJSON_DisabledNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildOptionsJSON: %v", err)
 	}
-	network, ok := wire.Network.(wireNetworkSpec)
-	if !ok {
-		t.Fatalf("Network type: got %T", wire.Network)
-	}
-	if network.Mode != string(NetworkModeDisabled) {
-		t.Errorf("Network.Mode: got %q", network.Mode)
-	}
-	if len(network.AllowNet) != 0 {
-		t.Errorf("Network.AllowNet: got %v", network.AllowNet)
-	}
+	requireDisabledNetwork(t, wire.Network)
 }
 
 func TestBuildOptionsJSON_RejectsAllowNetWithDisabledMode(t *testing.T) {
@@ -422,5 +411,29 @@ func TestBuildOptionsJSON_RejectsAllowNetWithDisabledMode(t *testing.T) {
 	}
 	if err.Error() != "network.mode=\"disabled\" is incompatible with allow_net" {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func requireEnabledNetwork(t *testing.T, network any) wireNetworkEnabled {
+	t.Helper()
+	value, ok := network.(map[string]wireNetworkEnabled)
+	if !ok {
+		t.Fatalf("Network type: got %T", network)
+	}
+	enabled, ok := value["Enabled"]
+	if !ok {
+		t.Fatalf("expected Enabled network, got %#v", value)
+	}
+	return enabled
+}
+
+func requireDisabledNetwork(t *testing.T, network any) {
+	t.Helper()
+	value, ok := network.(string)
+	if !ok {
+		t.Fatalf("Network type: got %T", network)
+	}
+	if value != "Disabled" {
+		t.Fatalf("expected Disabled network, got %q", value)
 	}
 }

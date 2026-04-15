@@ -47,7 +47,7 @@ docker compose up -d        # Docker available
 sudo apt install htop       # Passwordless sudo
 ```
 
-Tools persist across pause/resume (stored on JuiceFS).
+Tools persist across pause/resume (stored on the session's BoxLite QCOW2 disk).
 
 ## PTY Lifecycle
 

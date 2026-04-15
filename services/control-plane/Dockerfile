@@ -19,6 +19,7 @@ RUN set -eux; \
     mkdir -p /tmp/boxlite-c /tmp/boxlite-runtime; \
     curl -fsSL "$BOXLITE_RELEASE_URL/boxlite-c-v0.8.2-linux-x64-gnu.tar.gz" -o /tmp/boxlite-c.tgz; \
     tar -xzf /tmp/boxlite-c.tgz -C /tmp/boxlite-c --strip-components=1; \
+    cp /tmp/boxlite-c/include/boxlite.h ./third_party/boxlite-go-sdk/boxlite.h; \
     cp /tmp/boxlite-c/lib/libboxlite.a ./third_party/boxlite-go-sdk/libboxlite.a; \
     curl -fsSL "$BOXLITE_RELEASE_URL/boxlite-runtime-v0.8.2-linux-x64-gnu.tar.gz" -o /tmp/boxlite-runtime.tgz; \
     tar -xzf /tmp/boxlite-runtime.tgz -C /tmp/boxlite-runtime --strip-components=1
@@ -38,9 +39,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY --from=builder /tmp/boxlite-runtime/ /runtime/
 COPY --from=builder /app/control-plane /control-plane
 
-# Create runtime directories owned by non-root user
-RUN mkdir -p /var/lib/netclode/workspaces /var/lib/boxlite \
-    && chown -R 65534:65534 /var/lib/netclode /var/lib/boxlite
+# Create runtime directory owned by non-root user
+RUN mkdir -p /var/lib/boxlite \
+    && chown -R 65534:65534 /var/lib/boxlite
 
 # Run as non-root user
 USER 65534:65534

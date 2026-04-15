@@ -10,6 +10,8 @@
 
 Server is configured in `.env` as `DEPLOY_HOST` (Tailscale hostname or IP).
 
+> Migration note: sessions created before the QCOW2 BoxLite storage rollout must be deleted before upgrading. Paused virtiofs-backed sessions are not forward-compatible with the new BoxLite disk backend.
+
 ### Infrastructure Provisioning (Ansible)
 
 The server infrastructure is managed with Ansible in `infra/ansible/`. Secrets are automatically read from `.env` at the repo root.
