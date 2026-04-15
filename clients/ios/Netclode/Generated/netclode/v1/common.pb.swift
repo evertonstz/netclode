@@ -570,7 +570,7 @@ public struct Netclode_V1_SessionConfig: @unchecked Sendable {
   /// Clears the value of `zaiApiKey`. Subsequent reads from it will return its default value.
   public mutating func clearZaiApiKey() {_uniqueStorage()._zaiApiKey = nil}
 
-  /// GitHub Copilot OAuth tokens for OpenCode SDK (written to auth.json, not exposed to proxy)
+  /// GitHub Copilot OAuth tokens for OpenCode SDK (written to auth.json for BoxLite/file-based auth flows)
   public var githubCopilotOauthAccessToken: String {
     get {_storage._githubCopilotOauthAccessToken ?? String()}
     set {_uniqueStorage()._githubCopilotOauthAccessToken = newValue}
@@ -1011,9 +1011,20 @@ public struct Netclode_V1_SandboxResources: Sendable {
 
   public var memoryMb: Int32 = 0
 
+  public var diskSizeGb: Int32 {
+    get {_diskSizeGb ?? 0}
+    set {_diskSizeGb = newValue}
+  }
+  /// Returns true if `diskSizeGb` has been explicitly set.
+  public var hasDiskSizeGb: Bool {self._diskSizeGb != nil}
+  /// Clears the value of `diskSizeGb`. Subsequent reads from it will return its default value.
+  public mutating func clearDiskSizeGb() {self._diskSizeGb = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+
+  fileprivate var _diskSizeGb: Int32? = nil
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -1996,7 +2007,7 @@ extension Netclode_V1_CopilotPremiumQuota: SwiftProtobuf.Message, SwiftProtobuf.
 
 extension Netclode_V1_SandboxResources: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SandboxResources"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}vcpus\0\u{3}memory_mb\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}vcpus\0\u{3}memory_mb\0\u{3}disk_size_gb\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2006,24 +2017,33 @@ extension Netclode_V1_SandboxResources: SwiftProtobuf.Message, SwiftProtobuf._Me
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularInt32Field(value: &self.vcpus) }()
       case 2: try { try decoder.decodeSingularInt32Field(value: &self.memoryMb) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self._diskSizeGb) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.vcpus != 0 {
       try visitor.visitSingularInt32Field(value: self.vcpus, fieldNumber: 1)
     }
     if self.memoryMb != 0 {
       try visitor.visitSingularInt32Field(value: self.memoryMb, fieldNumber: 2)
     }
+    try { if let v = self._diskSizeGb {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Netclode_V1_SandboxResources, rhs: Netclode_V1_SandboxResources) -> Bool {
     if lhs.vcpus != rhs.vcpus {return false}
     if lhs.memoryMb != rhs.memoryMb {return false}
+    if lhs._diskSizeGb != rhs._diskSizeGb {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

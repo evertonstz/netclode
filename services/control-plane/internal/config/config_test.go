@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -107,6 +108,21 @@ func TestLoadWithSandboxTemplate(t *testing.T) {
 	cfg = Load()
 	if cfg.SandboxTemplate != "custom-template" {
 		t.Errorf("SandboxTemplate = %q, want %q", cfg.SandboxTemplate, "custom-template")
+	}
+}
+
+func TestEffectiveBoxliteHomeDir(t *testing.T) {
+	cfg := &Config{BoxliteHomeDir: "/custom/boxlite"}
+	if got := cfg.EffectiveBoxliteHomeDir(); got != "/custom/boxlite" {
+		t.Fatalf("EffectiveBoxliteHomeDir() = %q, want %q", got, "/custom/boxlite")
+	}
+
+	cfg = &Config{}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		want := filepath.Join(home, ".boxlite")
+		if got := cfg.EffectiveBoxliteHomeDir(); got != want {
+			t.Fatalf("EffectiveBoxliteHomeDir() = %q, want %q", got, want)
+		}
 	}
 }
 

@@ -233,4 +233,5 @@ message CopilotPremiumQuota {
 message SandboxResources {
   int32 vcpus = 1;
   int32 memory_mb = 2;
+  optional int32 disk_size_gb = 3;
 }

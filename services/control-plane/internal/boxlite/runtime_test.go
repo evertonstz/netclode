@@ -1,8 +1,6 @@
 package boxlite
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
@@ -106,22 +104,6 @@ func TestAppendUnique(t *testing.T) {
 	got = appendUnique(got, "c")
 	if len(got) != 3 || got[2] != "c" {
 		t.Fatalf("unexpected append result: %v", got)
-	}
-}
-
-func TestAllowedWorkspaceRoot(t *testing.T) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !isAllowedWorkspaceRoot(filepath.Join(home, ".boxlite", "test")) {
-		t.Fatal("expected ~/.boxlite path to be allowed")
-	}
-	if !isAllowedWorkspaceRoot("/var/lib/netclode/workspaces/test") {
-		t.Fatal("expected /var/lib/netclode path to be allowed")
-	}
-	if isAllowedWorkspaceRoot("/tmp/not-allowed") {
-		t.Fatal("unexpectedly allowed /tmp path")
 	}
 }
 

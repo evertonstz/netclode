@@ -88,8 +88,9 @@ type ContainerResources struct {
 // SandboxResourceConfig holds resource configuration for a sandbox VM.
 // These map to Kata annotations for VM sizing and K8s requests for scheduling.
 type SandboxResourceConfig struct {
-	VCPUs    int32 // Number of vCPUs for the VM
-	MemoryMB int32 // Memory in MiB for the VM
+	VCPUs      int32 // Number of vCPUs for the VM
+	MemoryMB   int32 // Memory in MiB for the VM
+	DiskSizeGb int   // QCOW2 disk size in GiB for BoxLite-backed sandboxes
 }
 
 // Port defines a container port

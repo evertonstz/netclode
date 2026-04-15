@@ -13,7 +13,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -115,10 +114,7 @@ type TokenIssuer interface {
 
 // NewRuntime creates an embedded BoxLite runtime.
 func NewRuntime(cfg *config.Config, issuer TokenIssuer) (*Runtime, error) {
-	homeDir := cfg.BoxliteHomeDir
-	if homeDir == "" {
-		homeDir = defaultHomeDir()
-	}
+	homeDir := cfg.EffectiveBoxliteHomeDir()
 	if err := os.MkdirAll(homeDir, 0o700); err != nil {
 		return nil, fmt.Errorf("create boxlite home dir %s: %w", homeDir, err)
 	}
@@ -139,13 +135,6 @@ func NewRuntime(cfg *config.Config, issuer TokenIssuer) (*Runtime, error) {
 
 	slog.Info("BoxLite embedded runtime initialised", "homeDir", homeDir, "version", boxlitesdk.Version())
 	return r, nil
-}
-
-func defaultHomeDir() string {
-	if home, err := os.UserHomeDir(); err == nil && home != "" {
-		return filepath.Join(home, ".boxlite")
-	}
-	return "/var/lib/boxlite"
 }
 
 func buildRealKeys(cfg *config.Config) map[string]string {
@@ -175,36 +164,6 @@ func (r *Runtime) Close() {
 }
 
 func (r *Runtime) boxName(sessionID string) string { return boxNamePrefix + sessionID }
-
-func (r *Runtime) workspacePath(sessionID string) string {
-	root := r.cfg.BoxliteWorkspaceRoot
-	if root == "" {
-		root = filepath.Join(defaultHomeDir(), "workspaces")
-	}
-	return filepath.Join(root, sessionID)
-}
-
-func (r *Runtime) ensureWorkspace(sessionID string) (string, error) {
-	root := r.cfg.BoxliteWorkspaceRoot
-	if root == "" {
-		root = filepath.Join(defaultHomeDir(), "workspaces")
-	}
-	absRoot, err := filepath.Abs(root)
-	if err != nil {
-		return "", fmt.Errorf("resolve workspace root %q: %w", root, err)
-	}
-	if !isAllowedWorkspaceRoot(absRoot) {
-		return "", fmt.Errorf("workspace root %q is not allowed", absRoot)
-	}
-	if err := os.MkdirAll(absRoot, 0o700); err != nil {
-		return "", fmt.Errorf("create workspace root %q: %w", absRoot, err)
-	}
-	path := filepath.Join(absRoot, sessionID)
-	if err := os.Mkdir(path, 0o700); err != nil && !os.IsExist(err) {
-		return "", fmt.Errorf("create session workspace %q: %w", path, err)
-	}
-	return path, nil
-}
 
 func (r *Runtime) getBox(sessionID string) (*boxlitesdk.Box, bool) {
 	r.boxMu.RLock()
@@ -239,11 +198,8 @@ func (r *Runtime) CreateSandbox(ctx context.Context, sessionID string, env map[s
 		return fmt.Errorf("token issuer not configured")
 	}
 	token := r.tokenIssuer.IssueDockerToken(sessionID)
-
-	workspacePath, err := r.ensureWorkspace(sessionID)
-	if err != nil {
-		return err
-	}
+	existingBoxName := env[k8s.ExistingPVCEnvKey]
+	delete(env, k8s.ExistingPVCEnvKey)
 
 	sdkType := sdkTypeFromEnv(env)
 
@@ -265,16 +221,14 @@ func (r *Runtime) CreateSandbox(ctx context.Context, sessionID string, env map[s
 		mergedKeys[k] = v
 	}
 
-	secrets, allowNet := BuildSecretsAndAllowNet(sdkType, mergedKeys)
+	secrets, _ := BuildSecretsAndAllowNet(sdkType, mergedKeys)
+	allowNet := []string{}
 
 	// Resolve the control-plane URL the agent will use to call back.
 	// Priority: explicit config > auto-detected outbound IP > fallback k8s DNS name.
 	cpURL := strings.TrimSpace(r.cfg.BoxliteAgentCPURL)
 	if cpURL == "" {
 		cpURL = autoDetectCPURL(r.cfg.Port)
-	}
-	if host := extractHost(cpURL); host != "" {
-		allowNet = appendUnique(allowNet, host)
 	}
 
 	boxEnv := make(map[string]string, len(env)+len(secrets)+3)
@@ -293,9 +247,20 @@ func (r *Runtime) CreateSandbox(ctx context.Context, sessionID string, env map[s
 	boxEnv["SESSION_ID"] = sessionID
 	boxEnv["CONTROL_PLANE_URL"] = cpURL
 
+	diskSizeGb := r.cfg.BoxliteDefaultDiskSizeGb
+	if resources != nil && resources.DiskSizeGb > 0 {
+		diskSizeGb = resources.DiskSizeGb
+	}
+	if diskSizeGb <= 0 {
+		diskSizeGb = 20
+	}
+
 	opts := []boxlitesdk.BoxOption{
 		boxlitesdk.WithName(r.boxName(sessionID)),
-		boxlitesdk.WithVolume(workspacePath, "/agent"),
+		boxlitesdk.WithDiskSizeGb(diskSizeGb),
+		// Keep persisted box metadata + QCOW2 disk across Stop/Start so pause/resume works.
+		// Full session deletion uses ForceRemove in DeletePVC.
+		boxlitesdk.WithAutoRemove(false),
 		boxlitesdk.WithNetwork(boxlitesdk.NetworkSpec{Mode: boxlitesdk.NetworkModeEnabled, AllowNet: allowNet}),
 		boxlitesdk.WithWorkDir("/agent"),
 	}
@@ -314,7 +279,20 @@ func (r *Runtime) CreateSandbox(ctx context.Context, sessionID string, env map[s
 		}
 	}
 
-	slog.Info("BoxLite: creating box", "sessionID", sessionID, "image", r.cfg.AgentImage, "sdkType", sdkType, "allowNet", allowNet)
+	if existingBoxName != "" {
+		if existingBox, err := r.rt.Get(ctx, existingBoxName); err == nil && existingBox != nil {
+			slog.Info("BoxLite: restarting existing box", "sessionID", sessionID, "boxName", existingBoxName)
+			if err := existingBox.Start(ctx); err != nil {
+				_ = existingBox.Close()
+				return fmt.Errorf("box restart: %w", err)
+			}
+			r.setBox(sessionID, existingBox)
+			slog.Info("BoxLite: box restarted", "sessionID", sessionID, "boxID", existingBox.ID(), "name", existingBox.Name())
+			return nil
+		}
+	}
+
+	slog.Info("BoxLite: creating box", "sessionID", sessionID, "image", r.cfg.AgentImage, "sdkType", sdkType, "allowNet", allowNet, "diskSizeGb", diskSizeGb)
 	box, err := r.rt.Create(ctx, r.cfg.AgentImage, opts...)
 	if err != nil {
 		return fmt.Errorf("box create: %w", err)
@@ -373,19 +351,27 @@ func (r *Runtime) DeleteSandbox(ctx context.Context, sessionID string) error {
 	if err := box.Stop(ctx); err != nil {
 		slog.Warn("BoxLite: stop failed", "sessionID", sessionID, "error", err)
 	}
+	// Keep the box record and QCOW2 disk for pause/resume. Full session deletion
+	// performs ForceRemove from DeletePVC.
+	r.deleteBox(sessionID)
+	return nil
+}
+
+func (r *Runtime) DeletePVC(ctx context.Context, sessionID string) error {
+	box, err := r.rt.Get(ctx, r.boxName(sessionID))
+	if err != nil || box == nil {
+		return nil
+	}
+	defer box.Close()
 	if err := r.rt.ForceRemove(ctx, box.ID()); err != nil {
-		slog.Warn("BoxLite: remove failed", "sessionID", sessionID, "error", err)
+		return fmt.Errorf("remove box disk: %w", err)
 	}
 	r.deleteBox(sessionID)
 	return nil
 }
 
-func (r *Runtime) DeletePVC(_ context.Context, sessionID string) error {
-	return os.RemoveAll(r.workspacePath(sessionID))
-}
-
-func (r *Runtime) DeletePVCByName(_ context.Context, pvcName string) error {
-	return os.RemoveAll(pvcName)
+func (r *Runtime) DeletePVCByName(_ context.Context, _ string) error {
+	return nil
 }
 
 func (r *Runtime) DeleteSecret(_ context.Context, _ string) error { return nil }
@@ -404,7 +390,7 @@ func (r *Runtime) GetStatus(ctx context.Context, sessionID string) (*k8s.Sandbox
 		return &k8s.SandboxStatusInfo{Exists: false}, nil
 	}
 	return &k8s.SandboxStatusInfo{
-		Exists:      true,
+		Exists:      info.Running,
 		Ready:       info.Running,
 		ServiceFQDN: r.boxName(sessionID),
 	}, nil
@@ -438,26 +424,28 @@ func (r *Runtime) ConfigureTailnetAccess(_ context.Context, sessionID string, _ 
 
 func (r *Runtime) DeleteNetworkRestriction(_ context.Context, _ string) error { return nil }
 
-func (r *Runtime) CreateVolumeSnapshot(_ context.Context, sessionID, snapshotID string) error {
-	return fmt.Errorf("%w: snapshots are not implemented in BoxLite v0.8.2", ErrNotSupported)
+func (r *Runtime) CreateVolumeSnapshot(_ context.Context, _, _ string) error {
+	return fmt.Errorf("%w: snapshots not yet exposed in BoxLite Go SDK; QCOW2 backend is ready", ErrNotSupported)
 }
 
 func (r *Runtime) WaitForSnapshotReady(_ context.Context, _, _ string, _ time.Duration) error {
-	return nil
+	return fmt.Errorf("%w: snapshots not yet exposed in BoxLite Go SDK; QCOW2 backend is ready", ErrNotSupported)
 }
 
-func (r *Runtime) DeleteVolumeSnapshot(_ context.Context, _, _ string) error { return nil }
+func (r *Runtime) DeleteVolumeSnapshot(_ context.Context, _, _ string) error {
+	return fmt.Errorf("%w: snapshots not yet exposed in BoxLite Go SDK; QCOW2 backend is ready", ErrNotSupported)
+}
 
 func (r *Runtime) ListVolumeSnapshots(_ context.Context, _ string) ([]k8s.VolumeSnapshotInfo, error) {
-	return nil, nil
+	return nil, fmt.Errorf("%w: snapshots not yet exposed in BoxLite Go SDK; QCOW2 backend is ready", ErrNotSupported)
 }
 
-func (r *Runtime) RestoreFromSnapshot(_ context.Context, sessionID, _ string) (string, error) {
-	return r.workspacePath(sessionID), nil
+func (r *Runtime) RestoreFromSnapshot(_ context.Context, _, _ string) (string, error) {
+	return "", fmt.Errorf("%w: snapshots not yet exposed in BoxLite Go SDK; QCOW2 backend is ready", ErrNotSupported)
 }
 
-func (r *Runtime) CreatePVCFromSnapshot(_ context.Context, sessionID, _ string) (string, error) {
-	return r.workspacePath(sessionID), nil
+func (r *Runtime) CreatePVCFromSnapshot(_ context.Context, _, _ string) (string, error) {
+	return "", fmt.Errorf("%w: snapshots not yet exposed in BoxLite Go SDK; QCOW2 backend is ready", ErrNotSupported)
 }
 
 func (r *Runtime) WaitForRestoreJob(_ context.Context, _, _ string, _ time.Duration) error {
@@ -465,7 +453,7 @@ func (r *Runtime) WaitForRestoreJob(_ context.Context, _, _ string, _ time.Durat
 }
 
 func (r *Runtime) GetPVCName(_ context.Context, sessionID string) (string, error) {
-	return r.workspacePath(sessionID), nil
+	return r.boxName(sessionID), nil
 }
 
 func (r *Runtime) VerifyAgentToken(_ context.Context, _ string, _ []string) (string, error) {
@@ -570,20 +558,6 @@ func appendUnique(slice []string, s string) []string {
 		}
 	}
 	return append(slice, s)
-}
-
-func isAllowedWorkspaceRoot(p string) bool {
-	home, err := os.UserHomeDir()
-	if err == nil && strings.HasPrefix(p, filepath.Join(home, ".boxlite")) {
-		return true
-	}
-	if strings.Contains(p, string(filepath.Separator)+".boxlite") {
-		return true
-	}
-	if strings.HasPrefix(p, "/var/lib/netclode") || strings.HasPrefix(p, "/var/lib/boxlite") {
-		return true
-	}
-	return false
 }
 
 var _ k8s.Runtime = (*Runtime)(nil)

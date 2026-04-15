@@ -533,6 +533,9 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 			VCPUs:    resources.Vcpus,
 			MemoryMB: resources.MemoryMb,
 		}
+		if resources.DiskSizeGb != nil && resources.GetDiskSizeGb() > 0 {
+			k8sResources.DiskSizeGb = int(resources.GetDiskSizeGb())
+		}
 	}
 
 	// Create sandbox
@@ -547,9 +550,11 @@ func (m *Manager) createSandboxDirect(ctx context.Context, sessionID string, rep
 	fqdn, err := m.k8s.WaitForReady(ctx, sessionID, sandboxReadyTimeout)
 	if err != nil {
 		slog.ErrorContext(ctx, "Sandbox failed to become ready", "sessionID", sessionID, "error", err)
-		// Cleanup: delete the sandbox to avoid resource leak
+		// Cleanup: pause-safe sandbox stop followed by full storage cleanup.
 		if delErr := m.k8s.DeleteSandbox(ctx, sessionID); delErr != nil {
 			slog.ErrorContext(ctx, "Failed to cleanup sandbox after timeout", "sessionID", sessionID, "error", delErr)
+		} else if pvcErr := m.k8s.DeletePVC(ctx, sessionID); pvcErr != nil {
+			slog.ErrorContext(ctx, "Failed to cleanup sandbox storage after timeout", "sessionID", sessionID, "error", pvcErr)
 		} else {
 			slog.InfoContext(ctx, "Cleaned up sandbox after timeout", "sessionID", sessionID)
 		}

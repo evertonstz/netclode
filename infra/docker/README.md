@@ -128,10 +128,9 @@ The control-plane is reachable at `https://<TS_HOSTNAME>.<tailnet>.ts.net`.
 | `GITHUB_COPILOT_OAUTH_ACCESS_TOKEN` | No | — | GitHub Copilot OAuth access token for file-based OpenCode auth |
 | `GITHUB_COPILOT_OAUTH_REFRESH_TOKEN` | No | — | GitHub Copilot OAuth refresh token for file-based OpenCode auth |
 | `GITHUB_COPILOT_OAUTH_TOKEN_EXPIRES` | No | `0` | Unix timestamp for OAuth expiry (`0` = unknown / not tracked) |
-| `BOXLITE_HOME_DIR` | No | `/var/lib/boxlite` | BoxLite home directory used by the embedded runtime |
-| `BOXLITE_WORKSPACE_ROOT` | No | `/var/lib/netclode/workspaces` | Workspace directory root. **On macOS use `~/.boxlite/workspaces`** so Boxlite can reliably mount it. |
+| `BOXLITE_HOME_DIR` | No | `/var/lib/boxlite` | BoxLite home directory used by the embedded runtime (stores box metadata, QCOW2 disks, and startup logs) |
 | `BOXLITE_AGENT_CP_URL` | No | auto-detected | Control-plane URL used by agents inside BoxLite VMs. Leave unset unless you need to override auto-detection. |
-| `BOXLITE_PERSISTENT_DISK_SIZE_GB` | No | `0` (disabled) | Per-session persistent block disk size in GB. Set to e.g. `2` to attach a 2 GB disk per session. |
+| `BOXLITE_DEFAULT_DISK_SIZE_GB` | No | `20` | Default QCOW2 disk size in GB for new sessions when the client does not request one explicitly. |
 | `BOXLITE_SNAPSHOT_RETENTION` | No | `5` | Number of snapshots to keep per session before pruning oldest. |
 | `BOXLITE_STARTUP_LOG_RETENTION` | No | `5` | Number of agent startup logs to keep per session. |
 | `MAX_ACTIVE_SESSIONS` | No | `5` | Max concurrent sessions |
@@ -155,20 +154,22 @@ docker compose exec tailscale tailscale funnel --bg 8082
 
 Configure your GitHub App webhook URL to `https://<TS_HOSTNAME>.<tailnet>.ts.net:8082/webhook`.
 
-## Workspace backup
+## BoxLite data backup
 
-Agent workspaces are stored on the host path configured via `BOXLITE_WORKSPACE_ROOT`
-(the default is `/var/lib/netclode/workspaces`):
+Session data now lives inside BoxLite-managed QCOW2 disks under `BOXLITE_HOME_DIR`
+(the default is `/var/lib/boxlite`):
 
 ```bash
-# List workspace directories
-ls /var/lib/netclode/workspaces
+# List box directories and QCOW2 disks
+ls /var/lib/boxlite/boxes
+find /var/lib/boxlite/boxes -name 'disk.qcow2'
 
-# Backup all workspaces
-tar czf workspaces-backup-$(date +%Y%m%d).tar.gz -C /var/lib/netclode/workspaces .
+# Backup all BoxLite runtime data
+tar czf boxlite-backup-$(date +%Y%m%d).tar.gz -C /var/lib/boxlite .
 
 # Restore
-tar xzf workspaces-backup-*.tar.gz -C /var/lib/netclode/workspaces
+mkdir -p /var/lib/boxlite
+tar xzf boxlite-backup-*.tar.gz -C /var/lib/boxlite
 ```
 
 ## Updating
@@ -207,7 +208,7 @@ docker compose logs control-plane | grep -i "boxlite\|sandbox\|error"
 - Verify the API key is set in `.env` for the SDK type being used
 
 **Session becomes READY but the model never answers:**
-- Check the workspace `agent.log` for the active session under `/var/lib/netclode/workspaces/<session-id>/agent.log`
+- Check the startup logs for the active session under `/var/lib/boxlite/startup-logs/<session-id>/`
 - For OpenCode + GitHub Copilot OAuth, verify `GITHUB_COPILOT_OAUTH_ACCESS_TOKEN` and `GITHUB_COPILOT_OAUTH_REFRESH_TOKEN` are set in `.env`
 - Remember the compose path has **no secret-proxy**: file-based SDK auth must be materialized correctly inside the guest
 - If you changed agent credential handling, rebuild the agent image and clear stale BoxLite session state before retrying

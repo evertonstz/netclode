@@ -61,3 +61,5 @@ secrets/
 .opencode/plans/
 .claude/skills/
 
+services/control-plane/third_party/boxlite-go-sdk/boxlite.h
+services/control-plane/third_party/boxlite-go-sdk/libboxlite.a

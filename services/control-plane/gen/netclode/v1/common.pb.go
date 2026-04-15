@@ -511,7 +511,7 @@ type SessionConfig struct {
 	OllamaUrl          *string                `protobuf:"bytes,17,opt,name=ollama_url,json=ollamaUrl,proto3,oneof" json:"ollama_url,omitempty"`                  // URL for local Ollama inference (e.g., "http://ollama.netclode.svc.cluster.local:11434")
 	OpencodeApiKey     *string                `protobuf:"bytes,18,opt,name=opencode_api_key,json=opencodeApiKey,proto3,oneof" json:"opencode_api_key,omitempty"` // OpenCode Zen API key (for paid models, empty/"public" = free tier only)
 	ZaiApiKey          *string                `protobuf:"bytes,19,opt,name=zai_api_key,json=zaiApiKey,proto3,oneof" json:"zai_api_key,omitempty"`                // Z.AI API key (for GLM-4.7 models via Anthropic-compatible endpoint)
-	// GitHub Copilot OAuth tokens for OpenCode SDK (written to auth.json, not exposed to proxy)
+	// GitHub Copilot OAuth tokens for OpenCode SDK (written to auth.json for BoxLite/file-based auth flows)
 	GithubCopilotOauthAccessToken  *string `protobuf:"bytes,20,opt,name=github_copilot_oauth_access_token,json=githubCopilotOauthAccessToken,proto3,oneof" json:"github_copilot_oauth_access_token,omitempty"`
 	GithubCopilotOauthRefreshToken *string `protobuf:"bytes,21,opt,name=github_copilot_oauth_refresh_token,json=githubCopilotOauthRefreshToken,proto3,oneof" json:"github_copilot_oauth_refresh_token,omitempty"`
 	GithubCopilotOauthTokenExpires *string `protobuf:"bytes,22,opt,name=github_copilot_oauth_token_expires,json=githubCopilotOauthTokenExpires,proto3,oneof" json:"github_copilot_oauth_token_expires,omitempty"`
@@ -1571,6 +1571,7 @@ type SandboxResources struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vcpus         int32                  `protobuf:"varint,1,opt,name=vcpus,proto3" json:"vcpus,omitempty"`
 	MemoryMb      int32                  `protobuf:"varint,2,opt,name=memory_mb,json=memoryMb,proto3" json:"memory_mb,omitempty"`
+	DiskSizeGb    *int32                 `protobuf:"varint,3,opt,name=disk_size_gb,json=diskSizeGb,proto3,oneof" json:"disk_size_gb,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1615,6 +1616,13 @@ func (x *SandboxResources) GetVcpus() int32 {
 func (x *SandboxResources) GetMemoryMb() int32 {
 	if x != nil {
 		return x.MemoryMb
+	}
+	return 0
+}
+
+func (x *SandboxResources) GetDiskSizeGb() int32 {
+	if x != nil && x.DiskSizeGb != nil {
+		return *x.DiskSizeGb
 	}
 	return 0
 }
@@ -1792,10 +1800,13 @@ const file_netclode_v1_common_proto_rawDesc = "" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x1c\n" +
 	"\tremaining\x18\x03 \x01(\x05R\tremaining\x12\x1e\n" +
 	"\breset_at\x18\x04 \x01(\tH\x00R\aresetAt\x88\x01\x01B\v\n" +
-	"\t_reset_at\"E\n" +
+	"\t_reset_at\"}\n" +
 	"\x10SandboxResources\x12\x14\n" +
 	"\x05vcpus\x18\x01 \x01(\x05R\x05vcpus\x12\x1b\n" +
-	"\tmemory_mb\x18\x02 \x01(\x05R\bmemoryMb*V\n" +
+	"\tmemory_mb\x18\x02 \x01(\x05R\bmemoryMb\x12%\n" +
+	"\fdisk_size_gb\x18\x03 \x01(\x05H\x00R\n" +
+	"diskSizeGb\x88\x01\x01B\x0f\n" +
+	"\r_disk_size_gb*V\n" +
 	"\n" +
 	"RepoAccess\x12\x1b\n" +
 	"\x17REPO_ACCESS_UNSPECIFIED\x10\x00\x12\x14\n" +
@@ -1925,6 +1936,7 @@ func file_netclode_v1_common_proto_init() {
 	file_netclode_v1_common_proto_msgTypes[11].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[12].OneofWrappers = []any{}
 	file_netclode_v1_common_proto_msgTypes[13].OneofWrappers = []any{}
+	file_netclode_v1_common_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
