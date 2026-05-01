@@ -11,8 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 # can resolve the local replace target.
 COPY go.mod go.sum ./
 COPY third_party/boxlite-go-sdk ./third_party/boxlite-go-sdk
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+RUN go mod download
 
 # Download the BoxLite native library and runtime assets at build time.
 RUN set -eux; \
@@ -27,9 +26,7 @@ RUN set -eux; \
 # Copy the rest of the source and build.
 COPY . .
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o control-plane ./cmd/control-plane
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o control-plane ./cmd/control-plane
 
 # Runtime image
 FROM debian:bookworm-slim
