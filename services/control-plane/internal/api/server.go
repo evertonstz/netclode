@@ -16,6 +16,8 @@ import (
 	pb "github.com/angristan/netclode/services/control-plane/gen/netclode/v1"
 	"github.com/angristan/netclode/services/control-plane/gen/netclode/v1/netclodev1connect"
 	"github.com/angristan/netclode/services/control-plane/internal/session"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -97,19 +99,22 @@ func (s *Server) ListenAndServe(ctx context.Context, httpAddr string) error {
 	// Wrap with Datadog tracing to capture HTTP spans
 	tracedHandler := httptrace.WrapHandler(mux, "control-plane", "http.request")
 
+	// Wrap with h2c to support both HTTP/1.1 and HTTP/2 on the same port
+	h2cHandler := h2c.NewHandler(tracedHandler, &http2.Server{})
+
 	s.httpServer = &http.Server{
 		Addr:    httpAddr,
-		Handler: tracedHandler,
+		Handler: h2cHandler,
 	}
 
-	slog.Info("Starting HTTP server", "addr", httpAddr)
+	slog.Info("Starting h2c server (HTTP/1.1 + HTTP/2)", "addr", httpAddr)
 
 	errCh := make(chan error, 1)
 
-	// Start the main HTTP server
+	// Start the main h2c server (handles both HTTP and Connect)
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
-			errCh <- fmt.Errorf("http server: %w", err)
+			errCh <- fmt.Errorf("h2c server: %w", err)
 		}
 	}()
 
