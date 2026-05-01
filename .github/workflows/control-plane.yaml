@@ -39,6 +39,20 @@ jobs:
           go-version-file: services/control-plane/go.mod
           cache-dependency-path: services/control-plane/go.sum
 
+      - name: Cache BoxLite native library
+        id: cache-boxlite
+        uses: actions/cache@v4
+        with:
+          path: third_party/boxlite-go-sdk/libboxlite.a
+          key: boxlite-lib-v0.8.2-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Install BoxLite native library
+        if: steps.cache-boxlite.outputs.cache-hit != 'true'
+        working-directory: services/control-plane
+        run: |
+          go run github.com/boxlite-ai/boxlite/sdks/go/cmd/setup
+          cp "$(go env GOMODCACHE)/github.com/boxlite-ai/boxlite/sdks/go@v0.8.2/libboxlite.a" third_party/boxlite-go-sdk/
+
       - name: Run tests
         working-directory: services/control-plane
         run: |
