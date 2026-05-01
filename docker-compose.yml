@@ -62,9 +62,7 @@ services:
   # Embeds the BoxLite runtime directly in-process.
   # Docker Desktop (macOS/Windows): host.docker.internal resolves to the host.
   control-plane:
-    build:
-      context: ./services/control-plane
-      dockerfile: Dockerfile
+    image: ghcr.io/evertonstz/netclode-control-plane:tip
     network_mode: service:tailscale
     user: "0:0"
     devices:
