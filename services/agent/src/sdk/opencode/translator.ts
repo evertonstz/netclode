@@ -29,6 +29,7 @@ export interface TranslatorState {
   textMessageIdCounter: number;
   lastUsage: { inputTokens: number; outputTokens: number } | null;
   textPartContent: Map<string, string>;
+  reasoningPartContent: Map<string, string>;
 }
 
 /**
@@ -44,6 +45,7 @@ export function createTranslatorState(): TranslatorState {
     textMessageIdCounter: 0,
     lastUsage: null,
     textPartContent: new Map(),
+    reasoningPartContent: new Map(),
   };
 }
 
@@ -58,6 +60,7 @@ export function resetTranslatorState(state: TranslatorState): void {
   state.currentTextMessageId = null;
   state.lastUsage = null;
   state.textPartContent.clear();
+  state.reasoningPartContent.clear();
 }
 
 /**
@@ -82,7 +85,7 @@ export function translateMessagePartUpdated(
       if (messageId && !state.assistantMessageIds.has(messageId)) {
         state.assistantMessageIds.add(messageId);
       }
-      return translateReasoningPart(part, delta);
+      return translateReasoningPart(part, delta, state);
     case "text":
       if (messageId && !state.assistantMessageIds.has(messageId)) {
         return null; // only emit for confirmed assistant messages
@@ -152,13 +155,23 @@ function translateTextPart(
  */
 function translateReasoningPart(
   part: Record<string, unknown>,
-  delta: string | undefined
-): PromptEvent {
+  delta: string | undefined,
+  state: TranslatorState
+): PromptEvent | null {
+  const partId = part.id as string;
+  const newContent = delta || (part.text as string) || "";
+
+  const prevContent = state.reasoningPartContent.get(partId) || "";
+  if (newContent === prevContent) return null; // no change
+  state.reasoningPartContent.set(partId, newContent);
+
+  // Emit even with empty content — OpenCode sends empty event first to
+  // position the thinking bubble in the timeline, then fills it later.
   return {
     type: "thinking",
-    thinkingId: (part.id as string) || `thinking_${Date.now()}`,
-    content: delta || (part.text as string) || "",
-    partial: !!delta,
+    thinkingId: partId || `thinking_${Date.now()}`,
+    content: newContent,
+    partial: !!delta || !newContent, // empty content = still streaming
   };
 }
 
