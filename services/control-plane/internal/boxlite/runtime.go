@@ -145,6 +145,7 @@ func NewRuntime(cfg *config.Config, issuer TokenIssuer) (*Runtime, error) {
 		boxes:         make(map[string]*boxlitesdk.Box),
 	}
 
+// BoxLite embedded runtime initialised (image cache preserved across sessions)
 	slog.Info("BoxLite embedded runtime initialised", "homeDir", homeDir, "version", boxlitesdk.Version())
 	return r, nil
 }
